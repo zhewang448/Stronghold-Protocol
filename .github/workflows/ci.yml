@@ -16,7 +16,9 @@ jobs:
   test:
     name: test (${{ matrix.os }}, node ${{ matrix.node }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 25
+    # The suite takes ~7-16 min on 4-vCPU runners (public repos) but runs nearly serially on 2-vCPU runners
+    # (private repos), where it needs 20-30 min.
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:

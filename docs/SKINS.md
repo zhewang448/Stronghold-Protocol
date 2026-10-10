@@ -1,6 +1,6 @@
 # 干员皮肤与预加载
 
-本地分支的可选外观扩展，依据用户 2026-10-10 的要求实现。参考
+本分支的可选外观扩展（2026-10-10 加入）。参考
 [Paper-Yuan 的融合版本](https://github.com/Paper-Yuan/Stronghold-Protocol/releases/tag/v0.2.1-fusion)
 与 [AoyamaT1 的 PR #85](https://github.com/sganggs/Stronghold-Protocol/pull/85)。
 借鉴皮肤目录与选择方式；官方角色和皮肤美术的权利仍属于原权利人，项目保持非商业使用。
