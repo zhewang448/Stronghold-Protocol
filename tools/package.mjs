@@ -124,7 +124,8 @@ export const RUNTIME_RESEARCH = ['docs/research/03-operators.json', 'docs/resear
 export const PLAYER_SCRIPTS = ['scripts/install-service-windows.ps1', 'scripts/launch.mjs', 'scripts/open-browser.mjs',
   'scripts/apply-release-update.mjs',
   'scripts/start-windows-sandbox.bat', 'scripts/run-server.cmd', 'scripts/start-windows.bat', 'scripts/start-windows.ps1', 'scripts/start.sh',
-  'scripts/start-tunnel.bat', 'scripts/start-tunnel.mjs', 'scripts/stop-server.bat', 'scripts/free-port.mjs'];
+  'scripts/start-tunnel.bat', 'scripts/start-tunnel.mjs', 'scripts/stop-server.bat', 'scripts/free-port.mjs',
+  'scripts/host-runtime.mjs', 'scripts/recover-release.mjs'];
 /** The tools a player runs (npm run setup / doctor / assets, the postinstall) and the ones setup starts. */
 export const PLAYER_TOOLS = ['tools/build-resource-manifest.mjs', 'tools/crop-board-atlas.mjs', 'tools/doctor.mjs', 'tools/fetch-assets.mjs', 'tools/install-skins.mjs', 'tools/build-seat-art.mjs', 'tools/install-seat-art.mjs', 'tools/setup.mjs', 'tools/vendor.mjs', 'tools/fetch-stats-assets.mjs', 'tools/plugin.mjs'];
 /** Whole tool directories: fetch-assets' modules, the local-client extraction setup runs. */

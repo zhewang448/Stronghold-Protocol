@@ -37,6 +37,14 @@ Run: `npm install && npm run assets && npm start` → `http://localhost:3000`. F
 
 ## 2. Repository layout & ownership
 
+### 安全开服、进程所有权与更新恢复（扩展分支）
+
+`scripts/launch.mjs` 是普通开服和公网开服的共同准备入口；`scripts/host-runtime.mjs` 只管理本启动器创建的服务器 / 隧道子进程，并用启动租约避免并发重复开服。发现同机其他服务占端口只提示，不扫描后结束进程。优雅停服须以本机安装目录的随机实例记录、回连令牌和控制台 PID 证明服务归属。
+
+受签名验证的完整包或增量包最终合并成同一个完整程序暂存目录，并进入 `release-install.js` 的事务安装流程。先验空间、备份、逐文件替换 / 校验，再在无插件、无恢复 / 设置写入、回环可访问的独立进程中验证目标应用、静态资源指纹及 WebSocket 心跳；只读探测失败可从当前事务备份回滚。正式进程启动失败可能已触碰用户设置或日志，只保留原子恢复点、状态及离线恢复工具，不自动覆盖运行期变化。恢复点是更新前一版变更路径的逆向事务，应按顺序还原；不是可任意挑选的全盘快照。
+
+临时隧道是单独租约；服务器进程以授权 IPC 标记重启 / 更新 / 停服，正常重启不回收隧道。掉电或隧道进程自行崩溃后，cloudflared 临时公网地址仍可能改变。玩家本机存储按 origin 隔离；`sp.backup.reminder` 是仅留在当前 origin 的提醒偏好，不属于个人数据导出、账户凭证或跨域自动迁移。
+
 ```
 server/
   index.js                 process entry: startServer() wires server/http/ (plain node:http + ws); boots when run directly

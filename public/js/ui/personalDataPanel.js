@@ -3,6 +3,7 @@ import { html, Button, Modal, TextField } from './components.js';
 import { createStore, store, useStore } from '../store.js';
 import { t } from '../../../shared/i18n.js';
 import { copyText } from './clipboard.js';
+import { backupDue, initializeReminder, isTemporaryHost, reminderState, updateReminder } from './backupReminder.js';
 import { capturePersonalData, encodePersonalData, decodePersonalData, restorePersonalData, personalSummary,
   migrationOrigin, validMigrationMessage, MAX_CODE_CHARS } from './personalData.js';
 
@@ -42,6 +43,7 @@ function PersonalDataPanel({ source, onClose }) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
+  const [reminders, setReminders] = useState(() => reminderState().enabled);
   const active = useRef(true), cancelMigration = useRef(() => {}), fileRef = useRef(null), operation = useRef(false);
   const oldSiteEdited = useRef(false);
   useEffect(() => () => { active.current = false; cancelMigration.current(); }, []);
@@ -77,6 +79,7 @@ function PersonalDataPanel({ source, onClose }) {
   });
   const doCopy = () => work('copy', async () => {
     const ok = await copyText(exported);
+    if (ok) updateReminder({ exportedAt: Date.now() });
     if (active.current) setMessage(ok ? t('恢复码已复制，请妥善保存。') : t('快捷复制失败，请选中恢复码手动复制。'));
   });
   const inspect = () => work('inspect', async () => {
@@ -90,6 +93,7 @@ function PersonalDataPanel({ source, onClose }) {
     try {
       link.href = url; link.download = `stronghold-personal-${new Date().toISOString().slice(0, 10)}.spdata`;
       document.body.appendChild(link); link.click();
+      updateReminder({ exportedAt: Date.now() });
     } finally { link.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); }
   });
   const loadFile = (event) => {
@@ -149,6 +153,7 @@ function PersonalDataPanel({ source, onClose }) {
     <div class="personal-data-panel">
       <p>${t('包含本机账号、昵称、头像、战绩与成就、干员调配、皮肤、设置、插件个人配置、自定义大厅背景和音乐。素材缓存及临时对局凭证不包含在内。')}</p>
       <p class="personal-data-warning">${t('恢复码包含个人数据，请像密码一样保管；它是备份时的快照，不会自动更新。')}</p>
+      ${!source ? html`<label><input type="checkbox" checked=${reminders} onChange=${(e) => { setReminders(e.currentTarget.checked); updateReminder({ enabled: e.currentTarget.checked }); }} /> ${t('定期提醒导出个人数据')}</label>` : null}
       ${source ? html`<section>
         <h3>${t('向新站传输')}</h3><p>${t('确认只将个人数据发送到以下网址：')}</p>
         <strong class="personal-data-origin">${source.origin}</strong>
@@ -193,4 +198,20 @@ export function PersonalDataHost() {
   const [source, setSource] = useState(incomingRequest);
   if (!open && !source) return null;
   return html`<${PersonalDataPanel} source=${source} onClose=${() => { panel.set({ open: false }); setSource(null); }} />`;
+}
+
+export function PersonalDataReminder() {
+  const [due, setDue] = useState(false);
+  useEffect(() => {
+    initializeReminder();
+    const sync = () => setDue(backupDue(undefined, location.hostname));
+    sync(); window.addEventListener('sp:backup-reminder', sync); window.addEventListener('storage', sync);
+    return () => { window.removeEventListener('sp:backup-reminder', sync); window.removeEventListener('storage', sync); };
+  }, []);
+  if (!due) return null;
+  return html`<section class="personal-data-reminder" role="status" data-testid="backup-reminder">
+    <p>${isTemporaryHost(location.hostname) ? t('当前为临时网址，换网址前请导出个人数据。') : t('建议备份本机个人数据，换网址或清理浏览器前可用于恢复。')}</p>
+    <div class="personal-data-actions"><${Button} size="sm" icon="download" onClick=${openPersonalData}>${t('导出个人数据')}<//>
+      <${Button} size="sm" variant="ghost" onClick=${() => updateReminder({ dismissedAt: Date.now() })}>${t('明天再提醒')}<//></div>
+  </section>`;
 }

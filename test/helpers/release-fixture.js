@@ -53,4 +53,15 @@ export function signRelease(release, zip, { signTag = release.tag_name, key = cr
   return { sums, sig, keys: [key.publicKey.export({ format: 'der', type: 'spki' }).toString('base64')] };
 }
 export const tick = () => new Promise((r) => setImmediate(r));
+export function healthServerSource(port) {
+  return `import http from 'node:http';
+import {fileURLToPath} from 'node:url';
+import {computeBuildTag} from ${JSON.stringify(new URL('../../server/http/buildTag.js', import.meta.url).href)};
+import {WebSocketServer} from ${JSON.stringify(new URL('../../node_modules/ws/wrapper.mjs', import.meta.url).href)};
+const root=fileURLToPath(new URL('..',import.meta.url));
+const server=http.createServer((q,r)=>r.end(q.url==='/healthz'?JSON.stringify({ok:true,app:${JSON.stringify(APP_VERSION)},build:computeBuildTag(root),pid:process.pid}):q.url==='/js/main.js'?'export {};':'<html><body>ready</body></html>'));
+const wss=new WebSocketServer({server});wss.on('connection',ws=>ws.on('message',data=>{const m=JSON.parse(String(data));ws.send(JSON.stringify({t:'pong',c:m.c}));}));
+server.listen(Number(process.env.PORT)||${port},'127.0.0.1',()=>{if(process.env.SP_UPDATE_PROBE)process.send?.({t:'sp.updateProbe',nonce:process.env.SP_UPDATE_PROBE,pid:process.pid,port:server.address().port});});
+process.on('message',m=>{if(m.t==='sp.probe.stop'){wss.close();server.close(()=>process.exit(0));}});`;
+}
 export async function until(fn) { for (let i = 0; i < 100; i++) { if (fn()) return; await new Promise((r) => setTimeout(r, 10)); } throw new Error('timed out'); }

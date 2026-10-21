@@ -21,10 +21,12 @@
 //      --no-open, SP_NO_BROWSER=1, or on a Linux box without a display).
 // Ctrl+C stops the server (it gets the signal from the terminal itself); the exit code is the server's.
 
-import { spawn, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
+import { runningInstance } from '../server/instance.js';
+import { acquireLease, superviseServer, openTunnel } from './host-runtime.mjs';
 // 打开浏览器只有一份实现（走 shell 关联 = 默认浏览器，且不会把浏览器拉成提权）
 import { openBrowser as openInBrowser } from './open-browser.mjs';
 
@@ -47,7 +49,7 @@ export const SCRIPT_MODES = Object.freeze(['off', 'sandbox', 'trusted', 'trusted
 export const TEST_MODE_FLAGS = Object.freeze(['off', '1', 'force']);
 
 export function parseArgs(argv) {
-  const o = { port: Number(process.env.PORT) || 3000, host: process.env.HOST || '::', open: !/^(1|true|yes)$/i.test(process.env.SP_NO_BROWSER || ''), setup: true, setupArgs: [], help: false, scripts: undefined, testMode: undefined };
+  const o = { port: Number(process.env.PORT) || 3000, host: process.env.HOST || '::', tunnel: false, open: !/^(1|true|yes)$/i.test(process.env.SP_NO_BROWSER || ''), setup: true, setupArgs: [], help: false, scripts: undefined, testMode: undefined };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const [k, v] = a.split('=');
@@ -55,6 +57,8 @@ export function parseArgs(argv) {
     if (k === '--port') o.port = Number(val()) || o.port;
     else if (k === '--host') o.host = val() || o.host;
     else if (a === '--no-open') o.open = false;
+    else if (a === '--tunnel') o.tunnel = true;
+    else if (a === '--no-tunnel') o.tunnel = false;
     else if (a === '--no-setup') o.setup = false;
     else if (k === '--scripts') o.scripts = val() ?? '';
     else if (k === '--test-mode') o.testMode = v !== undefined ? v : argv[i + 1] && !argv[i + 1].startsWith('-') ? argv[++i] : '1';
@@ -110,18 +114,25 @@ function printShare(port) {
   console.log(`${line}\n`);
 }
 
-async function waitHealthy(port, child, timeoutMs = 30000) {
-  const until = Date.now() + timeoutMs;
-  while (Date.now() < until && child.exitCode === null) {
-    const p = await probePort(port);
-    if (p.state === 'ours') return true;
-    await new Promise((r) => setTimeout(r, 300));
+export async function prepareLaunch(o, { root = ROOT, probe = probePort, running = runningInstance,
+  update = applyPendingUpdate, setup = () => spawnSync(process.execPath, [path.join(root, 'tools', 'setup.mjs'), '--quiet', ...o.setupArgs], { cwd: root, stdio: 'inherit', windowsHide: true }).status } = {}) {
+  const before = await probe(o.port, o.host);
+  if (before.state !== 'free') {
+    const instance = before.state === 'ours' ? await running(root, o.port) : null;
+    return instance ? { state: 'existing', instance } : { state: 'blocked', code: before.code || before.state };
   }
-  return false;
+  if (fs.existsSync(path.join(root, 'logs', 'release-update.lock'))) return { state: 'failed', code: 1, error: '更新安装正在进行或需要恢复，请先检查 logs/release-update-status.json。' };
+  try {
+    const status = JSON.parse(fs.readFileSync(path.join(root, 'logs', 'release-update-status.json'), 'utf8'));
+    if (status.state === 'recovery-required') return { state: 'failed', code: 1, error: '更新需要离线恢复，请关闭启动窗口及外部守护器后按恢复说明操作。' };
+  } catch { /* no outstanding recovery */ }
+  if (update(root).state === 'failed') return { state: 'failed', code: 1 };
+  const code = o.setup ? await setup() : 0;
+  return code === 0 ? { state: 'ready' } : { state: 'failed', code: code || 1 };
 }
 
-async function main() {
-  const o = parseArgs(process.argv.slice(2));
+export async function launch(argv = process.argv.slice(2)) {
+  const o = parseArgs(argv);
   if (o.help) {
     const src = fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n');
     const end = src.findIndex((l, i) => i > 0 && !l.startsWith('//'));
@@ -138,8 +149,13 @@ async function main() {
   }
   const localUrl = `http://localhost:${o.port}`;
 
-  const before = await probePort(o.port, o.host);
-  if (before.state === 'ours') {
+  const lease = acquireLease(ROOT, `launch-${o.port}`);
+  if (!lease.owned) { console.log('当前安装的启动流程正在运行，请查看原启动窗口。'); return 0; }
+  let before;
+  try { before = await prepareLaunch(o); }
+  catch (e) { lease.release(); throw e; }
+  if (before.state === 'existing') {
+    lease.release();
     console.log(`${mark.ok} 服务器已经在运行（端口 ${o.port}），直接打开浏览器。`);
     if (o.scripts !== undefined) console.log(c.warn(`  --scripts ${o.scripts} 不会改变正在运行的服务器：先停止它（关掉它的窗口），再重新启动。`));
     if (o.testMode !== undefined) console.log(c.warn(`  --test-mode ${o.testMode} 不会改变正在运行的服务器：先停止它（关掉它的窗口），再重新启动。`));
@@ -148,37 +164,50 @@ async function main() {
     }
     printShare(o.port);
     if (o.open) openBrowser(localUrl);
-    return 0;
+    if (!o.tunnel) return 0;
+    const tunnel = openTunnel({ root: ROOT, port: o.port, onUrl: (url) => console.log(`公网地址：${url}`) });
+    if (tunnel.existing) return 0;
+    const stop = () => tunnel.stop();
+    let missingSince = 0, checking = false;
+    const monitor = setInterval(async () => {
+      if (checking) return;
+      checking = true;
+      try {
+        if (await runningInstance(ROOT, o.port)) missingSince = 0;
+        else {
+          missingSince ||= Date.now();
+          // Keep the tunnel through normal restarts and the installer's two-minute lock window.
+          const grace = fs.existsSync(path.join(ROOT, 'logs', 'release-update.lock')) ? 150000 : 60000;
+          if (Date.now() - missingSince > grace) { console.log('本机服务持续离线，正在关闭本窗口创建的公网隧道。'); tunnel.stop(); }
+        }
+      } finally { checking = false; }
+    }, 1000);
+    process.once('SIGINT', stop); process.once('SIGTERM', stop);
+    try { return await tunnel.closed; }
+    finally { clearInterval(monitor); process.removeListener('SIGINT', stop); process.removeListener('SIGTERM', stop); tunnel.stop(); }
   }
-  if (before.state !== 'free') {
+  if (before.state === 'blocked') {
+    lease.release();
     console.error(`${mark.err} 端口 ${o.port} 被其他程序占用或无权限（${before.code || before.state}）。`);
     console.error(`  换一个端口：${IS_WIN ? 'scripts\\start-windows.bat --port 3001' : 'scripts/start.sh --port 3001'}`);
     return 1;
   }
 
-  // before setup: setup and the server then see the new version's files (its message explains a refusal)
-  if (applyPendingUpdate(ROOT).state === 'failed') return 1;
-
-  if (o.setup) {
-    const r = spawnSync(process.execPath, [path.join(ROOT, 'tools', 'setup.mjs'), '--quiet', ...o.setupArgs], { cwd: ROOT, stdio: 'inherit', windowsHide: true });
-    if (r.status !== 0) { console.error(`${mark.err} 准备步骤失败（见上方）。`); return r.status || 1; }
-  }
+  if (before.state === 'failed') { lease.release(); console.error(`${mark.err} ${before.error || '准备步骤失败（见上方）。'}`); return before.code; }
 
   const env = serverEnv(o);
   warnTestMode(o, env);
-  const child = spawn(process.execPath, [path.join(ROOT, 'server', 'index.js')], { cwd: ROOT, env, stdio: 'inherit', windowsHide: true });
-  const forward = (sig) => { if (child.exitCode === null) { try { child.kill(sig); } catch { /* gone */ } } };
-  // SIGINT reaches the server straight from the terminal (same process group / console); forwarding it too would make
-  // the server's second-signal path force-exit. Other signals (service managers, `kill`) are forwarded.
-  process.on('SIGINT', () => {});
-  for (const sig of ['SIGTERM', 'SIGHUP', 'SIGBREAK']) { try { process.on(sig, () => forward(sig === 'SIGBREAK' ? 'SIGTERM' : sig)); } catch { /* unsupported here */ } }
-
-  const exited = new Promise((resolve) => child.on('exit', (code, signal) => resolve(code ?? (signal ? 0 : 1))));
-  if (await waitHealthy(o.port, child)) {
-    printShare(o.port);
+  const runtime = superviseServer({ root: ROOT, port: o.port, env,
+    onHealthy: ({ first }) => { if (!first) console.log('服务器已恢复，公网隧道保持连接。'); } });
+  let tunnel;
+  const stop = () => { runtime.stop(); tunnel?.stop(); };
+  process.once('SIGINT', stop); process.once('SIGTERM', stop);
+  try {
+    await runtime.ready; lease.release(); printShare(o.port);
     if (o.open && !openBrowser(localUrl)) console.log(c.dim(`（未能自动打开浏览器，请手动访问 ${localUrl}）`));
-  }
-  return exited;
+    if (o.tunnel) tunnel = openTunnel({ root: ROOT, port: o.port, onUrl: (url) => console.log(`公网地址：${url}\n临时网址更换后，本机个人数据需通过备份迁移。`) });
+    return await runtime.done;
+  } finally { lease.release(); stop(); process.removeListener('SIGINT', stop); process.removeListener('SIGTERM', stop); }
 }
 
 // Same convention as tools/setup.mjs: the helpers above are importable, but only running this file starts anything.
@@ -188,5 +217,5 @@ function isMain() {
 }
 
 if (isMain()) {
-  main().then((code) => { process.exitCode = code; }, (e) => { console.error(e?.stack || e); process.exitCode = 1; });
+  launch().then((code) => { process.exitCode = code; }, (e) => { console.error(e?.stack || e); process.exitCode = 1; });
 }

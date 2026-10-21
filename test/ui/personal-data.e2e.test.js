@@ -53,9 +53,30 @@ describe('personal data backup and domain migration', { skip: !ENABLED }, () => 
     const config = await page.evaluate(() => fetch('/personal-data-config.json').then((r) => r.json()));
     await panel(page);
     const expected = config.migrationSource ? new URL(config.migrationSource).origin + '/' : '';
-    await page.waitForFunction((expected) => document.querySelector('.personal-data-panel input:not([type=file])')?.value === expected, {}, expected);
-    await page.$eval('.personal-data-panel input:not([type=file])', (e) => { e.value = 'https://manual.example.test/'; e.dispatchEvent(new Event('input', { bubbles: true })); });
-    assert.equal(await page.$eval('.personal-data-panel input:not([type=file])', (e) => e.value), 'https://manual.example.test/');
+    await page.waitForFunction((expected) => document.querySelector('.personal-data-panel input:not([type=file]):not([type=checkbox])')?.value === expected, {}, expected);
+    await page.$eval('.personal-data-panel input:not([type=file]):not([type=checkbox])', (e) => { e.value = 'https://manual.example.test/'; e.dispatchEvent(new Event('input', { bubbles: true })); });
+    assert.equal(await page.$eval('.personal-data-panel input:not([type=file]):not([type=checkbox])', (e) => e.value), 'https://manual.example.test/');
+  });
+  test('backup reminder supports postpone, disable, reload and mobile layout', async (t) => {
+    const { page, errors } = await open(t, 844, 390);
+    await page.evaluate(async () => {
+      const { updateReminder } = await import('/js/ui/backupReminder.js');
+      updateReminder({ firstSeen: Date.now() - 8 * 86400000, enabled: true });
+    });
+    await page.waitForSelector('[data-testid=backup-reminder]');
+    await page.$eval('[data-testid=backup-reminder]', (el) => el.scrollIntoView());
+    assert.equal(await page.$eval('[data-testid=backup-reminder]', (el) => el.scrollWidth <= el.clientWidth), true);
+    await page.screenshot({ path: '.cache/personal-data/reminder-mobile.png', fullPage: true });
+    const postpone = await page.evaluateHandle(() => [...document.querySelectorAll('[data-testid=backup-reminder] button')].find((b) => b.textContent.includes('明天再提醒')));
+    await postpone.asElement().click(); await postpone.dispose();
+    await page.waitForSelector('[data-testid=backup-reminder]', { hidden: true });
+    await page.reload(); await page.waitForSelector('.lobby-screen');
+    assert.equal(await page.$('[data-testid=backup-reminder]'), null);
+    await panel(page);
+    const toggle = '.personal-data-panel input[type=checkbox]';
+    await page.click(toggle);
+    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('sp.backup.reminder')).enabled), false);
+    assert.deepEqual(errors, []);
   });
   test('a delayed deployment default never overwrites a typed address', async (t) => {
     const { page } = await open(t);
@@ -66,11 +87,11 @@ describe('personal data backup and domain migration', { skip: !ENABLED }, () => 
       else void request.continue();
     });
     await panel(page);
-    await page.$eval('.personal-data-panel input:not([type=file])', (e) => { e.value = 'https://manual.example.test/'; e.dispatchEvent(new Event('input', { bubbles: true })); });
+    await page.$eval('.personal-data-panel input:not([type=file]):not([type=checkbox])', (e) => { e.value = 'https://manual.example.test/'; e.dispatchEvent(new Event('input', { bubbles: true })); });
     assert.ok(pending);
     await pending.respond({ status: 200, contentType: 'application/json', body: JSON.stringify({ migrationSource: 'https://old.example.test/' }) });
     await page.waitForNetworkIdle({ idleTime: 200 });
-    assert.equal(await page.$eval('.personal-data-panel input:not([type=file])', (e) => e.value), 'https://manual.example.test/');
+    assert.equal(await page.$eval('.personal-data-panel input:not([type=file]):not([type=checkbox])', (e) => e.value), 'https://manual.example.test/');
   });
   test('export, copy fallback, invalid input, preview and merged restore across reload', async (t) => {
     const { page, errors } = await open(t);
@@ -159,7 +180,7 @@ describe('personal data backup and domain migration', { skip: !ENABLED }, () => 
     await old.evaluate(() => { localStorage.setItem('sp.name', 'OldDoc'); localStorage.setItem('sp.pref.localAccount', '{"tag":"6789"}'); });
     await old.close();
     await panel(page);
-    await page.$eval('.personal-data-panel input:not([type=file])', (e, value) => { e.value = value; e.dispatchEvent(new Event('input', { bubbles: true })); }, oldServer.url);
+    await page.$eval('.personal-data-panel input:not([type=file]):not([type=checkbox])', (e, value) => { e.value = value; e.dispatchEvent(new Event('input', { bubbles: true })); }, oldServer.url);
     const popupPromise = new Promise((resolve) => page.once('popup', resolve));
     await clickText(page, '打开旧站迁移');
     const popup = await popupPromise;
@@ -215,7 +236,7 @@ describe('personal data backup and domain migration', { skip: !ENABLED }, () => 
     await page.waitForFunction(() => document.querySelector('.personal-data-modal [role=alert]')?.textContent.includes('离开当前同盟'));
     assert.equal(await page.evaluate(() => localStorage.getItem('sp.name')), 'BackupDoc');
     await page.evaluate(() => { globalThis.__SP__.store.set({ room: null }); window.open = () => null; });
-    await page.$eval('.personal-data-panel input:not([type=file])', (e) => { e.value = 'https://old.example.com'; e.dispatchEvent(new Event('input', { bubbles: true })); });
+    await page.$eval('.personal-data-panel input:not([type=file]):not([type=checkbox])', (e) => { e.value = 'https://old.example.com'; e.dispatchEvent(new Event('input', { bubbles: true })); });
     await clickText(page, '打开旧站迁移');
     await page.waitForFunction(() => document.querySelector('.personal-data-modal [role=alert]')?.textContent.includes('拦截'));
   });

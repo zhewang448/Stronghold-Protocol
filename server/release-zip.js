@@ -117,3 +117,41 @@ export function readZip(zipPath, onFile) {
     fs.closeSync(fd);
   }
 }
+
+/** Total uncompressed file bytes from the ZIP central directory, without extracting or allocating file bodies. */
+export function zipUnpackedSize(zipPath) {
+  const fd = fs.openSync(zipPath, 'r');
+  try {
+    const size = fs.fstatSync(fd).size, tailLen = Math.min(size, 22 + 65535), tail = readAt(fd, size - tailLen, tailLen);
+    let e = -1;
+    for (let i = tailLen - 22; i >= 0; i--) if (tail.readUInt32LE(i) === SIG.eocd) { e = i; break; }
+    if (e < 0) throw new Error('not a zip file (no end of central directory)');
+    let count = tail.readUInt16LE(e + 10), cdSize = tail.readUInt32LE(e + 12), cdOffset = tail.readUInt32LE(e + 16);
+    if (count === 0xffff || cdSize === U32 || cdOffset === U32) {
+      const locPos = size - tailLen + e - 20, loc = locPos >= 0 ? readAt(fd, locPos, 20) : null;
+      if (!loc || loc.readUInt32LE(0) !== SIG.loc64) throw new Error('zip64 locator missing');
+      const rec = readAt(fd, Number(loc.readBigUInt64LE(8)), 56);
+      if (rec.readUInt32LE(0) !== SIG.eocd64) throw new Error('zip64 end record missing');
+      count = Number(rec.readBigUInt64LE(32)); cdSize = Number(rec.readBigUInt64LE(40)); cdOffset = Number(rec.readBigUInt64LE(48));
+    }
+    if (!Number.isSafeInteger(count) || !Number.isSafeInteger(cdSize) || !Number.isSafeInteger(cdOffset)
+      || cdSize < 0 || cdOffset < 0 || cdOffset + cdSize > size) throw new Error('invalid ZIP central directory size');
+    const cd = readAt(fd, cdOffset, cdSize); let p = 0, total = 0;
+    for (let n = 0; n < count; n++) {
+      if (p + 46 > cd.length || cd.readUInt32LE(p) !== SIG.central) throw new Error('damaged central directory');
+      let raw = cd.readUInt32LE(p + 24); const nameLen = cd.readUInt16LE(p + 28), extraLen = cd.readUInt16LE(p + 30), commentLen = cd.readUInt16LE(p + 32);
+      if (raw === U32) {
+        for (let q = p + 46 + nameLen, end = q + extraLen; q + 4 <= end;) {
+          const id = cd.readUInt16LE(q), len = cd.readUInt16LE(q + 2);
+          if (q + 4 + len > end) throw new Error('damaged ZIP extra field');
+          if (id === 1) { raw = Number(cd.readBigUInt64LE(q + 4)); break; }
+          q += 4 + len;
+        }
+      }
+      if (!Number.isSafeInteger(raw) || raw < 0 || !Number.isSafeInteger(total + raw)) throw new Error('ZIP uncompressed size exceeds safe limit');
+      total += raw; p += 46 + nameLen + extraLen + commentLen;
+    }
+    if (p !== cd.length) throw new Error('central directory length mismatch');
+    return total;
+  } finally { fs.closeSync(fd); }
+}

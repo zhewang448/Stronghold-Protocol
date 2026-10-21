@@ -158,8 +158,10 @@ test('console Release updates: check/retry, confirmation/cancel, progress, resta
       const debug = await page.evaluate(() => ({ url: location.href, text: document.body.innerText, tabs: [...document.querySelectorAll('[data-tab]')].map((b) => [b.dataset.tab, b.getAttribute('aria-pressed')]) }));
       throw new Error(JSON.stringify({ debug, actualToken: admin.token, versionExists: fs.existsSync(updatePaths(root).version) }), { cause: e });
     }
+    // The initial HTML has the rooms tab selected before the module finishes its top-level data fetch.
+    await page.waitForFunction(() => !!document.querySelector('#status')?.textContent.trim());
     await page.click('[data-tab="settings"]');
-    await page.waitForFunction((tag) => document.querySelector('#release-update').textContent.includes(tag), {}, tag);
+    await page.waitForFunction((tag) => document.querySelector('#release-update')?.textContent.includes(tag), {}, tag);
     assert.deepEqual(errors, []);
     assert.equal(JSON.parse(fs.readFileSync(updatePaths(root).version)).tag, tag);
   } finally {

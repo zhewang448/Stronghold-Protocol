@@ -3,9 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseManifest, verifyFiles, digestFile, removalProblem, isSetupArt } from './update.js';
 import { releaseTarget as targetPath, readStagedArt, verifyStagedArt } from './release-art.js';
+import { assertUpdateSpace } from './update-backups.js';
 
 /** Backup replaced/deleted files first; restore all touched paths if replacement or verification fails. */
-export function applyReleaseStage(root, stage, { copyFile = fs.copyFileSync } = {}) {
+export function applyReleaseStage(root, stage, { copyFile = fs.copyFileSync, from, to } = {}) {
   root = fs.realpathSync(root);
   const next = parseManifest(fs.readFileSync(path.join(stage, 'MANIFEST.json'), 'utf8'));
   for (const rel of next.files.keys()) if (isSetupArt(rel) || removalProblem(rel)) throw new Error(`程序清单包含保留路径：${rel}`);
@@ -32,18 +33,27 @@ export function applyReleaseStage(root, stage, { copyFile = fs.copyFileSync } = 
     if (fs.existsSync(file) && !fs.statSync(file).isFile()) throw new Error(`更新目标不是普通文件：${rel}`);
   }
   const backups = path.join(root, 'logs', 'update-backups');
+  let required = 0;
+  for (const rel of changed) { try { required += fs.statSync(targetPath(root, rel)).size; } catch (e) { if (e.code !== 'ENOENT') throw e; } }
+  for (const rel of files) required += fs.statSync(path.join(stage, rel)).size;
+  assertUpdateSpace(root, required);
   fs.mkdirSync(backups, { recursive: true });
   const backup = fs.mkdtempSync(path.join(backups, 'release-'));
   const existing = new Set();
+  const hashes = {};
   for (const rel of changed) {
     const file = targetPath(root, rel);
     if (!fs.existsSync(file)) continue;
     const dst = path.join(backup, rel);
     fs.mkdirSync(path.dirname(dst), { recursive: true });
     fs.copyFileSync(file, dst);
+    hashes[rel] = digestFile(dst);
     existing.add(rel);
   }
-  fs.writeFileSync(path.join(backup, 'restore.json'), JSON.stringify({ files: changed, existing: [...existing] }, null, 2));
+  let versionBefore = null;
+  try { versionBefore = fs.readFileSync(path.join(root, 'logs', 'release-version.json'), 'utf8'); } catch (e) { if (e.code !== 'ENOENT') throw e; }
+  const record = { format: 2, files: changed, existing: [...existing], hashes, versionBefore, at: Date.now(), from, to, state: 'pending' };
+  fs.writeFileSync(path.join(backup, 'restore.json'), JSON.stringify(record));
   const touched = [];
   try {
     for (const rel of files) {
@@ -59,6 +69,8 @@ export function applyReleaseStage(root, stage, { copyFile = fs.copyFileSync } = 
     const result = verifyFiles(root, next.files);
     if (result.missing.length || result.mismatched.length) throw new Error('替换后程序文件校验失败');
     verifyStagedArt(root, stage, art, { installed: true });
+    record.target = Object.fromEntries(changed.map((rel) => [rel, digestFile(targetPath(root, rel))]));
+    fs.writeFileSync(path.join(backup, 'restore.json'), JSON.stringify(record));
     return { app: next.app, backup, removed: removed.length, assets: artChanges.length };
   } catch (e) {
     const failures = [];
@@ -70,10 +82,14 @@ export function applyReleaseStage(root, stage, { copyFile = fs.copyFileSync } = 
       } catch (err) { failures.push(`${rel}: ${err.message}`); }
     }
     if (failures.length) {
+      record.target = Object.fromEntries(changed.map((rel) => [rel, digestFile(targetPath(root, rel))]));
+      fs.writeFileSync(path.join(backup, 'restore.json'), JSON.stringify({ ...record, state: 'recovery-required' }));
       const error = new Error(`更新失败且部分文件恢复失败；备份在 ${backup}：${failures.join('；')}`, { cause: e });
       error.restartSafe = false;
+      error.backup = backup;
       throw error;
     }
+    fs.writeFileSync(path.join(backup, 'restore.json'), JSON.stringify({ ...record, state: 'restored' }));
     throw new Error(`更新失败，已恢复原程序：${e.message}`, { cause: e });
   }
 }
