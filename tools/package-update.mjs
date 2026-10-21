@@ -55,7 +55,7 @@ function walk(dir, rel = '', out = []) {
  * files themselves).
  * @param {string} source
  * @param {{ folder?: string, skip?: (rel: string) => boolean }} [opts]
- * @returns {{ source: string, version: string, files: Map<string, { size: number, sha256: string }>, art: number, update: boolean }}
+ * @returns {{ source: string, version: string, tag: string, files: Map<string, { size: number, sha256: string }>, art: number, update: boolean }}
  */
 export function readBase(source, { folder = 'Stronghold-Protocol', skip = () => false } = {}) {
   const abs = path.resolve(source);
@@ -63,9 +63,14 @@ export function readBase(source, { folder = 'Stronghold-Protocol', skip = () => 
   try { st = fs.statSync(abs); } catch { throw new Error(`base ${source}: not found`); }
   const files = new Map();
   let pkg = null;
+  let releaseTag = null;
   let update = false;
   const add = (rel, d, read) => {
     if (rel === 'package.json') { try { pkg = JSON.parse(read().toString('utf8')); } catch { pkg = {}; } }
+    if (rel === 'server/release-version.js') {
+      releaseTag = /^\s*export\s+const\s+RELEASE_TAG\s*=\s*(['"])(v\d+\.\d+\.\d+(?:-extended\.\d+)?)\1\s*;/m.exec(read().toString('utf8'))?.[2];
+      if (!releaseTag) throw new Error(`base ${source}: invalid server/release-version.js`);
+    }
     if (rel === UPDATE_FILE) update = true;
     if (!skip(rel)) files.set(rel, d);
   };
@@ -95,7 +100,8 @@ export function readBase(source, { folder = 'Stronghold-Protocol', skip = () => 
   if (typeof version !== 'string' || !/^\d+\.\d+\.\d+/.test(version)) throw new Error(`base ${source}: package.json names no version`);
   let art = 0;
   for (const rel of files.keys()) if (rel.startsWith('public/assets/')) art++;
-  return { source: abs, version, files, art, update };
+  if (releaseTag && releaseTag.split('-extended.')[0] !== `v${version}`) throw new Error(`base ${source}: release tag differs from package.json`);
+  return { source: abs, version, tag: releaseTag || `v${version}`, files, art, update };
 }
 
 /**
@@ -155,12 +161,13 @@ export function manifestText({ app, files }) {
 
 /**
  * UPDATE.json's text (server/update.js parseUpdate reads it).
- * @param {{ app: string, from: string[], files: Map, removed: { path: string, sha256: string[] }[] }} u
+ * @param {{ app: string, from: string[], files: Map, removed: { path: string, sha256: string[] }[], tag?: string, fromTags?: string[], art?: Map }} u
  */
-export function updateText({ app, from, files, removed }) {
+export function updateText({ app, from, files, removed, tag, fromTags, art }) {
   let bytes = 0;
   for (const d of files.values()) bytes += d.size;
   const gone = removed.map((r) => `{"path":${JSON.stringify(r.path)},"sha256":${JSON.stringify(r.sha256)}}`);
   return `{"format":${UPDATE_FORMAT},"app":${JSON.stringify(app)},"from":${JSON.stringify(from)},"count":${files.size},"bytes":${bytes},`
-    + `\n"removed":[${block(gone)}],\n"files":${filesJson(files)}}\n`;
+    + `${tag ? `"tag":${JSON.stringify(tag)},"fromTags":${JSON.stringify(fromTags)},` : ''}`
+    + `\n"removed":[${block(gone)}],\n"files":${filesJson(files)}${art ? `,\n"art":${filesJson(art)}` : ''}}\n`;
 }

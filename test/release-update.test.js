@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
@@ -8,10 +9,10 @@ import http from 'node:http';
 import net from 'node:net';
 import { RELEASE_TAG } from '../server/release-version.js';
 import { APP_VERSION } from '../shared/constants.js';
-import { createReleaseUpdater, compareReleaseTags, installedTag, installedIdentity, normalizeUpdateNetwork, createUpdateRequest, pickReleaseAsset, downloadAndStage, stageZip, scheduleInstall, updatePaths } from '../server/release-update.js';
+import { createReleaseUpdater, compareReleaseTags, installedTag, installedIdentity, normalizeUpdateNetwork, createUpdateRequest, pickReleaseAsset, pickReleaseUpdateAsset, downloadAndStage, stageZip, stageUpdateZip, scheduleInstall, updatePaths } from '../server/release-update.js';
 import { freePort } from './e2e/client.mjs';
 import { applyReleaseStage } from '../server/release-install.js';
-import { archive, releaseFor, files, manifest, put, read, tag, sha, signRelease, tick, until } from './helpers/release-fixture.js';
+import { archive, storedZip, releaseFor, files, manifest, put, read, tag, sha, signRelease, tick, until } from './helpers/release-fixture.js';
 const temp = (t) => { const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-release-')); t.after(() => fs.rmSync(root, { recursive: true, force: true })); put(root, 'package.json', JSON.stringify({ version: APP_VERSION })); return root; };
 const fetchRelease = async () => new Response(JSON.stringify([releaseFor()]));
 
@@ -202,6 +203,54 @@ test('download verifies ZIP checksum and program manifest, stages art and retain
   const broken = archive().toString('binary').replace('// new server', '// bad server');
   fs.writeFileSync(zipFile, Buffer.from(broken, 'binary'));
   assert.throws(() => stageZip(zipFile, path.join(root, 'broken'), tag), /校验失败|CRC/);
+});
+
+test('signed update prefers an applicable delta, stages unchanged files locally, then falls back to full on a bad delta', async (t) => {
+  const root = temp(t), next = tag, baseFiles = { 'package.json': JSON.stringify({ version: APP_VERSION, type: 'module' }),
+    'server/index.js': '// old server', 'server/keep.js': '// stable' };
+  for (const [rel, body] of Object.entries(baseFiles)) put(root, rel, body);
+  put(root, 'MANIFEST.json', manifest(baseFiles)); put(root, 'data/assets.json', '{}');
+  const targetFiles = { ...baseFiles, 'server/index.js': '// new server' };
+  const changed = { 'server/index.js': targetFiles['server/index.js'] };
+  const update = JSON.stringify({ format: 1, app: APP_VERSION, from: [APP_VERSION], count: 1,
+    tag: next, fromTags: [RELEASE_TAG], art: { 'data/assets.json': { size: 2, sha256: sha('{}') } },
+    bytes: Buffer.byteLength(changed['server/index.js']), removed: [],
+    files: Object.fromEntries(Object.entries(changed).map(([rel, body]) => [rel, { size: Buffer.byteLength(body), sha256: sha(body) }])) });
+  const delta = storedZip([['Stronghold-Protocol/MANIFEST.json', manifest(targetFiles)],
+    ['Stronghold-Protocol/UPDATE.json', update], ['Stronghold-Protocol/server/index.js', changed['server/index.js']]]);
+  const full = storedZip([...Object.entries({ ...targetFiles, 'MANIFEST.json': manifest(targetFiles), 'data/assets.json': '{}' })
+    .map(([rel, body]) => [`Stronghold-Protocol/${rel}`, body])]);
+  const release = releaseFor(full, next), deltaName = `Stronghold-Protocol-${next}-update.zip`;
+  release.assets.unshift({ name: deltaName, size: delta.length, digest: `sha256:${sha(delta)}`,
+    browser_download_url: `https://github.com/zhewang448/Stronghold-Protocol/releases/download/${next}/${deltaName}` });
+  const key = crypto.generateKeyPairSync('ed25519');
+  const sums = `${sha(delta)}  ${deltaName}\n${sha(full)}  ${release.assets[1].name}\n`;
+  const signed = crypto.sign(null, Buffer.concat([Buffer.from(`stronghold-protocol-release\n${next}\n`), Buffer.from(sums)]), key.privateKey).toString('base64');
+  release.assets.push({ name: 'SHA256SUMS.txt', browser_download_url: `https://github.com/zhewang448/Stronghold-Protocol/releases/download/${next}/SHA256SUMS.txt` },
+    { name: 'SHA256SUMS.txt.sig', browser_download_url: `https://github.com/zhewang448/Stronghold-Protocol/releases/download/${next}/SHA256SUMS.txt.sig` });
+  const calls = [];
+  const deltaPath = path.join(root, 'delta.zip'); fs.writeFileSync(deltaPath, delta);
+  stageUpdateZip(deltaPath, path.join(root, 'direct-stage'), next, root);
+  const request = async (url, consume) => {
+    calls.push(url);
+    if (url.endsWith('.sig')) return consume(new Response(signed));
+    if (url.endsWith('.txt')) return consume(new Response(sums));
+    return consume(new Response(url.endsWith(deltaName) ? delta : full));
+  };
+  assert.equal(pickReleaseUpdateAsset(release).name, deltaName);
+  const staged = await downloadAndStage({ root, release, request, keys: [key.publicKey.export({ format: 'der', type: 'spki' }).toString('base64')] });
+  assert.equal(staged.asset, deltaName);
+  assert.equal(read(staged.stage, 'server/index.js'), '// new server');
+  assert.equal(read(staged.stage, 'server/keep.js'), '// stable');
+  assert.ok(calls.some((url) => url.endsWith(deltaName)));
+  assert.ok(!calls.some((url) => url.endsWith(release.assets[1].name)));
+  assert.equal(read(root, 'server/index.js'), '// old server', 'staging does not mutate the running install');
+  put(root, 'server/keep.js', '// locally changed');
+  calls.length = 0;
+  const fallback = await downloadAndStage({ root, release, request, keys: [key.publicKey.export({ format: 'der', type: 'spki' }).toString('base64')] });
+  assert.equal(fallback.asset, release.assets[1].name);
+  assert.equal(read(fallback.stage, 'server/keep.js'), '// stable');
+  assert.ok(calls.some((url) => url.endsWith(deltaName)) && calls.some((url) => url.endsWith(release.assets[1].name)));
 });
 
 test('updater protects active matches before and after download, starts one job, catches network failure', async (t) => {

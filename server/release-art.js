@@ -1,4 +1,4 @@
-// Art staged from an authenticated full release; unlisted local files are never removed.
+// Art staged from an authenticated full release or delta inventory; unlisted local files are never removed.
 import fs from 'node:fs';
 import path from 'node:path';
 import { isSetupArt, removalProblem, parseManifest, listedArtFiles, digestFile } from './update.js';

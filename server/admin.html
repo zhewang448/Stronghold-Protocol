@@ -1001,6 +1001,7 @@ function drawReleaseUpdate() {
   const network = networkDraft || d.network || { proxy: '', mirror: 'https://gh-proxy.com/' };
   networkExpanded = host.querySelector('details')?.open ?? networkExpanded;
   const busy = updateRequest || ['checking', 'downloading', 'verifying', 'scheduled'].includes(d.state);
+  const actualPackage = d.target === selected?.tag && d.asset ? d : selected;
   const messages = {
     idle: '首次打开控制台会自动检查更新，也可手动刷新版本列表。', checking: '正在获取 Release 版本列表…',
     available: '发现新版本，请选择要安装的版本。', 'up-to-date': '未发现比当前版本更新的正式 Release。可选择旧版本回退。',
@@ -1012,14 +1013,16 @@ function drawReleaseUpdate() {
   host.innerHTML = `<h2>版本更新</h2>
     <p><label><input type="checkbox" id="auto-update" ${d.automatic?.enabled ? 'checked' : ''} ${updateRequest ? 'disabled' : ''}> 空闲时自动安装新版本</label> <button data-auto-update-save ${updateRequest ? 'disabled' : ''}>保存自动更新设置</button></p>
     <p class="meta" role="status">自动更新：${esc(({ disabled: '已关闭', idle: '等待检查', waiting: '等待全部对局结束', announcing: '已公告，等待一分钟', installing: '正在安装', error: '失败', 'up-to-date': '暂无新版' })[d.automatic?.state] || '已关闭')} ${esc(d.automatic?.error || '')} ${d.automatic?.lastCheck ? ' · 上次检查 ' + esc(new Date(d.automatic.lastCheck).toLocaleString()) : ''} ${esc(d.automatic?.target || '')}</p>
-    <p class="meta">从 ${esc(d.repository || 'zhewang448/Stronghold-Protocol')} 下载正式 Release 完整包，补齐缺失或变更的素材及清单，已有相同素材跳过写入。保留额外素材、主机设置和对局记录；替换前备份程序与素材，完成后自动重启。选择当前版本可修复素材。</p>
+    <p class="meta">从 ${esc(d.repository || 'zhewang448/Stronghold-Protocol')} 下载正式 Release，升级优先使用已签名增量包，不适配时改用完整素材包。回退旧版及同版修复使用完整包。保留额外素材、主机设置和对局记录；替换前备份程序与变化素材，完成后自动重启。</p>
     <div class="row"><span>当前版本：<strong>${esc(d.currentVersion || '读取中…')}</strong></span>
       ${d.latestVersion ? `<span>最新版本：<strong>${esc(d.latestVersion)}</strong></span>` : ''}</div>
     <p><label for="release-version-select">选择版本</label><br><select id="release-version-select" ${busy || d.state === 'reconnecting' ? 'disabled' : ''}>
       ${versions.length ? versions.map((r) => `<option value="${esc(r.tag)}" ${r.tag === selectedRelease ? 'selected' : ''}>${esc(r.tag)} · ${{ new: '新版本', current: '当前版本', old: '旧版本' }[r.relation]}${r.reason ? ' · 不可安装' : ''}</option>`).join('') : '<option value="">检查后显示可选版本</option>'}</select></p>
-    ${selected?.asset ? `<p class="meta" style="overflow-wrap:anywhere">安装包：${esc(selected.asset)}${selected.size ? ` · ${(selected.size / 1048576).toFixed(1)} MB` : ''}${selected.publishedAt ? ` · 发布于 ${esc(new Date(selected.publishedAt).toLocaleDateString())}` : ''} · ${selected.signed ? '已签名' : '未签名'}</p>` : ''}
+    ${actualPackage?.asset ? `<p class="meta" style="overflow-wrap:anywhere">安装包：${esc(actualPackage.asset)}${actualPackage.size ? ` · ${(actualPackage.size / 1048576).toFixed(1)} MB` : ''}${selected.publishedAt ? ` · 发布于 ${esc(new Date(selected.publishedAt).toLocaleDateString())}` : ''} · ${selected.signed ? '已签名' : '未签名'}</p>` : ''}
+    ${selected?.fallbackAsset ? `<p class="meta">优先下载增量包；不适配或校验失败时自动改用完整素材包（${(selected.fallbackSize / 1048576).toFixed(1)} MB）。</p>` : ''}
+    ${d.target === selected?.tag && d.fallback ? `<p class="note">已改用完整素材包：${esc(d.fallbackReason || '增量包不可用')}</p>` : ''}
     ${selected?.reason ? `<p class="note">该版本不可安装：${esc(selected.reason)}</p>` : ''}
-    ${selected?.relation === 'old' ? '<p class="note">回退旧版本可能不兼容新版功能或记录。安装前会备份程序文件。</p>' : ''}
+    ${selected?.relation === 'old' ? '<p class="note">回退使用目标旧版的完整素材包。安装前备份程序及变化素材；设置与记录保留原样，不会自动恢复为旧版格式。</p>' : ''}
     <p id="release-update-state" role="status" aria-live="polite" ${d.error ? 'class="bad"' : 'class="meta"'}>${esc(d.error ? `更新失败：${d.error}。可重新检查后重试。` : messages[d.state] || '')}</p>
     <div class="row"><button data-update-check ${busy || d.state === 'reconnecting' || d.state === 'active-matches' ? 'disabled' : ''}>检查更新</button>
       ${d.hasMore ? `<button data-update-more ${busy ? 'disabled' : ''}>加载更早版本</button>` : ''}

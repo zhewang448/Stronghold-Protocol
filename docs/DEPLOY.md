@@ -154,7 +154,9 @@ powershell -ExecutionPolicy Bypass -File scripts\install-service-windows.ps1 -Re
 
 「更新网络配置」可保存 HTTP / HTTPS 代理（如 `http://127.0.0.1:7890`，不支持 SOCKS 或带账号密码的地址）；留空则直连 GitHub。正常访问失败后直接走备用镜像，默认 `https://gh-proxy.com/`，自定义镜像须支持完整 GitHub API 和附件 URL 的前缀转发，留空关闭回退。列表查询、SHA256SUMS、签名和 ZIP 下载都适用，错误响应、下载中断或校验失败也会尝试镜像；镜像仍失败则报告错误，绝不跳过校验。镜像只负责传输，信任来自签名，签名不符时不会退回未签名的校验方式。配置保存在 `logs/release-network.json`，保存后立即生效且重启后保留。更新正在检查 / 下载 / 安装时不能修改配置。
 
-控制台更新下载该版本完整包（包括素材，下载量会大于 lite），验证签名与 ZIP SHA-256 后同步程序、字体、美术和三份素材清单。按大小与 SHA-256 比较本机素材，只暂存及替换缺失或变化的文件；内容相同的素材不重复写入。本机额外素材、设置、对局记录、缓存和自装内容包保留。程序与变化的素材安装前一起备份至 `logs/update-backups/`，安装失败一起恢复；只删除旧程序清单中内容未被本机改过、且所选版本已不再提供的程序文件，不清理额外素材。回退旧版可能不兼容新版功能、设置或记录，也可能没有此更新入口，程序备份不等同于数据格式迁移。
+控制台升级优先下载已签名 Release 的 `*-update.zip`，验证签名和 ZIP SHA-256 后，检查增量包的基础版本、适用扩展标签、目标程序清单及完整目标素材哈希。未变化的程序从本机校验后复制到暂存区，未变化的素材留在原位；只下载增量包带来的变化文件。没有增量包、适用版本不符、本机文件缺失或损坏、增量包下载或校验失败时，自动改用同一 Release 的完整素材包，并在控制台显示原因及实际下载大小。缺少完整目标素材哈希的旧式手动更新包也会触发完整包回退。
+
+回退旧版本和同版「修复素材」始终下载目标完整素材包，不反向应用增量包。两条路径都验证程序、字体、美术和三份素材清单；按大小与 SHA-256 比较本机素材，只暂存及替换缺失或变化的文件。本机额外素材、设置、对局记录、缓存和自装内容包保留。程序与变化的素材安装前一起备份至 `logs/update-backups/`，安装失败一起恢复；只删除旧程序清单中内容未被本机改过、且所选版本已不再提供的程序文件，不清理额外素材。回退旧版可能不兼容新版功能、设置或记录，也可能没有此更新入口，程序备份不等同于数据格式迁移。
 
 下载期间可继续使用服务器。安装包、程序及素材文件校验通过才停服；有进行中的对局时会要求确认结束全部对局。安装成功后自动重启，控制台恢复连接后自动刷新以获取新 token。失败会显示原因；程序替换失败会恢复旧文件。错误详情在 `logs/release-update-status.json`，直接重启的输出在 `logs/release-restart.log`。备份保留供恢复，可在确认新版本正常后自行清理。
 
@@ -401,6 +403,8 @@ volumes:
 
 ## 7. 打包发布（维护者）
 
+控制台用的增量包在 `UPDATE.json` 中额外记录目标 `tag`、具体基线 `fromTags` 与完整目标素材哈希 `art`。`--from` 读取旧包里的 `server/release-version.js`，因此同一基础版本的不同扩展版本也能作为基线，扩展序号按数字比较。`from` 仍保留基础版本列表，兼容既有手动覆盖更新流程。增量包和完整包一起加入 `SHA256SUMS.txt` 后签名；不能只上传 ZIP 而沿用不包含它的旧校验清单。
+
 Releases 的 zip（完整包、精简包，0.2.1 起还有更新包）由 `tools/package.mjs` 生成，在**源码仓库**里运行（整合包里没有这个工具）：
 
 ```bash
@@ -422,7 +426,7 @@ node tools/package.mjs --assets --out <目录>   # 素材包 Stronghold-Protocol
 - **打包前的检查**（`--dry-run` 也全部做一遍）：拒绝名单（`pv`、`review`、`.cache`、`.claude`、`.git`、`logs`、`.env`、`scripts/service.env.cmd`、`handoff`、`test` 除精确允许的作者助手外、服主自己的插件、`plugins/_dist/` / `_moved/` 等）；每个打进去的模块的相对导入、玩家用的 npm 脚本（start / setup / doctor / launch / postinstall / vendor / assets）都指向包里的文件；完整包里 `data/assets.json` 和 `data/local-assets.json` 列出的文件都在（缺了先运行 `node tools/fetch-assets.mjs`）；没有只差大小写的两个路径；包里的文件（二进制素材也查）不含个人目录路径（`/Users/…`、`C:\Users\…`、`/home/…`）或本机的账户名（运行时从系统读取；`SP_PACKAGE_SCAN_NAMES=a,b` 可以再加名字）；打进去的已跟踪文件没有未提交的改动（重新生成的 `data/assets.json` 要先提交）。有任何问题都会列出原因、以非零状态结束，不写 zip；正式打包时还会核对临时目录里的文件和计划完全一致。
 - **玩家包里的脚本和文档链接**：临时目录里的 `package.json` 只留下每条 `node <文件>` 都指向包内文件、并且至少指出一个文件的脚本（`start`、`dev`、`setup`、`doctor`、`launch`、`postinstall`、`vendor`、`assets`）。`test`、`golden`、数据构建、lint、本工具等不留，避免玩家运行 `npm test` 时在没有测试文件的情况下得到「0 个测试、成功退出」。`README.md`、`CHANGELOG.md`、`NOTICE.md`、`THIRD-PARTY-NOTICES.md`、`docs/PLAYING.md`、本文、插件参考和作者指南里，指向包内没有的文件的相对链接改成该版本 GitHub 标签上的同一路径（链接仓库为 `zhewang448/Stronghold-Protocol`，当前基础版本使用 `server/release-version.js` 的扩展标签，其他版本去掉末尾的 `-dev` 后加 `v`；图片用 `raw`，其余用 `blob`）；`../../releases/latest` 改为仓库的 Releases 地址。源码仓库里的这些文件仍是相对链接。
 
-- **本库扩展整合包**还包含 `docs/SKINS.md`、`docs/LOCAL-CHANGELOG.md`、`docs/LOCAL-DEV.md`、`docs/PRIVACY.md`、`scripts/README.md`、README 引用的 `docs/img/features/` 界面截图，以及 `scripts/start-tunnel.bat` / `.mjs`、`scripts/stop-server.bat`、`scripts/free-port.mjs`。两种包都带这些文件；开发指南从 README 的在线链接访问。皮肤目录 `docs/research/operator-skins.json` 与安装器 `tools/install-skins.mjs` 也随包提供。扩展附件命名为 `Stronghold-Protocol-<扩展标签>-assets.zip` 和 `Stronghold-Protocol-<扩展标签>-lite.zip`（如 `v0.2.5-extended.2`），附 `SHA256SUMS.txt`，签名后的版本另附 `SHA256SUMS.txt.sig`；包内游戏基础版本为标签的前三段。本次不提供覆盖式增量包，升级时解压到新目录并停服迁移 `logs/`。
+- **本库扩展整合包**还包含 `docs/SKINS.md`、`docs/LOCAL-CHANGELOG.md`、`docs/LOCAL-DEV.md`、`docs/PRIVACY.md`、`scripts/README.md`、README 引用的 `docs/img/features/` 界面截图，以及 `scripts/start-tunnel.bat` / `.mjs`、`scripts/stop-server.bat`、`scripts/free-port.mjs`。两种包都带这些文件；开发指南从 README 的在线链接访问。皮肤目录 `docs/research/operator-skins.json` 与安装器 `tools/install-skins.mjs` 也随包提供。扩展附件命名为 `Stronghold-Protocol-<扩展标签>-assets.zip` 和 `Stronghold-Protocol-<扩展标签>-lite.zip`（如 `v0.2.5-extended.2`），附 `SHA256SUMS.txt`，签名后的版本另附 `SHA256SUMS.txt.sig`；包内游戏基础版本为标签的前三段。新增控制台增量支持后，可另外发布 `Stronghold-Protocol-<扩展标签>-update.zip`：用同一份发布代码、素材与生产依赖构建，`--from` 指向支持的旧版完整包。完整包仍保留供新装、修复和回退使用。旧版控制台仍只下载完整包，升级到支持增量的控制台后才会优先选择增量附件。
 - **不打进去的**：`test/`、维护用的工具（数据构建、golden、botbench、i18n、导入检查、本工具等）、`scripts/make-windows-bundle.mjs`（Windows 便携包，见 [WINDOWS.md](WINDOWS.md)）、其他文档、研究笔记和 `docs/img/` 中非特色展示图片、`handoff/`、`.github/`、`types/`、lint / 编辑器 / Docker 配置。和 0.1.x 的整树打包（全部跟踪文件加上 `public/assets` 的全部内容）相比，0.2.0 的完整包少了约 640 个文件、解压后小约 26 MB，zip 小约 8 MB。
 - **MANIFEST.json**：三种包的根目录都有（`npm ci` 之后写入）：除素材（`public/assets/`、`public/fonts/`、`data/assets.json`、`data/local-assets.json`，归 setup 管）以外每个文件的大小和 sha256，同一版本的三种包内容相同。`npm run doctor` 和更新包的启动检查（`server/update.js`）用它核对安装。
 - **更新包**（0.2.1 起，每个版本都发）：`--from` 后面列出**此次支持升级的每个旧版本完整包**（Releases 上的 zip，或它解压出来、没动过的文件夹；逗号分隔或写多个 `--from`），例如发布 0.2.2 时 `--from Stronghold-Protocol-v0.2.0.zip,Stronghold-Protocol-v0.2.1.zip`。工具照常构建完整包的临时目录（`npm ci` 等），逐个文件（大小 + sha256）和每个旧版本比较：和任何一个旧版本不同、或旧版本没有的文件都打进去，所以一个更新包能覆盖在列出的每个版本上；旧版本有、新版本没有的文件记进 `UPDATE.json` 的 `removed`（连同各旧版本里的 sha256，玩家那边只删内容一致的文件；只差大小写的同名文件和 `.env` 之类的本机文件名不删，摘要里会列出）。旧版本必须比当前版本旧、带素材（不能是精简包或更新包）、每个版本只给一次，`--dry-run` 只读取并检查旧版本。更新包里还有新版本的 `MANIFEST.json` 和 `UPDATE.json`（适用的旧版本、文件数、字节数、文件列表和 `removed`），同样经过拒绝名单和个人信息检查；摘要列出和每个旧版本相比改动 / 新增 / 删除的文件数和更新包里各类文件的数量。发布时在 Releases 说明里写明更新包适用的版本（即 `--from` 列出的版本）。0.3.0 至少以 0.2.6 完整包为基线；新增的插件模块、Schemas、作者工具、模板、SES / Acorn 与前端库都会作为新增或改变的文件进入更新包。删除列表以实际基线比较为准，不要凭开发过程里曾出现过的页面名手写。`--keep-stage` 保留更新包目录和完整包的临时目录（`<目录>/Stronghold-Protocol-v<版本>-update/` 里的 `Stronghold-Protocol/` 和 `.full/`）。

@@ -9,6 +9,8 @@
 // holds only the files that differ from at least one of those zips, MANIFEST.json and UPDATE.json:
 //   {format, app, from: [<base versions>], count, bytes, files: {<path>: {size, sha256}} (what it ships),
 //    removed: [{path, sha256: [<the bytes the bases shipped>]}] (files a base shipped that this version does not)}.
+// Signed console deltas additionally carry tag/fromTags and art (the full target art size/SHA-256 inventory).
+// The console validates these before transactional staging; the manual boot path remains compatible without them.
 //
 // The player stops the server, extracts the zip over the install and starts it again. applyPendingUpdate runs before
 // the server starts (server/http/boot.js runMain — every route: npm start, scripts/launch.mjs, the Windows service's
@@ -149,6 +151,11 @@ export function parseUpdate(text) {
   if (!Array.isArray(j.from) || !j.from.length || !j.from.every((v) => typeof v === 'string' && VERSION.test(v))) throw new Error('from names no base version');
   if (!isCount(j.count) || !isCount(j.bytes)) throw new Error('count / bytes missing');
   const files = parseFiles(j.files, 'files');
+  // Optional signed-console metadata; older manual update packages remain readable.
+  if (j.tag !== undefined && (typeof j.tag !== 'string' || !j.tag.startsWith('v') || !VERSION.test(j.tag.slice(1)))) throw new Error('tag names no release');
+  if (j.fromTags !== undefined && (!Array.isArray(j.fromTags) || !j.fromTags.length
+    || !j.fromTags.every((v) => typeof v === 'string' && v.startsWith('v') && VERSION.test(v.slice(1))))) throw new Error('fromTags names no base release');
+  const art = j.art === undefined ? undefined : parseFiles(j.art, 'art');
   if (!Array.isArray(j.removed)) throw new Error('removed is not a list');
   const removed = [];
   const seen = new Set();
@@ -161,7 +168,9 @@ export function parseUpdate(text) {
     seen.add(rel);
     removed.push({ path: rel, sha256: [...r.sha256] });
   }
-  return { app: j.app, from: [...j.from], count: j.count, bytes: j.bytes, files, removed };
+  return { app: j.app, from: [...j.from], count: j.count, bytes: j.bytes, files, removed,
+    ...(j.tag === undefined ? {} : { tag: j.tag }), ...(j.fromTags === undefined ? {} : { fromTags: [...j.fromTags] }),
+    ...(art === undefined ? {} : { art }) };
 }
 
 const abs = (root, rel) => path.join(root, ...rel.split('/'));

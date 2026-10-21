@@ -1,7 +1,7 @@
-// ZIP extraction and full-art hashing run off the live server's event loop.
+// Full/delta extraction and target-file hashing run off the live server's event loop.
 import { parentPort, workerData } from 'node:worker_threads';
-import { stageZip } from './release-update.js';
+import { stageUpdateZip, stageZip } from './release-update.js';
 
-const { zip, stage, tag, root } = workerData;
-const manifest = stageZip(zip, stage, tag, { root });
+const { zip, stage, tag, root, incremental = false } = workerData;
+const manifest = incremental ? stageUpdateZip(zip, stage, tag, root) : stageZip(zip, stage, tag, { root });
 parentPort.postMessage({ app: manifest.app });

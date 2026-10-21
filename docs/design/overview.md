@@ -162,6 +162,16 @@ Ownership rule for parallel agents: **only edit files assigned to you**; if you 
 
 ---
 
+### Host-console release updates (owner extension)
+
+For upgrades, the console prefers an Ed25519-authenticated delta ZIP. Its base app version and, when present,
+exact extension tags must match; every target program file and every target asset must verify against authenticated
+hashes before installation. Missing, incompatible or invalid deltas fall back to the same release's independently
+verified full archive. Downgrades and same-version repairs always use the full archive. Downloading and staging
+leave the running install untouched; replacement retains the existing backup/rollback transaction and active-match
+guards. Owner settings and records are retained, with no reverse data-format migration. See
+[DEPLOY.md](../DEPLOY.md) and [LOCAL-DEV.md](../LOCAL-DEV.md) for packaging and API details.
+
 ## 12. Implementation phases
 
 1. **Foundation**: build-data, fetch-assets/vendor, server platform (http/ws/lobby), client shell (screens up to room).

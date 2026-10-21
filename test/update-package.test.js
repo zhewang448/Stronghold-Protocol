@@ -13,6 +13,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import zlib from 'node:zlib';
+import { APP_VERSION } from '../shared/constants.js';
+import { RELEASE_TAG } from '../server/release-version.js';
+import { installedIdentity, stageUpdateZip } from '../server/release-update.js';
+import { applyReleaseStage } from '../server/release-install.js';
 import { APPLIED_FILE, MANIFEST_FILE, UPDATE_FILE, applyPendingUpdate, checkInstall, parseUpdate, removalProblem } from '../server/update.js';
 import { compareVersions, diffBases, readBase, readZip } from '../tools/package-update.mjs';
 import { FOLDER, readBases, scanFiles, stageProblems, zipFolder } from '../tools/package.mjs';
@@ -144,6 +148,45 @@ function bump({ dir }, version) {
 }
 
 const runTool = (args, env = ENV) => spawnSync(process.execPath, [TOOL, ...args], { encoding: 'utf8', env: { ...process.env, ...env }, maxBuffer: 16 * 1024 * 1024, windowsHide: true });
+
+test('extension delta uses exact release tags and a signed target art inventory, then installs through the console stage', { skip: !hasZipTool && 'no zip / tar' }, () => {
+  const co = fakeCheckout(APP_VERSION), out = tmp('ext-out'), inst = tmp('ext-player');
+  const previousTag = RELEASE_TAG.replace(/\d+$/, n => String(Number(n) - 1));
+  try {
+    put(co.dir, 'server/release-version.js', `export const RELEASE_TAG = '${previousTag}';\n`);
+    assert.equal(co.git('add', '-A').status, 0);
+    let result = runTool(['--root', co.dir, '--out', out, '--no-install', '--allow-dirty']);
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    const full = path.join(out, `${FOLDER}-v${APP_VERSION}.zip`);
+    extract(full, inst);
+    const root = path.join(inst, FOLDER);
+    put(root, 'logs/release-version.json', JSON.stringify({ app: APP_VERSION, tag: previousTag, sourceHash: installedIdentity(root) }));
+    put(co.dir, 'server/release-version.js', `export const RELEASE_TAG = '${RELEASE_TAG}';\n`);
+    put(co.dir, 'server/sim/rng.js', 'export const rng = 2;\n');
+    put(co.dir, 'public/assets/char/a.png', Buffer.concat([PNG, Buffer.from('changed')]));
+    result = runTool(['--root', co.dir, '--out', out, '--no-install', '--allow-dirty', '--update', '--from', full]);
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    const zip = path.join(out, `${FOLDER}-${RELEASE_TAG}-update.zip`);
+    let doc;
+    readZip(zip, (name, body) => { if (name.endsWith('/UPDATE.json')) doc = parseUpdate(body.toString('utf8')); });
+    assert.equal(doc.tag, RELEASE_TAG); assert.deepEqual(doc.fromTags, [previousTag]);
+    assert.deepEqual(doc.from, [APP_VERSION]);
+    assert.ok(doc.art.has('data/assets.json') && doc.art.has('public/fonts/fonts.css'));
+    const upstream = tmp('upstream-base');
+    try {
+      put(upstream, 'package.json', JSON.stringify({ version: APP_VERSION }));
+      put(upstream, 'public/assets/a.png', PNG);
+      assert.equal(readBases([upstream], APP_VERSION, { tag: RELEASE_TAG })[0].tag, `v${APP_VERSION}`,
+        'an upstream release is older than its extensions, matching the console ordering');
+    } finally { fs.rmSync(upstream, { recursive: true, force: true }); }
+    const stage = path.join(inst, 'stage');
+    stageUpdateZip(zip, stage, RELEASE_TAG, root);
+    applyReleaseStage(root, stage);
+    assert.equal(read(root, 'server/sim/rng.js'), 'export const rng = 2;\n');
+    assert.equal(read(root, 'public/assets/char/a.png'), Buffer.concat([PNG, Buffer.from('changed')]).toString('utf8'));
+    assert.equal(checkInstall(root).state, 'ok');
+  } finally { for (const dir of [co.dir, out, inst]) fs.rmSync(dir, { recursive: true, force: true }); }
+});
 
 /** Extract a release zip into `dir` (over what is there), as a player would: readZip writes every file. */
 function extract(zipPath, dir) {

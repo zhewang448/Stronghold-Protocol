@@ -92,6 +92,7 @@ import { rewriteManifest } from '../server/http/assetViews.js';
 import { mergeLocalManifests, planFromManifests } from '../public/js/assetPack.js';
 import { writePackIndex } from './packs.mjs';
 import { RELEASE_TAG } from '../server/release-version.js';
+import { compareReleaseTags } from '../server/release-update.js';
 import { compareVersions, diffBases, manifestText, readBase, updateText } from './package-update.mjs';
 import {
   APPLIED_FILE, MANIFEST_FILE, UPDATE_FILE, affectsRuntime, digestFile, inManifest, isSetupArt, listedArtFiles,
@@ -1010,26 +1011,29 @@ const isClutter = (rel) => {
  * as npm writes it) per-machine files (the refusal list) and OS clutter.
  */
 const baseSkip = (rel) => rel === MANIFEST_FILE || rel === UPDATE_FILE || rel === APPLIED_FILE || (!isLib(rel) && (isRefused(rel) || isClutter(rel)));
+const FORMAL_TAG = /^v\d+\.\d+\.\d+(?:-extended\.\d+)?$/;
+const compareBaseTags = (a, b) => FORMAL_TAG.test(a) && FORMAL_TAG.test(b)
+  ? compareReleaseTags(a, b) : compareVersions(a.slice(1), b.slice(1));
 
 /**
- * Read and check the bases of an update to `version`: each an earlier release's full zip or its extracted folder, older
- * than `version`, with art (not a lite zip), not an update zip, each version once. Sorted by version.
+ * Read and check earlier full releases, including extension revisions of the same app version. Each release tag
+ * occurs once and sorts numerically; old upstream archives without a release-version module use v<app>.
  * @param {string[]} sources
  * @param {string} version
  */
-export function readBases(sources, version, { log = () => {} } = {}) {
+export function readBases(sources, version, { log = () => {}, tag = `v${version}` } = {}) {
   const bases = [];
   for (const src of sources) {
     log(`reading base ${src} …`);
     const b = readBase(src, { folder: FOLDER, skip: baseSkip });
     if (b.update) throw new Error(`base ${src} is an update package: pass the earlier release's full zip`);
     if (!b.art) throw new Error(`base ${src} has no game art (a lite zip?): pass the full zip, ${FOLDER}-v${b.version}.zip`);
-    if (compareVersions(b.version, version) >= 0) throw new Error(`base ${src} is v${b.version}, not older than v${version}`);
-    const twin = bases.find((x) => x.version === b.version);
-    if (twin) throw new Error(`two bases are v${b.version}: ${twin.source} and ${b.source}`);
+    if (compareBaseTags(b.tag, tag) >= 0) throw new Error(`base ${src} is ${b.tag}, not older than ${tag}`);
+    const twin = bases.find((x) => x.tag === b.tag);
+    if (twin) throw new Error(`two bases are ${b.tag}: ${twin.source} and ${b.source}`);
     bases.push(b);
   }
-  return bases.sort((a, b) => compareVersions(a.version, b.version));
+  return bases.sort((a, b) => compareBaseTags(a.tag, b.tag));
 }
 
 /**
@@ -1043,7 +1047,7 @@ export function buildUpdate(root, p, bases, { out, install = true, force = false
   if (!bases.length) throw new Error('an update needs at least one base (--from)');
   const dest = path.resolve(out);
   if (packageOutIsUnsafe(dest, root)) throw new Error(`refusing to write into the repository or a parent of it: ${dest}`);
-  const name = `${FOLDER}-v${p.version}-update`;
+  const name = `${FOLDER}-${releaseTag(p.version)}-update`;
   const work = path.join(dest, name);
   const full = path.join(work, '.full', FOLDER);
   const stage = path.join(work, FOLDER);
@@ -1070,7 +1074,10 @@ export function buildUpdate(root, p, bases, { out, install = true, force = false
   }
   for (const rel of diff.ship) copyInto(full, stage, rel);
   copyInto(full, stage, MANIFEST_FILE);
-  const update = { app: p.version, from: bases.map((b) => b.version), files: new Map(diff.ship.map((f) => [f, next.get(f)])), removed: diff.removed };
+  const update = { app: p.version, from: [...new Set(bases.map((b) => b.version))],
+    tag: releaseTag(p.version), fromTags: bases.map((b) => b.tag || `v${b.version}`),
+    files: new Map(diff.ship.map((f) => [f, next.get(f)])), removed: diff.removed,
+    art: new Map([...next].filter(([rel]) => isSetupArt(rel))) };
   fs.writeFileSync(path.join(stage, UPDATE_FILE), updateText(update));
   // what the player's server will read back
   parseUpdate(fs.readFileSync(path.join(stage, UPDATE_FILE), 'utf8'));
@@ -1162,7 +1169,7 @@ function main(argv) {
   process.stdout.write(formatSummary(p));
   let bases = [];
   if (o.update) {
-    try { bases = readBases(o.from, p.version, { log: (m) => console.log(m) }); } catch (e) { console.error(`package: ${e.message}`); return 1; }
+    try { bases = readBases(o.from, p.version, { tag: releaseTag(p.version), log: (m) => console.log(m) }); } catch (e) { console.error(`package: ${e.message}`); return 1; }
     process.stdout.write(formatBases(bases));
   }
   if (o.dryRun) {

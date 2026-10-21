@@ -8,7 +8,7 @@ import { Worker } from 'node:worker_threads';
 import { fileURLToPath } from 'node:url';
 import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
-import { parseManifest, pathProblem, removalProblem, isSetupArt, verifyFiles, digestFile } from './update.js';
+import { parseManifest, parseUpdate, pathProblem, removalProblem, isSetupArt, verifyFiles, digestFile } from './update.js';
 import { readZip } from './release-zip.js';
 import { ART_STAGE_FILE, releaseTarget, readStagedArt, verifyStagedArt } from './release-art.js';
 import { RELEASE_TAG } from './release-version.js';
@@ -58,6 +58,16 @@ export function pickReleaseAsset(release) {
   // Only the full package can supply extracted scenes, effects and their matching manifests.
   const assets = Array.isArray(release.assets) ? release.assets : [];
   return assets.find((a) => /^Stronghold-Protocol-v[^/\\]+-assets\.zip$/.test(a.name));
+}
+export function pickReleaseUpdateAsset(release) {
+  const assets = Array.isArray(release.assets) ? release.assets : [];
+  return assets.find((a) => /^Stronghold-Protocol-v[^/\\]+-update\.zip$/.test(a.name));
+}
+function preferredUpdate(release, currentTag) {
+  const signed = [SUMS_ASSET, SIGNATURE_ASSET].every((name) => release.assets?.some((a) => a.name === name));
+  const asset = signed && compareReleaseTags(release.tag_name, currentTag) > 0 ? pickReleaseUpdateAsset(release) : null;
+  if (!asset) return null;
+  try { assetUrl(asset); return asset; } catch { return null; }
 }
 function assetUrl(asset) {
   const url = new URL(asset.browser_download_url);
@@ -169,11 +179,79 @@ export function stageZip(zip, stage, releaseTag, { root = null } = {}) {
   return manifest;
 }
 
+/** Build a complete transactional stage from a signed delta and the installed files it leaves unchanged. */
+export function stageUpdateZip(zip, stage, releaseTag, root) {
+  const seen = new Set();
+  const shipped = new Map();
+  let manifestText, updateText;
+  fs.mkdirSync(stage, { recursive: true });
+  readZip(zip, (name, data) => {
+    if (pathProblem(name) || !name.startsWith('Stronghold-Protocol/')) throw new Error(`压缩包包含非法路径：${name}`);
+    const rel = name.slice('Stronghold-Protocol/'.length), key = rel.toLowerCase();
+    if (seen.has(key)) throw new Error(`压缩包包含重复文件：${rel}`);
+    seen.add(key);
+    if (rel === 'MANIFEST.json') manifestText = data.toString('utf8');
+    else if (rel === 'UPDATE.json') updateText = data.toString('utf8');
+    else {
+      if (rel === ART_STAGE_FILE || removalProblem(rel)) throw new Error(`增量包包含保留路径：${rel}`);
+      const target = path.join(stage, ...rel.split('/'));
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(target, data);
+      shipped.set(rel, { size: data.length, sha256: crypto.createHash('sha256').update(data).digest('hex') });
+    }
+  });
+  if (!manifestText || !updateText) throw new Error('增量包缺少 MANIFEST.json 或 UPDATE.json');
+  const manifest = parseManifest(manifestText), update = parseUpdate(updateText);
+  if (manifest.app !== update.app || TAG.exec(releaseTag)?.slice(1, 4).join('.') !== manifest.app) throw new Error('增量包基础版本与 Release 标签不一致');
+  if (compareReleaseTags(releaseTag, installedTag(root)) <= 0) throw new Error('回退和同版修复必须使用完整素材包');
+  if (update.tag && update.tag !== releaseTag) throw new Error('增量包目标标签与 Release 不一致');
+  const baseVersion = appVersion(root);
+  if (!update.from.includes(baseVersion)) throw new Error(`增量包不适用于当前基础版本 v${baseVersion}`);
+  if (update.fromTags && !update.fromTags.includes(installedTag(root))) throw new Error('增量包不适用于当前扩展版本');
+  if (!update.art) throw new Error('增量包缺少完整目标素材哈希清单');
+  const art = update.art;
+  for (const rel of art.keys()) if (!isSetupArt(rel) || removalProblem(rel)) throw new Error(`素材清单包含非法路径：${rel}`);
+  for (const rel of manifest.files.keys()) if (isSetupArt(rel) || removalProblem(rel)) throw new Error(`程序清单包含保留路径：${rel}`);
+  const target = new Map([...manifest.files, ...art]);
+  const names = new Set(['manifest.json', 'update.json', ART_STAGE_FILE.toLowerCase(), '.update-applied.json']);
+  for (const rel of target.keys()) {
+    if (names.has(rel.toLowerCase())) throw new Error(`目标清单包含重复文件：${rel}`);
+    names.add(rel.toLowerCase());
+  }
+  let bytes = 0;
+  for (const [rel, expected] of update.files) {
+    const want = target.get(rel), got = shipped.get(rel);
+    if (!want || want.size !== expected.size || want.sha256 !== expected.sha256) throw new Error(`增量包文件不在目标清单中：${rel}`);
+    if (!got || got.size !== expected.size || got.sha256 !== expected.sha256) throw new Error(`增量包文件校验失败：${rel}`);
+    bytes += expected.size;
+  }
+  for (const rel of shipped.keys()) if (!update.files.has(rel)) throw new Error(`增量包包含未列出的文件：${rel}`);
+  if (update.count !== shipped.size || update.bytes !== bytes) throw new Error('增量包文件数量或总大小不符');
+  for (const required of ['package.json', 'server/index.js']) if (!manifest.files.has(required)) throw new Error(`程序清单缺少 ${required}`);
+  const checkedParents = new Set();
+  for (const [rel, expected] of manifest.files) {
+    if (!shipped.has(rel)) {
+      const source = releaseTarget(root, rel, checkedParents), got = digestFile(source);
+      if (!got || got.size !== expected.size || got.sha256 !== expected.sha256) throw new Error(`本机文件与增量包基线不符：${rel}`);
+      const file = path.join(stage, ...rel.split('/'));
+      fs.mkdirSync(path.dirname(file), { recursive: true }); fs.copyFileSync(source, file);
+    }
+  }
+  const pkg = JSON.parse(fs.readFileSync(path.join(stage, 'package.json'), 'utf8'));
+  if (pkg.version !== manifest.app) throw new Error('增量包程序版本与 MANIFEST.json 不一致');
+  const checked = verifyFiles(stage, manifest.files);
+  if (checked.missing.length || checked.mismatched.length) throw new Error('增量包合并后程序校验失败');
+  fs.writeFileSync(path.join(stage, 'MANIFEST.json'), manifestText);
+  fs.writeFileSync(path.join(stage, ART_STAGE_FILE), JSON.stringify({ format: 1, app: manifest.app, files: Object.fromEntries(art) }));
+  verifyStagedArt(root, stage, readStagedArt(stage, manifest.app));
+  return manifest;
+}
+
 /** Keep ongoing matches responsive while the authenticated archive is unpacked and hashed. */
-export function stageReleaseArchive(zip, stage, tag, root) {
+export function stageReleaseArchive(zip, stage, tag, root, incremental = false) {
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL('./release-stage-worker.js', import.meta.url), {
-      workerData: { zip, stage, tag, root }, execArgv: [],
+      workerData: { zip, stage, tag, root, incremental }, execArgv: [],
     });
     let result, failure;
     worker.once('message', value => { result = value; });
@@ -220,35 +298,50 @@ async function expectedHash({ release, asset, request, listing, keys }) {
 /** Stream with backpressure, verify published ZIP SHA-256, then verify individual program files. */
 export async function downloadAndStage({ root, release, fetchImpl = fetch, listing = 'direct', keys, progress = () => {},
   request = async (url, consume, timeout) => consume(await responseFor(url, fetchImpl, timeout), 'direct') }) {
-  const asset = pickReleaseAsset(release);
-  if (!asset) throw new Error('这个 Release 缺少完整素材包，无法保证素材完整');
-  const want = await expectedHash({ release, asset, request, listing, keys });
+  const full = pickReleaseAsset(release);
+  const installed = installedTag(root);
+  const delta = preferredUpdate(release, installed);
+  const candidates = [...(delta ? [delta] : []), ...(full ? [full] : [])];
+  if (!candidates.length) throw new Error('这个 Release 缺少完整素材包，无法保证素材完整');
   const base = path.join(root, 'logs', 'update-staging');
   fs.mkdirSync(base, { recursive: true });
   const work = fs.mkdtempSync(path.join(base, 'release-'));
   const zip = path.join(work, 'release.zip');
   try {
-    const staged = await request(assetUrl(asset), async (response) => {
-      fs.rmSync(path.join(work, 'Stronghold-Protocol'), { recursive: true, force: true });
-      if (!response.body) throw new Error('安装包响应为空');
-      let received = 0;
-      const hash = crypto.createHash('sha256');
-      const meter = new Transform({ transform(chunk, _encoding, cb) {
-        received += chunk.length;
-        hash.update(chunk);
-        progress({ state: 'downloading', received, size: asset.size || 0 });
-        cb(null, chunk);
-      } });
-      await pipeline(Readable.fromWeb(response.body), meter, fs.createWriteStream(zip));
-      if (asset.size && received !== asset.size) throw new Error('下载包大小不符，请重试');
-      if (hash.digest('hex') !== want) throw new Error('安装包 SHA-256 校验失败，请重试');
-      progress({ state: 'verifying', received, size: asset.size || received });
-      const stage = path.join(work, 'Stronghold-Protocol');
-      const manifest = await stageReleaseArchive(zip, stage, release.tag_name, root);
-      fs.rmSync(zip);
-      return { stage, app: manifest.app, tag: release.tag_name, asset: asset.name };
-    }, 15 * 60 * 1000);
-    return staged;
+    let lastError;
+    for (const asset of candidates) {
+      try {
+        const want = await expectedHash({ release, asset, request, listing, keys });
+        const staged = await request(assetUrl(asset), async (response) => {
+          fs.rmSync(path.join(work, 'Stronghold-Protocol'), { recursive: true, force: true });
+          if (!response.body) throw new Error('安装包响应为空');
+          let received = 0;
+          const hash = crypto.createHash('sha256');
+          const meter = new Transform({ transform(chunk, _encoding, cb) {
+            received += chunk.length; hash.update(chunk);
+            progress({ state: 'downloading', received, size: asset.size || 0, asset: asset.name }); cb(null, chunk);
+          } });
+          await pipeline(Readable.fromWeb(response.body), meter, fs.createWriteStream(zip));
+          if (asset.size && received !== asset.size) throw new Error('下载包大小不符，请重试');
+          if (hash.digest('hex') !== want) throw new Error('安装包 SHA-256 校验失败，请重试');
+          progress({ state: 'verifying', received, size: asset.size || received, asset: asset.name });
+          const stage = path.join(work, 'Stronghold-Protocol');
+          const manifest = await stageReleaseArchive(zip, stage, release.tag_name, root, asset === delta);
+          fs.rmSync(zip);
+          return { stage, app: manifest.app, tag: release.tag_name, asset: asset.name };
+        }, 15 * 60 * 1000);
+        return staged;
+      } catch (e) {
+        lastError = e;
+        if (asset === delta && full) {
+          fs.rmSync(zip, { force: true });
+          progress({ state: 'downloading', received: 0, size: full.size || 0, fallback: true, fallbackReason: e.message, asset: full.name });
+          continue;
+        }
+        throw e;
+      }
+    }
+    throw lastError || new Error('没有可用的更新包');
   } catch (e) { fs.rmSync(work, { recursive: true, force: true }); throw e; }
 }
 
@@ -291,23 +384,27 @@ export function createReleaseUpdater({ root, log = console, onReady, hasActive =
     if (last.state === 'error') current = last;
   } catch { /* no previous failure */ }
   function releaseView(release) {
-    const asset = pickReleaseAsset(release);
+    const full = pickReleaseAsset(release);
+    const relation = compareReleaseTags(release.tag_name, installedTag(root));
+    const delta = preferredUpdate(release, installedTag(root));
+    const asset = delta || full;
     let reason = '';
     try {
       if (!asset) throw new Error('缺少完整素材包，无法保证素材完整');
-      assetUrl(asset);
       const sums = release.assets?.find((a) => a.name === SUMS_ASSET);
       const sig = release.assets?.find((a) => a.name === SIGNATURE_ASSET);
+      assetUrl(asset);
       if (sums) assetUrl(sums);
       if (sig) {
         assetUrl(sig);
         if (!sums) throw new Error('签名附件缺少对应的 SHA256SUMS.txt');
       } else if (listedVia.get(release.tag_name) === 'mirror') throw new Error(UNSIGNED_VIA_MIRROR);
-      if (!sums && !/^sha256:[a-f0-9]{64}$/i.test(asset.digest || '')) throw new Error('缺少 SHA-256 校验值');
+      if (!sums && !/^sha256:[a-f0-9]{64}$/i.test(asset.digest || '')
+        && (!full || !/^sha256:[a-f0-9]{64}$/i.test(full.digest || ''))) throw new Error('缺少 SHA-256 校验值');
     } catch (e) { reason = e.message; }
-    const delta = compareReleaseTags(release.tag_name, installedTag(root));
-    return { tag: release.tag_name, relation: delta > 0 ? 'new' : delta < 0 ? 'old' : 'current',
+    return { tag: release.tag_name, relation: relation > 0 ? 'new' : relation < 0 ? 'old' : 'current',
       asset: asset?.name, size: asset?.size || 0, publishedAt: release.published_at,
+      fallbackAsset: delta ? full?.name : undefined, fallbackSize: delta ? (full?.size || 0) : undefined,
       signed: !!release.assets?.some((a) => a.name === SIGNATURE_ASSET), installable: !reason, reason };
   }
   const status = () => {
@@ -401,7 +498,10 @@ export function createReleaseUpdater({ root, log = console, onReady, hasActive =
         if (relative && !relative.startsWith('..') && !path.isAbsolute(relative)) fs.rmSync(path.dirname(prepared.stage), { recursive: true, force: true });
         prepared = null;
       }
-      current = { ...current, ...view, target: tag, state: prepared ? 'verifying' : 'downloading', error: undefined, received: 0 };
+      const preparedAsset = prepared?.asset && release.assets?.find((a) => a.name === prepared.asset);
+      current = { ...current, ...view, ...(preparedAsset ? { asset: preparedAsset.name, size: preparedAsset.size || 0 } : {}),
+        target: tag, state: prepared ? 'verifying' : 'downloading', error: undefined, received: 0,
+        fallback: prepared ? current.fallback : false, fallbackReason: prepared ? current.fallbackReason : undefined };
       (async () => {
         try {
           prepared ||= await stageRelease({ root, release, fetchImpl, request, listing: listedVia.get(tag), progress: (p) => { current = { ...current, ...p }; } });

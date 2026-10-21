@@ -11,6 +11,75 @@ import { tag, releaseFor, put } from '../helpers/release-fixture.js';
 import { APP_VERSION } from '../../shared/constants.js';
 import { RELEASE_TAG } from '../../server/release-version.js';
 
+test('console shows delta choice, full downgrade/repair choice and actual fallback progress on desktop/mobile', {
+  skip: process.env.SP_E2E !== '1' || !hasChrome(), timeout: 30000,
+}, async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-delta-ui-'));
+  put(root, 'package.json', JSON.stringify({ version: APP_VERSION }));
+  const makeRelease = (target) => {
+    const release = releaseFor(undefined, target), full = release.assets[0];
+    full.size = 104857600;
+    release.assets.unshift({ ...full, name: full.name.replace('-assets.zip', '-update.zip'), size: 1048576,
+      browser_download_url: full.browser_download_url.replace('-assets.zip', '-update.zip') });
+    const base = full.browser_download_url.replace(/[^/]+$/, '');
+    release.assets.push({ name: 'SHA256SUMS.txt', browser_download_url: `${base}SHA256SUMS.txt` },
+      { name: 'SHA256SUMS.txt.sig', browser_download_url: `${base}SHA256SUMS.txt.sig` });
+    return release;
+  };
+  let admin, browser, report, finish;
+  const older = 'v0.2.5';
+  try {
+    admin = await startAdmin({ root, port: 0, resultsDir: root, settingsFile: path.join(root, 'settings.json'),
+      lobby: { rooms: new Map(), safeData: () => ({}), onMatchEnd() {},
+        staticOptions: { publicDir: path.join(ROOT, 'public'), sharedDir: path.join(ROOT, 'shared') } },
+      log: { warn() {}, error() {}, info() {} }, onUpdateReady() {}, updateOptions: {
+        fetchImpl: async () => new Response(JSON.stringify([makeRelease(tag), makeRelease(RELEASE_TAG), makeRelease(older)])),
+        stageRelease: async ({ progress }) => {
+          report = progress;
+          await new Promise(resolve => { finish = resolve; });
+          throw new Error('test stops before installation');
+        },
+      } });
+    browser = await (await import('puppeteer-core')).default.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox', '--no-first-run'] });
+    const page = await browser.newPage(), errors = [];
+    page.on('pageerror', e => errors.push(e.message));
+    await page.goto(admin.url, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('dialog.release-notes[open]');
+    await page.click('dialog.release-notes .release-notes__button--primary');
+    await page.waitForSelector('#release-version-select');
+    assert.match(await page.$eval('#release-update', el => el.textContent), /优先下载增量包/);
+    for (const target of [older, RELEASE_TAG]) {
+      await page.select('#release-version-select', target);
+      const label = await page.$eval('#release-update .meta[style]', el => el.textContent);
+      assert.match(label, /-assets\.zip/); assert.doesNotMatch(label, /-update\.zip/);
+    }
+    await page.select('#release-version-select', tag);
+    await page.click('[data-update-install]');
+    await page.waitForFunction(() => document.querySelector('[data-update-install]').disabled);
+    assert.equal(typeof report, 'function');
+    const fullName = `Stronghold-Protocol-${tag}-assets.zip`;
+    report({ state: 'downloading', received: 1048576, size: 104857600, asset: fullName,
+      fallback: true, fallbackReason: '本机文件与增量包基线不符：server/keep.js' });
+    await page.waitForFunction(() => document.querySelector('#release-update').textContent.includes('已改用完整素材包'));
+    assert.match(await page.$eval('#release-update .meta[style]', el => el.textContent), /-assets\.zip.*100\.0 MB/);
+    const shots = path.resolve('.impeccable/review'); fs.mkdirSync(shots, { recursive: true });
+    for (const [name, width, height] of [['desktop', 1440, 900], ['mobile', 390, 844]]) {
+      await page.setViewport({ width, height });
+      await page.$eval('#release-update', el => el.scrollIntoView({ block: 'start' }));
+      assert.ok(await page.$eval('#release-update', el => el.scrollWidth <= el.clientWidth), name);
+      await page.screenshot({ path: path.join(shots, `update-delta-${name}.png`) });
+    }
+    finish();
+    await page.waitForFunction(() => document.querySelector('#release-update-state').textContent.includes('test stops before installation'));
+    assert.deepEqual(errors, []);
+  } finally {
+    finish?.();
+    if (browser) await browser.close();
+    if (admin) await admin.close();
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('console Release updates: check/retry, confirmation/cancel, progress, restart token refresh, desktop/mobile', {
   skip: process.env.SP_E2E !== '1' || !hasChrome(), timeout: 45000,
 }, async () => {

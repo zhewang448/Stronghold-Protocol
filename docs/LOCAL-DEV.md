@@ -367,7 +367,9 @@ LOBBY → INFO_CHECK → BAND_DRAFT → BATTLE_CHECK
 
 首次打开行为由服务端消费，刷新和多页并发不会重复检查或提醒；检查请求并发合并。查询正式版本按数值排序，过滤草稿、预发布和无法识别的标签；当前版本没有远程附件时仍显示。当前版本仅在显式 `repairAssets:true` 时允许重新安装，用于修复素材；旧版回退和活动对局分别确认。网络配置保存在 `logs/release-network.json`；运行时使用 undici 的 HTTP/HTTPS `ProxyAgent`，兼容 Node 22.14，不依赖启动时环境变量。先代理 / 直连 GitHub，失败后绕过该代理直接访问镜像（默认复用素材工具的 `https://gh-proxy.com/` 前缀）。整个响应消费含 JSON、校验文本、流下载、SHA-256 与程序清单验证均可回退，更新忙碌或已有待安装包时拒绝修改网络配置。
 
-更新只访问 `zhewang448/Stronghold-Protocol` 的正式 Release，使用 assets 完整包；只有 lite 时显示不可安装，不接受源码或增量包。先验证附件的 GitHub digest / `SHA256SUMS.txt`，再检查包内程序 `MANIFEST.json`，拒绝路径穿越、重名及清单外程序文件。`release-art.js` 将经过整包验证的素材逐文件哈希记入内部暂存清单 `RELEASE-ART.json`，按本机哈希跳过相同文件；安装前后校验全部目标素材及三份素材清单的引用。变化的程序、素材和素材清单一起备份、替换与回滚；额外本机素材不删除。这是完整包下载、差异写入，不是差异下载。原服务下载期间继续运行；安装器握手成功才安排优雅停服。替换前备份到 `logs/update-backups/`，复制失败恢复旧文件；恢复失败保留安装锁、阻止重启并提示备份路径。日志在 `logs/release-update-status.json`，直接重启的输出在 `logs/release-restart.log`。
+更新只访问 `zhewang448/Stronghold-Protocol` 的正式 Release；只有 lite 时显示不可安装，不接受源码包。升级优先使用同时带校验清单与 Ed25519 签名的 `*-update.zip`，回退旧版本和同版修复始终使用 assets 完整包。先验证发布签名及 ZIP SHA-256，再检查 `UPDATE.json` 的 `from`、可选 `fromTags` / 目标 `tag`、文件数量与字节数，以及完整程序 `MANIFEST.json` 和必需的目标素材哈希 `art`。未变化的程序逐项与目标哈希比较后复制到暂存区，变化程序及素材来自已验签增量包；缺失或损坏的本地文件、旧式增量清单、下载或校验错误均触发同 Release 完整包回退，完整包仍独立验证签名与哈希。控制台显示预选包、实际包、下载大小和回退原因；不会因增量失败改用未签名校验。
+
+`release-art.js` 将已认证的完整目标素材哈希记入内部暂存清单 `RELEASE-ART.json`，安装前后校验全部目标素材及三份素材清单的引用。变化的程序、素材和素材清单一起备份、替换与回滚；额外本机素材不删除。原服务下载期间继续运行；安装器握手成功才安排优雅停服。替换前备份到 `logs/update-backups/`，复制失败恢复旧文件；恢复失败保留安装锁、阻止重启并提示备份路径。日志在 `logs/release-update-status.json`，直接重启的输出在 `logs/release-restart.log`。回退保留原有设置和记录，不进行数据格式逆迁移。
 
 解压、与本机素材逐文件比较及暂存校验由 `release-stage-worker.js` 工作线程执行，不占用服务主线程；线程退出后才允许安装或清理暂存目录。停服后的安装器仍会重新校验素材，发现期间被修改的文件时拒绝安装。
 
