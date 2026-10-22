@@ -143,6 +143,9 @@
   .settings-group .room h2 { margin-top: 0; font-size: 17px; }
   .settings-group .meta { max-width: 82ch; line-height: 1.65; overflow-wrap: anywhere; }
   .settings-group form > .row { margin-top: 14px; }
+  .update-backup-list { padding-left: 20px; }
+  .update-backup-list li { margin: 12px 0; overflow-wrap: anywhere; }
+  .update-backup-list small { display: block; margin: 4px 0; }
   .settings-preview { margin-top: 16px; }
   .settings-preview summary { cursor: pointer; padding: 8px 0; color: var(--mint); }
   #settings-cleanup .room { border-color: #6c4440; }
@@ -1012,7 +1015,7 @@ function drawReleaseUpdate() {
   const selected = versions.find((r) => r.tag === selectedRelease);
   const network = networkDraft || d.network || { proxy: '', mirror: 'https://gh-proxy.com/' };
   networkExpanded = host.querySelector('details')?.open ?? networkExpanded;
-  const busy = updateRequest || ['checking', 'downloading', 'verifying', 'scheduled'].includes(d.state);
+  const busy = updateRequest || ['checking', 'downloading', 'verifying', 'scheduled', 'validating', 'starting', 'rolling-back', 'recovery-required'].includes(d.state);
   const actualPackage = d.target === selected?.tag && d.asset ? d : selected;
   const messages = {
     idle: '首次打开控制台会自动检查更新，也可手动刷新版本列表。', checking: '正在获取 Release 版本列表…',
@@ -1020,6 +1023,11 @@ function drawReleaseUpdate() {
     downloading: `正在下载安装包…${d.received ? ` ${(d.received / 1048576).toFixed(1)} / ${(d.size / 1048576).toFixed(1)} MB` : ''}`,
     verifying: '正在校验程序与素材，比较本机已有文件…', 'active-matches': '有正在进行的对局，安装前需要确认结束对局。',
     scheduled: '更新已校验，服务器即将重启。恢复连接后此页面会自动刷新。',
+    validating: '已隔离启动候选版本，正在验证网页、构建指纹和 WebSocket。',
+    starting: '候选版本验证通过，正在启动正式服务并检查就绪状态。',
+    'rolling-back': '启动验证失败，正在校验并恢复原程序。',
+    installed: '新版已启动并通过健康检查。',
+    'recovery-required': '更新未完成或健康检查未通过，需要离线恢复；请按下方说明先停服。',
     reconnecting: '正在安装并等待服务器恢复…',
   };
   host.innerHTML = `<h2>版本更新</h2>
@@ -1035,7 +1043,10 @@ function drawReleaseUpdate() {
     ${d.target === selected?.tag && d.fallback ? `<p class="note">已改用完整素材包：${esc(d.fallbackReason || '增量包不可用')}</p>` : ''}
     ${selected?.reason ? `<p class="note">该版本不可安装：${esc(selected.reason)}</p>` : ''}
     ${selected?.relation === 'old' ? '<p class="note">回退使用目标旧版的完整素材包。安装前备份程序及变化素材；设置与记录保留原样，不会自动恢复为旧版格式。</p>' : ''}
-    <p id="release-update-state" role="status" aria-live="polite" ${d.error ? 'class="bad"' : 'class="meta"'}>${esc(d.error ? `更新失败：${d.error}。可重新检查后重试。` : messages[d.state] || '')}</p>
+    <p id="release-update-state" role="status" aria-live="polite" ${d.error || d.state === 'recovery-required' ? 'class="bad"' : 'class="meta"'}>${esc(d.state === 'recovery-required' ? `${messages[d.state]} ${d.error || ''}` : d.error ? `更新失败：${d.error}。可重新检查后重试。` : messages[d.state] || '')}</p>
+    ${d.warning ? `<p class="note" role="status">${esc(d.warning)}</p>` : ''}
+    ${d.recovery ? `<p class="note">停服后，在安装目录运行：<code>${esc(d.recovery)}</code>。程序会核对备份和当前文件；状态不匹配时会拒绝覆盖。</p>` : ''}
+    ${d.state === 'recovery-required' ? '<p class="note">先关闭启动窗口、服务及外部守护器，再离线恢复。恢复完成后重新启动服务器并刷新本页。恢复不会续接已经被跨版本更新结束的对局。</p>' : ''}
     <div class="row"><button data-update-check ${busy || d.state === 'reconnecting' || d.state === 'active-matches' ? 'disabled' : ''}>检查更新</button>
       ${d.hasMore ? `<button data-update-more ${busy ? 'disabled' : ''}>加载更早版本</button>` : ''}
       <button class="primary" data-update-install ${busy || d.state === 'reconnecting' || !d.canInstall || !selected?.installable ? 'disabled' : ''}>${d.state === 'active-matches' ? '继续安装并重启' : selected?.relation === 'current' ? '修复素材并重启' : selected?.relation === 'old' ? '回退并重启' : '下载并安装'}</button></div>
@@ -1091,7 +1102,7 @@ async function openUpdateConsole() {
     releaseUpdate = await api('/api/update', { action: 'open' });
     if (servicePending) return;
     drawReleaseUpdate();
-    if (['checking', 'downloading', 'verifying', 'scheduled'].includes(releaseUpdate.state)) startUpdatePolling();
+    if (['checking', 'downloading', 'verifying', 'scheduled', 'validating', 'starting', 'rolling-back'].includes(releaseUpdate.state)) startUpdatePolling();
     if (releaseUpdate.notify && await showReleaseUpdatePrompt({
       title: '版本更新', message: `发现新版本 ${releaseUpdate.tag}（当前 ${releaseUpdate.currentVersion}）。是否打开更新设置？`,
       confirmLabel: '打开更新设置', cancelLabel: '稍后',
@@ -1106,10 +1117,10 @@ function startUpdatePolling() {
       const d = await api('/api/update');
       if (d.error === 'bad token' && (reconnectStarted || releaseUpdate.state === 'scheduled')) { location.reload(); return; }
       if (d.error && !d.state) throw new Error(d.error);
-      if (reconnectStarted && !['scheduled', 'downloading', 'verifying'].includes(d.state)) { location.reload(); return; }
+      if (reconnectStarted && !['scheduled', 'downloading', 'verifying', 'validating', 'starting', 'rolling-back'].includes(d.state)) { location.reload(); return; }
       releaseUpdate = d;
       drawReleaseUpdate();
-      if (!['checking', 'downloading', 'verifying', 'scheduled'].includes(d.state)) {
+      if (!['checking', 'downloading', 'verifying', 'scheduled', 'validating', 'starting', 'rolling-back'].includes(d.state)) {
         clearInterval(updatePoll); updatePoll = null;
       }
     } catch {
@@ -1151,7 +1162,7 @@ async function updateRelease(action, force = false, allowDowngrade = false) {
       await updateRelease('install', false, allowDowngrade);
       return;
     }
-    if (['checking', 'downloading', 'verifying', 'scheduled'].includes(releaseUpdate.state)) startUpdatePolling();
+    if (['checking', 'downloading', 'verifying', 'scheduled', 'validating', 'starting', 'rolling-back'].includes(releaseUpdate.state)) startUpdatePolling();
   } catch { releaseUpdate = { ...releaseUpdate, state: 'error', error: '连接服务器失败，请重新检查更新' }; }
   finally { updateRequest = false; drawReleaseUpdate(); }
 }
@@ -1209,6 +1220,10 @@ async function showSettings() {
   const n = Math.max(0, ...d.defaults.map((x) => x.rounds.length));
   const base = (r) => { const v = d.defaults.map((x) => x.rounds[r - 1]).filter((s) => s > 0); return v.length ? Math.max(...v) : ''; };
   host.innerHTML = `<section class="room" id="release-update" aria-label="版本更新"></section>
+    <section class="room" id="update-backups-settings"><h2>更新备份与空间</h2>
+      <p class="meta">更新前会预估暂存和备份空间；每个恢复点校验程序及素材。按最新版本的安装顺序回退。更新出错时不会自动清理正在恢复的备份。</p>
+      <div id="update-backups-content" role="status" aria-live="polite">正在读取更新备份…</div>
+    </section>
     <section class="room" id="plugin-settings"><h2>插件管理</h2><p>在插件工作台安装、启停、编辑和导出插件。</p><a class="replay-link" href="/studio" target="_blank" rel="noopener noreferrer">打开插件工作台 ↗</a><p class="meta">仅本机可通过此入口获取工作台权限；工作台关闭时会显示原因。</p></section>
     <section class="room" id="issue-feedback"><h2>问题反馈与功能建议</h2><p>欢迎反馈使用中遇到的问题，或提出新的功能拓展建议，帮助项目持续改进。</p><a class="replay-link" href="https://github.com/zhewang448/Stronghold-Protocol/issues" target="_blank" rel="noopener noreferrer">前往 GitHub Issues ↗</a><p class="meta">提交问题时，欢迎附上复现步骤、运行方式与相关日志。</p></section>
     <section class="room" id="replay-settings"><h2>整局回放</h2>
@@ -1268,10 +1283,27 @@ async function showSettings() {
   drawPrepPreview();
   await loadRecovery();
   refreshStorage();
+  await loadUpdateBackups();
   drawReleaseUpdate();
   releaseUpdate = await api('/api/update').catch(() => ({ state: 'error', error: '读取更新状态失败' }));
   drawReleaseUpdate();
-  if (['checking', 'downloading', 'verifying', 'scheduled'].includes(releaseUpdate.state)) startUpdatePolling();
+  if (['checking', 'downloading', 'verifying', 'scheduled', 'validating', 'starting', 'rolling-back'].includes(releaseUpdate.state)) startUpdatePolling();
+}
+
+async function loadUpdateBackups() {
+  const host = $('#update-backups-content'); if (!host) return;
+  try {
+    const d = await api('/api/update-backups');
+    if (d.error) throw new Error(d.error);
+    const rows = d.backups.map((b) => `<li><strong>${esc(b.to || '未知目标版本')}</strong> · ${b.state === 'verified' ? '已验证' : b.state === 'pending' ? '待验证' : b.state === 'recovery-required' ? '需要恢复' : b.state === 'restored' ? '已恢复' : '旧式备份，需人工检查'} · ${b.at ? esc(new Date(b.at).toLocaleString()) : '时间未知'} · ${b.bytes == null ? '占用未知' : `${(b.bytes / 1048576).toFixed(1)} MB`}
+      ${b.from ? `<small>来源：${esc(b.from)}</small>` : ''}${b.error ? `<small class="bad">${esc(b.error)}</small>` : ''}
+      <button type="button" data-update-backup-delete="${esc(b.id)}" ${b.protected || b.state === 'unrecognized' ? 'disabled' : ''}>清理此恢复点</button></li>`).join('');
+    host.innerHTML = `<p>${d.backups.length} 个备份 · ${d.bytes == null ? '总占用未知' : `合计 ${(d.bytes / 1048576).toFixed(1)} MB`} · 默认保留最近 ${d.keep} 个已验证恢复点</p>
+      ${rows ? `<ul class="update-backup-list">${rows}</ul>` : '<p class="meta">尚无更新备份。</p>'}
+      <label for="update-backup-keep">已验证恢复点保留数量</label>
+      <div class="row"><input id="update-backup-keep" type="number" min="1" max="20" step="1" value="${d.keep}">
+      <button type="button" data-update-backup-save>保存</button><button type="button" data-update-backup-refresh>刷新</button><span id="update-backups-feedback" role="status"></span></div>`;
+  } catch (error) { host.textContent = `读取更新备份失败：${error.message}`; }
 }
 
 function arrangeSettings() {
@@ -1298,7 +1330,7 @@ function arrangeSettings() {
     ['game', '对局设置', ['prep-settings', 'unite-settings', 'round-charts-settings']],
     ['chat', '交流管理', ['social-settings', 'chat-policy-settings', 'chat-settings']],
     ['history', '记录与恢复', ['replay-settings', 'recovery-settings']],
-    ['system', '维护与扩展', ['release-update', 'plugin-settings', 'issue-feedback']],
+    ['system', '维护与扩展', ['release-update', 'update-backups-settings', 'plugin-settings', 'issue-feedback']],
     ['cleanup', '数据清理', ['storage-settings']],
   ];
   host.innerHTML = `<div class="settings-intro"><h2>主机设置</h2><p class="meta">每项设置单独保存。除页面另有说明外，保存后立即生效；主机配置保存在 ${esc(settingsData.file)}。</p></div>
@@ -1439,6 +1471,12 @@ document.addEventListener('pointerdown', (e) => {
   if (e.target.closest('[data-candidate-option]')) e.preventDefault();
 });
 document.addEventListener('click', (e) => {
+  const deleteBackup = e.target.closest('button[data-update-backup-delete]');
+  if (deleteBackup) { void changeUpdateBackup({ action: 'delete', id: deleteBackup.dataset.updateBackupDelete, confirm: confirm(`确定清理更新备份 ${deleteBackup.dataset.updateBackupDelete}？此操作不可撤销。`) }); return; }
+  if (e.target.closest('button[data-update-backup-save]')) {
+    const keep = Number($('#update-backup-keep')?.value); void changeUpdateBackup({ action: 'configure', keep }); return;
+  }
+  if (e.target.closest('button[data-update-backup-refresh]')) { void loadUpdateBackups(); return; }
   if (e.target.matches('input[data-candidate-kind]')) {
     requestAnimationFrame(() => { if (document.activeElement === e.target) showCandidates(e.target); });
     return;
@@ -1449,6 +1487,17 @@ document.addEventListener('click', (e) => {
   e.preventDefault();
   chooseCandidate(el, option.dataset.candidateOption);
 });
+
+async function changeUpdateBackup(body) {
+  if (body.action === 'delete' && !body.confirm) return;
+  const feedback = $('#update-backups-feedback'); if (feedback) feedback.textContent = '正在保存…';
+  try {
+    const d = await api('/api/update-backups', body);
+    if (d.error) throw new Error(d.error);
+    await loadUpdateBackups();
+    const next = $('#update-backups-feedback'); if (next) next.textContent = body.action === 'delete' ? '已清理恢复点。' : '保留数量已保存。';
+  } catch (error) { if (feedback) feedback.textContent = `操作失败：${error.message}`; }
+}
 document.addEventListener('keydown', (e) => {
   const el = e.target;
   if (!el.matches('input[data-candidate-kind]')) return;

@@ -99,7 +99,8 @@ test('the real tracked tree: runtime in, the rest out; every shipped import, npm
     if (/^(?:[a-z]+:|#)/i.test(href)) continue;
     assert.ok(got.has(href.split('#')[0]), `README link missing from the release: ${href}`);
   }
-  for (const f of ['scripts/start-tunnel.bat', 'scripts/start-tunnel.mjs', 'scripts/stop-server.bat', 'scripts/free-port.mjs']) {
+  for (const f of ['scripts/start-tunnel.bat', 'scripts/start-tunnel.mjs', 'scripts/stop-server.bat', 'scripts/free-port.mjs',
+    'scripts/host-runtime.mjs', 'scripts/recover-release.mjs']) {
     assert.ok(got.has(f), `extension launcher missing from the release: ${f}`);
   }
   const code = [...got].filter((f) => /\.(?:m?js|py)$/.test(f));

@@ -689,6 +689,7 @@
   flex: none;
   padding: calc(var(--av) * .045);
   background: #0a0d0c;
+  border: 1px solid var(--seat-color, var(--line));
   border: 1px solid color-mix(in srgb, var(--seat-color) 65%, var(--line));
 }
 .avatar__img {
@@ -697,6 +698,7 @@
   overflow: hidden;
   display: grid;
   place-items: center;
+  background: #101311;
   background:
     repeating-linear-gradient(45deg, rgba(255, 255, 255, .03) 0 2px, transparent 2px 7px),
     radial-gradient(circle at 30% 18%, color-mix(in srgb, var(--seat-color) 35%, #101311), color-mix(in srgb, var(--seat-color) 12%, #101311) 72%);
@@ -707,6 +709,7 @@
   font-weight: 900;
   line-height: 1;
   color: var(--seat-color);
+  text-shadow: 0 0 calc(var(--av) * .12) var(--seat-color);
   text-shadow: 0 0 calc(var(--av) * .12) color-mix(in srgb, var(--seat-color) 45%, transparent);
 }
 .avatar__bot { width: 56%; height: 56%; color: #a9c3d8; filter: drop-shadow(0 0 6px rgba(159, 212, 255, .35)); }

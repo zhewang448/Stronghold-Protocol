@@ -10,6 +10,33 @@ import { createRng } from '../../server/sim/rng.js';
 
 const bossFields = () => FakeBattle.instances.filter((b) => b.kind === 'boss' || b.kind === 'hidden');
 
+for (const humans of [2, 4]) for (const hidden of [false, true]) {
+  test(`${humans} players: quitting during ${hidden ? 'hidden core' : 'final assault'} keeps the original pool and captured layers`, t => {
+    const h = makeMatch({ humans, fake: true, instant: false }).start().toPrep(1), m = h.m;
+    t.after(() => m.dispose());
+    m.startRound(m.gd.bossRound);
+    h.drive(() => m.phase === PHASE.PREP && m.round === m.gd.bossRound, { ready: false, maxSteps: 50 });
+    if (hidden) {
+      m.startRound(m.gd.hiddenRound);
+      h.drive(() => m.phase === PHASE.PREP && m.round === m.gd.hiddenRound, { ready: false, maxSteps: 50 });
+      m.teamLp = m.alivePlayers().reduce((sum, p) => sum + p.lp, 0);
+      for (const p of m.alivePlayers()) p.lpAtFinal = p.lp;
+    }
+    h.ps('p_0').bondCountBonus.yanShip = 3;
+    h.ps('p_0').layers.yanShip = 300;
+    h.ps('p_0').recompute();
+    assert.equal(h.ps('p_0').activatedLayers(), 300);
+    m.setDeadline(0); m.startFinalAssault(hidden);
+    m.hiddenLayerSum = 1500;
+    const pool = m.bossPool;
+    pool.damage('p_1', pool.maxHp / 4);
+    const before = { maxHp: pool.maxHp, hp: pool.hp, layers: m.hiddenLayerSum };
+    m.onLeave('p_0');
+    assert.deepEqual({ maxHp: pool.maxHp, hp: pool.hp, layers: m.hiddenLayerSum }, before);
+    assert.equal(h.ps('p_0').left, true);
+  });
+}
+
 test('pairing is seeded, independent of input order, includes everyone once and can draw every partner', () => {
   const p = (seat) => ({ seat, playerId: `s${seat}` });
   const partners = new Set(), lone = new Set();

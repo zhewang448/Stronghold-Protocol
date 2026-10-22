@@ -3,6 +3,7 @@ import { wallView } from './admin-wall.js';
 import { createResources } from './resources.js';
 import { createIdleUpdater } from './idle-update.js';
 import { readReleaseNotes } from './release-notes.js';
+import { listBackups, configureBackups, deleteBackup } from './update-backups.js';
 // server/admin.js — the host's local console (server/admin.html): rooms, matches and players at a glance, plus host
 // actions — 回到第 N 回合休整期 (./match/rewind.js), funds, LP, shop level, free refreshes, operator / item grants, bond
 // layers and count bonuses, 托管, effects and 机变 cards, board edits, the enemy schedule (any composition for the current round before combat or any later
@@ -722,7 +723,8 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
   const resources = createResources({ lobby, network, traffic });
   const token = randomBytes(16).toString('hex');
   let serviceAction = null, serviceTimer = null, serviceCancel = null;
-  const serviceView = () => ({ instanceId: process.pid, canRestart: !!service, canShutdown: !!service && !service.shutdownReason,
+  const serviceView = () => ({ instanceId: process.pid, activeMatches: [...lobby.rooms.values()].filter((r) => r.match && !r.match.ended && !r.match.disposed).length,
+    canRestart: !!service, canShutdown: !!service && !service.shutdownReason,
     shutdownReason: service?.shutdownReason || '', action: serviceAction, recoveryEnabled: lobby.recovery?.status().enabled || false });
   const page = fs.readFileSync(path.join(DIR, 'admin.html'), 'utf8').replace('__TOKEN__', token);
   const tokenBuf = Buffer.from(token);
@@ -821,6 +823,17 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
         return res.end(body);
       }
       if (req.method === 'GET' && url.pathname === '/api/storage') return send(200, storageView());
+      if (req.method === 'GET' && url.pathname === '/api/update-backups') return send(200, listBackups(root));
+      if (req.method === 'POST' && url.pathname === '/api/update-backups') {
+        const body = await readJson(req);
+        if (['checking', 'downloading', 'verifying', 'scheduled', 'validating', 'starting', 'rolling-back'].includes(updater.status().state)) return send(409, { error: '更新进行中，不能修改或清理备份' });
+        try {
+          if (body?.action === 'configure') configureBackups(root, body.keep);
+          else if (body?.action === 'delete' && body.confirm === true) deleteBackup(root, body.id);
+          else return send(400, { error: '请确认有效的备份操作' });
+          return send(200, { ok: true, ...listBackups(root) });
+        } catch (e) { return send(400, { error: e.message }); }
+      }
       if (req.method === 'POST' && url.pathname === '/api/storage') {
         const body = await readJson(req);
         if (!body || body.confirm !== true) return send(400, { error: '请先确认删除范围' });
@@ -854,8 +867,9 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
         const body = await readJson(req);
         if (!body || !['restart', 'shutdown'].includes(body.action)) return send(400, { error: '未知服务操作' });
         if (body.confirm !== true) return send(400, { error: '请确认结束全部对局并操作服务' });
+        if (body.confirmActive === false && serviceView().activeMatches) return send(409, { error: '当前有活动对局，请确认后再停止。' });
         if (!service || (body.action === 'shutdown' && service.shutdownReason)) return send(409, { error: service?.shutdownReason || '当前启动方式不支持服务控制' });
-        if (serviceAction || ['checking', 'downloading', 'verifying', 'scheduled'].includes(updater.status().state)) return send(409, { error: '服务操作或更新进行中，请稍后重试' });
+        if (serviceAction || ['checking', 'downloading', 'verifying', 'scheduled', 'validating', 'starting', 'rolling-back'].includes(updater.status().state)) return send(409, { error: '服务操作或更新进行中，请稍后重试' });
         serviceAction = body.action;
         try {
           const prepared = await service.prepare(body.action);

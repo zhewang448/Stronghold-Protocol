@@ -674,6 +674,7 @@
 .pavatar {
   --pa: .8rem;
   position: relative; display: block; width: var(--pa); height: var(--pa); flex: none;
+  background: #101311;
   background: linear-gradient(135deg, color-mix(in srgb, var(--seat-color) 24%, #101311), color-mix(in srgb, var(--seat-color) 10%, #101311));
   border: 1px solid var(--seat-color, var(--line-2));
 }
@@ -748,7 +749,7 @@
 .round-history .chart-legend button::before, .round-history .player-series-key::before { content: ''; display: inline-block; width: 12px; height: 4px; flex: none; margin-right: 5px; background: var(--c); }
 .round-history .chart-legend button[aria-pressed="true"] { border-color: var(--c); background: var(--bg-3, #303a34); font-weight: 700; }
 .round-history .chart-legend[hidden], .round-history label[hidden] { display: none; }
-.round-history .chart-legend:has([aria-pressed="true"]) button[aria-pressed="false"] { color: var(--text-md); }
+.round-history .chart-legend[data-highlighted="true"] button[aria-pressed="false"] { color: var(--text-md); }
 @media (pointer: coarse) { .round-history .chart-legend button { min-height: 44px; } }
 .round-history .chart-wrap { position: relative; overflow-x: auto; }
 .round-history .chart-wrap svg { display: block; width: 100%; min-width: 560px; height: auto; }
@@ -1532,6 +1533,7 @@
 .team__pool-group::before {
   content: ''; position: absolute; inset: -.06rem; z-index: -1; pointer-events: none;
   border: 1px solid var(--pool-group-color);
+  background: transparent;
   background: color-mix(in srgb, var(--pool-group-color) 7%, transparent);
 }
 .team--many { bottom: 1.12rem; width: max-content; max-width: 3.1rem; }

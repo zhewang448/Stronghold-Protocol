@@ -5,7 +5,7 @@
 // Installed on Match.prototype by server/match/Match.js (a method container: never instantiated; `this` is the match).
 
 import { C2S } from '../../../shared/protocol.js';
-import { PHASE, ERR } from '../../../shared/constants.js';
+import { PHASE, ERR, BASE_SEATS } from '../../../shared/constants.js';
 import { syntheticResult } from '../fields.js';
 import { bossPoolHp } from '../finalAssault.js';
 import { FLOW_TICKER_PRIORITY, OK, fail } from './common.js';
@@ -241,7 +241,8 @@ export class MatchPlatform {
       if (turn) this.startDraftTurn(group);
     }
     const passedRound = phase === PHASE.SETTLE ? this.round + 1 : Math.max(1, this.round);
-    const leavingBossLayers = phase === PHASE.FINAL_ASSAULT ? ps.activatedLayers() : 0;
+    const expanded = this.order.length > BASE_SEATS;
+    const leavingBossLayers = expanded && phase === PHASE.FINAL_ASSAULT ? ps.activatedLayers() : 0;
     // its own normal battle has nobody left to fight for
     for (const f of this.fields) {
       if (f.live && f.kind === 'normal' && f.players.length === 1 && f.players[0] === ps.playerId) {
@@ -255,8 +256,8 @@ export class MatchPlatform {
     }
     ps.lp = 0;
     ps.eliminate(passedRound);
-    if (phase === PHASE.FINAL_ASSAULT) this.hiddenLayerSum = Math.max(0, this.hiddenLayerSum - leavingBossLayers);
-    if (this.bossPool && (phase === PHASE.FINAL_ASSAULT || phase === PHASE.HIDDEN_CORE) && this.alivePlayers().length) {
+    if (expanded && phase === PHASE.FINAL_ASSAULT) this.hiddenLayerSum = Math.max(0, this.hiddenLayerSum - leavingBossLayers);
+    if (expanded && this.bossPool && (phase === PHASE.FINAL_ASSAULT || phase === PHASE.HIDDEN_CORE) && this.alivePlayers().length) {
       const bossId = phase === PHASE.HIDDEN_CORE ? this.hiddenBossId : this.bossId;
       this.bossPool.rescale(bossPoolHp(this.gd, bossId, this.alivePlayers().length));
       this._broadcastPool(true);

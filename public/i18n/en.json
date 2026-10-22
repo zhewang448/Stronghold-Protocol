@@ -3064,5 +3064,9 @@
   "突出玩家：{name}": "Highlight player: {name}",
   "关闭回合详情": "Close round details",
   "点击查看全部 {n} 名玩家": "Click to view all {n} players",
-  "点击固定详情": "Click to pin details"
+  "点击固定详情": "Click to pin details",
+  "定期提醒导出个人数据": "Remind me to export my personal data",
+  "当前为临时网址，换网址前请导出个人数据。": "This is a temporary address. Export your personal data before changing addresses.",
+  "建议备份本机个人数据，换网址或清理浏览器前可用于恢复。": "Back up your local personal data so you can restore it after changing addresses or clearing browser data.",
+  "明天再提醒": "Remind me tomorrow"
 }

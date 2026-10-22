@@ -9,17 +9,18 @@ import { fileURLToPath } from 'node:url';
 import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { parseManifest, parseUpdate, pathProblem, removalProblem, isSetupArt, verifyFiles, digestFile } from './update.js';
-import { readZip } from './release-zip.js';
+import { readZip, zipUnpackedSize } from './release-zip.js';
 import { ART_STAGE_FILE, releaseTarget, readStagedArt, verifyStagedArt } from './release-art.js';
 import { RELEASE_TAG } from './release-version.js';
 import { SIGNATURE_ASSET, SUMS_ASSET, parseSignature, sumFor, verifySums } from './release-signing.js';
 import { fetch as networkFetch, ProxyAgent } from 'undici';
 import { DEFAULT_GITHUB_PROXY, normalizeProxyPrefix } from '../tools/assets/sources.mjs';
+import { assertUpdateSpace } from './update-backups.js';
 
 export const UPDATE_REPOSITORY = 'zhewang448/Stronghold-Protocol';
 const API = `https://api.github.com/repos/${UPDATE_REPOSITORY}/releases`;
 const HEADERS = { accept: 'application/vnd.github+json', 'user-agent': 'Stronghold-Protocol-console' };
-const BUSY = new Set(['checking', 'downloading', 'verifying', 'scheduled']);
+const BUSY = new Set(['checking', 'downloading', 'verifying', 'scheduled', 'validating', 'starting', 'rolling-back']);
 const TAG = /^v?(\d+)\.(\d+)\.(\d+)(?:-extended\.(\d+))?$/;
 export const updatePaths = (root) => ({
   lock: path.join(root, 'logs', 'release-update.lock'),
@@ -30,7 +31,7 @@ export const updatePaths = (root) => ({
 export function saveUpdateStatus(root, status) {
   const file = updatePaths(root).status;
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, JSON.stringify(status));
+  fs.writeFileSync(file + '.tmp', JSON.stringify(status)); fs.renameSync(file + '.tmp', file);
 }
 function appVersion(root) { return JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version; }
 export function installedIdentity(root) {
@@ -311,6 +312,7 @@ export async function downloadAndStage({ root, release, fetchImpl = fetch, listi
     let lastError;
     for (const asset of candidates) {
       try {
+        assertUpdateSpace(root, Number.isSafeInteger(asset.size) && asset.size > 0 ? asset.size : 0);
         const want = await expectedHash({ release, asset, request, listing, keys });
         const staged = await request(assetUrl(asset), async (response) => {
           fs.rmSync(path.join(work, 'Stronghold-Protocol'), { recursive: true, force: true });
@@ -325,6 +327,7 @@ export async function downloadAndStage({ root, release, fetchImpl = fetch, listi
           if (asset.size && received !== asset.size) throw new Error('下载包大小不符，请重试');
           if (hash.digest('hex') !== want) throw new Error('安装包 SHA-256 校验失败，请重试');
           progress({ state: 'verifying', received, size: asset.size || received, asset: asset.name });
+          assertUpdateSpace(root, zipUnpackedSize(zip));
           const stage = path.join(work, 'Stronghold-Protocol');
           const manifest = await stageReleaseArchive(zip, stage, release.tag_name, root, asset === delta);
           fs.rmSync(zip);
@@ -346,14 +349,14 @@ export async function downloadAndStage({ root, release, fetchImpl = fetch, listi
 }
 
 /** The installer must load and acknowledge startup before shutdown is allowed. */
-export async function scheduleInstall({ root, stage, tag, parentPid = process.pid }) {
+export async function scheduleInstall({ root, stage, tag, parentPid = process.pid, port = Number(process.env.PORT) || 3000 }) {
   const script = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'scripts', 'apply-release-update.mjs');
   fs.mkdirSync(path.join(root, 'logs'), { recursive: true });
-  fs.writeFileSync(updatePaths(root).lock, JSON.stringify({ pid: parentPid, at: Date.now() }));
+  fs.writeFileSync(updatePaths(root).lock, JSON.stringify({ pid: parentPid, at: Date.now() }), { flag: 'wx', mode: 0o600 });
   try {
     const installer = await new Promise((resolve, reject) => {
       const child = spawn(process.execPath, [script, root, stage, String(parentPid), tag], {
-        cwd: root, detached: true, stdio: ['ignore', 'ignore', 'ignore', 'ipc'], windowsHide: true,
+        cwd: root, env: { ...process.env, SP_UPDATE_PORT: String(port) }, detached: true, stdio: ['ignore', 'ignore', 'ignore', 'ipc'], windowsHide: true,
       });
       const timer = setTimeout(() => { child.kill(); reject(new Error('更新安装器启动超时')); }, 10000);
       const fail = (e) => { clearTimeout(timer); reject(e); };
@@ -372,7 +375,7 @@ export async function scheduleInstall({ root, stage, tag, parentPid = process.pi
   } catch (e) { fs.rmSync(updatePaths(root).lock, { force: true }); throw e; }
 }
 
-export function createReleaseUpdater({ root, log = console, onReady, hasActive = () => false,
+export function createReleaseUpdater({ root, port = Number(process.env.PORT) || 3000, log = console, onReady, hasActive = () => false,
   fetchImpl = networkFetch, stageRelease = downloadAndStage, schedule = scheduleInstall } = {}) {
   let current = { state: 'idle' }, releases = [], prepared = null, opened = false, checking = null, page = 0, hasMore = false;
   const listedVia = new Map(); // tag → route its Release entry was last listed through
@@ -381,7 +384,7 @@ export function createReleaseUpdater({ root, log = console, onReady, hasActive =
   catch { /* default on first launch or invalid saved settings */ }
   try {
     const last = JSON.parse(fs.readFileSync(updatePaths(root).status, 'utf8'));
-    if (last.state === 'error') current = last;
+    if (['error', 'recovery-required', 'starting', 'validating', 'rolling-back', 'installed'].includes(last.state)) current = last;
   } catch { /* no previous failure */ }
   function releaseView(release) {
     const full = pickReleaseAsset(release);
@@ -408,6 +411,9 @@ export function createReleaseUpdater({ root, log = console, onReady, hasActive =
       signed: !!release.assets?.some((a) => a.name === SIGNATURE_ASSET), installable: !reason, reason };
   }
   const status = () => {
+    if (['starting', 'validating', 'rolling-back'].includes(current.state)) {
+      try { const disk = JSON.parse(fs.readFileSync(updatePaths(root).status, 'utf8')); if (disk.tag === current.tag) current = disk; } catch {}
+    }
     const versions = releases.map(releaseView);
     const currentVersion = installedTag(root);
     if (!versions.some((r) => r.relation === 'current')) versions.push({ tag: currentVersion, relation: 'current', installable: false });
@@ -424,7 +430,7 @@ export function createReleaseUpdater({ root, log = console, onReady, hasActive =
   };
   async function launch(force) {
     if (hasActive() && !force) { current = { ...current, state: 'active-matches' }; return; }
-    const cancel = await schedule({ root, ...prepared });
+    const cancel = await schedule({ root, port, ...prepared });
     current = { ...current, state: 'scheduled' };
     saveUpdateStatus(root, current);
     setTimeout(() => {
@@ -437,6 +443,7 @@ export function createReleaseUpdater({ root, log = console, onReady, hasActive =
     }, 2000).unref();
   }
   function check(more = false) {
+    if (current.state === 'recovery-required') return Promise.resolve(status());
     if (checking) return checking;
     if (BUSY.has(current.state) || prepared || (more && !hasMore)) return Promise.resolve(status());
     const nextPage = more ? page + 1 : 1;
@@ -483,6 +490,7 @@ export function createReleaseUpdater({ root, log = console, onReady, hasActive =
       } catch (e) { return { ...status(), error: e.message }; }
     },
     install({ force = false, tag, allowDowngrade = false, repairAssets = false } = {}) {
+      if (current.state === 'recovery-required') return { ...status(), error: '更新需要人工恢复，请按恢复说明操作后重新启动服务器。' };
       if (BUSY.has(current.state)) return status();
       if (!onReady) return { ...status(), error: '当前启动方式不支持自动重启' };
       const release = releases.find((r) => r.tag_name === tag);

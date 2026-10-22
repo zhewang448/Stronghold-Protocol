@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { capturePersonalData, encodePersonalData, decodePersonalData, restorePersonalData, validatePersonalData, personalKey,
   personalSummary, migrationOrigin, validMigrationMessage } from '../../public/js/ui/personalData.js';
 import { buildRecord, STATS_VERSION } from '../../public/js/ui/stats.js';
+import { BACKUP_REMINDER_KEY, backupDue, initializeReminder, isTemporaryHost, reminderState, updateReminder } from '../../public/js/ui/backupReminder.js';
 
 function storage(seed = {}) {
   const map = new Map(Object.entries(seed));
@@ -14,6 +15,24 @@ const envelope = (entries = {}, backdrop = null) => ({ app: 'stronghold-protocol
 const record = (seed) => buildRecord({ seed, victory: true, roundsPassed: 15, players: [
   { playerId: 'p1', name: '博士', alive: true, victory: true, roundsPassed: 15, stats: {}, trophies: 5 },
 ] }, { myId: 'p1', now: seed * 1000 });
+
+test('portable profile backups get a gentle reminder while temporary links get an immediate prompt', () => {
+  const now = Date.UTC(2026, 9, 21), local = storage({ 'sp.name': '博士' });
+  initializeReminder(local, now);
+  assert.equal(backupDue(local, 'example.test', now + 6 * 86400000), false);
+  assert.equal(backupDue(local, 'example.test', now + 7 * 86400000), true);
+  assert.equal(isTemporaryHost('fresh.trycloudflare.com'), true);
+  assert.equal(backupDue(local, 'fresh.trycloudflare.com', now), true);
+  updateReminder({ dismissedAt: now }, local, now);
+  assert.equal(backupDue(local, 'fresh.trycloudflare.com', now + 12 * 3600000), false);
+  assert.equal(backupDue(local, 'fresh.trycloudflare.com', now + 86400000), true);
+  updateReminder({ enabled: false }, local, now + 86400000);
+  assert.equal(backupDue(local, 'fresh.trycloudflare.com', now + 8 * 86400000), false);
+  updateReminder({ enabled: true, exportedAt: now + 8 * 86400000 }, local, now + 8 * 86400000);
+  assert.equal(backupDue(local, 'fresh.trycloudflare.com', now + 8 * 86400000), false);
+  assert.equal(reminderState(local, now).enabled, true);
+  assert.equal(BACKUP_REMINDER_KEY, 'sp.backup.reminder');
+});
 
 test('captures every personal namespace and backdrop, excludes sessions, grants and server keys', async () => {
   const ls = storage({ 'sp.name': '博士😀', 'sp.pref.settings': '{"textSize":1.2}', 'sp.pref.localAccount': '{"tag":"1234"}',

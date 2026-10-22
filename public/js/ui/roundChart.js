@@ -149,6 +149,7 @@ export function drawRoundChart(host, history, nameOf, state, options = {}) {
   content.append(wrap);
 
   const applyHighlight = () => {
+    legend.dataset.highlighted = String(!!state.highlight);
     for (const b of legend.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.player === state.highlight));
     for (const el of wrap.querySelectorAll('[data-series]')) {
       const selected = el.getAttribute('data-series') === state.highlight;

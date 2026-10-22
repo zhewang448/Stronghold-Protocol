@@ -15,9 +15,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
 import { SIGNATURE_ASSET, SUMS_ASSET, parseSignature, signSums, sumFor, verifySums } from '../server/release-signing.js';
+import { RELEASE_TAG } from '../server/release-version.js';
 
 export const keyPath = (env = process.env) => env.SP_RELEASE_KEY || path.join(os.homedir(), '.stronghold-release', 'release-ed25519.pem');
 
@@ -43,6 +45,12 @@ export async function sign(tag, dir, { file, keys } = {}) {
   const lines = [];
   for (const name of zips) lines.push(`${await hashFile(path.join(dir, name))}  ${name}`);
   const sums = `${lines.join('\n')}\n`;
+  // A signed artifact set is sealed. A changed package requires a new release revision.
+  const oldSums = path.join(dir, SUMS_ASSET), oldSignature = path.join(dir, SIGNATURE_ASSET);
+  if (fs.existsSync(oldSums) || fs.existsSync(oldSignature)) {
+    if (!fs.existsSync(oldSums) || !fs.existsSync(oldSignature) || fs.readFileSync(oldSums, 'utf8') !== sums) throw new Error('signed release is immutable; bump the extension revision instead of replacing its artifacts');
+    await verify(tag, dir, { keys }); return zips;
+  }
   const signature = signSums(tag, sums, crypto.createPrivateKey(fs.readFileSync(file)));
   if (!verifySums(tag, sums, parseSignature(signature), keys)) throw new Error('the signing key is not in RELEASE_PUBLIC_KEYS (server/release-signing.js)');
   fs.writeFileSync(path.join(dir, SUMS_ASSET), sums);
@@ -58,12 +66,24 @@ export async function verify(tag, dir, { keys } = {}) {
   return zips;
 }
 
+export function assertReleaseRevision(tag, { expected = RELEASE_TAG, root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'), run = spawnSync } = {}) {
+  if (tag !== expected) throw new Error('签名标签必须与 server/release-version.js 一致，请先递增扩展版本并同步发布说明。');
+  const dirty = run('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8', windowsHide: true });
+  if (dirty.status !== 0 || dirty.stdout.trim()) throw new Error('签名只能用于干净工作区中的正式版本；不要为未提交改动生成发布签名。');
+  const ref = run('git', ['rev-parse', '--verify', `refs/tags/${tag}^{commit}`], { cwd: root, encoding: 'utf8', windowsHide: true });
+  if (ref.status === 0) {
+    const head = run('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8', windowsHide: true });
+    if (head.status !== 0 || head.stdout.trim() !== ref.stdout.trim()) throw new Error('该扩展标签已对应其他程序内容，请递增版本，不能覆盖同版发布。');
+  }
+}
+
 async function main([command, tag, dir]) {
   if (command === 'keygen') {
     const file = keyPath();
     console.log(`private key: ${file} (back it up; never commit it)`);
     console.log(`public key for RELEASE_PUBLIC_KEYS: ${keygen(file)}`);
   } else if ((command === 'sign' || command === 'verify') && tag && dir) {
+    if (command === 'sign') assertReleaseRevision(tag);
     const zips = command === 'sign' ? await sign(tag, dir, { file: keyPath() }) : await verify(tag, dir);
     console.log(`${command === 'sign' ? 'signed' : 'verified'} ${tag}: ${zips.join(', ')}`);
   } else {

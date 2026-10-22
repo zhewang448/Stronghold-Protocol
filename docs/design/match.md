@@ -262,3 +262,8 @@ Experimental branch addition, maintainer authorized 2026-10-21: optional expande
 Expanded-coop compatibility review (2026-10-22): a Unite wave whose scheduled count exceeds the client result's 400-entry leak/unspawned limit runs on the existing sliced server path. Settlement retains all survivors; live and settled operator rankings accumulate all actual waves once, and a failed later wave's diagnostic leak list follows its planned input. Runtime Unite offspring remain excluded from billed leak diagnostics.
 
 Second expanded-coop review (2026-10-22): runtime Unite splits and summons never enter a later wave's scheduled escaped-enemy input. Only the original escaped enemies can continue through the group waves; this preserves §34.19's no-billing rule for runtime offspring. PREP recovery accepts alphanumeric room codes, writes prefixed filenames and migrates legacy filenames without leaving stale snapshots; the existing version-identity checks still apply (LOCAL-DEV §5).
+
+Main integration (2026-10-22, maintainer authorized): matches starting with at most four players retain the original
+boss pool and hidden-layer snapshot when someone quits mid-fight. Only larger starting rosters use the expanded
+mid-fight rescale and layer removal; the initial roster remains fixed even after eliminations. Single-group strategy
+skips still allow a later AI, offline or autoplay seat; only parallel groups require another manual human in that group.

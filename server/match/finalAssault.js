@@ -16,8 +16,9 @@
 //     @qingjingshenghuo, which replaces the fixed pool of 「保持固定血量」 (config bossHpScale perPlayer false / solo 0.25
 //     restores it); × the tuning bossHpMul when data/tuning.json still has one (docs/BALANCE.md); bosses are never scaled
 //     by enemyScale and their parts / escorts keep their own HP.
-//     This fork extends the count to 20 and rescales the pool when a player leaves mid-fight, preserving its remaining
-//     HP percentage (docs/development/DECISIONS.md D009); disconnecting or enabling autoplay does not remove a seat.
+//     This fork extends the count to 20. Matches starting above four seats rescale the pool when a player leaves
+//     mid-fight, preserving its remaining HP percentage; four-seat matches retain their start-of-fight pool.
+//     Disconnecting or enabling autoplay does not remove a seat.
 //   * Overtime: bossTurnHpReduceTime counts REAL seconds like the level's 120 s maxPlayTime (which runs out first; the
 //     battle goes on): from 150 real s (300 game s on the 2× field clock) the team loses bossOvertimeDrainPerSec (1) LP
 //     per real second (gamedata.js bossOvertimeDue); m.public.deadline = the 120 s countdown, m.public.overtimeAt = the

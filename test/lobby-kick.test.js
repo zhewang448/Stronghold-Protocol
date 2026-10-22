@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { startServer } from '../server/index.js';
 import { StubMatch } from '../server/match/StubMatch.js';
 import { TestClient } from './helpers/wsClient.js';
-import { ERR } from '../shared/constants.js';
+import { ERR, MAX_SEATS } from '../shared/constants.js';
 import { validateC2S } from '../shared/protocol.js';
 
 function clientPool(getUrl) {
@@ -61,7 +61,8 @@ describe('room.kick (lobby)', () => {
   test('protocol: room.kick {seat, playerId} — a seat index and the confirmed player', () => {
     assert.equal(validateC2S({ t: 'room.kick', seat: 1, playerId: 'p_0123456789' }), null);
     assert.notEqual(validateC2S({ t: 'room.kick', seat: 1 }), null, 'the player is required');
-    assert.notEqual(validateC2S({ t: 'room.kick', seat: 9, playerId: 'p_0123456789' }), null);
+    assert.equal(validateC2S({ t: 'room.kick', seat: MAX_SEATS - 1, playerId: 'p_0123456789' }), null);
+    assert.notEqual(validateC2S({ t: 'room.kick', seat: MAX_SEATS, playerId: 'p_0123456789' }), null);
     assert.notEqual(validateC2S({ t: 'room.kick', seat: 1, playerId: '' }), null);
     assert.notEqual(validateC2S({ t: 'room.kick' }), null);
   });

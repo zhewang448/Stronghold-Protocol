@@ -25,6 +25,15 @@ test('--scripts sets SP_PLUGIN_SCRIPTS for the server; off removes an inherited 
   assert.deepEqual([env.PORT, env.SP_PLUGIN_SCRIPTS], ['3001', 'trusted-force']);
 });
 
+test('public start delegates Node bootstrapping, and stop never kills port owners', () => {
+  const tunnelBat = readFileSync(path.join(ROOT, 'scripts/start-tunnel.bat'), 'utf8');
+  assert.match(tunnelBat, /call "%~dp0start-windows\.bat" --tunnel/);
+  assert.ok(!/free-port|taskkill|Get-NetTCPConnection/i.test(readFileSync(path.join(ROOT, 'scripts/start-tunnel.mjs'), 'utf8')));
+  const free = readFileSync(path.join(ROOT, 'scripts/free-port.mjs'), 'utf8');
+  assert.ok(!/taskkill|spawnSync|Get-CimInstance|findProcesses/i.test(free));
+  assert.match(free, /stopInstance/);
+});
+
 test('--test-mode sets SP_TEST_MODE; off removes an inherited one; no flag keeps it', () => {
   assert.deepEqual([...TEST_MODE_FLAGS], ['off', '1', 'force']);
   for (const argv of [['--test-mode', '1'], ['--test-mode=force']]) {

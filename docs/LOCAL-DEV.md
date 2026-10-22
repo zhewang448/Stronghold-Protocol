@@ -4,7 +4,7 @@
 
 ## 1. 仓库与分支
 
-个人数据迁移（2026-10-19，未发布）：`public/js/ui/personalData.js` 为纯数据校验/编码/回滚模块，
+个人数据迁移（2026-10-19）：`public/js/ui/personalData.js` 为纯数据校验/编码/回滚模块，
 `personalDataPanel.js` 负责公共弹窗与旧站授权窗口。大厅入口紧接统计数据，标题页也可打开。
 迁移不需要账号后端或 CORS；新旧域名都要提供本版前端，旧域名不能只做 301/302 跳转。
 用户在新站填旧网址，在旧站确认目标 origin 并允许，新站核对摘要后确认恢复并刷新。
@@ -25,7 +25,7 @@
 - 合并上游新版本时从 `main` 开功能分支，完成适配与测试后再合并回 `main`。
 - 同步上游：`git fetch upstream` → `git merge upstream/master` → `npm install` → `npm run setup`（上游常会加素材）→ `node --test`。
 - 素材 `public/assets/`、`.cache/`、`.claude/` 都在 `.gitignore` 里，不进仓库。新机器 clone 后要先 `npm install && npm run setup`。
-- 当前版本为 `v0.3.1-extended.6`（正式版），基于上游 `v0.3.1`（`b3deebda`）。上一正式版为 `v0.3.1-extended.5`。本版新增在线玩家名单、状态与隐身、房间邀请及控制台管理，房间联防叠层权限和公告草稿、模板与 Markdown 预览。完整包包含 11 个官方战场场景（提取版本 4）、官方 FX、多语言语音、174 套皮肤和海报素材；lite 需保留或另行安装素材，发布预检使用 `--require-local-art`。
+- 当前版本为 `v0.3.1-extended.7`，基于上游 `v0.3.1`（`b3deebda`）。上一正式版为 `v0.3.1-extended.6`。本轮新增安全启动、保留隧道的重启、启动健康验证、受保护的恢复备份和个人数据提醒。完整包仍需包含 11 个官方战场场景（提取版本 4）、官方 FX、多语言语音、174 套皮肤和海报素材；lite 需保留或另行安装素材，发布预检使用 `--require-local-art`。
 
 当前源码已整合上游 `v0.3.1`（`b3deebda`）；`package.json` / APP_VERSION 为基础版本 0.3.1；`server/release-version.js` 单独记录扩展标签。发布附件与公开状态以 Releases 为准。
 
@@ -81,8 +81,9 @@ Ctrl / ⌘ 点击、中键及浏览器菜单仍可另开页面。预览无法复
 
 | 文件 | 作用 |
 |---|---|
-| `scripts/start-tunnel.bat` / `.mjs` | 一键开服 + cloudflared 公网隧道，列出地址，持续输出日志。详见 [scripts/README.md](../scripts/README.md) |
-| `scripts/stop-server.bat` / `free-port.mjs` | 释放游戏端口（结束服务器和指向它的隧道），仅 Windows |
+| `scripts/start-tunnel.bat` / `.mjs` | 经共用启动准备建立服务器和 cloudflared；受管服务器重启时保留本启动器创建的隧道。Windows 双击会检查 Node、依赖及素材 |
+| `scripts/host-runtime.mjs`、`server/instance.js` | 每端口启动 / 隧道租约、异常重启上限和本安装的回环令牌实例记录；绝不按端口强杀其他进程 |
+| `scripts/stop-server.bat` / `free-port.mjs` | 只有令牌与 PID 都确认本安装实例时才请求优雅停止；结束活动对局需明确确认 |
 | `server/admin.js` / `admin.html` | 本机主机控制台（HTTP API + 单页界面） |
 | `server/service-control.js` | 直接启动模式的脱离窗口重启助手，等旧进程退出后再启动，日志在 `logs/service-restart.log` |
 | `server/match/replay.js`、`server/replay-store.js` | 战斗输入与已采纳结果录制、gzip 保存、指纹和记录清理 |
@@ -369,7 +370,11 @@ LOBBY → INFO_CHECK → BAND_DRAFT → BATTLE_CHECK
 
 更新只访问 `zhewang448/Stronghold-Protocol` 的正式 Release；只有 lite 时显示不可安装，不接受源码包。升级优先使用同时带校验清单与 Ed25519 签名的 `*-update.zip`，回退旧版本和同版修复始终使用 assets 完整包。先验证发布签名及 ZIP SHA-256，再检查 `UPDATE.json` 的 `from`、可选 `fromTags` / 目标 `tag`、文件数量与字节数，以及完整程序 `MANIFEST.json` 和必需的目标素材哈希 `art`。未变化的程序逐项与目标哈希比较后复制到暂存区，变化程序及素材来自已验签增量包；缺失或损坏的本地文件、旧式增量清单、下载或校验错误均触发同 Release 完整包回退，完整包仍独立验证签名与哈希。控制台显示预选包、实际包、下载大小和回退原因；不会因增量失败改用未签名校验。
 
-`release-art.js` 将已认证的完整目标素材哈希记入内部暂存清单 `RELEASE-ART.json`，安装前后校验全部目标素材及三份素材清单的引用。变化的程序、素材和素材清单一起备份、替换与回滚；额外本机素材不删除。原服务下载期间继续运行；安装器握手成功才安排优雅停服。替换前备份到 `logs/update-backups/`，复制失败恢复旧文件；恢复失败保留安装锁、阻止重启并提示备份路径。日志在 `logs/release-update-status.json`，直接重启的输出在 `logs/release-restart.log`。回退保留原有设置和记录，不进行数据格式逆迁移。
+`release-art.js` 将已认证的完整目标素材哈希记入内部暂存清单 `RELEASE-ART.json`，安装前后校验全部目标素材及三份素材清单的引用。下载、暂存解压容量和安装备份空间都在对应写入前预检。变化的程序、素材和素材清单一起备份、替换与回滚；额外本机素材不删除。停服前等安装助手握手成功；新版本在回环隔离子进程校验健康接口、build、HTML、主模块和 WebSocket ping，并关闭插件脚本、PREP 恢复、控制台及数据写入。兼容只读探测协议的候选失败时，在释放安装锁前校验并恢复原程序和版本标记；旧版本先在隔离暂存目录验证，不对用户目录运行旧引导程序。
+
+正式进程对外启动失败与只读探测失败区分处理：正式版本可能已触及主机设置或运行态，只标记 `recovery-required`，保留锁、备份和诊断状态，不自动覆写运行中的程序或数据。独立于游戏服务器的离线工具 `node scripts/recover-release.mjs --backup release-<id> --port <游戏端口> --confirm` 只在端口空闲、备份内容逐文件验证且恢复目标与记录一致时恢复；先后回退，不能把不同时间点的反向补丁当成独立完整快照。
+
+控制台「维护与扩展 → 更新备份与空间」显示占用，默认保留最近 2 个验证通过的更新前恢复点，可设 1–20 个；最新已验证恢复点、进行中的事务以及需要恢复 / 检查的备份不可自动清除。日志和状态在 `logs/release-update-status.json` 与 `logs/release-restart.log`；正式启动在验证完成前不会显示“已安装”。回退保留主机原有设置和记录，不做格式逆迁移。
 
 解压、与本机素材逐文件比较及暂存校验由 `release-stage-worker.js` 工作线程执行，不占用服务主线程；线程退出后才允许安装或清理暂存目录。停服后的安装器仍会重新校验素材，发现期间被修改的文件时拒绝安装。
 

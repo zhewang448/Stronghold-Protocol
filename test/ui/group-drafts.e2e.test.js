@@ -16,6 +16,32 @@ describe('twenty-player group choices on landscape touch phones', { skip: !enabl
   });
   after(async () => { await browser?.close(); await srv?.close(); });
 
+  test('one human and an AI retain the single-group skip button and original hint', async () => {
+    const page = await browser.newPage();
+    try {
+      await page.goto(`http://127.0.0.1:${srv.port}/dev/game-mock.html?shot=1&render=fallback&phase=BAND_DRAFT`, { waitUntil: 'networkidle0', timeout: 60000 });
+      await page.waitForFunction(() => !!globalThis.__MOCK__);
+      await page.evaluate(async () => {
+        const M = globalThis.__MOCK__, s = M.S();
+        s.pub.players = s.pub.players.filter(p => ['p1', 'ai_2'].includes(p.playerId));
+        s.pub.poolGroups = [{ id: 1, playerIds: ['p1', 'ai_2'] }];
+        s.pub.draft = { order: ['p1', 'ai_2'], turn: 'p1', picks: {}, skipsLeft: { p1: 1 } };
+        M.pushPublic();
+        const [{ render }, { html }, { BandDraftScreen }] = await Promise.all([
+          import('/vendor/preact.module.js'), import('/js/ui/components.js'), import('/js/screens/bandDraft.js'),
+        ]);
+        render(html`<${BandDraftScreen} />`, document.querySelector('#app'));
+      });
+      const selector = '.draft-detail__btns button:not(.btn--primary)';
+      await page.waitForSelector(selector);
+      assert.equal(await page.$eval(selector, e => e.disabled), false, 'an AI still counts as a later single-group picker');
+      assert.equal(await page.$eval(selector, e => e.title), '跳过本轮，稍后再选');
+      await page.click(selector);
+      await page.waitForFunction(() => globalThis.__MOCK__.S().pub.draft.turn === 'ai_2');
+      assert.equal(await page.$eval(selector, e => e.disabled), true, 'the one skip is consumed');
+    } finally { await page.close(); }
+  });
+
   for (const [width, height] of [[844, 390], [640, 360]]) test(`${width}×${height}: five groups, six cards, foreign page read-only and return by touch`, async () => {
     const page = await browser.newPage(), errors = [];
     page.on('pageerror', (e) => errors.push(e.message));

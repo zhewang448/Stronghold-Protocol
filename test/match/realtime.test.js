@@ -71,7 +71,8 @@ async function driveLoop(c, { skipOnce = false, until, stats }) {
       done.add('info');
       assert.equal((await c.request({ t: 'g.infoReady' })).t, 'ok');
     } else if (pub.phase === 'BAND_DRAFT' && pub.draft && pub.draft.turn === c.id) {
-      const key = `band:${pub.draft.order.join()}`;
+      // Two consecutive skips can restore the same order; the remaining allowance identifies the returned turn.
+      const key = `band:${pub.draft.id || ''}:${pub.draft.skipsLeft?.[c.id] ?? 1}:${Object.keys(pub.draft.picks || {}).length}`;
       if (done.has(key)) continue;
       done.add(key);
       const last = pub.draft.order.indexOf(c.id) === pub.draft.order.length - 1;
@@ -83,7 +84,10 @@ async function driveLoop(c, { skipOnce = false, until, stats }) {
         else assert.ok(['NOT_YOUR_TURN', 'ALREADY'].includes(r.code), `bandSkip: ${JSON.stringify(r)}`);
         stats.skipTries++;
       } else {
-        const r = await c.request({ t: 'g.band', bandId: 'band_bldsk' });
+        const taken = new Set(Object.values(pub.draft.picks || {}));
+        const band = Object.values(getData().bands).find(b => (!Array.isArray(b.modeTypeList) || b.modeTypeList.includes('MULTI')) && !taken.has(b.bandId));
+        assert.ok(band, 'a strategy remains available');
+        const r = await c.request({ t: 'g.band', bandId: band.bandId });
         if (r.t === 'ok') stats.bands++;
         else stats.bandTimeouts++;
       }

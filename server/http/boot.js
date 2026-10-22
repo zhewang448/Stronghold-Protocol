@@ -22,6 +22,7 @@ import { ROOT } from './config.js';
 import { startAdmin, loadSettings } from '../admin.js';
 import { updatePaths } from '../release-update.js';
 import { prepareRestart } from '../service-control.js';
+import { recordInstance } from '../instance.js';
 
 /**
  * Non-internal addresses as http URLs — IPv4 first, then IPv6 (an IPv6 literal needs brackets: `http://[240e:…]:3000`).
@@ -91,8 +92,26 @@ export function printBanner(srv) {
  * @param {(options?: object) => Promise<{ url: string, host: string, port: number, close: () => Promise<void> }>} start index.js startServer
  */
 export async function runMain(start) {
+  // Installation validation never loads settings, resumes games, runs extensions, or exposes a public listener.
+  if (process.env.SP_UPDATE_PROBE) {
+    const nonce = process.env.SP_UPDATE_PROBE;
+    const srv = await start({ host: '127.0.0.1', port: 0, recovery: false, studio: false, assetIndex: false });
+    let closing = false;
+    const stop = async () => { if (closing) return; closing = true; await srv.close(); process.exit(0); };
+    const timer = setTimeout(() => { void stop(); }, 45000); timer.unref();
+    process.on('message', (m) => { if (m?.t === 'sp.probe.stop' && m.nonce === nonce) void stop(); });
+    process.on('disconnect', () => { void stop(); });
+    process.send?.({ t: 'sp.updateProbe', nonce, pid: process.pid, port: srv.port });
+    return;
+  }
   // A service supervisor may restart while the detached installer is still copying. Load fresh code only afterward.
   const lock = updatePaths(ROOT).lock;
+  try {
+    const status = JSON.parse(fs.readFileSync(updatePaths(ROOT).status, 'utf8'));
+    if (status.state === 'recovery-required') {
+      console.error('[update] 请先关闭启动窗口及外部守护器，完成离线恢复后再启动。'); process.exitCode = 1; return;
+    }
+  } catch { /* no outstanding recovery */ }
   if (fs.existsSync(lock)) {
     console.log('[update] 等待安装器完成，请稍候…');
     for (let i = 0; i < 1200 && fs.existsSync(lock); i++) await new Promise((r) => setTimeout(r, 100));
@@ -118,10 +137,14 @@ export async function runMain(start) {
   printBanner(srv);
   // the host's local console (server/admin.js): 127.0.0.1 only, never part of what the LAN / tunnel can reach
   let admin = null;
+  let removeInstance = () => {};
   let stopping = false;
+  const notify = (action) => { if (process.connected) process.send?.({ t: 'sp.lifecycle', action, pid: process.pid }, () => {}); };
   const stop = (signal, code = 0) => {
     if (stopping) { console.log('forced exit'); process.exit(1); }
     stopping = true;
+    notify(signal === 'UPDATE' ? 'update' : signal === 'RESTART' ? 'restart' : 'shutdown');
+    removeInstance();
     console.log(`\n[${signal}] shutting down…`);
     setTimeout(() => process.exit(code), 5000).unref();
     if (admin) admin.close();
@@ -142,8 +165,9 @@ export async function runMain(start) {
             return { cancel, run: () => stop(action.toUpperCase(), supervised ? (action === 'shutdown' ? 75 : 1) : 0) };
           },
         },
-        onUpdateReady: () => stop('UPDATE') });
+        updateOptions: { port: srv.port }, onUpdateReady: () => stop('UPDATE') });
       console.log(`  Console: ${admin.url}  (本机控制台)\n`);
+      removeInstance = recordInstance(ROOT, { port: srv.port, adminPort: admin.port, token: admin.token });
     } catch (e) {
       console.warn(`  Console: 未启动（${e.code || e.message}）\n`);
     }
@@ -151,4 +175,5 @@ export async function runMain(start) {
 
   process.on('SIGINT', () => stop('SIGINT'));
   process.on('SIGTERM', () => stop('SIGTERM'));
+  notify('ready');
 }

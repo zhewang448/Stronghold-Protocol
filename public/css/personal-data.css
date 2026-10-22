@@ -10,6 +10,8 @@
 .personal-data-panel section { display: flex; flex-direction: column; align-items: stretch; gap: .12rem; padding-top: .18rem; border-top: 1px solid var(--line); }
 .personal-data-panel h3 { margin: 0; color: var(--text-hi); font-size: max(15px, calc(.2 * var(--t))); }
 .personal-data-actions { display: flex; flex-wrap: wrap; gap: .1rem; }
+.personal-data-reminder { padding: .28rem; border-top: 1px solid var(--line); color: var(--text); font-size: max(12px, calc(.15 * var(--t))); line-height: 1.45; }
+.personal-data-reminder p { margin: 0 0 .12rem; overflow-wrap: anywhere; }
 .personal-data-panel textarea { width: 100%; min-height: max(70px, 1rem); max-height: 2rem; resize: vertical; padding: .12rem; background: var(--bg-0); color: var(--text-hi); border: 1px solid var(--line-3); font: inherit; font-size: max(14px, calc(.16 * var(--t))); overflow-wrap: anywhere; caret-color: var(--mint-400); }
 .personal-data-panel textarea:focus-visible { outline: 2px solid var(--mint-400); outline-offset: 2px; }
 .personal-data-panel textarea::placeholder { color: var(--text-md); opacity: 1; }

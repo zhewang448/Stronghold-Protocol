@@ -217,7 +217,7 @@ export function BandDraftScreen() {
   const myTurn = !myPick && (solo || draft.turnPid === myId);
   const skipsLeft = draft.skipsLeft.has(myId) ? draft.skipsLeft.get(myId) : (skipped ? 0 : 1);
   const manualTeammateAfter = hasManualTeammateAfter(draft, players, myId);
-  const canSkip = !solo && myTurn && skipsLeft > 0 && manualTeammateAfter;
+  const canSkip = !solo && myTurn && skipsLeft > 0 && (grouped ? manualTeammateAfter : draft.order.filter((pid) => !draft.picks.has(pid)).length > 1);
   const taken = solo ? new Map() : teammateBands(draft.picks, myId);
   const pickers = new Map(); // bandId → players
   for (const [pid, bid] of draft.picks) {
@@ -381,7 +381,7 @@ export function BandDraftScreen() {
             : !myTurn ? html`<p class="draft-detail__status"><${Icon} name="hourglass" />${turnName ? t('{turnName} 正在决策…', { turnName }) : t('等待轮到你')}</p>` : null}
           <div class="draft-detail__btns">
             ${!solo ? html`<${Button} variant="secondary" size="lg" icon="chevrons" disabled=${!canSkip} loading=${busy === 'skip'} onClick=${skip}
-              title=${skipsLeft <= 0 ? t('跳过次数已用完') : manualTeammateAfter ? t('让其他手动玩家先选，稍后再选') : t('没有其他待选的手动玩家')}>${t('跳过')}${skipsLeft > 0 ? '' : t('（已用）')}<//>` : null}
+              title=${skipsLeft <= 0 ? t('跳过次数已用完') : !grouped ? t('跳过本轮，稍后再选') : manualTeammateAfter ? t('让其他手动玩家先选，稍后再选') : t('没有其他待选的手动玩家')}>${t('跳过')}${skipsLeft > 0 ? '' : t('（已用）')}<//>` : null}
             <${Button} variant="primary" size="lg" icon="check" disabled=${!myTurn || !band || selTaken} loading=${busy === 'pick'} onClick=${confirm}>${selTaken ? t('队友已选') : t('确认选择')}<//>
           </div>
         </div>

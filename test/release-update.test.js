@@ -8,6 +8,8 @@ import { spawn } from 'node:child_process';
 import http from 'node:http';
 import net from 'node:net';
 import { RELEASE_TAG } from '../server/release-version.js';
+import { healthServerSource } from './helpers/release-fixture.js';
+import { sign as signReleaseDirectory, assertReleaseRevision } from '../tools/release-sign.mjs';
 import { APP_VERSION } from '../shared/constants.js';
 import { createReleaseUpdater, compareReleaseTags, installedTag, installedIdentity, normalizeUpdateNetwork, createUpdateRequest, pickReleaseAsset, pickReleaseUpdateAsset, downloadAndStage, stageZip, stageUpdateZip, scheduleInstall, updatePaths } from '../server/release-update.js';
 import { freePort } from './e2e/client.mjs';
@@ -15,6 +17,24 @@ import { applyReleaseStage } from '../server/release-install.js';
 import { archive, storedZip, releaseFor, files, manifest, put, read, tag, sha, signRelease, tick, until } from './helpers/release-fixture.js';
 const temp = (t) => { const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-release-')); t.after(() => fs.rmSync(root, { recursive: true, force: true })); put(root, 'package.json', JSON.stringify({ version: APP_VERSION })); return root; };
 const fetchRelease = async () => new Response(JSON.stringify([releaseFor()]));
+
+test('signing refuses dirty worktrees, changed tags, and changed artifacts under a signed release tag', async (t) => {
+  const expected = 'v0.3.1-extended.7', root = 'unused';
+  assert.throws(() => assertReleaseRevision('v0.3.1-extended.6', { expected, root, run: () => assert.fail('wrong tag stops first') }), /递增/);
+  assert.throws(() => assertReleaseRevision(expected, { expected, root, run: (_bin, args) => args[0] === 'status'
+    ? { status: 0, stdout: ' M server/file.js\n' } : { status: 1, stdout: '' } }), /干净工作区/);
+  assert.throws(() => assertReleaseRevision(expected, { expected, root, run: (_bin, args) => args[0] === 'status'
+    ? { status: 0, stdout: '' } : args[2]?.includes('refs/tags/') ? { status: 0, stdout: 'old-commit\n' } : { status: 0, stdout: 'new-commit\n' } }), /不能覆盖同版/);
+  assert.doesNotThrow(() => assertReleaseRevision(expected, { expected, root, run: (_bin, args) => args[0] === 'status'
+    ? { status: 0, stdout: '' } : { status: 1, stdout: '' } }));
+  const dir = temp(t), key = path.join(dir, 'key.pem'), zip = path.join(dir, `Stronghold-Protocol-${tag}-assets.zip`);
+  const pair = crypto.generateKeyPairSync('ed25519'), keys = [pair.publicKey.export({ format: 'der', type: 'spki' }).toString('base64')];
+  fs.writeFileSync(key, pair.privateKey.export({ format: 'pem', type: 'pkcs8' })); fs.writeFileSync(zip, 'first');
+  await signReleaseDirectory(tag, dir, { file: key, keys });
+  const signed = read(dir, 'SHA256SUMS.txt'); await signReleaseDirectory(tag, dir, { file: key, keys }); assert.equal(read(dir, 'SHA256SUMS.txt'), signed);
+  fs.writeFileSync(zip, 'second');
+  await assert.rejects(signReleaseDirectory(tag, dir, { file: key, keys }), /immutable/);
+});
 
 test('first console open checks once per server launch, concurrent check shares request and only first opener is notified', async (t) => {
   const root = temp(t); let calls = 0, finish;
@@ -318,10 +338,10 @@ test('failed replacement rolls back every touched file and rejects junction dest
   assert.equal(fs.existsSync(updatePaths(root).lock), false);
 });
 
-test('detached installer waits for the old PID, replaces files, records extension tag and restarts a temporary server', { timeout: 20000 }, async (t) => {
+test('detached installer waits for the old PID, replaces files, records extension tag and restarts a temporary server', { timeout: 60000 }, async (t) => {
   const root = temp(t), stage = path.join(root, 'logs', 'update-staging', 'integration', 'Stronghold-Protocol');
   const port = await freePort();
-  const index = `import http from 'node:http'; http.createServer((_q, r) => r.end(JSON.stringify({pid:process.pid}))).listen(${port}, '127.0.0.1');`;
+  const index = healthServerSource(port);
   const content = { 'package.json': files['package.json'], 'server/index.js': index };
   for (const [rel, body] of Object.entries(content)) put(stage, rel, body);
   put(stage, 'MANIFEST.json', manifest(content));
@@ -332,13 +352,16 @@ test('detached installer waits for the old PID, replaces files, records extensio
   t.after(() => { if (old.exitCode === null) old.kill(); if (newPid) { try { process.kill(newPid); } catch {} } });
   const before = process.env.SP_UPDATE_RESTART;
   delete process.env.SP_UPDATE_RESTART;
-  try { await scheduleInstall({ root, stage, tag, parentPid: old.pid }); }
+  try { await scheduleInstall({ root, stage, tag, parentPid: old.pid, port }); }
   finally { if (before !== undefined) process.env.SP_UPDATE_RESTART = before; }
   assert.equal(read(root, 'server/index.js'), '// old', 'no copying while old process lives');
   assert.ok(fs.existsSync(updatePaths(root).lock));
   old.kill();
-  for (let i = 0; i < 100; i++) {
-    try { newPid = (await (await fetch(`http://127.0.0.1:${port}`)).json()).pid; break; } catch { await new Promise((r) => setTimeout(r, 100)); }
+  for (let i = 0; i < 450; i++) {
+    try {
+      if (JSON.parse(read(root, 'logs/release-update-status.json')).state !== 'installed') throw new Error('waiting for health validation');
+      newPid = (await (await fetch(`http://127.0.0.1:${port}/healthz`)).json()).pid; break;
+    } catch { await new Promise((r) => setTimeout(r, 100)); }
   }
   assert.ok(newPid, 'replacement server starts');
   assert.equal(read(root, 'server/index.js'), index);
