@@ -171,6 +171,7 @@ import { RoomChat, cleanChatText, getChatSettings } from './chat.js';
 import { getData as defaultGetData, lookup } from './data.js';
 import { Match as DefaultMatch } from './match/Match.js';
 import { getUniteLayerGains, getAllowRoomUniteLayerGains, getSocialSettings } from './match/hostSettings.js';
+import { getShowPwaInstall } from './match/hostSettings.js';
 import { ServerSocial } from './social.js';
 import { KITTED_CHARS } from './sim/content/kits/index.js';
 import { SiteAnnouncements } from './announcements.js';
@@ -1447,6 +1448,8 @@ export class Lobby {
     }
     // Omitted when the switch is off, so a welcome from a normal server stays identical.
     if (this.testEnabled === true) info.testMode = true;
+    // Default-on is omitted for compatibility with older servers and clients.
+    if (!getShowPwaInstall()) info.showPwaInstall = false;
     return info;
   }
 

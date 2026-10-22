@@ -59,6 +59,7 @@ import { ResourceHost } from './ui/resourcePanel.js';
 import { syncResources, unsupportedReason } from './resources/index.js';
 import { GuideHost } from './ui/guide.js';
 import { installDeviceSupport } from './ui/device.js';
+import { pwaInstall } from './pwa.js';
 import { registerImportedAssetWorker } from './assetCache.js';
 import { LoadoutHost } from './screens/loadout.js';
 import { StatsHost } from './screens/stats.js';
@@ -68,7 +69,7 @@ import { recordResult, installStatsRecorder } from './ui/stats.js';
 import { installLoadoutSync, installOwnershipSync, installDiySync, installSkinsSync } from './ui/loadoutSync.js';
 import { installBondPlanSync } from './ui/bondPlan.js';
 
-import { startBuildGuard } from './ui/buildGuard.js';
+import { startBuildGuard, fetchBuild } from './ui/buildGuard.js';
 import { initLang, useLang, tickerText } from './ui/lang.js';
 import { t, N_, translateWire } from '../../shared/i18n.js';
 import { PING_KEEP } from '../../shared/constants.js';
@@ -170,6 +171,7 @@ function backToLobby() {
 const pluginCount = (content) => (content && Number.isInteger(content.plugins) && content.plugins > 0 ? content.plugins : 0);
 
 function onWelcome(msg) {
+  pwaInstall.setEnabled(msg.showPwaInstall !== false);
   identity.saveToken(msg.token);
   identity.rememberMatch(null);
   const prev = store.get();
@@ -257,6 +259,7 @@ function wireNet() {
   net.on('unhandledError', (err) => toastError(err));
   net.on('room.state', onRoomState);
   net.on('site.announcement', (message) => store.set({ announcement: announcementFromMessage(message) }));
+  net.on('site.settings', (message) => pwaInstall.setEnabled(message.showPwaInstall));
   net.on('room.closed', (msg) => {
     backToLobby();
     const known = Object.hasOwn(CLOSE_REASON, String(msg.reason)) ? CLOSE_REASON[msg.reason] : null;
@@ -404,6 +407,9 @@ function installGlobalErrorHandlers() {
 }
 
 async function boot() {
+  const installPolicyReady = fetchBuild((...args) => fetch(...args), {
+    onHealth: h => pwaInstall.setEnabled(h.siteSettings?.showPwaInstall),
+  });
   installChatSync({ net, store });
   installGlobalErrorHandlers();
   // what this page downloads, by category, for the 问题反馈 report's traffic line (diag.js; nothing is sent anywhere)
@@ -466,7 +472,7 @@ async function boot() {
   });
   // the language (and its UI translations) before the first render: no Chinese flash for an English player
   const langReady = initLang().catch((err) => console.warn('[app] language setup failed', err));
-  await Promise.all([waitForFonts(1200), connectWhenReady, langReady]);
+  await Promise.all([waitForFonts(1200), connectWhenReady, langReady, installPolicyReady]);
   const root = document.getElementById('app');
   render(html`<${App} />`, root);
 
@@ -487,6 +493,7 @@ async function boot() {
       onStale: ({ waiting }) => { if (waiting) store.patch('ui', { buildStale: true }); },
       // the same /healthz names how many plugins the server has: the title screen shows it before any hello
       onHealth: (h) => {
+        pwaInstall.setEnabled(h.siteSettings?.showPwaInstall);
         const n = pluginCount(h.content), notices = h.content?.notices === true;
         if (n !== store.get().installedPlugins || notices !== store.get().installedNotices) store.set({ installedPlugins: n, installedNotices: notices });
       },

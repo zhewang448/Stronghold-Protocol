@@ -578,9 +578,19 @@ logos, icons or fonts.
 only the mark to 87.5%, keeping every foreground pixel inside the central circle of radius 40% of the canvas.
 The same master supplies 16/32/48 px PNG / ICO favicons and the 180 px Apple touch icon linked from `index.html`.
 These project-owned assets live in `public/icons/` and ship in full and lite packages; ASSETS.md records their provenance.
-The install button appears only for a live browser install offer and hides
-in standalone/fullscreen windows or after installation. Every offer is consumed before awaiting the prompt, including
-cancellation or failure. The install button does not register a service worker and does not make the server available
+The install entry stays visible on the title screen and lobby before installation, including when the browser has
+not issued an install offer, unless the host disables `showPwaInstall` in the local console. The host switch defaults
+to true and hides the title, lobby and rotation-hint entries together; it does not uninstall apps or disable the
+browser's own install menu. A live offer opens the browser prompt directly; otherwise the existing dialog host shows
+manual desktop/mobile browser instructions and explains that installation still connects to the current server.
+Insecure contexts explain that public HTTPS needs a browser-trusted certificate matching the hostname, while
+localhost/127.0.0.1 work locally. The fallback also calls out certificate warnings and the fact that encrypted FRP
+tunnels alone do not establish browser trust; the page does not claim to inspect the TLS certificate itself.
+Standalone/fullscreen windows and the
+`appinstalled` event hide the entry, even without a prior offer. While a prompt or guide is open, its button is disabled.
+Every offer is consumed before awaiting the prompt, including cancellation or failure; dismissal keeps the manual
+entry available. The rotation overlay retains its native-offer-only button so manual guidance cannot open beneath it.
+The install button does not register a service worker and does not make the server available
 offline. A separate asset-only worker (`public/sw.js`) may be registered on HTTPS or localhost to serve imported
 hashed art from Cache Storage; it does not intercept the page, scripts, `/data/`, `/sim/` or `/ws`. HTTPS or
 localhost and browser support still govern installation.

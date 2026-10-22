@@ -1224,6 +1224,11 @@ async function showSettings() {
       <p class="meta">更新前会预估暂存和备份空间；每个恢复点校验程序及素材。按最新版本的安装顺序回退。更新出错时不会自动清理正在恢复的备份。</p>
       <div id="update-backups-content" role="status" aria-live="polite">正在读取更新备份…</div>
     </section>
+    <section class="room" id="pwa-install-settings"><h2>桌面安装入口</h2>
+      <p class="meta" id="pwa-install-help">默认显示首页、大厅和横屏提示中的「添加到桌面」按钮。关闭只隐藏游戏内入口，不会卸载已安装的应用，也不影响浏览器自带的安装菜单。原生安装仍需浏览器支持及有效的 HTTPS 证书或本机地址。</p>
+      <form id="pwa-install-form" onsubmit="return false"><label><input id="pwa-install-visible" type="checkbox" aria-describedby="pwa-install-help" ${d.showPwaInstall !== false ? 'checked' : ''}> 显示「添加到桌面」按钮</label>
+      <div class="row"><button type="button" class="primary" data-pwa-install-save>保存</button><button type="button" data-pwa-install-reset>撤销修改</button><span id="pwa-install-saved" class="meta" role="status"></span></div></form>
+    </section>
     <section class="room" id="plugin-settings"><h2>插件管理</h2><p>在插件工作台安装、启停、编辑和导出插件。</p><a class="replay-link" href="/studio" target="_blank" rel="noopener noreferrer">打开插件工作台 ↗</a><p class="meta">仅本机可通过此入口获取工作台权限；工作台关闭时会显示原因。</p></section>
     <section class="room" id="issue-feedback"><h2>问题反馈与功能建议</h2><p>欢迎反馈使用中遇到的问题，或提出新的功能拓展建议，帮助项目持续改进。</p><a class="replay-link" href="https://github.com/zhewang448/Stronghold-Protocol/issues" target="_blank" rel="noopener noreferrer">前往 GitHub Issues ↗</a><p class="meta">提交问题时，欢迎附上复现步骤、运行方式与相关日志。</p></section>
     <section class="room" id="replay-settings"><h2>整局回放</h2>
@@ -1330,7 +1335,7 @@ function arrangeSettings() {
     ['game', '对局设置', ['prep-settings', 'unite-settings', 'round-charts-settings']],
     ['chat', '交流管理', ['social-settings', 'chat-policy-settings', 'chat-settings']],
     ['history', '记录与恢复', ['replay-settings', 'recovery-settings']],
-    ['system', '维护与扩展', ['release-update', 'update-backups-settings', 'plugin-settings', 'issue-feedback']],
+    ['system', '维护与扩展', ['release-update', 'update-backups-settings', 'pwa-install-settings', 'plugin-settings', 'issue-feedback']],
     ['cleanup', '数据清理', ['storage-settings']],
   ];
   host.innerHTML = `<div class="settings-intro"><h2>主机设置</h2><p class="meta">每项设置单独保存。除页面另有说明外，保存后立即生效；主机配置保存在 ${esc(settingsData.file)}。</p></div>
@@ -1588,6 +1593,23 @@ async function refresh(force = false) {
 }
 
 document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-pwa-install-reset]')) {
+    $('#pwa-install-visible').checked = settingsData.showPwaInstall !== false;
+    $('#pwa-install-saved').textContent = ''; return;
+  }
+  if (e.target.closest('[data-pwa-install-save]')) {
+    const controls = [...$('#pwa-install-form').querySelectorAll('input,button')];
+    const status = $('#pwa-install-saved'), showPwaInstall = $('#pwa-install-visible').checked;
+    controls.forEach(control => { control.disabled = true; }); status.textContent = '保存中…';
+    api('/api/settings', { showPwaInstall }).then(result => {
+      if (!result.ok) throw new Error(result.error || '保存失败');
+      settingsData.showPwaInstall = result.showPwaInstall;
+      $('#pwa-install-visible').checked = result.showPwaInstall;
+      status.textContent = '已保存，已连接玩家立即生效；重启后保留';
+    }).catch(error => { status.textContent = '保存失败：' + error.message; })
+      .finally(() => { controls.forEach(control => { control.disabled = false; }); });
+    return;
+  }
   if (e.target.closest('[data-social-reset]')) {
     for (const input of document.querySelectorAll('[data-social-option]')) input.checked = settingsData.social?.[input.dataset.socialOption] === true;
     $('#social-saved').textContent = ''; return;

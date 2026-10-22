@@ -25,7 +25,7 @@
 - 合并上游新版本时从 `main` 开功能分支，完成适配与测试后再合并回 `main`。
 - 同步上游：`git fetch upstream` → `git merge upstream/master` → `npm install` → `npm run setup`（上游常会加素材）→ `node --test`。
 - 素材 `public/assets/`、`.cache/`、`.claude/` 都在 `.gitignore` 里，不进仓库。新机器 clone 后要先 `npm install && npm run setup`。
-- 当前版本为 `v0.3.1-extended.7`，基于上游 `v0.3.1`（`b3deebda`）。上一正式版为 `v0.3.1-extended.6`。本轮新增安全启动、保留隧道的重启、启动健康验证、受保护的恢复备份和个人数据提醒。完整包仍需包含 11 个官方战场场景（提取版本 4）、官方 FX、多语言语音、174 套皮肤和海报素材；lite 需保留或另行安装素材，发布预检使用 `--require-local-art`。
+- 当前版本为 `v0.3.1-extended.9`，基于上游 `v0.3.1`（`b3deebda`）。上一正式版为 `v0.3.1-extended.8`。本版新增 Windows 服主 EXE、桌面安装与控制台显示开关，保留多人扩容、安全启动和更新恢复。完整包仍需包含 11 个官方战场场景（提取版本 4）、官方 FX、多语言语音、174 套皮肤和海报素材；lite 需保留或另行安装素材，发布预检使用 `--require-local-art`。EXE 通过同版独立 Windows x64 附件提供，生成物不进 Git。
 
 当前源码已整合上游 `v0.3.1`（`b3deebda`）；`package.json` / APP_VERSION 为基础版本 0.3.1；`server/release-version.js` 单独记录扩展标签。发布附件与公开状态以 Releases 为准。
 
@@ -76,6 +76,9 @@ Ctrl / ⌘ 点击、中键及浏览器菜单仍可另开页面。预览无法复
 本地自己的文件（上游没有，合并不会冲突）：
 
 控制台「设置 → 交流管理 → 房间聊天」可配置玩家文字开关、发言间隔和保留条数；主机消息仍从房间聊天管理发送。
+「设置 → 维护与扩展 → 桌面安装入口」可控制是否显示「添加到桌面」按钮，默认开启。保存后首页、大厅和横屏提示
+同步更新，已连接玩家无需刷新；新页面和重连读取当前配置。该选项保存为 `logs/admin-settings.json` 的
+`showPwaInstall` 布尔值，跨重启保留，旧配置缺省开启。关闭只隐藏游戏内入口，不卸载应用，也不屏蔽浏览器自带菜单。
 「对局设置 → 局内每回合统计」可单独关闭实时伤害，已结算回合继续保留。上述配置保存于既有
 `logs/admin-settings.json`，保存立即生效并跨重启保留。源码更新后需重启服务并刷新控制台：控制台首页模板在启动时读取。
 
@@ -716,3 +719,27 @@ Windows 文件锁、既有资源缓存/标题链接断言。观战隐私断言�
 验证：`test/announcement-persistence.test.js` 覆盖默认开启、关闭保留、当前/定时/长期/过期公告、撤下、
 写入失败、原 ID 与期限、真实服务器重启、鉴权与清理保护；
 `SP_E2E=1 node --test test/ui/announcement-persistence.e2e.test.js` 验证保存、刷新恢复、失败重试和手机布局。
+
+## Windows 服主 EXE 启动器（v0.3.1-extended.9）
+
+`launcher/` 提供继承现有 UI 色板的 WPF Windows x64 启动器；构建和使用见
+[启动器说明](../launcher/README.md)。单文件随带 .NET 运行时，游戏仍需要 Node.js 22+ 和同版项目文件。
+默认中文；原生界面文案经 `t()` 读取 `public/i18n/`，由 `launcher/i18n-msgids.mjs` 注册校验。
+
+`scripts/host-launcher.mjs` 仅包装 `launch.mjs`、doctor/setup 检查与实例控制，不重写模拟器或服务器：
+检查实际素材清单；通过 `runningInstance` 核验当前安装；状态只输出管理地址、能力和公开连接地址，
+不输出 token。局域网地址复用网卡分类，只有本次启动的双栈服务才发布该列表，本机模式不列局域网地址。
+重启复用控制台 `/api/service`，停服复用 `free-port.mjs`；不强杀未知端口占用者。
+桌面启动前同时检查游戏与管理端口；`SP_REQUIRE_ADMIN=1` 仅由桌面启动路径设置。
+若控制台因端口竞争等原因启动失败，boot 正常关闭本次自建服务并以 75 退出，
+防止留下无法鉴权管理的后台游戏服务；普通脚本未设置该标志时保持原有行为。
+
+关闭窗口保留后台服务，再打开从当前安装凭据恢复管理；窗口内停止 / 重启前显示断线影响。
+独立日志保存到 `logs/host-launcher-<port>.log`，写入前移除 ANSI 和工作台 key/token URL 参数；
+诊断可能含目录及网络地址，分享前仍须自行核对。每用户仅保存目录、端口、网络方式，不存管理凭据。
+生成物不入 Git；`tools/package.mjs` 已允许桌面助手源码，EXE 构建后另附同版游戏包。
+
+验证覆盖：`test/host-launcher.test.js`、现有 host-runtime / host-lifecycle / package 测试；
+WPF `--render-preview` 生成默认、在线演示、紧凑和端口占用演示截图，演示不启动服务。
+本轮构建哈希、专项结果及全量 CI 未通过项保存在 [启动器验收记录](HOST-LAUNCHER-VALIDATION.md)，
+不再只依赖忽略目录中的临时日志；它与后续文档复检结果分开记录。

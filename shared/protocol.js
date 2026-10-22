@@ -657,7 +657,7 @@ export const C2S = {
 export const S2C = [
   'welcome', 'ok', 'error', 'pong',
   'social.state',
-  'room.state', 'room.closed', 'chat.message', 'chat.history', 'site.announcement',
+  'room.state', 'room.closed', 'chat.message', 'chat.history', 'site.announcement', 'site.settings',
   'm.public', 'm.private', 'm.state', 'm.field', 'm.toast', 'm.ticker', 'm.emote', 'm.ping', 'm.result',
   // m.layer { playerId, bondId, add } — own live prep layer gain; ephemeral, never replayed on resync.
   'm.layer',

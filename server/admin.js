@@ -37,6 +37,7 @@ import { syntheticResult } from './match/fields.js';
 import { GameData } from './match/gamedata.js';
 import { getPrep, setPrep, normalizePrep, getUniteLayerGains, setUniteLayerGains, getRoundCharts, setRoundCharts, getLiveRoundDamage, setLiveRoundDamage } from './match/hostSettings.js';
 import { getAllowRoomUniteLayerGains, setAllowRoomUniteLayerGains } from './match/hostSettings.js';
+import { getShowPwaInstall, setShowPwaInstall } from './match/hostSettings.js';
 import { AnnouncementDrafts } from './announcement-drafts.js';
 import { getSocialSettings, setSocialSettings, normalizeSocialSettings } from './match/hostSettings.js';
 import { DEFAULT_SOCIAL_SETTINGS } from '../shared/social.js';
@@ -48,7 +49,7 @@ import { getReplayConfig, setReplayConfig, replayRecord, recordReplayAdmin } fro
 import { replayIdentity, saveReplay, readReplay, replayFiles, recordFiles, deleteRecordFiles, replayAdminLogs, REPLAY_ID } from './replay-store.js';
 import { liveState, liveIntent } from './admin-live.js';
 import { DEV_PAGES } from '../shared/devtools.js';
-import { sendSession } from './net.js';
+import { sendSession, send as sendSocket } from './net.js';
 import { cleanChatText, getBlockedWords, normalizeBlockedWords, setBlockedWords, getChatSettings, normalizeChatSettings, setChatSettings, DEFAULT_CHAT_SETTINGS } from './chat.js';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -625,6 +626,8 @@ export function loadSettings(file, log) {
     if (c.error) log.error(`[admin] ${file}: roundCharts ignored (${c.error})`);
     const live = setLiveRoundDamage(saved.liveRoundDamage ?? true);
     if (live.error) log.error(`[admin] ${file}: liveRoundDamage ignored (${live.error})`);
+    const install = setShowPwaInstall(saved.showPwaInstall ?? true);
+    if (install.error) log.error(`[admin] ${file}: showPwaInstall ignored (${install.error})`);
     const chat = setChatSettings(saved.chat ?? DEFAULT_CHAT_SETTINGS);
     if (chat.error) log.error(`[admin] ${file}: chat ignored (${chat.error})`);
     const b = setBlockedWords(saved.blockedWords ?? []);
@@ -646,6 +649,8 @@ function saveSettings(file, body) {
   if (typeof roundCharts !== 'boolean') return { error: '局内曲线设置必须为开或关' };
   const liveRoundDamage = Object.hasOwn(body, 'liveRoundDamage') ? body.liveRoundDamage : getLiveRoundDamage();
   if (typeof liveRoundDamage !== 'boolean') return { error: '实时伤害设置必须为开或关' };
+  const showPwaInstall = Object.hasOwn(body, 'showPwaInstall') ? body.showPwaInstall : getShowPwaInstall();
+  if (typeof showPwaInstall !== 'boolean') return { error: '桌面安装按钮设置必须为开或关' };
   const chat = normalizeChatSettings(Object.hasOwn(body, 'chat') ? body.chat : getChatSettings());
   if (chat.error) return chat;
   const blocked = normalizeBlockedWords(Object.hasOwn(body, 'blockedWords') ? body.blockedWords : getBlockedWords());
@@ -655,7 +660,7 @@ function saveSettings(file, body) {
   if (typeof replay.enabled !== 'boolean' || replay.keep !== 50) return { error: '回放设置无效（最多保留 50 局）' };
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const tmp = `${file}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify({ prep: r.prep, uniteLayerGains, allowRoomUniteLayerGains, roundCharts, liveRoundDamage, chat: chat.settings, blockedWords: blocked.words, replay, social: social.settings }, null, 2));
+  fs.writeFileSync(tmp, JSON.stringify({ prep: r.prep, uniteLayerGains, allowRoomUniteLayerGains, roundCharts, liveRoundDamage, showPwaInstall, chat: chat.settings, blockedWords: blocked.words, replay, social: social.settings }, null, 2));
   fs.renameSync(tmp, file);
   setPrep(r.prep);
   setUniteLayerGains(uniteLayerGains);
@@ -663,6 +668,7 @@ function saveSettings(file, body) {
   setSocialSettings(social.settings);
   setRoundCharts(roundCharts);
   setLiveRoundDamage(liveRoundDamage);
+  setShowPwaInstall(showPwaInstall);
   setChatSettings(chat.settings);
   setBlockedWords(blocked.words);
   setReplayConfig({ enabled: process.env.SP_REPLAY === '0' ? false : replay.enabled });
@@ -670,6 +676,7 @@ function saveSettings(file, body) {
   if (Object.hasOwn(body, 'allowRoomUniteLayerGains')) out.allowRoomUniteLayerGains = getAllowRoomUniteLayerGains();
   if (Object.hasOwn(body, 'social')) out.social = getSocialSettings();
   if (Object.hasOwn(body, 'liveRoundDamage')) out.liveRoundDamage = getLiveRoundDamage();
+  if (Object.hasOwn(body, 'showPwaInstall')) out.showPwaInstall = getShowPwaInstall();
   if (Object.hasOwn(body, 'chat')) out.chat = getChatSettings();
   if (Object.hasOwn(body, 'blockedWords')) out.blockedWords = getBlockedWords();
   if (Object.hasOwn(body, 'replay')) out.replay = { enabled: getReplayConfig().enabled, keep: 50, forcedOff: process.env.SP_REPLAY === '0' };
@@ -937,7 +944,7 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
       if (req.method === 'GET' && url.pathname === '/api/catalog') return send(200, await catalogView(lobby, url.searchParams.get('room')));
       if (req.method === 'GET' && url.pathname === '/api/results-summary') return send(200, summarizeResults(Object.fromEntries(url.searchParams)));
       if (req.method === 'GET' && url.pathname === '/api/results') return send(200, { records: listRecords(resultsDir) });
-      if (req.method === 'GET' && url.pathname === '/api/settings') return send(200, { social: getSocialSettings(), prep: getPrep(), uniteLayerGains: getUniteLayerGains(), allowRoomUniteLayerGains: getAllowRoomUniteLayerGains(), roundCharts: getRoundCharts(), liveRoundDamage: getLiveRoundDamage(), chat: getChatSettings(), blockedWords: getBlockedWords(), replay: { enabled: getReplayConfig().enabled, keep: 50, forcedOff: process.env.SP_REPLAY === '0' }, file: settingsFile, defaults: prepDefaults(lobby.safeData()) });
+      if (req.method === 'GET' && url.pathname === '/api/settings') return send(200, { social: getSocialSettings(), prep: getPrep(), uniteLayerGains: getUniteLayerGains(), allowRoomUniteLayerGains: getAllowRoomUniteLayerGains(), roundCharts: getRoundCharts(), liveRoundDamage: getLiveRoundDamage(), showPwaInstall: getShowPwaInstall(), chat: getChatSettings(), blockedWords: getBlockedWords(), replay: { enabled: getReplayConfig().enabled, keep: 50, forcedOff: process.env.SP_REPLAY === '0' }, file: settingsFile, defaults: prepDefaults(lobby.safeData()) });
       if (req.method === 'POST' && url.pathname === '/api/settings') {
         const body = await readJson(req);
         if (!body) return send(400, { error: '请求格式错误' });
@@ -948,6 +955,15 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
         }
         if (r.ok) for (const room of lobby.rooms.values()) room.match?.syncExtensions?.();
         if (r.ok && Object.hasOwn(body, 'social')) lobby.social?.sync(true);
+        if (r.ok && Object.hasOwn(body, 'showPwaInstall')) {
+          const frame = { t: 'site.settings', showPwaInstall: getShowPwaInstall() };
+          if (network?.conns) {
+            // The title screen has a socket before choosing a name, so it has no registered session yet.
+            for (const connection of network.conns.values()) sendSocket(connection.ws, frame);
+          } else for (const session of lobby.registry?.all?.() || []) {
+            if (session.connected) sendSession(session, frame);
+          }
+        }
         if (r.ok && Object.hasOwn(body, 'allowRoomUniteLayerGains')) {
           for (const room of lobby.rooms.values()) lobby.broadcastState?.(room);
         }

@@ -2,6 +2,13 @@
 
 Part of [DESIGN.md](../DESIGN.md) (the index; section numbers are global).
 
+Host-only `GET/POST /api/settings` includes boolean `showPwaInstall` (default true), persisted atomically with the
+existing settings. `welcome.showPwaInstall:false` hides installation before the initial screen render; absence
+retains compatibility with older servers. A successful save broadcasts `site.settings {showPwaInstall}` to all
+connected sockets, including the anonymous title screen before a player chooses a name. `/healthz.siteSettings.showPwaInstall`
+is a public read-only fallback read before first rendering and by the existing build check. No client-to-server
+mutation or admin credentials are exposed.
+
 本库 2026-10-16：仅本机认证控制台 `POST /api/action {room,action:'chatSend',value:text}` 可发送
 本房间主机消息，复用 `chat.message/history` 与单调递增 id，服务端固定 `playerId:'host'`、
 `role:'system'`、发送者和时间，所有房间成员（含观战者）接收；玩家没有此管理 C2S。

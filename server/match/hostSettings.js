@@ -33,6 +33,13 @@ let uniteLayerGains = false;
 let allowRoomUniteLayerGains = false;
 let roundCharts = true;
 let liveRoundDamage = true;
+let showPwaInstall = true;
+export function getShowPwaInstall() { return showPwaInstall; }
+export function setShowPwaInstall(value) {
+  if (typeof value !== 'boolean') return { error: '桌面安装按钮设置必须为开或关' };
+  showPwaInstall = value;
+  return { ok: true };
+}
 export function getLiveRoundDamage() { return liveRoundDamage; }
 export function setLiveRoundDamage(v) {
   if (typeof v !== 'boolean') return { error: '实时伤害设置必须为开或关' };
@@ -104,7 +111,7 @@ export function setPrep(v) {
 }
 
 /** Back to the data's timers and the official 联防 rule (tests). */
-export function resetHostSettings() { prep = DEFAULT_PREP; uniteLayerGains = false; allowRoomUniteLayerGains = false; roundCharts = true; liveRoundDamage = true; social = DEFAULT_SOCIAL_SETTINGS; }
+export function resetHostSettings() { prep = DEFAULT_PREP; uniteLayerGains = false; allowRoomUniteLayerGains = false; roundCharts = true; liveRoundDamage = true; showPwaInstall = true; social = DEFAULT_SOCIAL_SETTINGS; }
 
 /** The 休整期 seconds of round r for a match whose data gives `base` (null = untimed stays untimed). */
 export function prepSecondsFor(round, base, p = prep) {

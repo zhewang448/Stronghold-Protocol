@@ -1,0 +1,113 @@
+<Application x:Class="StrongholdProtocolLauncher.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ShutdownMode="OnMainWindowClose">
+  <Application.Resources>
+    <SolidColorBrush x:Key="Bg0" Color="#0C0F0E" />
+    <SolidColorBrush x:Key="Bg1" Color="#141816" />
+    <SolidColorBrush x:Key="Bg2" Color="#1E2421" />
+    <SolidColorBrush x:Key="Line" Color="#2F3A35" />
+    <SolidColorBrush x:Key="Mint" Color="#4ED8AF" />
+    <SolidColorBrush x:Key="MintHi" Color="#59F4CA" />
+    <SolidColorBrush x:Key="Gold" Color="#F2BD3E" />
+    <SolidColorBrush x:Key="Amber" Color="#F6A329" />
+    <SolidColorBrush x:Key="Danger" Color="#FF5454" />
+    <SolidColorBrush x:Key="TextHi" Color="#F2F2F2" />
+    <SolidColorBrush x:Key="TextMd" Color="#C3CBC7" />
+    <SolidColorBrush x:Key="TextLo" Color="#8A948F" />
+    <SolidColorBrush x:Key="TextDim" Color="#7C8982" />
+
+    <Style TargetType="TextBlock">
+      <Setter Property="FontFamily" Value="Segoe UI" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
+    </Style>
+
+    <Style x:Key="PrimaryButton" TargetType="Button">
+      <Setter Property="Foreground" Value="#06110D" />
+      <Setter Property="Background" Value="{StaticResource Mint}" />
+      <Setter Property="BorderBrush" Value="{StaticResource Mint}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="Padding" Value="18,10" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Frame" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2" Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Frame" Property="Background" Value="{StaticResource MintHi}" /></Trigger>
+              <Trigger Property="IsPressed" Value="True"><Setter TargetName="Frame" Property="Opacity" Value=".82" /></Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource TextHi}" /><Setter TargetName="Frame" Property="BorderThickness" Value="2" /></Trigger>
+              <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Frame" Property="Background" Value="#263E34" /><Setter Property="Foreground" Value="{StaticResource TextLo}" /><Setter Property="Cursor" Value="Arrow" /></Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="SecondaryButton" TargetType="Button">
+      <Setter Property="Foreground" Value="{StaticResource TextMd}" />
+      <Setter Property="Background" Value="{StaticResource Bg2}" />
+      <Setter Property="BorderBrush" Value="{StaticResource Line}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="12,8" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Frame" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2" Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Mint}" /><Setter Property="Foreground" Value="{StaticResource MintHi}" /></Trigger>
+              <Trigger Property="IsPressed" Value="True"><Setter TargetName="Frame" Property="Opacity" Value=".8" /></Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource MintHi}" /><Setter TargetName="Frame" Property="BorderThickness" Value="2" /></Trigger>
+              <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Frame" Property="Opacity" Value=".4" /><Setter Property="Cursor" Value="Arrow" /></Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="ModeButton" TargetType="RadioButton">
+      <Setter Property="Foreground" Value="{StaticResource TextMd}" />
+      <Setter Property="Background" Value="{StaticResource Bg1}" />
+      <Setter Property="BorderBrush" Value="{StaticResource Line}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="13,12" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="RadioButton">
+            <Border x:Name="Frame" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2" Padding="{TemplateBinding Padding}">
+              <ContentPresenter />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsChecked" Value="True"><Setter TargetName="Frame" Property="Background" Value="#10231D" /><Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Mint}" /><Setter Property="Foreground" Value="{StaticResource MintHi}" /></Trigger>
+              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Mint}" /></Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource MintHi}" /><Setter TargetName="Frame" Property="BorderThickness" Value="2" /></Trigger>
+              <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Frame" Property="Opacity" Value=".45" /></Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="InputBox" TargetType="TextBox">
+      <Setter Property="Foreground" Value="{StaticResource TextHi}" />
+      <Setter Property="Background" Value="{StaticResource Bg0}" />
+      <Setter Property="BorderBrush" Value="{StaticResource Line}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="9,7" />
+      <Setter Property="CaretBrush" Value="{StaticResource MintHi}" />
+      <Setter Property="SelectionBrush" Value="{StaticResource Mint}" />
+    </Style>
+  </Application.Resources>
+</Application>

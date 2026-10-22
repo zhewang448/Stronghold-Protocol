@@ -1,6 +1,6 @@
 # 卫戍协议：盟约 · Stronghold Protocol: Alliance
 
-![扩展版本](https://img.shields.io/badge/version-0.3.1--extended.8-blue)
+![扩展版本](https://img.shields.io/badge/version-0.3.1--extended.9-blue)
 ![上游基础版本](https://img.shields.io/badge/version-0.3.1-2ea44f)
 ![许可](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
 
@@ -12,7 +12,7 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 [下载正式版](https://github.com/zhewang448/Stronghold-Protocol/releases/latest) · [开始运行](#开始运行) · [本库特色](#本库特色) · [和朋友一起玩](#和朋友一起玩) · [更新记录](docs/LOCAL-CHANGELOG.md) · [反馈问题](https://github.com/zhewang448/Stronghold-Protocol/issues)
 
-> 当前版本为 **`v0.3.1-extended.8`**（基础版本 `0.3.1`，上一正式版为 `v0.3.1-extended.7`）。本版加入最多二十人同盟、固定分组轮选、多轮联防、分组统计和完整漏怪结算，保留此前的安全启动、签名增量更新及数据保护。正式附件见 Releases，使用与验证边界见[发布说明](docs/RELEASE-CANDIDATE.md)。
+> 当前版本为 **`v0.3.1-extended.9`**（基础版本 `0.3.1`，上一正式版为 `v0.3.1-extended.8`）。本版新增 Windows 服主 EXE 启动器、桌面安装入口与控制台显示开关，修复桌面启动时管理端口失败的清理，保留此前的多人扩容和签名增量更新。正式附件见 Releases，使用与验证边界见[发布说明](docs/RELEASE-CANDIDATE.md)。
 >
 > 非官方、非商业同人项目，与《明日方舟》官方无隶属或授权关系。游戏素材与数据的权利归原权利人；代码、素材及截图的许可边界见 [NOTICE.md](NOTICE.md)。
 
@@ -58,6 +58,15 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 ## 开始运行
 
+Windows 服主可使用 `StrongholdProtocolLauncher.exe`：将它放在**同版项目根目录**，与 `package.json` 同级，
+双击后选择「仅本机 / 局域网 / 公网隧道」，确认端口并启动。启动器检查运行环境、依赖、素材和双端口占用，
+提供地址复制、管理控制台、重启、正常停服和诊断日志；界面沿用本项目的深绿灰与薄荷绿视觉。
+**关闭 EXE 窗口后服务继续运行；停服请点击「停止服务器」。**
+
+EXE 自带 .NET 运行时，游戏仍需 Node.js 22+ 和包含 `scripts/host-launcher.mjs` 的同版项目文件；
+公网隧道另需 cloudflared。源码构建、故障处理和验证边界见 [启动器说明](launcher/README.md)。
+从同版本 Release 下载 `launcher-win-x64.zip`，解压 EXE 到游戏根目录使用；完整包、轻量包与增量包均提供配套桥接脚本，原脚本入口继续可用。
+
 需要 **Node.js 22 或 24** 和支持 WebGL 的现代浏览器；Windows、macOS、Linux 均可开服。手机建议横屏游玩，战斗在玩家浏览器中模拟，设备性能会影响流畅度。
 
 ### 下载整合包
@@ -72,7 +81,7 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 | `SHA256SUMS.txt` | 用于核对安装包的 SHA-256 校验值 |
 | `SHA256SUMS.txt.sig` | 维护者对校验值的 Ed25519 签名，控制台更新据此确认安装包来自本库；更早的版本没有此附件 |
 
-- **Windows**：双击 `scripts/start-windows.bat`。
+- **Windows**：随包有同版 `StrongholdProtocolLauncher.exe` 时可双击使用；否则双击 `scripts/start-windows.bat`。
 - **macOS / Linux**：在解压后的项目目录运行 `bash scripts/start.sh`。
 
 脚本会检查环境与素材、启动服务器并打开浏览器。默认游戏地址为 `http://localhost:3000`，控制台地址见启动日志的 `Console:` 行。
