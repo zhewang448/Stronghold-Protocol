@@ -98,3 +98,10 @@ under GPL-3.0-or-later. Adaptation keeps the current room API, four-player rules
 `docs/REFERENCE-UI-REVIEW.md`）及 `css/screens/room.css`：
 `public/css/reference-mobile.css` 按本库 `.rs-*` 房间结构映射立绘比例、滚动、顶底栏和触摸范围规则，
 并沿用其顶部 HUD 紧凑规则。仅在小屏作用，不整体替换本库业务组件。保留上述 GPL-3.0-or-later 与来源致谢。
+
+**多人扩容致谢（2026-10-22）**：固定分组卡池、策略 / 机变并行轮选及多轮联防的核心方案来自
+[LongQianChen/Stronghold-Protocol](https://github.com/LongQianChen/Stronghold-Protocol/tree/feat/IncreasePlayerCapacity)
+的 `feat/IncreasePlayerCapacity` 分支，迁移采用
+[SiderLock/Stronghold-Protocol](https://github.com/SiderLock/Stronghold-Protocol) 的 0.3.1 适配
+（提交 `85bc37c84bf28f751f19c26bc0e5111027272b8f`），保留 GPL-3.0-or-later 许可与来源。
+本库补充回档 / 重启恢复、统计、控制台与普通四人玩法兼容；具体范围见 [扩展联机说明](docs/EXPANDED-COOP.md)。

@@ -1,32 +1,37 @@
 # 卫戍协议：盟约 · Stronghold Protocol: Alliance
 
-![扩展版本](https://img.shields.io/badge/version-0.3.1--extended.7-blue)
+![扩展版本](https://img.shields.io/badge/version-0.3.1--extended.8-blue)
 ![上游基础版本](https://img.shields.io/badge/version-0.3.1-2ea44f)
 ![许可](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
 
 在浏览器里招募干员、布置阵容，与朋友合作迎敌。本库是《明日方舟》「卫戍协议：盟约」的非商业同人扩展分支，支持独立模拟与默认 **1–4 人同盟模拟**，当前源码可选最多二十人，空位可由 AI 队友补齐。
 
-在上游玩法和确定性战斗模拟的基础上，本分支重点完善**找人组队、主机管理、局内交流、统计回放、个人数据迁移和自行开服**，并保留联动干员、可选皮肤及社区 UI 适配。
+在上游玩法和确定性战斗模拟的基础上，本分支重点完善**多人扩容、找人组队、主机管理、局内交流、统计回放、个人数据迁移和自行开服**，并保留联动干员、可选皮肤及社区 UI 适配。
 
 A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance*, with online invitations, host tools, round statistics, replays, personal-data backups and optional cosmetics.
 
 [下载正式版](https://github.com/zhewang448/Stronghold-Protocol/releases/latest) · [开始运行](#开始运行) · [本库特色](#本库特色) · [和朋友一起玩](#和朋友一起玩) · [更新记录](docs/LOCAL-CHANGELOG.md) · [反馈问题](https://github.com/zhewang448/Stronghold-Protocol/issues)
 
-> 当前版本为 **`v0.3.1-extended.7`**（基础版本 `0.3.1`，上一正式版为 `v0.3.1-extended.6`）。本版提供安全启动、重启保留隧道、签名增量更新、更新健康验证、备份管理及个人数据提醒。正式附件见 Releases，使用与验证边界见[发布说明](docs/RELEASE-CANDIDATE.md)。
+> 当前版本为 **`v0.3.1-extended.8`**（基础版本 `0.3.1`，上一正式版为 `v0.3.1-extended.7`）。本版加入最多二十人同盟、固定分组轮选、多轮联防、分组统计和完整漏怪结算，保留此前的安全启动、签名增量更新及数据保护。正式附件见 Releases，使用与验证边界见[发布说明](docs/RELEASE-CANDIDATE.md)。
 >
 > 非官方、非商业同人项目，与《明日方舟》官方无隶属或授权关系。游戏素材与数据的权利归原权利人；代码、素材及截图的许可边界见 [NOTICE.md](NOTICE.md)。
 
 ## 仓库索引
 
-| 仓库 | 定位与关系 |
+感谢原项目及社区作者的开源贡献。本库采用或参考的实现与对应作者列在下表，具体提交、许可证及署名见 [NOTICE.md](NOTICE.md)。
+
+| 仓库 | 定位、采用内容与致谢 |
 | --- | --- |
 | [本库 · Stronghold-Protocol](https://github.com/zhewang448/Stronghold-Protocol) | 主机管理与联机体验扩展；本 README、整合包与问题反馈对应此仓库 |
-| [原项目 · sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) | 上游玩法、确定性模拟与官方数据适配来源 |
-| [UI 设计上游 · xinhai-ai/Stronghold-Protocol](https://github.com/xinhai-ai/Stronghold-Protocol) | 本库 Hub 大厅、同盟等待室、干员调配与对局界面的 UI 设计及后续适配参考；原始界面作者与移植来源见 [NOTICE.md](NOTICE.md) |
+| [原项目 · sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) | 本库的玩法、确定性模拟、官方数据适配与插件体系基础；感谢 **sganggs 及上游贡献者**的原始实现与持续维护 |
+| [多人扩容方案 · LongQianChen/Stronghold-Protocol](https://github.com/LongQianChen/Stronghold-Protocol/tree/feat/IncreasePlayerCapacity) | 本库采用解除四人限制、固定分组卡池与并行轮选的核心方案，感谢 **LongQianChen** 的多人扩容实现 |
+| [多人扩容 0.3.1 适配 · SiderLock/Stronghold-Protocol](https://github.com/SiderLock/Stronghold-Protocol) | 本库迁移采用其 0.3.1 适配，感谢 **SiderLock** 的整合工作；具体提交及本库兼容调整见 [扩展联机说明](docs/EXPANDED-COOP.md#来源) |
+| [原始社区 UI · isomerpoi/Stronghold-Protocol](https://github.com/isomerpoi/Stronghold-Protocol) | 本库大厅、同盟等待室、物资调配、对局 HUD 与结算界面的原始社区实现来源；感谢 **isomerpoi（雨千代chiyo）** 的界面设计与实现 |
+| [UI 后续适配参考 · xinhai-ai/Stronghold-Protocol](https://github.com/xinhai-ai/Stronghold-Protocol) | 本库交流布局、快捷键、资源展示、公告 Markdown 和手机界面的后续适配参考；感谢 **xinhai-ai 及参考站贡献者**的公开实现，移植范围见 [源码对照文档](docs/REFERENCE-UI-REVIEW.md) |
 | [参考站前端归档 · stronghold-ui-site-archive（私有）](https://github.com/zhewang448/stronghold-ui-site-archive) | 保存参考站公开前端快照、来源和哈希，供后续跟进 UI 变化；需仓库访问权限，更新方法见 [源码对照文档](docs/REFERENCE-UI-REVIEW.md#后续跟进与私有归档) |
 | [Stronghold-Protocol-Forge-Mods](https://github.com/XiaMo233M/Stronghold-Protocol-Forge-Mods) | Forge 工坊包与成品索引；配套下方 Forge 宿主使用 |
 | [Stronghold-Protocol-Forge](https://github.com/XiaMo233M/Stronghold-Protocol-Forge) | Forge-Mods 对应的游戏宿主与 MOD API |
-| [RyantArgnisan/Stronghold-Protocol](https://github.com/RyantArgnisan/Stronghold-Protocol) | 社区扩展分支，本库文字聊天参考来源，署名见 [NOTICE.md](NOTICE.md) |
+| [RyantArgnisan/Stronghold-Protocol](https://github.com/RyantArgnisan/Stronghold-Protocol) | 本库房间文字聊天的参考与改编来源，感谢 **RyantArgnisan** 的开源聊天实现；具体提交见 [NOTICE.md](NOTICE.md) |
 | [Stronghold-Protocol-Lele-Mods](https://github.com/llleeeqi/Stronghold-Protocol-Lele-Mods) | Lele 系列插件，需要其配套宿主适配 |
 
 不同分支的插件格式和宿主 API 并不通用。**Forge-Mods 与 Lele 插件尚未验证可直接用于本库**；更多来源、安装前核对项和兼容边界见[社区插件索引](docs/COMMUNITY-PLUGINS.md)。本库设置页提供本机插件工作台入口。
@@ -37,6 +42,7 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 | 方向 | 本分支提供的体验 |
 | --- | --- |
+| [多人扩容](#多人扩容与分组联机) | 解除四人房间限制，默认四人、可选最多二十人；固定分组卡池、策略与机变并行轮选，多轮联防及分组统计 |
 | [找人组队](#在线玩家状态与房间邀请) | 本服在线名单、姓名搜索与状态展示；在线 / 暂离 / 忙碌 / 隐身；等待室直接邀请，确认后加入 |
 | [主机控制台](#主机控制台) | 房间和玩家管理、阵容与数值编辑、干员道具发放、实时查看与代操作、回档、敌人日程及监控墙 |
 | [公告与交流](#公告聊天与战场标点) | 公告草稿、四类模板、Markdown 预览与跨重启保留；房间聊天、主机消息、屏蔽词和可拖动战场标点 |
@@ -124,7 +130,21 @@ winget install Cloudflare.cloudflared
 
 ## 本库特色详解
 
-以下截图来自本机测试实例或维护者提供的实际界面；自动拍摄使用演示数据，不含私人聊天或管理凭据。手机截图为横屏浏览器视口，部分图片裁剪了无关区域。截图对应 `v0.3.1-extended.7` 及此前提供的功能。
+以下截图来自本机测试实例或维护者提供的实际界面；自动拍摄使用演示数据，不含私人聊天或管理凭据。手机截图为横屏浏览器视口，部分图片裁剪了无关区域。多人扩容截图对应 `v0.3.1-extended.8`，其余截图展示此前已有功能；具体拍摄来源见 [截图说明](docs/img/features/README.md)。
+
+### 多人扩容与分组联机
+
+**解除原有四人联机上限，当前最多二十人。** 创建同盟后，房主可在等待室底部齿轮的「同盟设置 → 人数上限」中选择 **4 / 8 / 10 / 16 / 20 人**，默认仍为四人；开局后人数上限固定，空位可添加 AI 队友。
+
+![同盟设置中的人数上限：可将默认四人房间扩展到二十人](docs/img/features/expanded-coop-capacity.webp)
+
+开局实际参战人数决定分组，包含 AI、不含空位和观战者。六人起使用固定卡池分组；二十人分成 **A–E 五组，每组四人**。各组干员与装备库存独立，策略和机变按组并行、组内依次选择，每组机变各有六个选项。退出或淘汰后不会重新分组。
+
+![二十人演示名单的分组机变：A–E 五组独立轮选，每组六个选项](docs/img/features/expanded-coop-groups.webp)
+
+联防每场仍最多两名助手，可按固定组数继续后续轮次，最多五轮；首领战仍按两人分场，不扩大棋盘。局内和结算统计支持本组 / 全部玩家筛选，二十席使用固定玩家色；主机监控墙按每页四席切换。
+
+这一社区扩展沿用上表两个来源仓库的方案，并适配本库的回档、重启恢复、统计与完整漏怪结算。具体规则、普通四人兼容范围和验证记录见 [扩展联机说明](docs/EXPANDED-COOP.md)。
 
 ### 在线玩家、状态与房间邀请
 
@@ -331,4 +351,3 @@ npm run golden       # 确定性战斗与整局黄金结果
 本库在原项目基础上继续开发；原项目的介绍、版本记录及致谢见[原项目 README](https://github.com/sganggs/Stronghold-Protocol/blob/master/README.md)。文字聊天借鉴 RyantArgnisan/Stronghold-Protocol 的 GPL 实现，署名见 [NOTICE.md](NOTICE.md)；其他扩展的参考来源记录在相应开发文档中。
 
 代码以 **GPL-3.0-or-later** 发布，见 [LICENSE](LICENSE)。游戏素材与数据不适用代码许可证；版权、Spine 组合分发附加许可和第三方组件说明见 [NOTICE.md](NOTICE.md) 与 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。本项目保持非商业使用，不接受广告、付费服务或其他变现功能。
-> 多人扩容：同盟房默认四人，可选最多二十人；普通启动入口即可使用，也可用独立的 3188 / 3288 端口测试。运行和规则见 [扩展联机说明](docs/EXPANDED-COOP.md)。这是社区扩展，不是上游或官方人数规则。
