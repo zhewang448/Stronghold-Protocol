@@ -52,6 +52,7 @@ describe('custom alliance key form', { skip: !ENABLED }, () => {
         await host.type(input, key);
         assert.equal(await host.$eval(input, (e) => e.value), key.toUpperCase());
         assert.equal(await host.$eval(create, (e) => e.disabled), false);
+        assert.ok(await host.$('.proto'), 'creating an alliance opens the difficulty picker instead of creating immediately');
         const overflow = await host.evaluate(() => document.documentElement.scrollWidth - innerWidth);
         assert.ok(overflow <= 1, `horizontal overflow ${overflow}`);
         const field = await host.$eval(input, (e) => e.getBoundingClientRect().toJSON());
@@ -64,11 +65,25 @@ describe('custom alliance key form', { skip: !ENABLED }, () => {
         await host.screenshot({ path: `.cache/custom-room-code/${viewport.width}.png`, fullPage: true });
         await host.focus(input);
         await host.keyboard.press('Enter');
+        await host.waitForSelector('.proto[data-difficulty]');
+        assert.equal(await host.$eval('.proto', e => e.dataset.difficulty), 'FUNNY');
+        await host.$eval('.proto-back', e => e.click());
+        await host.waitForSelector('[data-testid="create-alliance"]');
+        assert.equal(await host.$eval(input, e => e.value), key.toUpperCase(), 'back returns to the alliance setup and retains its custom key');
+        await host.click(create);
+        await host.waitForSelector('.proto[data-difficulty]');
+        await host.$$eval('.proto .pcard', es => es[2].click());
+        assert.equal(await host.$eval('.proto', e => e.dataset.difficulty), 'HARD');
+        await host.click('.proto-start');
         await host.waitForFunction((code) => globalThis.__SP__.store.get().room?.code === code, {}, key.toUpperCase());
+        assert.equal(await host.evaluate(() => globalThis.__SP__.store.get().room.difficulty), 'HARD');
+        assert.equal(await host.evaluate(() => globalThis.__SP__.store.get().room.aiPicksLast), true);
 
         const guest = await pageIn();
         await guest.type(input, key);
         await guest.click(create);
+        await guest.waitForSelector('.proto-start');
+        await guest.click('.proto-start');
         await guest.waitForFunction(() => document.body.textContent.includes('该同盟密钥已被使用'));
         assert.equal(await guest.evaluate(() => globalThis.__SP__.store.get().room), null);
         assert.equal(await guest.$eval(input, (e) => e.value), key.toUpperCase());
@@ -78,8 +93,11 @@ describe('custom alliance key form', { skip: !ENABLED }, () => {
 
         const random = await pageIn();
         await random.click(create);
+        await random.waitForSelector('.proto[data-difficulty]');
+        await random.click('.proto-start');
         await random.waitForFunction(() => !!globalThis.__SP__.store.get().room?.code);
         assert.match(await random.evaluate(() => globalThis.__SP__.store.get().room.code), /^[A-Z]{4}$/);
+        assert.equal(await random.evaluate(() => globalThis.__SP__.store.get().room.aiPicksLast), true);
       } finally { await Promise.all(contexts.map((ctx) => ctx.close())); }
     });
   }

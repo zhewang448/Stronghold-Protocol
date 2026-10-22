@@ -7,10 +7,10 @@ import { useLang } from './lang.js';
 import { hudFrame, useHudMeasure } from './hudDock.js';
 
 /** One modeless view for live, settled and locally stored round history. */
-export function RoundHistoryPanel({ history = [], players = [], onClose, initialTab = 'chart' }) {
+export function RoundHistoryPanel({ history = [], players = [], poolGroups = [], viewerId = '', onClose, initialTab = 'chart' }) {
   const ready = useData('bonds');
   const lang = useLang();
-  const snapshot = JSON.stringify([history, players.map((p) => [p.playerId, p.name])]);
+  const snapshot = JSON.stringify([history, players.map((p) => [p.playerId, p.name, p.seat]), poolGroups, viewerId]);
   const host = useRef(null), close = useRef(null);
   const panel = useRef(null);
   const [chartSize, setChartSize] = useState({ width: 0, fontSize: 12 });
@@ -35,8 +35,8 @@ export function RoundHistoryPanel({ history = [], players = [], onClose, initial
   useHudMeasure(panel, measure, []);
   // Font/language changes may leave an already height-constrained panel's outer box unchanged.
   useLayoutEffect(measure);
-  const chartState = useRef({ metric: 'lp', table: false });
-  const rankState = useRef({ round: null, player: '', all: false, cumulative: false });
+  const chartState = useRef({ metric: 'lp', table: false, round: null, player: '', all: false, cumulative: false });
+  const rankState = chartState;
   const [tab, setTab] = useState(initialTab);
   useEffect(() => {
     const previous = document.activeElement;
@@ -50,8 +50,9 @@ export function RoundHistoryPanel({ history = [], players = [], onClose, initial
   useEffect(() => {
     const names = new Map(players.map((p) => [p.playerId, p.name]));
     const nameOf = (id) => names.get(id) || id;
-    if (tab === 'units') drawUnitRounds(host.current, history, nameOf, rankState.current, { name: tName });
-    else drawRoundChart(host.current, history, nameOf, chartState.current, { bondRecord: getBond, name: tName, ...chartSize });
+    const options = { name: tName, players, poolGroups, viewerId };
+    if (tab === 'units') drawUnitRounds(host.current, history, nameOf, rankState.current, options);
+    else drawRoundChart(host.current, history, nameOf, chartState.current, { ...options, bondRecord: getBond, ...chartSize });
   }, [snapshot, ready, lang, tab, chartSize]);
   return html`<section ref=${panel} id="round-history-panel" class="round-history brackets" role="dialog" aria-label=${t('每回合统计')}
     onKeyDown=${(e) => { if (e.key === 'Escape') onClose(); e.stopPropagation(); }}>

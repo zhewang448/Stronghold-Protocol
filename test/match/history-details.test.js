@@ -28,3 +28,17 @@ test('economy balances actual coins; rewind discards abandoned economy and leak 
   assert.equal(rewindToPrep(h.m).ok, true);
   assert.equal(ps.funds, opening); assert.equal(h.m.history.length, 0); assert.deepEqual(ps.leakHistory, []);
 });
+
+test('a failed later Unite wave records the planned survivors and excludes runtime summons', () => {
+  const ps = { playerId: 'p' }, gd = { enemy: (id) => id === 'a' ? { name: '甲' } : null };
+  const own = { leaked: [{ enemyKey: 'a' }, { enemyKey: 'a' }, { enemyKey: 'missing' }] };
+  const plan = { leakers: [ps], leaked: [{ enemyKey: 'a', sourcePlayerId: 'p' }] };
+  for (const uniteResult of [null, { synthetic: true, perPlayer: {} }]) {
+    const failed = normalLeakHistory({ gd }, ps, own, { plan, uniteResult, uniteRan: true, loss: 2 });
+    assert.equal(failed[1].enemies.reduce((n, e) => n + e.counted, 0), 2, 'the failed wave cannot erase surviving leaks');
+  }
+  const completed = normalLeakHistory({ gd }, ps, own, { plan, uniteResult: { perPlayer: { helper: { leaked: [
+    { enemyKey: 'a', sourcePlayerId: 'p' }, { enemyKey: 'a', sourcePlayerId: 'p', uniteRuntime: true },
+  ] } }, unspawned: [] }, uniteRan: true, loss: 2 });
+  assert.equal(completed[1].enemies.reduce((n, e) => n + e.counted, 0), 2, 'runtime summons never enter billed leak history');
+});

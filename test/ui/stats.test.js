@@ -461,8 +461,9 @@ describe('local stats: bounded storage', () => {
       })),
       bigUnknown: 'y'.repeat(1e6),
     });
-    assert.ok(JSON.stringify(rec).length < 40_000, `${JSON.stringify(rec).length} chars`);
-    assert.equal(rec.players.length, 6);
+    assert.ok(JSON.stringify(rec).length < 140_000, `${JSON.stringify(rec).length} chars`);
+    assert.equal(rec.players.length, 20);
+    assert.equal(rec.players[19].playerId, 'p19', 'the last expanded seat survives import normalization');
     assert.equal(rec.players[0].lineup.length, 12);
     assert.equal(rec.players[0].lineup[0].items.length, 4);
     assert.equal(rec.players[0].name.length, 24);

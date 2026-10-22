@@ -1,7 +1,7 @@
 // Normative message catalogue (DESIGN §8). Used by server (validation) and client (building requests).
 // Every client→server message is `{ t, rid?, ...fields }`. Unknown `t` or invalid fields ⇒ ERR.BAD_MSG.
 
-import { DIFFICULTIES, NAME_MAX_LEN, ROOM_CODE_LEN, MAX_SEATS, EMOTE_IDS, PING_KINDS, GEO } from './constants.js';
+import { DIFFICULTIES, NAME_MAX_LEN, ROOM_CODE_LEN, MAX_SEATS, ROOM_CAPACITIES, EMOTE_IDS, PING_KINDS, GEO } from './constants.js';
 import { isDroppableChess } from './standIn.js';
 import { diySlotIds, validateDiyPicks } from './diy.js';
 import { cultivatedStats, isPotential, isCultivate, POTENTIAL_DEFAULT, CULTIVATE_DEFAULT, hasPotentialData } from './potential.js';
@@ -75,6 +75,8 @@ export function isBattleResult(v) {
     && optional((x) => isInt(x, 0, 1e5))(v.resolved)
     && isMap(v.perPlayer, RESULT_LIMITS.players, isId, isPerPlayer) && Object.keys(v.perPlayer).length > 0
     && (v.unspawned === undefined || isList(v.unspawned, RESULT_LIMITS.unspawned, isUnspawned))
+    // A capped result is delivered within the wire budget, then rejected semantically for server re-simulation.
+    && optional(isBool)(v.truncated)
     && optional((x) => isInt(x, 0, 1e9))(v.errors) && optional((x) => isNum(x, 0, BIG))(v.bossHpLeft);
 }
 
@@ -510,12 +512,14 @@ export const C2S = {
   ping: { c: (v) => typeof v === 'number' && Number.isFinite(v) },
   // test: only the literal true (DESIGN §34.8). Omit it for a normal room — `false` is a bad field, so a
   // string cannot sneak in as "not a test". The server still refuses it unless SP_TEST_MODE is on.
-  'room.create': { mode: (v) => v === 'solo' || v === 'coop', difficulty: (v) => DIFFICULTIES.includes(v), code: (v) => typeof v === 'string' && new RegExp(`^[A-Za-z0-9]{${ROOM_CODE_LEN}}$`).test(v), test: (v) => v === true, $optional: ['code', 'test'] },
+  'room.create': { mode: (v) => v === 'solo' || v === 'coop', difficulty: (v) => DIFFICULTIES.includes(v), code: (v) => typeof v === 'string' && new RegExp(`^[A-Za-z0-9]{${ROOM_CODE_LEN}}$`).test(v), capacity: (v) => ROOM_CAPACITIES.includes(v), test: (v) => v === true, $optional: ['code', 'capacity', 'test'] },
   'room.join': { $optional: ['testAck'], testAck: (v) => v === true, code: (v) => isStr(v, ROOM_CODE_LEN + 2) && /^[A-Za-z0-9]+$/.test(v) },
   'room.leave': {},
   'room.ready': { ready: isBool },
   'room.chat': { text: (v) => isStr(v, 1024), clientId: isId },
   'room.setDifficulty': { difficulty: (v) => DIFFICULTIES.includes(v) },
+  'room.setCapacity': { capacity: (v) => ROOM_CAPACITIES.includes(v) },
+  'room.setMaxSeats': { n: (v) => ROOM_CAPACITIES.includes(v) },
   // the co-op room option 「AI 队友最后选择」 (GitHub #338; host, before the match): the strategy and 机变 drafts order every
   // human seat before every AI seat (server/match/match/phases.js humansFirst); room.state.aiPicksLast
   'room.setAiPicksLast': { on: isBool },
@@ -566,11 +570,11 @@ export const C2S = {
   // match
   'g.infoReady': { setupRevision: (v) => isInt(v, 0, 2 ** 31), $optional: ['setupRevision'] },
   'g.rerollVote': { voteId: (v) => isInt(v, 1, 2 ** 31), agree: isBool },
-  'g.band': { bandId: isId },
-  'g.bandSkip': {},
+  'g.band': { bandId: isId, draftId: isId, groupId: (v) => isInt(v, 1, 5), $optional: ['draftId', 'groupId'] },
+  'g.bandSkip': { draftId: isId, groupId: (v) => isInt(v, 1, 5), $optional: ['draftId', 'groupId'] },
   // the strategy highlighted in the draft screen (user playtest #4 item 4): a turn that runs out takes it while it is
   // free (Match.timeoutBand); absent / null clears it
-  'g.bandFocus': { bandId: nullable(isId), $optional: ['bandId'] },
+  'g.bandFocus': { bandId: nullable(isId), draftId: isId, groupId: (v) => isInt(v, 1, 5), $optional: ['bandId', 'draftId', 'groupId'] },
   'g.buy': { slot: (v) => isInt(v, 0, 15) },
   'g.refresh': {},
   'g.freeze': {},
@@ -586,7 +590,7 @@ export const C2S = {
   // unequip (DESIGN §34.15): one equipped item back to the hand, else the visible temp window. Official rooms refuse it.
   'g.unequip': { itemUid: isUid },
   'g.reward': { idx: (v) => isInt(v, 0, 5) },
-  'g.choice': { idx: (v) => isInt(v, 0, 5), choiceId: isId, $optional: ['choiceId'] },
+  'g.choice': { idx: (v) => isInt(v, 0, 5), choiceId: isId, draftId: isId, groupId: (v) => isInt(v, 1, 5), $optional: ['choiceId', 'draftId', 'groupId'] },
   // a plugin interaction window (PLUGIN API v2, docs/PLUGINS.md §10b): offerId is the window's declared id, idx the
   // slot picked; g.offerRefresh redraws one slot (the window's own `refresh.perSlot` bounds how often). The host
   // applies the window's declared effect primitive — a plugin never receives these messages itself.
@@ -606,6 +610,7 @@ export const C2S = {
   // solo pause (official PauseUp / ResumeUp, DESIGN §14): freezes the running battle (field clock, deadlines, the
   // browser's local runner) — solo matches only (co-op ⇒ WRONG_PHASE), only while a battle runs; m.public.paused
   'g.pause': { on: isBool },
+  'g.uniteSkipVote': { voteId: isId, $optional: ['voteId'] },
   // the stats the own board's units start their next battle with (user playtest #4 item 7; prep phases): answered by
   // the push m.unitStats { seq, round, units: [unitStatsEntry] }; `seq` is echoed so the client keeps the newest answer
   'g.unitStats': { seq: (v) => isInt(v, 0, 2 ** 31), $optional: ['seq'] },
@@ -626,7 +631,7 @@ export const C2S = {
     resolved: (v) => isInt(v, 0, 1e5),
     leaks: (v) => isNum(v, 0, 1e6), bossDmg: (v) => isNum(v, 0, BIG),
     by: (v) => isMap(v, RESULT_LIMITS.players, isId, (x) => isNum(x, 0, BIG)), done: isBool,
-    left: (v) => isMap(v, RESULT_LIMITS.players, isId, (x) => isInt(x, 0, 1e5)),
+    left: (v) => isMap(v, MAX_SEATS, isId, (x) => isInt(x, 0, 1e5)),
     damage: (v) => isList(v, RESULT_LIMITS.players, isLiveDamage),
     leaksBy: (v) => isMap(v, RESULT_LIMITS.players, isId, (x) => isNum(x, 0, 1e6)),
     $optional: ['resolved', 'leaks', 'bossDmg', 'by', 'done', 'left', 'leaksBy', 'damage'],

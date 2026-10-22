@@ -162,7 +162,7 @@
 //     a player seat (the seat is kept and given back on resume).
 
 import { randomBytes, randomInt } from 'node:crypto';
-import { DIFFICULTIES, ERR, MAX_SEATS, MAX_SPECTATORS, ROOM_CODE_LEN, modeIdFor } from '../shared/constants.js';
+import { DIFFICULTIES, ERR, DEFAULT_SEATS, MAX_SEATS, ROOM_CAPACITIES, MAX_SPECTATORS, ROOM_CODE_LEN, modeIdFor } from '../shared/constants.js';
 import { checkLoadout, checkLoadoutOps, cultivationCharIds, checkNotOwned, checkDiyPicks, charPotentialChanges, checkSkinSelection, operatorCharIds } from '../shared/protocol.js';
 import { encode, isDroppable, isErrCode, sendRaw, sendSession, sendSessionFrame } from './net.js';
 import { isStateKind } from '../shared/stateDelta.js';
@@ -271,21 +271,23 @@ function freezeSkins(skins, hasOperator) {
 /** One room: 4 seat slots, host, difficulty, optional running match. */
 export class Room {
   /** @param {string} code @param {'solo'|'coop'} mode @param {string} difficulty @param {number} now */
-  constructor(code, mode, difficulty, now) {
+  constructor(code, mode, difficulty, now, capacity = DEFAULT_SEATS) {
     this.code = code;
     this.mode = mode;
     this.difficulty = difficulty;
     /**
-     * 「AI 队友最后选择」 (room.setAiPicksLast, GitHub #338; co-op only, off by default): the match's strategy and 机变 drafts
+     * 「AI 队友最后选择」 (this fork's default, requested by the maintainer in 2026-10-22): on by default in new co-op rooms.
+     * The room host can still opt out; the match's strategy and 机变 drafts
      * put every human seat before every AI seat (Match opts.aiPicksLast). Kept across the room's matches.
      */
-    this.aiPicksLast = false;
+    this.aiPicksLast = mode !== 'solo';
     // Capture the host default once; later changes belong to this room alone.
     this.uniteLayerGains = getUniteLayerGains();
     /** @type {string | null} */
     this.hostId = null;
     /** @type {(Seat | null)[]} */
-    this.seats = new Array(MAX_SEATS).fill(null);
+    this.capacity = mode === 'solo' ? 1 : capacity;
+    this.seats = new Array(this.capacity).fill(null);
     /** @type {{ playerId: string, name: string, connected: boolean }[]} spectator seats, ≤ MAX_SPECTATORS (header) */
     this.spectators = [];
     this.chat = new RoomChat();
@@ -351,6 +353,8 @@ export class Room {
       hostId: this.hostId,
       mode: this.mode,
       difficulty: this.difficulty,
+      capacity: this.capacity,
+      maxSeats: this.capacity,
       aiPicksLast: this.aiPicksLast,
       uniteLayerGains: this.uniteLayerGains,
       canSetUniteLayerGains: getAllowRoomUniteLayerGains(),
@@ -672,6 +676,8 @@ export class Lobby {
       case 'room.ready': return this.ready(session, msg);
       case 'room.chat': return this.chat(session, msg);
       case 'room.setDifficulty': return this.setDifficulty(session, msg);
+      case 'room.setCapacity': return this.setCapacity(session, msg);
+      case 'room.setMaxSeats': return this.setCapacity(session, { capacity: msg.n });
       case 'room.setAiPicksLast': return this.setAiPicksLast(session, msg);
       case 'room.setUniteLayerGains': return this.setUniteLayerGains(session, msg);
       case 'room.addBot': return this.addBot(session);
@@ -763,7 +769,8 @@ export class Lobby {
   // room.* handlers
   // ---------------------------------------------------------------------------------------------------
 
-  create(session, { mode, difficulty, code: requestedCode, test } = {}) {
+  create(session, { mode, difficulty, code: requestedCode, capacity = DEFAULT_SEATS, test } = {}) {
+    if (!ROOM_CAPACITIES.includes(capacity)) return fail(ERR.BAD_MSG);
     // A test room exists only when the process switch allowed it. The check runs before the room is built.
     if (test === true && this.testEnabled !== true) return fail(ERR.TEST_DISABLED);
 
@@ -785,7 +792,7 @@ export class Lobby {
     const code = customCode || this.genCode();
     if (!code) return fail(ERR.INTERNAL, 'no room code available');
     if (cur) this.removeMember(cur, session.playerId);
-    const room = new Room(code, mode, difficulty, this.now());
+    const room = new Room(code, mode, difficulty, this.now(), capacity);
     room.test = test === true;
     room.content = this.vanilla;
     // the server owner's default plugins (plugins/config.json `default`; header "Gameplay plugins"): none — the original game
@@ -918,6 +925,22 @@ export class Lobby {
       seat.ready = ready;
       this.broadcastState(room);
     }
+    return OK;
+  }
+
+  /** Capacity changes preserve seat identities and readiness; occupied seats cannot be truncated. */
+  setCapacity(session, { capacity }) {
+    const room = this.roomOf(session);
+    if (!room) return fail(ERR.NOT_IN_ROOM);
+    if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
+    if (room.match) return fail(ERR.ROOM_STARTED);
+    if (room.mode === 'solo' || !ROOM_CAPACITIES.includes(capacity)) return fail(ERR.BAD_MSG);
+    if (room.seats.slice(capacity).some(Boolean)) return fail(ERR.ROOM_FULL);
+    if (room.capacity === capacity) return OK;
+    this.dropReplay(room, session.playerId);
+    room.seats = Array.from({ length: capacity }, (_, i) => room.seats[i] || null);
+    room.capacity = capacity;
+    this.broadcastState(room);
     return OK;
   }
 

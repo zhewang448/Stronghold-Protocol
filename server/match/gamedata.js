@@ -15,6 +15,7 @@ import { getConfig, getMode } from '../data.js';
 import { isShopItem } from '../sim/simdata.js';
 import { mergeData } from '../../shared/plugins/dataUtils.js';
 import { standInRecord } from '../../shared/standIn.js';
+import { MAX_SEATS } from '../../shared/constants.js';
 import { MAX_OFFER_SLOTS } from './player/common.js';
 
 const own = (map, id) => (map && typeof map === 'object' && typeof id === 'string' && Object.hasOwn(map, id) && map[id] && typeof map[id] === 'object' ? map[id] : null);
@@ -63,9 +64,9 @@ export const COMBAT_TIME_SCALE = 2;
  *   solo   `solo` (1: the table value — one player's share);
  *   co-op  `perPlayer` true (the owner's decision of 2026-10-06, adopting PR #209 by @qingjingshenghuo): `coop` (1) × the
  *          players alive when the fight starts — bots and AI 托管 seats count, eliminated and departed seats do not —
- *          at most `aliveFull` (4); a count left out means a full team;
+ *          including larger rooms up to MAX_SEATS (20); a count left out means `aliveFull` (4);
  *          `perPlayer` false: the fixed pool of 0.1.x (「保持固定血量」, restorable with `solo` 0.25): `coop` whatever the
- *          count, × min(alive, aliveFull) / aliveFull with `aliveScaling`.
+ *          count, × alive / aliveFull with `aliveScaling`.
  * @param {object|null|undefined} modeScale config.modes[modeId].bossHpScale
  * @param {object|null|undefined} cfgScale config.bossHpScale
  * @param {boolean} isSolo
@@ -80,7 +81,7 @@ export function bossPoolShareOf(modeScale, cfgScale, isSolo, aliveCount) {
   if (isSolo) return pick('solo', 1);
   const full = Math.max(1, Math.floor(pick('aliveFull', 4)));
   const n = Number(aliveCount);
-  const alive = Number.isFinite(n) && n >= 1 ? Math.min(full, Math.floor(n)) : full;
+  const alive = Number.isFinite(n) && n >= 1 ? Math.min(MAX_SEATS, Math.floor(n)) : Math.min(MAX_SEATS, full);
   if (flag('perPlayer', true)) return pick('coop', 1) * alive;
   return pick('coop', 1) * (flag('aliveScaling', false) ? alive / full : 1);
 }
@@ -108,7 +109,7 @@ export class GameData {
     // Fixed operator gifts are unlimited outputs, but every produced normal/advanced item still occupies 1/2 copies
     // (card-pool experiment BV1eLXXBqEgF, maintainer-confirmed 2026-10-11). Random subset gifts are not exempt.
     this._fixedGiftItems = new Set(Object.values(this.raw.garrisons || {})
-      .filter(g => g.effectKey === 'SERVER_GAIN_EQUIP').map(g => g.bbStr?.chess).filter(id => this._items[id]));
+      .filter(g => g?.effectKey === 'SERVER_GAIN_EQUIP').map(g => this.baseIdOf(g.bbStr?.chess)).filter(id => this._items[id]));
     this._bonds = this.raw.bonds && typeof this.raw.bonds === 'object' ? this.raw.bonds : {};
     /** visible, shop-eligible base (normal) chess ids */
     this.visibleChess = Object.keys(chess).filter((id) => {
@@ -312,20 +313,23 @@ export class GameData {
   }
 
   /**
-   * Copies of a base chess in the shared pool — and, for a DIY slot, of a slotted 自选 piece in its player's own stock
-   * (player/diy.js buildDiyStock).
+   * Copies of a base chess in the shared pool (co-op multiplier applied).
+   * Private DIY stock retains the current branch's co-op multiplier; fixed-group scaling is shared-pool only.
    */
   poolCopies(baseId) {
+    const base = this.basePoolCopies(baseId);
+    // Co-op doubles shared and private stock (#650). Only SharedPool applies the additional fixed-group scale.
+    const multiplier = this.isSolo ? 1 : posIntOr(this.economy.coopPoolMultiplier, 1);
+    return base * multiplier;
+  }
+
+  /** Single-player base copies (overrides + tier defaults); no co-op multiplier. */
+  basePoolCopies(baseId) {
     const ov = this.economy.poolCopiesOverrides;
     const tier = this.tierOf(baseId);
     const pc = this.economy.poolCopies;
     const v = ov && Number.isInteger(ov[baseId]) && ov[baseId] >= 0 ? ov[baseId] : pc?.[tier];
-    const base = Number.isInteger(v) && v >= 0 ? v : (DEFAULTS.poolCopies[tier] ?? 10);
-    // Co-op doubles the single-player counts: the measured shared pool (shared by the whole team, independent of team
-    // size) and each player's private 自选 stock alike — the maintainer's decision of 2026-10-15 (GitHub #650): with
-    // the shared pool doubled and the 自选 stock not, a 自选 operator was diluted in the copy-weighted rolls.
-    const multiplier = this.isSolo ? 1 : posIntOr(this.economy.coopPoolMultiplier, 1);
-    return base * multiplier;
+    return Number.isInteger(v) && v >= 0 ? v : (DEFAULTS.poolCopies[tier] ?? 10);
   }
 
   /** Normal equipment copies in the shared pool; effect-only items have no shop stock limit. */
@@ -338,6 +342,9 @@ export class GameData {
 
   /** Whether a fixed trait gift may be produced beyond stock (including the advanced version of that item). */
   isUnlimitedGiftItem(id) { return this._fixedGiftItems.has(this.baseIdOf(id)); }
+
+  /** Compatibility for the fork's fixed-gift upgrade and merge identity marker. */
+  isTraitFixedItem(id) { return this.isUnlimitedGiftItem(id); }
 
   /** Copies needed to merge (0 = never merges: golden chess). */
   mergeCount(id) {

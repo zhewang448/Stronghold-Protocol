@@ -296,6 +296,12 @@ export class MatchTestCommands {
   }
 
   _testAdvance() {
+    const first = this._testDraftHolds.entries().next().value;
+    if (first) {
+      this._testDraftHolds.delete(first[0]);
+      first[1]();
+      return OK;
+    }
     const held = this._testHeld;
     if (!held || typeof held.fn !== 'function') return fail(ERR.WRONG_PHASE);
     this._testHeld = null;
@@ -335,6 +341,12 @@ export class MatchTestCommands {
       this.testTimers = true;
       this._testHeld = null;
       if (held) this.setDeadline(held.seconds, held.fn, { silent: !!held.silent });
+      const stage = this.phase === PHASE.BAND_DRAFT ? this.draft : this.phase === PHASE.SP_DRAFT ? this.sp : null;
+      for (const g of stage?.groups?.length > 1 ? stage.groups : []) {
+        const expire = this._testDraftHolds.get(String(g.id));
+        if (expire && !g.done) this.armDraftTurnTimer(g, g.turnSeconds * 1000, expire);
+      }
+      this._testDraftHolds.clear();
     } else {
       this.testTimers = false;
       const armed = this._testArmed;
@@ -342,8 +354,18 @@ export class MatchTestCommands {
       this._phaseTimer = null;
       this.deadline = 0;
       this._testHeld = armed || null;
+      const stage = this.phase === PHASE.BAND_DRAFT ? this.draft : this.phase === PHASE.SP_DRAFT ? this.sp : null;
+      for (const g of stage?.groups?.length > 1 ? stage.groups : []) {
+        if (g.done || typeof g._expire !== 'function') continue;
+        this.cancel(g.timer);
+        g.timer = null;
+        g.turnDeadline = 0;
+        this._testDraftHolds.set(String(g.id), g._expire);
+      }
     }
-    if (this.phase === PHASE.BAND_DRAFT && this.draft) this.draft.turnDeadline = this.deadline;
+    const stage = this.phase === PHASE.BAND_DRAFT ? this.draft : this.phase === PHASE.SP_DRAFT ? this.sp : null;
+    if (stage?.groups.length === 1) stage.groups[0].turnDeadline = this.deadline;
+    if (stage) this.syncDraftDeadline(stage);
     this.markPublic();
     return OK;
   }

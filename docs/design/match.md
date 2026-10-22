@@ -8,12 +8,14 @@ Part of [DESIGN.md](../DESIGN.md) (the index; section numbers are global).
 
 ### 6.1 State machine (Match.js)
 
+本扩容实验分支（维护者确认，2026-10-22）：从大厅新建同盟时先在「选择同盟方式」选创建，再进入「选择模拟协议」选难度；确认后才创建并进入等待室。同盟等待室的「AI 队友最后选择」新房间默认开启，创建者仍可在开局前关闭；单人流程不变。直接重连、加入已有同盟与快速匹配使用各自已有的难度，不插入创建选择步骤。历史恢复文件显式保存的值保持不变，旧文件若未含该字段按旧默认关闭处理。
+
 ```
-LOBBY(room) → INFO_CHECK (co-op 25 s; solo and any single-human match untimed (§18.2); all ready ⇒ skip; the operator loadout (§16) locks when it ends) → BAND_DRAFT (co-op: random order — the room option 「AI 队友最后选择」 (host, off by default; `room.setAiPicksLast`) puts every human seat before every AI seat, each group keeping the drawn order, and draws no extra random number; a skipping human goes behind the other humans still to pick and ahead of the AI seats, or to the very end when no other human remains [ASSUMED] —, ONE countdown — `BAND_TURN_SECONDS` 50 s per turn = m.public.deadline, AI seats pick at once, 1 skip each, a strategy a teammate already took is refused (队友已选), timeout ⇒ the strategy the player highlights (`g.bandFocus`) while free, else band_bldsk, else the first free one; solo: free pick, no timer, no skip; a single human: untimed) → BATTLE_CHECK (3 s)
+LOBBY(room) → INFO_CHECK (co-op 25 s; solo and any single-human match untimed (§18.2); all ready ⇒ skip; the operator loadout (§16) locks when it ends) → BAND_DRAFT (co-op: random order — new co-op rooms default 「AI 队友最后选择」 on; the host may switch it off before the match (`room.setAiPicksLast`), and the match puts every human seat before every AI seat, each group keeping the drawn order, without another random number; an absent value from a legacy room defaults off; a skipping human goes behind the other humans still to pick and ahead of the AI seats, or to the very end when no other human remains [ASSUMED] —, ONE countdown — `BAND_TURN_SECONDS` 50 s per turn = m.public.deadline, AI seats pick at once, 1 skip each, a strategy a teammate already took is refused (队友已选), timeout ⇒ the strategy the player highlights (`g.bandFocus`) while free, else band_bldsk, else the first free one; solo: free pick, no timer, no skip; a single human: untimed) → BATTLE_CHECK (3 s)
 → loop r = 1..lastRound:
      ROUND_START   (income, upgrade price −1 (floor 0), temp NOT wiped — what overflowed after the last prep's deadline is shown in this
                     prep (§6.2 temp overflow), unfrozen shop slots rerolled, frozen kept, <进入休整期时> effects)
-     [SP_DRAFT]    (if r ∈ spRounds: 机变 draft; co-op: random order (「AI 队友最后选择」, off by default: humans first, the same partition as the strategy draft), 30 s first picker / 16 s others; solo 3 cards; solo / single human untimed;
+     [SP_DRAFT]    (if r ∈ spRounds: 机变 draft; co-op: random order (new rooms have 「AI 队友最后选择」 on by default; the host may turn it off; humans first uses the same partition as the strategy draft), 30 s first picker / 16 s others; solo 3 cards; solo / single human untimed;
                     a card is picked with two taps, §18.2)
      PREP          (co-op: timer from config, ends when all alive humans+bots ready; solo / single human: untimed, ends on ready)
      PREP_END      (<休整期结束时> effects; unfrozen shop cleared; Ready is blocked while a personal choice or temp overflow is pending;
@@ -255,3 +257,13 @@ other owners do not replenish spent stock. [ASSUMED] Keep valid board cards in r
 index order, remove obsolete/excess cards and temp deadlines, and grant missing copies via normal overflow.
 These do not alter the default rules above. See
 [PLUGINS.md](../PLUGINS.md#rule-switches) for limits and assumptions.
+Experimental branch addition, maintainer authorized 2026-10-21: optional expanded rooms use the fixed-group capacity, draft and Unite rules in [EXPANDED-COOP.md](../EXPANDED-COOP.md). These community rules apply to larger starting rosters; ordinary rooms default to four and retain their existing private DIY stock and AI-last option.
+
+Expanded-coop compatibility review (2026-10-22): a Unite wave whose scheduled count exceeds the client result's 400-entry leak/unspawned limit runs on the existing sliced server path. Settlement retains all survivors; live and settled operator rankings accumulate all actual waves once, and a failed later wave's diagnostic leak list follows its planned input. Runtime Unite offspring remain excluded from billed leak diagnostics.
+
+Second expanded-coop review (2026-10-22): runtime Unite splits and summons never enter a later wave's scheduled escaped-enemy input. Only the original escaped enemies can continue through the group waves; this preserves §34.19's no-billing rule for runtime offspring. PREP recovery accepts alphanumeric room codes, writes prefixed filenames and migrates legacy filenames without leaving stale snapshots; the existing version-identity checks still apply (LOCAL-DEV §5).
+
+Main integration (2026-10-22, maintainer authorized): matches starting with at most four players retain the original
+boss pool and hidden-layer snapshot when someone quits mid-fight. Only larger starting rosters use the expanded
+mid-fight rescale and layer removal; the initial roster remains fixed even after eliminations. Single-group strategy
+skips still allow a later AI, offline or autoplay seat; only parallel groups require another manual human in that group.

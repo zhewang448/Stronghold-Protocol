@@ -69,7 +69,7 @@ async function play() {
     let replayContent = null, contentIndex = null;
     if (f.spec.cs) {
       const { loadContentSet } = await import('/js/content.js');
-      const set = await loadContentSet(f.spec.cs);
+      const set = await loadContentSet(f.spec.cs, { allowVanilla: true });
       if (set.canSim === false) throw new Error('该回放需要脚本插件授权，请在原房间确认脚本后查看实时战场');
       contentIndex = set.index;
       data.setContent({ id: set.cs, values: set.values });

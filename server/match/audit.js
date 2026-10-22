@@ -23,8 +23,9 @@
 //                 #6 follow-up)
 //   combat start  nothing overdue in temp, everyone ready, funds lost (carry bands excepted), unfrozen shop cleared,
 //                 one field per alive player
-//   drafts        every seat holds an allowed band with LP = totalHp; 机变: one card per alive player, card ↔ picker
-//                 maps consistent, 6 (co-op) / 3 (solo) cards
+//   drafts        every living seat holds an allowed band with LP = totalHp, unique within its fixed pool group;
+//                 机变: one card per alive player, group-local card ↔ picker maps consistent, six cards per co-op group
+//                 / the configured solo count (normally three; training six)
 //   联防          decided after the COMBAT_END pause from the players still in: runs iff co-op with ≥ 1 leaker and
 //                 ≥ 1 perfect player; helpers = unite.js helperOrder (PRTS: units > active bond > layers > standing
 //                 units > seat, research 08 §5); leakers = players with counted leaks
@@ -34,14 +35,16 @@
 //                 after a win when hiddenEligible() holds
 //   result        each title ≤ once, ≤ 1 title per player, onlyOnWin titles only on a win, roundsPassed per player,
 //                 Σ alive players' LP = the merged team LP after the Final Assault
-//   deadlines     every timed phase's m.public deadline equals its configured duration × timerScale; the co-op
-//                 strategy draft has one countdown: the deadline is the current turn's (Match.BAND_TURN_SECONDS). A match
+//   deadlines     every timed phase's m.public deadline equals its configured duration × timerScale; the strategy and
+//                 机变 drafts have an independent countdown per group (the global deadline is zero for multiple groups).
+//                 Starting one group's turn must preserve the other groups' clocks. A match
 //                 with a single human (solo, or a 同盟 room with AI teammates only: Match.soloUntimed) times nothing
 //                 outside its battles — no INFO_CHECK / draft / 机变 / prep deadline, BATTLE_CHECK / ROUND_START / SETTLE
 //                 silent (deadline 0)
 // Checks never throw into the match: an exception inside a check is itself recorded as a violation.
 
-import { PHASE } from '../../shared/constants.js';
+import { PHASE, MAX_DRAFT_CARDS } from '../../shared/constants.js';
+import { coopDraftCardCount, uniteRoundLimit } from '../../shared/playerCapacity.js';
 import { collectViolations } from './invariants.js';
 import { mergeTile, pieceDir, canPlace, placeClass } from './board.js';
 import { bossPoolHp, hiddenEligible } from './finalAssault.js';
@@ -84,6 +87,60 @@ export function attachAudit(m, { invariants = true, limit = 200 } = {}) {
     if (!invariants) return;
     audit.phases++;
     for (const v of collectViolations(m, { limit: 10 })) fail(`invariant: ${v}`);
+  };
+  const draftGroups = (stage) => stage.groups || [stage];
+  const checkDraftOrder = (stage, label) => {
+    const groups = draftGroups(stage);
+    const alive = new Set(m.alivePlayers().map((p) => p.playerId));
+    const ordered = groups.flatMap((g) => g.order).filter((pid) => alive.has(pid)).sort();
+    const want = [...alive].sort();
+    if (JSON.stringify(ordered) !== JSON.stringify(want)) fail(`${label}: group orders ${ordered} != living seats ${want}`);
+    if (!stage.groups) return;
+    if (new Set(groups.map((g) => g.id)).size !== groups.length) fail(`${label}: duplicate group id`);
+    if (groups.length !== m.poolGroups.length) fail(`${label}: ${groups.length} groups != ${m.poolGroups.length} fixed pool groups`);
+    for (const g of groups) {
+      const pool = m.poolGroups.find((p) => p.id === g.id);
+      if (!pool || JSON.stringify(g.playerIds) !== JSON.stringify(pool.playerIds)) fail(`${label} group ${g.id}: fixed membership changed`);
+      if (new Set(g.order).size !== g.order.length) fail(`${label} group ${g.id}: duplicate turn`);
+      for (const pid of g.order) if (!g.playerIds.includes(pid)) fail(`${label} group ${g.id}: outsider ${pid} in order`);
+    }
+  };
+  const peerClocks = (stage, group) => draftGroups(stage).filter((g) => g !== group)
+    .map((g) => ({ g, deadline: g.turnDeadline, seconds: g.turnSeconds, token: g.token, timer: g.timer }));
+  const checkDraftClock = (stage, group, seconds, label, peers) => {
+    const groups = draftGroups(stage);
+    const g = group;
+    if (g.untimed !== m.soloUntimed) fail(`${label} group ${g.id ?? 1}: untimed ${g.untimed}, expected ${m.soloUntimed}`);
+    const want = !g.done && g.idx < g.order.length && !g.untimed ? m.scaled(seconds * 1000) : 0;
+    const got = g.turnDeadline ? g.turnDeadline - m.sched.now() : 0;
+    if (Math.abs(got - want) > 1) fail(`${label} group ${g.id ?? 1}: deadline in ${got} ms, expected ${want} ms`);
+    if (g.turnSeconds != null && Math.abs(g.turnSeconds * 1000 - want) > 1) fail(`${label} group ${g.id ?? 1}: turnSeconds ${g.turnSeconds}, expected ${want / 1000}`);
+    const global = groups.length === 1 ? groups[0].turnDeadline || 0 : 0;
+    if (m.deadline !== global) fail(`${label}: global deadline ${m.deadline}, expected ${global}`);
+    for (const p of peers) if (p.g.turnDeadline !== p.deadline || p.g.turnSeconds !== p.seconds || p.g.token !== p.token || p.g.timer !== p.timer) {
+      fail(`${label} group ${g.id ?? 1}: changed group ${p.g.id ?? 1}'s clock`);
+    }
+    const timers = groups.filter((x) => !x.done && !x.untimed && x.timer != null).map((x) => x.timer);
+    if (new Set(timers).size !== timers.length) fail(`${label}: groups share a turn timer`);
+    const pending = g.order.slice(g.idx).map((pid) => m.players.get(pid)).filter((p) => p?.alive && !p.left);
+    let automatic = false;
+      for (const ps of groups.length > 1 ? pending : []) {
+      if (!m.manualDraftPicker(ps)) automatic = true;
+      else if (automatic) fail(`${label} group ${g.id ?? 1}: manual player ${ps.playerId} ordered after an automatic seat`);
+    }
+  };
+  const checkBandPicks = (stage) => {
+    for (const g of draftGroups(stage)) {
+      const picks = Object.entries(g.picks);
+      if (new Set(picks.map(([, id]) => id)).size !== picks.length) fail(`band draft group ${g.id ?? 1}: duplicate strategy`);
+      for (const [pid, id] of picks) {
+        if (g.playerIds && !g.playerIds.includes(pid)) fail(`band draft group ${g.id}: outsider ${pid} picked`);
+        if (stage.picks[pid] !== id) fail(`band draft group ${g.id ?? 1}: ${pid} pick differs from the global map`);
+      }
+    }
+    for (const pid of Object.keys(stage.picks)) if (!draftGroups(stage).some((g) => g.picks[pid] === stage.picks[pid])) {
+      fail(`band draft: ${pid} appears only in the global pick map`);
+    }
   };
 
   // ---- per-player prep handlers and round start --------------------------------------------------------------
@@ -131,7 +188,7 @@ export function attachAudit(m, { invariants = true, limit = 200 } = {}) {
           if (t > ps.shop.level) fail(`${ps.playerId}: rolled tier ${t} at shop level ${ps.shop.level}`);
           // (a slotted 自选 piece comes from the player's own stock, 0.2.0 player/diy.js — once the 调度中心 is at its level)
           const diy = ps.diyStock && ps.diyStock.has(base) ? ps.diyStock.entries.get(base) : null;
-          if (!m.pool.has(base) && !diy) fail(`${ps.playerId}: rolled ${s.id} outside the match pool (banned/hidden)`);
+          if (!ps.pool.has(base) && !diy) fail(`${ps.playerId}: rolled ${s.id} outside the match pool (banned/hidden)`);
           if (diy && ps.shop.level < diy.shopLevel) fail(`${ps.playerId}: rolled 自选 ${s.id} at shop level ${ps.shop.level} < ${diy.shopLevel}`);
           if (s.basePrice !== gd.chessPrice(s.id)) fail(`${ps.playerId}: ${s.id} basePrice ${s.basePrice} != ${gd.chessPrice(s.id)}`);
         });
@@ -299,23 +356,33 @@ export function attachAudit(m, { invariants = true, limit = 200 } = {}) {
     check('band draft', () => {
       if (m.phase !== PHASE.BAND_DRAFT) return;
       const d = m.draft;
-      const ids = m.order.map((p) => p.playerId).sort();
-      if (JSON.stringify(d.order.slice().sort()) !== JSON.stringify(ids)) fail(`draft order ${d.order} != seats ${ids}`);
-      // one countdown (user playtest #4 item 4): the step's deadline IS the current turn's, BAND_TURN_SECONDS long
-      if (m.soloUntimed) { if (m.deadline || d.turnDeadline) fail('untimed band draft is timed'); } else {
-        if (m.deadline !== d.turnDeadline) fail(`BAND_DRAFT: deadline ${m.deadline} is not the turn's ${d.turnDeadline}`);
-        expectDeadline(BAND_TURN_SECONDS, 'BAND_DRAFT turn');
-      }
+      checkDraftOrder(d, 'band draft');
+      checkBandPicks(d);
     });
     return r;
+  });
+  wrap(m, 'startDraftTurn', function (orig, group = m.draftGroup()) {
+    const stage = m.draft;
+    const peers = stage && group ? peerClocks(stage, group) : [];
+    const res = orig(group);
+    check('band turn', () => {
+      if (m.phase !== PHASE.BAND_DRAFT || m.draft !== stage || !group) return;
+      checkDraftClock(stage, group, BAND_TURN_SECONDS, 'BAND_DRAFT', peers);
+      checkBandPicks(stage);
+    });
+    return res;
   });
   wrap(m, 'enterBattleCheck', function (orig) {
     const r = orig();
     runInvariants();
     check('bands', () => {
-      for (const ps of m.order) {
+      for (const ps of m.alivePlayers()) {
         if (!ps.bandId || !gd.bandAllowed(ps.bandId)) fail(`${ps.playerId}: band ${ps.bandId} not allowed`);
         if (ps.lp !== gd.startLp(ps.bandId)) fail(`${ps.playerId}: LP ${ps.lp} != totalHp ${gd.startLp(ps.bandId)} of ${ps.bandId}`);
+      }
+      if (m.draft) {
+        checkBandPicks(m.draft);
+        for (const ps of m.alivePlayers()) if (m.draft.picks[ps.playerId] !== ps.bandId) fail(`${ps.playerId}: assigned band differs from the draft pick`);
       }
       expectDeadline(gd.timer('battleCheck'), 'BATTLE_CHECK', { silentSolo: true });
     });
@@ -332,13 +399,20 @@ export function attachAudit(m, { invariants = true, limit = 200 } = {}) {
     });
     return res;
   });
-  wrap(m, 'startSpTurn', function (orig) {
-    const res = orig();
+  wrap(m, 'enterSpDraft', function (orig, ...args) {
+    const res = orig(...args);
+    check('sp orders', () => {
+      if (m.phase === PHASE.SP_DRAFT && m.sp) checkDraftOrder(m.sp, '机变');
+    });
+    return res;
+  });
+  wrap(m, 'startSpTurn', function (orig, group = m.spGroup()) {
+    const stage = m.sp;
+    const peers = stage && group ? peerClocks(stage, group) : [];
+    const res = orig(group);
     check('sp turn', () => {
-      if (m.phase !== PHASE.SP_DRAFT || !m.sp) return;
-      const s = m.sp;
-      if (s.idx >= s.order.length) return;
-      if (m.soloUntimed) { if (m.deadline) fail('untimed 机变 is timed'); } else expectDeadline(s.idx === 0 ? gd.timer('spFirst') : gd.timer('spTurn'), `SP_DRAFT turn ${s.idx}`);
+      if (m.phase !== PHASE.SP_DRAFT || m.sp !== stage || !group) return;
+      checkDraftClock(stage, group, gd.timer(group.idx === 0 ? 'spFirst' : 'spTurn'), 'SP_DRAFT', peers);
     });
     return res;
   });
@@ -346,16 +420,34 @@ export function attachAudit(m, { invariants = true, limit = 200 } = {}) {
     const s = m.sp;
     if (m.phase === PHASE.SP_DRAFT && s) check('sp draft', () => {
       const alive = m.alivePlayers().map((p) => p.playerId);
-      const want = m.isSolo ? 3 : 6;
-      if (s.cards.length > want) fail(`${s.cards.length} 机变 cards (max ${want})`);
-      if (s.order.length !== alive.length) fail(`机变 order ${s.order.length} for ${alive.length} alive`);
-      for (const pid of alive) {
-        const idx = s.picks[pid];
-        if (idx == null) fail(`${pid} ends 机变 without a card`);
-        else if (s.taken[idx] !== pid) fail(`${pid} picked card ${idx} held by ${s.taken[idx]}`);
+      const configured = gd.choices.schedule?.[gd.modeId]?.rounds?.[String(m.round)]?.cards;
+      const soloCount = Number.isInteger(configured) && configured > 0 ? configured : gd.choices.format?.solo?.cards || 3;
+      const want = m.isSolo ? Math.min(MAX_DRAFT_CARDS, soloCount) : coopDraftCardCount();
+      checkDraftOrder(s, '机变');
+      for (const g of draftGroups(s)) {
+        // A fixed group with no living member at stage creation keeps its identity but has no selectable page.
+        const count = g.order.length ? want : 0;
+        if (g.cards.length !== count) fail(`机变 group ${g.id ?? 1}: ${g.cards.length} cards, expected ${count}`);
+        if (s.groups && !g.done) fail(`机变 group ${g.id}: finished before all its turns completed`);
+        const cards = new Set(g.cards.map((c) => c.idx));
+        if (cards.size !== g.cards.length) fail(`机变 group ${g.id ?? 1}: duplicate card index`);
+        for (const pid of alive.filter((p) => !g.playerIds || g.playerIds.includes(p))) {
+          const idx = g.picks[pid];
+          if (idx == null) fail(`${pid} ends 机变 without a card`);
+          else if (!cards.has(idx) || g.taken[idx] !== pid) fail(`${pid} picked card ${idx} held by ${g.taken[idx]} in group ${g.id ?? 1}`);
+        }
+        for (const [pid, idx] of Object.entries(g.picks)) {
+          if (g.playerIds && !g.playerIds.includes(pid)) fail(`机变 group ${g.id}: outsider ${pid} picked`);
+          if (s.picks[pid] !== idx) fail(`机变 group ${g.id ?? 1}: ${pid} pick differs from the global map`);
+          if (g.taken[idx] !== pid) fail(`机变 group ${g.id ?? 1}: ${pid} pick is not held`);
+        }
+        const holders = Object.values(g.taken);
+        if (new Set(holders).size !== holders.length) fail(`机变 group ${g.id ?? 1}: a player took two cards`);
+        for (const [idx, pid] of Object.entries(g.taken)) {
+          if (!cards.has(Number(idx)) || g.picks[pid] !== Number(idx)) fail(`机变 group ${g.id ?? 1}: held card ${idx} has no matching pick`);
+        }
       }
-      const holders = Object.values(s.taken);
-      if (new Set(holders).size !== holders.length) fail('a player took two 机变 cards');
+      for (const pid of Object.keys(s.picks)) if (!draftGroups(s).some((g) => g.picks[pid] === s.picks[pid])) fail(`机变: ${pid} appears only in the global pick map`);
     });
     return orig();
   });
@@ -389,7 +481,8 @@ export function attachAudit(m, { invariants = true, limit = 200 } = {}) {
       const counted = (pid) => ((m.lastResults.get(pid) || {}).leaked || []).filter((l) => l && l.counted !== false).length;
       const alive = m.alivePlayers();
       const leak = alive.some((p) => counted(p.playerId) > 0);
-      const perfect = alive.some((p) => counted(p.playerId) === 0);
+      const perfect = alive.some((p) => m.lastResults.has(p.playerId)
+        && m.lastResults.get(p.playerId).perfect !== false && counted(p.playerId) === 0);
       expectUnite = { round: m.round, expect: !m.isSolo && leak && perfect };
     });
     return orig();
@@ -400,13 +493,25 @@ export function attachAudit(m, { invariants = true, limit = 200 } = {}) {
       const counted = (pid) => ((res.get(pid) || {}).leaked || []).filter((l) => l && l.counted !== false).length;
       const alive = m.alivePlayers();
       const leakers = alive.filter((p) => counted(p.playerId) > 0).map((p) => p.playerId).sort();
-      const perfect = alive.filter((p) => counted(p.playerId) === 0);
+      const perfect = alive.filter((p) => res.has(p.playerId) && res.get(p.playerId).perfect !== false && counted(p.playerId) === 0);
       const helpers = helperOrder(m, perfect, res).map((p) => p.playerId);
-      if (helpers.length > gd.unite.maxHelpers) fail(`${helpers.length} 联防 helpers (max ${gd.unite.maxHelpers})`);
+      const perRound = Math.max(1, Math.min(2, gd.unite.maxHelpers));
+      const roundsLimit = uniteRoundLimit(m.poolGroups?.length || 1);
+      if (!Number.isInteger(plan.round) || plan.round < 1 || plan.round > roundsLimit
+        || !Number.isInteger(plan.roundsMax) || plan.roundsMax < plan.round || plan.roundsMax > roundsLimit)
+        fail(`联防 wave ${plan.round}/${plan.roundsMax} exceeds the fixed-group limit ${roundsLimit}`);
+      const usedIds = [...plan.usedHelpers, ...plan.helpers].map((p) => p.playerId);
+      if (new Set(usedIds).size !== usedIds.length) fail('联防 reused a helper across waves');
+      if (usedIds.length > perRound * roundsLimit) fail('联防 used more helpers than the fixed-group budget');
+      if (plan.helpers.length > perRound) fail(`${plan.helpers.length} 联防 helpers in one wave (max ${perRound})`);
       if (plan.helpers.some((p) => !p.alive || p.left)) fail(`联防 helper eliminated / departed: ${plan.helpers.filter((p) => !p.alive || p.left).map((p) => p.playerId)}`);
       if (m.isSolo) fail('联防 in solo');
-      if (JSON.stringify(plan.leakers.map((p) => p.playerId).sort()) !== JSON.stringify(leakers)) fail(`联防 leakers ${plan.leakers.map((p) => p.playerId)} != ${leakers}`);
-      if (JSON.stringify(plan.helpers.map((p) => p.playerId)) !== JSON.stringify(helpers)) fail(`联防 helpers ${plan.helpers.map((p) => p.playerId)} != ${helpers}`);
+      if (plan.round === 1 && JSON.stringify(plan.leakers.map((p) => p.playerId).sort()) !== JSON.stringify(leakers))
+        fail(`联防 leakers ${plan.leakers.map((p) => p.playerId)} != ${leakers}`);
+      if (plan.leakers.some((p) => counted(p.playerId) === 0)) fail('联防 includes a source that did not leak');
+      if (plan.round === 1 && JSON.stringify(plan.helpers.map((p) => p.playerId)) !== JSON.stringify(helpers.slice(0, perRound)))
+        fail(`联防 helpers ${plan.helpers.map((p) => p.playerId)} != ${helpers.slice(0, perRound)}`);
+      if (plan.helpers.some((p) => !perfect.includes(p))) fail('联防 selected a leaker or a non-perfect helper');
     });
     const r = orig(plan);
     runInvariants();
@@ -421,7 +526,7 @@ export function attachAudit(m, { invariants = true, limit = 200 } = {}) {
     const res = orig(plan, uniteResult);
     check('settle', () => {
       const cap = gd.lpCapPerRound;
-      const uniteRan = !!(plan && uniteResult && !uniteResult.synthetic);
+      const uniteRan = !!plan;
       for (const [ps, lp0] of before) {
         const r = m.lastResults.get(ps.playerId) || { leaked: [] };
         const counted = (r.leaked || []).filter((l) => l && l.counted !== false).length;
@@ -470,7 +575,7 @@ export function attachAudit(m, { invariants = true, limit = 200 } = {}) {
       if (hidden && m.teamLp !== teamLp0) fail(`hidden core changed team LP ${teamLp0} → ${m.teamLp}`);
       const want = bossPoolHp(gd, hidden ? m.hiddenBossId : m.bossId, alive.length);
       if (!m.bossPool || m.bossPool.maxHp !== want) fail(`boss pool ${m.bossPool && m.bossPool.maxHp} != ${want}`);
-      if (hidden && !hiddenEligible(gd, { layerSum: m.hiddenLayerSum, teamLp: m.teamLp })) fail('hidden core entered while not eligible');
+      if (hidden && !hiddenEligible(gd, { layerSum: m.hiddenLayerSum, teamLp: m.teamLp, playerCount: alive.length })) fail('hidden core entered while not eligible');
       if (hidden && gd.difficulty === 'FUNNY') fail('hidden core on FUNNY');
     });
     return res;

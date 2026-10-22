@@ -88,9 +88,26 @@
   .chart-wrap svg { display: block; width: 100%; height: auto; }
   .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 4px 0; font-size: 12px; }
   .legend span::before, .tip .k { content: ""; display: inline-block; width: 12px; height: 2px; vertical-align: middle; margin-right: 6px; background: var(--c); }
-  .tip { position: absolute; pointer-events: none; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 6px 10px; font-size: 12px; white-space: nowrap; display: none; z-index: 2; }
-  .tip b { font-weight: normal; color: var(--dim); display: block; margin-bottom: 2px; }
-  .tip .v { display: inline-block; min-width: 56px; text-align: right; margin-right: 8px; font-variant-numeric: tabular-nums; }
+  .chart-legend button { display: inline-flex; align-items: center; gap: 7px; min-height: 36px; max-width: 100%; text-align: left; overflow-wrap: anywhere; }
+  .chart-legend button::before, .player-series-key::before { content: ''; display: inline-block; width: 12px; height: 4px; margin-right: 5px; background: var(--c); flex: none; }
+  .chart-legend button[aria-pressed="true"] { border-color: var(--c); background: #303a34; font-weight: 700; }
+  .chart-legend button:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
+  .chart-legend[hidden], label[hidden] { display: none; }
+  @media (pointer: coarse) { .chart-legend button { min-height: 44px; } }
+  .tip { position: fixed; pointer-events: none; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; font-size: 12px; max-width: calc(100vw - 16px); overflow: hidden; overflow-wrap: anywhere; display: none; z-index: 30; }
+  .tip[data-pinned="true"] { pointer-events: auto; }
+  .tip-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; padding: 0; border: 0; }
+  .tip-head b { min-width: 0; line-height: 1.35; }
+  .tip .tip-close { display: grid; place-items: center; width: 32px; min-width: 32px; min-height: 32px; padding: 4px; flex: none; }
+  .tip .tip-close[hidden] { display: none; }
+  .tip-close .icon { width: 18px; height: 18px; fill: currentColor; }
+  .tip-rows { overflow-y: hidden; overflow-x: hidden; scrollbar-gutter: stable; overscroll-behavior: contain; touch-action: pan-y; }
+  .tip[data-pinned="true"] .tip-rows { overflow-y: auto; }
+  .tip-row { display: grid; grid-template-columns: 12px max-content minmax(0, 1fr); align-items: baseline; gap: 8px; padding: 4px 0; }
+  .tip-row .k { margin: 0; }
+  .tip-row .v { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tip-hint { margin: 8px 0 0; color: var(--dim); font-size: 12px; line-height: 1.4; }
+  @media (pointer: coarse) { .tip .tip-close { width: 44px; min-width: 44px; min-height: 44px; } }
   .units { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 16px; }
   .units ol { margin: 2px 0 0; padding-left: 20px; }
   .good { color: var(--mint); }
@@ -254,6 +271,7 @@
 <div id="msg" role="status" aria-live="polite"></div>
 <script type="module">
 import { drawRoundChart, drawUnitRounds } from '/js/ui/roundChart.js';
+import { playerSeries } from '/js/ui/playerSeries.js';
 import { DEV_PAGES, DEV_SCENES, devSceneUrl } from '/shared/devtools.js';
 import { initAnnouncementEditor } from '/js/ui/announcementEditor.js';
 const chartBonds = await fetch('/data/bonds.json').then((r) => r.ok ? r.json() : {}).catch(() => ({}));
@@ -697,9 +715,6 @@ function roomCard(r) {
 }
 
 // ---- statistics (shared by the rooms page and the 对局记录 page)
-// series colors follow the seat order, never the rank (validated against the panel surfaces, docs/HANDOFF.md 4.8)
-const SERIES = ['#3987e5', '#d95926', '#199e70', '#c98500'];
-const INK = { grid: '#2c2c2a', axis: '#383835', label: '#898781', text: '#dfe6e2', surface: '#101311' };
 const TOTALS = [['dmgDealt', '伤害'], ['kills', '击杀'], ['leaks', '漏怪'], ['perfectRounds', '无伤回合'], ['lpLost', '损失 LP'], ['fundsGained', '获得金币'],
   ['gold', '花费'], ['buys', '购买'], ['sells', '出售'], ['refreshes', '刷新'], ['merges', '晋升'], ['itemsEquipped', '配装'], ['healing', '治疗'],
   ['bossDamage', '领袖伤害'], ['activatedLayers', '盟约层数']];
@@ -715,25 +730,21 @@ const dur = (ms) => { const s = Math.round((ms || 0) / 1000); return `${Math.flo
 const outcomeText = (r) => (r.victory ? (r.hiddenCleared ? '胜利 · 隐秘核心' : '胜利') : r.reason === 'admin' ? '控制台结束' : '失败');
 
 /** The players of a history, in seat order (the entry order), with their series color and name. */
-function seriesOf(history, nameOf) {
-  const last = history[history.length - 1];
-  return last ? last.players.map((p, i) => ({ id: p.playerId, name: nameOf(p.playerId), color: SERIES[i] || INK.label })) : [];
-}
-
 /** Points of one player for a metric: every round alive, plus the round it was eliminated in. */
-function drawChart(host, history, nameOf, state) {
-  drawRoundChart(host, history, nameOf, state, { bondRecord: (id) => chartBonds[id] });
+function drawChart(host, history, nameOf, state, options = {}) {
+  drawRoundChart(host, history, nameOf, state, { ...options, bondRecord: (id) => chartBonds[id] });
 }
 
 /** Running totals, one row per player. players: [{ name, stats }] */
 function totalsTable(players) {
+  const colors = new Map(playerSeries([], id => id, { players }).map(s => [s.id, s.color]));
   return `<div class="xscroll"><table><thead><tr><th scope="col">玩家</th>${TOTALS.map(([, l]) => `<th scope="col" class="n">${l}</th>`).join('')}</tr></thead>
-    <tbody>${players.map((p) => `<tr><th scope="row">${esc(p.name)}</th>${TOTALS.map(([k]) => `<td class="n">${p.stats && p.stats[k] != null ? fmt(p.stats[k]) : '—'}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    <tbody>${players.map((p) => `<tr><th scope="row"><span class="player-series-key" style="--c:${colors.get(p.playerId || p.id)}">${esc(p.name)}</span></th>${TOTALS.map(([k]) => `<td class="n">${p.stats && p.stats[k] != null ? fmt(p.stats[k]) : '—'}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 
 /** Each player's five operators with the most damage over the recorded rounds. */
-function unitsRanking(history, nameOf) {
-  const series = seriesOf(history, nameOf);
+function unitsRanking(history, nameOf, options = {}) {
+  const series = playerSeries(history, nameOf, options);
   if (!series.length) return '<p class="meta">暂无</p>';
   return `<div class="units">${series.map((s) => {
     const by = new Map();
@@ -882,6 +893,7 @@ function statsPanel(r) {
   const ended = !r.match && !!r.lastMatch;
   const names = new Map(m ? m.players.map((x) => [x.id, x.name]) : []);
   const nameOf = (id) => names.get(id) || id;
+  const chartOptions = { players: (m?.players || []).map(p => ({ playerId: p.id, seat: p.seat })), poolGroups: m?.poolGroups || [] };
   const part = (k, data, draw) => {
     const json = JSON.stringify(data);
     if (p.seen[k] === json) return;
@@ -901,11 +913,11 @@ function statsPanel(r) {
     const key = ended ? r.lastMatch.savedAt : 'live';
     if (p.matchKey !== key) { p.matchKey = key; p.rounds.round = null; p.unitRounds = { round: null, player: '', all: false }; }
     part('leaks', [m.history, [...names]], (host) => { host.innerHTML = leaksView(m.history, nameOf); });
-    part('chart', [m.history, [...names]], (host) => drawChart(host, m.history, nameOf, p.chart));
+    part('chart', [m.history, [...names], chartOptions], (host) => drawChart(host, m.history, nameOf, p.chart, chartOptions));
     part('rounds', [m.history, [...names]], (host) => drawRounds(host, m.history, nameOf, p.rounds));
-    part('unitRounds', [m.history, [...names]], (host) => drawUnitRounds(host, m.history, nameOf, p.unitRounds));
+    part('unitRounds', [m.history, [...names], chartOptions], (host) => drawUnitRounds(host, m.history, nameOf, p.unitRounds, chartOptions));
     part('totals', m.players.map((x) => [x.name, x.stats]), (host) => { host.innerHTML = totalsTable(m.players); });
-    part('units', [m.history.length, [...names]], (host) => { host.innerHTML = unitsRanking(m.history, nameOf); });
+    part('units', [m.history.length, [...names], chartOptions], (host) => { host.innerHTML = unitsRanking(m.history, nameOf, chartOptions); });
   }
   p.el.querySelector('details[data-plan]').hidden = !(r.match && r.match.enemyPlan);
   if (r.match && r.match.enemyPlan) part('plan', r.match.enemyPlan, (host) => { host.innerHTML = planTable(r.code, r.match.enemyPlan); });
@@ -971,12 +983,12 @@ async function showRecord(id) {
       <details><summary>漏怪分析</summary><div data-part="leaks"></div></details>
       <div><h3>每回合干员伤害排行</h3><div data-part="unitRounds"></div></div>
       <div><h3>累计数据</h3>${totalsTable(players)}</div>
-      <div><h3>本局干员伤害排行（累计前 5）</h3>${unitsRanking(history, nameOf)}</div>
+      <div><h3>本局干员伤害排行（累计前 5）</h3>${unitsRanking(history, nameOf, { players })}</div>
     </div></section>`;
   host.querySelector('[data-part="leaks"]').innerHTML = leaksView(history, nameOf);
-  drawChart(host.querySelector('[data-part="chart"]'), history, nameOf, { metric: 'lp', table: false });
+  drawChart(host.querySelector('[data-part="chart"]'), history, nameOf, { metric: 'lp', table: false }, { players });
   drawRounds(host.querySelector('[data-part="rounds"]'), history, nameOf, { round: null });
-  drawUnitRounds(host.querySelector('[data-part="unitRounds"]'), history, nameOf, { round: null, player: '', all: false });
+  drawUnitRounds(host.querySelector('[data-part="unitRounds"]'), history, nameOf, { round: null, player: '', all: false }, { players });
   host.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -1213,6 +1225,7 @@ async function showSettings() {
       <div id="update-backups-content" role="status" aria-live="polite">正在读取更新备份…</div>
     </section>
     <section class="room" id="plugin-settings"><h2>插件管理</h2><p>在插件工作台安装、启停、编辑和导出插件。</p><a class="replay-link" href="/studio" target="_blank" rel="noopener noreferrer">打开插件工作台 ↗</a><p class="meta">仅本机可通过此入口获取工作台权限；工作台关闭时会显示原因。</p></section>
+    <section class="room" id="issue-feedback"><h2>问题反馈与功能建议</h2><p>欢迎反馈使用中遇到的问题，或提出新的功能拓展建议，帮助项目持续改进。</p><a class="replay-link" href="https://github.com/zhewang448/Stronghold-Protocol/issues" target="_blank" rel="noopener noreferrer">前往 GitHub Issues ↗</a><p class="meta">提交问题时，欢迎附上复现步骤、运行方式与相关日志。</p></section>
     <section class="room" id="replay-settings"><h2>整局回放</h2>
       <p class="meta" id="replay-help">默认录制，保留最近 50 局回放，自动清理只删除回放文件。普通战斗与联防可播放，领袖战仅展示结果。关闭后，当前对局后续战斗及新对局不再录制，未完整录制的对局不保存回放。</p>
       <label><input id="replay-enabled" type="checkbox" aria-describedby="replay-help" ${d.replay.enabled ? 'checked' : ''} ${d.replay.forcedOff ? 'disabled' : ''}> 录制整局回放</label>
@@ -1317,7 +1330,7 @@ function arrangeSettings() {
     ['game', '对局设置', ['prep-settings', 'unite-settings', 'round-charts-settings']],
     ['chat', '交流管理', ['social-settings', 'chat-policy-settings', 'chat-settings']],
     ['history', '记录与恢复', ['replay-settings', 'recovery-settings']],
-    ['system', '维护与扩展', ['release-update', 'update-backups-settings', 'plugin-settings']],
+    ['system', '维护与扩展', ['release-update', 'update-backups-settings', 'plugin-settings', 'issue-feedback']],
     ['cleanup', '数据清理', ['storage-settings']],
   ];
   host.innerHTML = `<div class="settings-intro"><h2>主机设置</h2><p class="meta">每项设置单独保存。除页面另有说明外，保存后立即生效；主机配置保存在 ${esc(settingsData.file)}。</p></div>

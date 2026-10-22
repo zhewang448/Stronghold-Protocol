@@ -14,14 +14,14 @@
 //   opts.difficulty  'FUNNY'|'NORMAL'|'HARD'|'ABYSS'
 //   opts.modeId      string                     modeIdFor(mode, difficulty), e.g. 'mode_multi_hard'
 //   opts.aiPicksLast boolean (optional)         the co-op room option 「AI 队友最后选择」 (room.setAiPicksLast, GitHub #338):
-//                                              the strategy and 机变 drafts put every human seat before every AI seat
-//                                              (MatchPhases.humansFirst); only `true` turns it on; ignored in solo
-//   opts.seats       Array<{ seat: 0..3, playerId: string, name: string, isBot: boolean, connected: boolean,
+//                                              retains the existing single-group option; expanded fixed groups prioritize
+//                                              connected manual pickers (prioritizeDraftOrder); ignored in solo.
+//   opts.seats       Array<{ seat: 0..19, playerId: string, name: string, isBot: boolean, connected: boolean,
 //                            loadout?: { [baseChessId]: { skill: index, module: uniEquipId|'none'|null } } | null,
 //                            ops?: { [charId]: { potential: 1–6, cultivate: 0–3 } } | null,
 //                            notOwned?: string[] | null,
 //                            diy?: { [slotBaseId]: { charId, skillIndex, uniEquipId } } | null }>
-//                    sorted by seat, 1–4 entries, ≥ 1 human; solo ⇒ exactly 1 human and no bots.
+//                    sorted by seat, 1–20 entries, ≥ 1 human; solo ⇒ exactly 1 human and no bots.
 //                    Bot playerIds start with 'ai_'. Seat indexes may have gaps (e.g. seats 0 and 2).
 //                    `loadout` (DESIGN §16, optional): the human's operator loadout, already checked by the lobby
 //                    (shared/protocol.js checkLoadout); PlayerState re-checks it against opts.data and ignores it for bots.
@@ -138,8 +138,8 @@
 // result — _uniteLeft) and pendingLp = min(lpCapPerRound, uniteLeft): the counter falls as the helpers kill them (and
 // rises when one of them splits or summons — the children are billed to the same leaker).
 // User playtest #4: a match with a single human (独立模拟, or a 同盟 room started alone / with AI teammates) times no
-// phase outside its battles (soloUntimed); the co-op strategy draft has ONE countdown — BAND_TURN_SECONDS per turn,
-// published as m.public.deadline — AI seats pick at once and a turn that runs out takes the highlighted strategy
+// phase outside its battles (soloUntimed); each fixed-pool strategy draft group has its own BAND_TURN_SECONDS clock,
+// published in m.public.draft.groups (single-group deadline stays compatible) — AI seats pick at once and a turn that runs out takes the highlighted strategy
 // (g.bandFocus → timeoutBand); g.unitStats answers m.unitStats: the stats the board's units start their next battle with.
 //   opts.clientCombat  default true (env SP_COMBAT=server → false: the legacy server-run + snapshot streaming mode)
 //   opts.verify        'off' | 'sample' | 'all' (env SP_VERIFY, default 'off'): re-simulate accepted client results
@@ -176,7 +176,9 @@
 //     bought for them unless they toggled "AI 托管" (g.autoplay { on: true }), which lets the bot play the seat.
 //   * departed human (onLeave): 中途退出 counts as elimination (research 00-INDEX §3, 01 §9, 06 §7 / §10.3) — every
 //     copy the seat holds returns to the shared pool at once, the seat leaves the round loop, the Final Assault
-//     pairing and the boss pool; its own running normal battle is force-ended. The seat shows status 'left'. When no
+//     pairing and, in matches starting above four seats, the running boss pool (remaining HP percentage preserved);
+//     four-seat matches keep the pool and hidden-layer total captured at the fight's start. Its own running
+//     normal battle is force-ended. The seat shows status 'left'. When no
 //     human is left at all the match ends ('abandoned'); when nobody alive is left it ends as 'eliminated'.
 //
 // Code layout: this file keeps the constructor (options, seats, the per-match setup, the state fields); the methods
@@ -215,7 +217,8 @@ import { DataSource } from '../sim/simdata.js';
 import { createRng, deriveSeed } from '../sim/rng.js';
 import { GameData } from './gamedata.js';
 import { RealScheduler } from './scheduler.js';
-import { SharedPool, SharedItemPool, drawDisabledBonds } from './pool.js';
+import { FreezeScheduler } from './freezeScheduler.js';
+import { createPoolGroups, drawDisabledBonds } from './pool.js';
 import { PlayerState } from './PlayerState.js';
 import { EffectDispatcher, getDefaultRegistry } from './effectsMeta.js';
 import { setupMatchWaves } from './waves.js';
@@ -322,7 +325,7 @@ export class Match {
     /** Room rule fixed for this match; direct callers without it retain the host-setting fallback. */
     this.uniteLayerGains = typeof opts.uniteLayerGains === 'boolean' ? opts.uniteLayerGains : null;
     this.ownsScheduler = !opts.scheduler;
-    this.sched = opts.scheduler || new RealScheduler({ now: opts.now || Date.now, onError: (e) => this.reportError('timer', e) });
+    this.sched = new FreezeScheduler(opts.scheduler || new RealScheduler({ now: opts.now || Date.now, onError: (e) => this.reportError('timer', e) }), { ownsSource: this.ownsScheduler });
     this.registry = opts.registry || getDefaultRegistry();
     this.dispatcher = new EffectDispatcher(this, this.registry);
     this.BattleClass = typeof opts.BattleClass === 'function' ? opts.BattleClass : Battle;
@@ -363,6 +366,8 @@ export class Match {
       this._testHeld = null;
       /** the last callback setDeadline armed, so timers can be turned off mid-phase */
       this._testArmed = null;
+      /** group draft turn callbacks held while testTimers is false (key → expire); parallel groups each keep one */
+      this._testDraftHolds = new Map();
       /** false once the input journal stops logging (the replay decoder's line cap) */
       this.testReplayable = true;
       /** replay: stop a sliced callback after this many steps; null while recording */
@@ -388,6 +393,13 @@ export class Match {
     this._pausedAt = 0;
     /** real ms spent paused this match (diagnostics) */
     this.pausedMs = 0;
+    /** Server-controlled emergency protection is separate from the user's solo combat pause. */
+    this.emergencyFrozen = false;
+    this.emergencyFrozenAt = 0;
+    this.emergencyReason = null;
+    this.emergencyFrozenMs = 0;
+    this._emergencyLeaves = new Set();
+    this._emergencyLostAuthorities = new Set();
     /** boss rounds (client-side combat): the throttled m.public refresh (_bossPublic) */
     this._bossPubTimer = null;
     this._bossPubAt = -Infinity;
@@ -447,8 +459,10 @@ export class Match {
     this.disabledBonds = bans.drawn;
     this.staticInactiveBonds = bans.staticOff;
     this.bannedChess = bans.banned;
-    this.pool = new SharedPool(this.gd, { banned: bans.banned });
-    this.itemPool = new SharedItemPool(this.gd, () => this.order);
+    this.poolGroups = createPoolGroups(this.gd, this.order, { banned: bans.banned });
+    this.playerPools = new Map(this.poolGroups.flatMap((g) => g.playerIds.map((id) => [id, g.pool])));
+    // Compatibility for single-pool diagnostics; player transactions use poolFor / ps.pool / ps.poolOf.
+    this.pool = this.poolGroups[0].pool;
     // 自选编队 (0.2.0): each human's slotted DIY pieces get their own stock — none for one whose bonds are all off this
     // match (player/diy.js initDiyStock); no randomness is drawn here
     const off = new Set([...bans.drawn, ...bans.staticOff]);
@@ -460,6 +474,7 @@ export class Match {
     /** Final Assault / Hidden Core: ms epoch when the overtime drain starts (m.public.overtimeAt) */
     this.overtimeAt = 0;
     this.uidSeq = 0;
+    this.draftSeq = 0;
     this.ended = false;
     this.disposed = false;
     this.startedAt = this.sched.now();
@@ -526,6 +541,14 @@ export class Match {
     // above). The input journal records the steps that callback took; replay stops there.
     if (this.test && opts.journal !== false) installTestTrace(this, opts);
 
+  }
+
+  /** First-group compatibility for diagnostics; player transactions always select their fixed group. */
+  get itemPool() { return this.poolGroups[0]?.itemPool; }
+
+  itemPoolFor(player) {
+    const playerId = typeof player === 'string' ? player : player?.playerId;
+    return this.poolGroups.find((g) => g.playerIds.includes(playerId))?.itemPool || this.itemPool;
   }
 }
 

@@ -4,11 +4,11 @@
 ![上游基础版本](https://img.shields.io/badge/version-0.3.1-2ea44f)
 ![许可](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
 
-在浏览器里招募干员、布置阵容，与朋友合作迎敌。本库是《明日方舟》「卫戍协议：盟约」的非商业同人扩展分支，支持独立模拟与 **1–4 人同盟模拟**，空位可由 AI 队友补齐。
+在浏览器里招募干员、布置阵容，与朋友合作迎敌。本库是《明日方舟》「卫戍协议：盟约」的非商业同人扩展分支，支持独立模拟与默认 **1–4 人同盟模拟**，当前源码可选最多二十人，空位可由 AI 队友补齐。
 
 在上游玩法和确定性战斗模拟的基础上，本分支重点完善**找人组队、主机管理、局内交流、统计回放、个人数据迁移和自行开服**，并保留联动干员、可选皮肤及社区 UI 适配。
 
-A non-commercial fan remake of Arknights *Stronghold Protocol: Alliance*, with online invitations, host tools, round statistics, replays, personal-data backups and optional cosmetics.
+A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance*, with online invitations, host tools, round statistics, replays, personal-data backups and optional cosmetics.
 
 [下载正式版](https://github.com/zhewang448/Stronghold-Protocol/releases/latest) · [开始运行](#开始运行) · [本库特色](#本库特色) · [和朋友一起玩](#和朋友一起玩) · [更新记录](docs/LOCAL-CHANGELOG.md) · [反馈问题](https://github.com/zhewang448/Stronghold-Protocol/issues)
 
@@ -331,3 +331,4 @@ npm run golden       # 确定性战斗与整局黄金结果
 本库在原项目基础上继续开发；原项目的介绍、版本记录及致谢见[原项目 README](https://github.com/sganggs/Stronghold-Protocol/blob/master/README.md)。文字聊天借鉴 RyantArgnisan/Stronghold-Protocol 的 GPL 实现，署名见 [NOTICE.md](NOTICE.md)；其他扩展的参考来源记录在相应开发文档中。
 
 代码以 **GPL-3.0-or-later** 发布，见 [LICENSE](LICENSE)。游戏素材与数据不适用代码许可证；版权、Spine 组合分发附加许可和第三方组件说明见 [NOTICE.md](NOTICE.md) 与 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。本项目保持非商业使用，不接受广告、付费服务或其他变现功能。
+> 多人扩容：同盟房默认四人，可选最多二十人；普通启动入口即可使用，也可用独立的 3188 / 3288 端口测试。运行和规则见 [扩展联机说明](docs/EXPANDED-COOP.md)。这是社区扩展，不是上游或官方人数规则。

@@ -25,6 +25,20 @@ test('bootLayout: 01 / 03 left, 02 / 04 right with a line each into the ship; a 
   assert.equal(B.bootLayout(0).length, 1);
 });
 
+test('extended boot rosters keep every seat within the stage and above the title without overlap', () => {
+  for (const count of [7, 8, 10, 16, 20]) {
+    const spots = B.bootLayout(count);
+    assert.equal(spots.length, count);
+    for (const [i, s] of spots.entries()) {
+      assert.ok(s.x >= 0 && s.x + 350 <= 1920 && s.y >= 0 && s.y + 100 < 705);
+      for (const other of spots.slice(i + 1)) {
+        assert.ok(s.x + 350 <= other.x || other.x + 350 <= s.x || s.y + 100 <= other.y || other.y + 100 <= s.y);
+      }
+    }
+  }
+  assert.equal(B.bootLayout(100).length, 20, 'the supported capacity remains bounded');
+});
+
 test('the official sprites, all in the asset list; no drawn stand-ins; not ready without them', () => {
   const ui = JSON.parse(read('data/assets.json')).ui;
   const js = read('public/js/ui/protocolBoot.js');

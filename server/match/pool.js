@@ -11,7 +11,7 @@
 //     the maintainer's decision of 2026-10-14 for equipment, #624). A slot that is already sold still fails SOLD_OUT.
 //     Future rolls exclude empty stock. 整备 and grants that are not an already-shown card stay stock-limited.
 //   * Pieces remember how many copies they hold (`piece.poolCopies`), so selling / elimination / temp wipes return
-//     exactly what was taken — chess granted by effects while the pool is empty (or hidden/banned chess) hold 0.
+//     exactly what was taken. Visible effect grants may overdraw; hidden / banned chess hold 0 shared copies.
 //   * Invariant: raw left ≤ cap and raw left + Σ held copies == cap. Mimic can exceed stock, but its copies still occupy it.
 //
 // Rolls: each chess slot draws ONE copy uniformly from all remaining copies of eligible chess with tier ≤ shop level
@@ -20,6 +20,22 @@
 // (`extra`, after its own): one player's 自选 stock — the ordinary shop passes diyRollEntries (the shopLevel gate);
 // the promotion reward and random grants pass diyStockEntries (the roll's own tier, DESIGN §30.23). Weighted by its
 // copies like any chess, drawn by that player only.
+
+import { poolGroupSizes, poolCopyScale } from '../../shared/playerCapacity.js';
+
+/** Groups are assigned by occupied seat order at match start and never reshuffled after eliminations. */
+export function createPoolGroups(gd, players, opts = {}) {
+  const sorted = players.slice().sort((a, b) => a.seat - b.seat);
+  let offset = 0;
+  return poolGroupSizes(sorted.length).map((size, i) => {
+    const members = sorted.slice(offset, offset + size);
+    const playerIds = members.map((p) => p.playerId);
+    offset += size;
+    const scale = poolCopyScale(size);
+    return { id: i + 1, playerIds, scale, pool: new SharedPool(gd, { ...opts, scale }),
+      itemPool: new SharedItemPool(gd, () => members, { scale }) };
+  });
+}
 
 /**
  * Per-match disabled bond set D and banned chess (research 01 A2): D = uniform sample of `core` core bonds and `addon`
@@ -58,18 +74,22 @@ function sample(arr, n, rng) {
 export class SharedPool {
   /**
    * @param {import('./gamedata.js').GameData} gd
-   * @param {{ banned?: Iterable<string> }} [opts]
+   * @param {{ banned?: Iterable<string>, scale?: number }} [opts]
    */
-  constructor(gd, { banned = [] } = {}) {
+  constructor(gd, { banned = [], scale = 1 } = {}) {
     this.gd = gd;
+    this.scale = Number.isFinite(scale) && scale > 0 ? scale : 1;
     const ban = new Set(banned);
     /** @type {Map<string, { cap: number, left: number, tier: number }>} */
     this.entries = new Map();
     for (const id of gd.visibleChess) {
       if (ban.has(id)) continue;
-      const cap = gd.poolCopies(id);
+      const tier = gd.tierOf(id);
+      const scaled = gd.poolCopies(id) * this.scale;
+      // Preserve the five-player tier III floor rule against the current co-op baseline (36 * 1.25 = 45).
+      const cap = this.scale === poolCopyScale(5) && tier === 3 ? Math.floor(scaled) : Math.ceil(scaled);
       if (cap <= 0) continue;
-      this.entries.set(id, { cap, left: cap, tier: gd.tierOf(id) });
+      this.entries.set(id, { cap, left: cap, tier });
     }
     this.banned = [...ban].sort();
   }
@@ -212,13 +232,17 @@ export class SharedPool {
  * 2026-10-14 (#624). [ASSUMED] An item that is consumed, destroyed or removed by elimination no longer occupies
  * stock, consistently with the video's ownership model; this is not a per-match purchase limit. */
 export class SharedItemPool {
-  constructor(gd, players) {
+  constructor(gd, players, { scale = 1 } = {}) {
     this.gd = gd;
     this.players = players;
+    this.scale = Number.isFinite(scale) && scale > 0 ? scale : 1;
     /** @type {Map<string, number>} base id → copies taken past the cap by an already-displayed card */
     this.debt = new Map();
   }
-  cap(id) { return this.gd.itemPoolCopies(id); }
+  cap(id) {
+    const cap = this.gd.itemPoolCopies(id);
+    return cap == null ? null : Math.ceil(cap * this.scale);
+  }
   need(id) { return this.gd.isGolden(id) ? 2 : 1; }
   held(id, { ignoreAdmin = false } = {}) {
     const base = this.gd.baseIdOf(id);

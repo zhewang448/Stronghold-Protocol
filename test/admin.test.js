@@ -18,6 +18,24 @@ import { releaseFor, tag, until } from './helpers/release-fixture.js';
 let srv = null;
 let admin = null;
 const resultsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-results-'));
+
+test('expanded host grants and forced equipment use the target player\'s fixed group', t => {
+  const h = makeMatch({ humans: 8, fake: true }).start().toPrep();
+  t.after(() => h.m.dispose());
+  const m = h.m, a = h.ps('p_0'), b = h.ps('p_7');
+  const lobby = { rooms: new Map([['TEST', { code: 'TEST', match: m }]]) };
+  const id = 'chess_item_5_07_e_a';
+  const act = (ps, value) => handleAction(lobby, { room: 'TEST', action: 'item', playerId: ps.playerId, value });
+  for (let i = 0; i < m.itemPoolFor(a).cap(id); i++) assert.deepEqual(act(a, id), { ok: true });
+  assert.equal(act(a, id).code, 'ITEM_STOCK_CONFIRM');
+  assert.deepEqual(act(b, id), { ok: true }, 'a different group still has stock');
+  for (let i = 1; i < m.itemPoolFor(b).cap(id); i++) assert.deepEqual(act(b, id), { ok: true });
+  assert.equal(act(b, id).code, 'ITEM_STOCK_CONFIRM');
+  assert.deepEqual(act(b, { id, force: true }), { ok: true });
+  assert.equal(m.itemPoolFor(a).held(id), 2);
+  assert.equal(m.itemPoolFor(b).held(id), 3);
+  checkInvariants(m);
+});
 after(async () => { if (admin) await admin.close(); if (srv) await srv.close(); fs.rmSync(resultsDir, { recursive: true, force: true }); });
 
 /** Raw request (fetch cannot forge a Host header). */

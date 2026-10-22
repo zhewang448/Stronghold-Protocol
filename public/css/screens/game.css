@@ -674,13 +674,14 @@
 .pavatar {
   --pa: .8rem;
   position: relative; display: block; width: var(--pa); height: var(--pa); flex: none;
-  background: linear-gradient(135deg, hsl(var(--seat-hue) 40% 22%), hsl(var(--seat-hue) 30% 10%));
-  border: 1px solid var(--line-2);
+  background: #101311;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--seat-color) 24%, #101311), color-mix(in srgb, var(--seat-color) 10%, #101311));
+  border: 1px solid var(--seat-color, var(--line-2));
 }
 .pavatar--sm { --pa: .42rem; }
 .pavatar__img { position: absolute; inset: 0; overflow: hidden; display: grid; place-items: center; }
 .pavatar__img img { width: 100%; height: 100%; object-fit: cover; }
-.pavatar__glyph { font-weight: 900; font-size: calc(var(--pa) * .5); color: hsl(var(--seat-hue) 70% 72%); }
+.pavatar__glyph { font-weight: 900; font-size: calc(var(--pa) * .5); color: var(--seat-color); }
 .pavatar__bot { width: 56%; height: 56%; color: #a9c3d8; }
 .pavatar.is-dead .pavatar__img, .pavatar.is-left .pavatar__img, .pavatar.is-offline .pavatar__img { filter: grayscale(1) brightness(.4); }
 .pavatar__x, .pavatar__door { position: absolute; inset: 0; display: grid; place-items: center; color: var(--red-premium); }
@@ -731,7 +732,7 @@
 .round-history :focus-visible { outline: 2px solid var(--mint-400); outline-offset: 2px; }
 .round-history__head button { display: grid; place-items: center; width: 36px; flex: none; }
 .round-history__head .icon { width: 18px; height: 18px; }
-.round-history__body { min-height: 0; padding: 12px 14px; overflow: auto; overscroll-behavior: contain; touch-action: pan-x pan-y; scrollbar-color: var(--mint-700) var(--bg-1); }
+.round-history__body { min-height: 0; padding: 12px 14px; overflow: auto; overscroll-behavior: contain; touch-action: pan-x pan-y; scrollbar-gutter: stable; scrollbar-color: var(--mint-700) var(--bg-1); }
 .round-history__tabs { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 14px 0; flex: none; }
 .round-history__tabs button[aria-pressed="true"] { color: var(--mint-400); border-color: var(--mint-500); }
 .round-history__live { flex: none; margin: 10px 14px 0; padding: 8px 10px; border: 1px solid var(--mint-800); color: var(--mint-300); background: rgba(34, 121, 98, .12); }
@@ -744,11 +745,28 @@
 .round-history .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 4px 0; }
 .round-history .legend span { overflow-wrap: anywhere; }
 .round-history .legend span::before, .round-history .tip .k { content: ''; display: inline-block; width: 10px; height: 10px; margin-right: 5px; background: var(--c); }
+.round-history .chart-legend button { display: inline-flex; align-items: center; gap: 7px; min-width: 0; max-width: 100%; text-align: left; overflow-wrap: anywhere; }
+.round-history .chart-legend button::before, .round-history .player-series-key::before { content: ''; display: inline-block; width: 12px; height: 4px; flex: none; margin-right: 5px; background: var(--c); }
+.round-history .chart-legend button[aria-pressed="true"] { border-color: var(--c); background: var(--bg-3, #303a34); font-weight: 700; }
+.round-history .chart-legend[hidden], .round-history label[hidden] { display: none; }
+.round-history .chart-legend[data-highlighted="true"] button[aria-pressed="false"] { color: var(--text-md); }
+@media (pointer: coarse) { .round-history .chart-legend button { min-height: 44px; } }
 .round-history .chart-wrap { position: relative; overflow-x: auto; }
 .round-history .chart-wrap svg { display: block; width: 100%; min-width: 560px; height: auto; }
-.round-history .tip { display: none; position: absolute; pointer-events: none; padding: 8px 10px; max-width: min(280px, 100%); background: var(--bg-1, #101311); border: 1px solid var(--line-2); box-shadow: 0 4px 12px #0008; overflow-wrap: anywhere; }
-.round-history .tip b { display: block; margin-bottom: 6px; }
-.round-history .tip .v { font-variant-numeric: tabular-nums; margin-right: 10px; }
+.round-history .tip { display: none; position: fixed; z-index: 20; pointer-events: none; padding: 8px 10px; max-width: calc(100vw - 16px); background: var(--bg-1, #101311); border: 1px solid var(--line-2); box-shadow: 0 4px 12px #0008; overflow: hidden; overflow-wrap: anywhere; }
+.round-history .tip[data-pinned="true"] { pointer-events: auto; }
+.round-history .tip-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.round-history .tip-head b { min-width: 0; font-weight: 700; line-height: 1.35; }
+.round-history .tip .tip-close { display: grid; place-items: center; width: 32px; min-width: 32px; min-height: 32px; flex: none; padding: 4px; }
+.round-history .tip .tip-close[hidden] { display: none; }
+.round-history .tip-close .icon { width: 18px; height: 18px; }
+.round-history .tip-rows { overflow-y: hidden; overflow-x: hidden; scrollbar-gutter: stable; overscroll-behavior: contain; touch-action: pan-y; }
+.round-history .tip[data-pinned="true"] .tip-rows { overflow-y: auto; }
+.round-history .tip-row { display: grid; grid-template-columns: 10px max-content minmax(0, 1fr); align-items: baseline; gap: 8px; padding: 4px 0; }
+.round-history .tip-row .k { margin: 0; }
+.round-history .tip-row .v { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.round-history .tip-hint { margin: 8px 0 0; color: var(--text-md); font-size: 12px; line-height: 1.4; }
+@media (pointer: coarse) { .round-history .tip .tip-close { width: 44px; min-width: 44px; min-height: 44px; } }
 .round-history .xscroll { overflow-x: auto; }
 .round-history table { border-collapse: collapse; min-width: 100%; font-variant-numeric: tabular-nums; }
 .round-history th, .round-history td { padding: 6px 10px; border-bottom: 1px solid var(--line-2); text-align: right; white-space: nowrap; }
@@ -1507,6 +1525,34 @@
   .settings-modal .set-range::-moz-range-thumb { width: .26rem; height: .36rem; }
   .settings-modal .set-hint { font-size: calc(.15 * var(--t)); line-height: 1.5; }
 }
+
+/* Expanded co-op: fixed-pool identities and a bounded, scrollable member list. */
+.team__section { display: flex; flex-direction: column; gap: .14rem; flex: none; }
+.team--grouped .team__list { gap: .2rem; }
+.team__pool-group { position: relative; isolation: isolate; }
+.team__pool-group::before {
+  content: ''; position: absolute; inset: -.06rem; z-index: -1; pointer-events: none;
+  border: 1px solid var(--pool-group-color);
+  background: transparent;
+  background: color-mix(in srgb, var(--pool-group-color) 7%, transparent);
+}
+.team--many { bottom: 1.12rem; width: max-content; max-width: 3.1rem; }
+.team--many .team__list { min-height: 0; overflow-y: auto; overflow-x: hidden; padding: .08rem; pointer-events: auto; scrollbar-width: thin; }
+.team--many .team__section { gap: .05rem; }
+.team--many .team__row { flex: none; min-height: .56rem; }
+.team--many .team__btn .pavatar { --pa: .53rem; }
+.team__group-badge {
+  position: absolute; left: .02rem; bottom: .02rem; z-index: 2; display: grid; place-items: center;
+  min-width: max(.18rem, 14px); height: max(.18rem, 14px); padding: 0 .025rem;
+  font-family: var(--font-num); font-size: max(calc(.12 * var(--t)), 10px); font-weight: 700; line-height: 1;
+  color: var(--bg); background: var(--pool-group-color);
+}
+.team__emote-feed { position: absolute; left: calc(100% + .1rem); top: 0; z-index: 4; display: flex; flex-direction: column; gap: .03rem; width: 2.55rem; max-height: 2.72rem; overflow-y: auto; padding: .03rem; border: 1px solid var(--mint-800); background: rgba(8, 13, 11, .88); pointer-events: auto; scrollbar-width: thin; }
+.team__feed-row { display: flex; align-items: center; gap: .04rem; flex: none; height: .57rem; padding: .02rem .05rem; border-bottom: 1px solid var(--line); }
+.team__feed-row .pavatar { --pa: .35rem; }
+.team__feed-name { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-md); font-size: calc(.12 * var(--t)); }
+.team__feed-bubble { position: relative; display: block; flex: none; width: .68rem; height: .55rem; }
+.team__feed-bubble .ebubble { position: absolute; left: 0; top: -.04rem; transform: scale(.58); transform-origin: top left; }
 
 /* 协议已失效 (ui/downedPlate.js): the project's Modal restyled as the event's panel (video 10:56–10:58) — the official map
    behind, the knocked-out face, the title, and the two buttons under the panel; design px ÷ 100 [ASSUMED: measured from

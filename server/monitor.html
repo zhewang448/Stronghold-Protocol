@@ -5,7 +5,7 @@
 :root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0c0f0e;color:#dfe6e2;font:14px/1.5 system-ui,"Microsoft YaHei",sans-serif}header{padding:12px 16px;border-bottom:1px solid #2f3a35}h1{margin:0;font-size:20px}a{color:#4ed8af;text-underline-offset:3px}main{padding:12px 16px}.wall{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.seat{min-width:0;color:inherit;background:#141816;border:1px solid #2f3a35;border-radius:4px;overflow:hidden}.seat-head{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:8px 12px}.seat h2{font-size:16px;margin:0}.seat-summary{flex:1 1 200px;margin:0;font-variant-numeric:tabular-nums}.seat-actions{display:flex;align-items:center;gap:8px}.seat-actions a,.seat-actions button{min-height:36px;display:inline-flex;align-items:center}.seat-actions button{padding:4px 8px;border:1px solid #3e4b45;background:#1e2421;color:#dfe6e2;font:inherit;cursor:pointer}.seat-actions button:hover{border-color:#4ed8af}.viewport{position:relative;aspect-ratio:16/9;background:#0c0f0e;overflow:hidden}.viewport iframe{position:absolute;left:0;top:0;width:1280px;height:720px;border:0;transform-origin:0 0}.seat-empty{min-height:200px;display:grid;place-items:center;padding:24px}.seat:fullscreen{display:flex;flex-direction:column;background:#0c0f0e}.seat:fullscreen .viewport{flex:1;aspect-ratio:auto}.meta{color:#a6b8ae}.bad{color:#ff8c80}table{border-collapse:collapse;width:100%;margin:16px 0}td,th{text-align:left;padding:6px;border-bottom:1px solid #2f3a35}.scroll{overflow:auto}a:focus-visible,button:focus-visible{outline:2px solid #4ed8af;outline-offset:2px}::selection{background:#145443;color:#dfe6e2}*{scrollbar-color:#58675f #141816}@media(max-width:900px){.wall{grid-template-columns:1fr}header,main{padding:12px}.seat-actions a,.seat-actions button{min-height:44px}}
 </style>
 <style>.seat-actions[hidden],.viewport[hidden],.seat-empty[hidden]{display:none}</style>
-<header><h1 id="title">主机监控</h1><p id="status" role="status">正在连接…</p><a href="/">返回控制台</a></header><main id="content"></main>
+<header><h1 id="title">主机监控</h1><p id="status" role="status">正在连接…</p><a href="/">返回控制台</a><label id="wall-page" hidden> · 显示席位 <select aria-label="显示席位"></select></label></header><main id="content"></main>
 <script type="module">
 const token='__TOKEN__', params=new URLSearchParams(location.search), room=params.get('room');
 const esc=(s)=>String(s??'').replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -13,12 +13,29 @@ const host=document.querySelector('#content'), status=document.querySelector('#s
 document.querySelector('#title').textContent=room?'房间 '+room+' · 监控墙':'服务器资源';
 let signature='', stopped=false;
 const seats=new Map();
-const resize=new ResizeObserver((entries)=>{for(const {target} of entries){const frame=target.querySelector('iframe');if(frame){const scale=target.clientWidth/1280;frame.style.transform=`scale(${scale})`;frame.style.height=Math.max(720,target.clientHeight/scale)+'px';}}});
+const pageControl=document.querySelector('#wall-page'), pageSelect=pageControl.querySelector('select');
+let wallData=null;
+pageSelect.onchange=()=>{signature='';if(wallData)drawWall(wallData);};
+function fitFrame(viewport,frame){
+  if(!viewport||!frame||!viewport.clientWidth||!viewport.clientHeight)return;
+  const scale=Math.min(viewport.clientWidth/1280,viewport.clientHeight/720);
+  frame.style.width='1280px';
+  frame.style.height='720px';
+  frame.style.transform=`scale(${scale})`;
+  frame.style.left=Math.max(0,(viewport.clientWidth-1280*scale)/2)+'px';
+  frame.style.top=Math.max(0,(viewport.clientHeight-720*scale)/2)+'px';
+}
+const resize=new ResizeObserver((entries)=>{for(const {target} of entries){fitFrame(target,target.querySelector('iframe'));}});
 window.addEventListener('pagehide',()=>{stopped=true;resize.disconnect();for(const view of seats.values())view.frame?.remove();});
 function drawWall(d){
+  wallData=d;
+  const pages=Math.max(1,Math.ceil(d.seats.length/4)), prior=Number(pageSelect.value)||0;
+  if(pageSelect.options.length!==pages){pageSelect.replaceChildren(...Array.from({length:pages},(_,i)=>new Option(`${i*4+1}–${Math.min(d.seats.length,i*4+4)}`,String(i))));pageSelect.value=String(Math.min(prior,pages-1));}
+  pageControl.hidden=pages===1;
+  const start=(Number(pageSelect.value)||0)*4;
   host.className='wall';
   for(let i=0;i<4;i++){
-    const s=d.seats[i], key=s&&d.matchId?`${d.matchId}:${s.playerId}`:'';
+    const seatIndex=start+i, s=d.seats[seatIndex], key=s&&d.matchId?`${d.matchId}:${s.playerId}`:'';
     let view=seats.get(i);
     if(!view){
       const el=document.createElement('section');el.className='seat';
@@ -28,7 +45,7 @@ function drawWall(d){
       resize.observe(el.querySelector('.viewport'));
     }
     const {el}=view;
-    el.querySelector('h2').textContent=`${i+1} · ${s?.name||'空位'}`;
+    el.querySelector('h2').textContent=`${seatIndex+1} · ${s?.name||'空位'}`;
     el.querySelector('.seat-summary').textContent=s?`LP ${s.lp??'—'} · 金币 ${s.funds??'—'} · 商店 ${s.level??'—'} · ${s.left?'已离开':s.alive===false?'已淘汰':s.ready?'已准备':'未准备'} · ${s.isBot?'AI':!s.connected?'掉线':s.autoplay?'托管':'在线'}`:'';
     const link=el.querySelector('a');link.href=s?`/live?room=${encodeURIComponent(room)}&playerId=${encodeURIComponent(s.playerId)}`:'#';
     el.querySelector('.seat-actions').hidden=!key;
@@ -37,7 +54,7 @@ function drawWall(d){
     el.querySelector('.seat-empty').textContent=s?'对局未开始或已结束':'此座位暂无玩家';
     if(view.key!==key){
       view.frame?.remove();view.frame=null;view.key=key;
-      if(key){const frame=document.createElement('iframe');frame.title=`${s.name}的实时画面（只读）`;frame.src=link.getAttribute('href')+'&wall=1';view.frame=frame;el.querySelector('.viewport').append(frame);}
+      if(key){const viewport=el.querySelector('.viewport');const frame=document.createElement('iframe');frame.title=`${s.name}的实时画面（只读）`;frame.src=link.getAttribute('href')+'&wall=1';view.frame=frame;viewport.append(frame);fitFrame(viewport,frame);frame.addEventListener('load',()=>fitFrame(viewport,frame));}
     }
   }
 }

@@ -74,6 +74,8 @@ describe('the settings entry of the lobby and the room', { skip: !ENABLED && 'se
     await page.click('.hub-entry[aria-label="ALLIANCE"]');
     await page.waitForSelector('[data-testid="create-alliance"]');
     await page.click('[data-testid="create-alliance"]');
+    await page.waitForSelector('.proto-start');
+    await page.click('.proto-start');
     await page.waitForSelector('.room-screen', { timeout: 15000 });
     await sleep(500);
     assert.ok(await settingsBeforeGuide(page, '.room-screen .rs-tools', 'room-guide'), '设置 sits before 玩法说明 in the room\'s top bar');

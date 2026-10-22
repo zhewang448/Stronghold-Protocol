@@ -159,6 +159,7 @@ test('co-op spectator over websockets: watches the real match like an eliminated
   await ok(a, { t: 'room.addBot' });
   const s = await watcher('Spec');
   await ok(s, { t: 'room.spectate', code: st.code });
+  await ok(a, { t: 'room.setAiPicksLast', on: false }); // this seed regression explicitly exercises AI-first
   await ok(a, { t: 'room.start' });
   const info = await s.waitFor('m.public', (p) => p.phase === 'INFO_CHECK');
   assert.ok(!info.players.some((p) => p.playerId === s.id), 'never a player');
@@ -258,7 +259,7 @@ test('co-op spectator removed by the host while the match runs: room.closed {kic
   await ok(a, { t: 'g.ready', ready: true });
   await s2.waitFor('b.start', (x) => x.kind === 'normal', 10000);
   await a.waitFor('m.public', (p) => p.phase === 'PREP' && p.round === 2, 15000);
-  assert.deepEqual(s1.log.slice(mark).filter((x) => x.t !== 'pong').map((x) => x.t), [], 'nothing reaches the removed spectator');
+  assert.deepEqual(s1.log.slice(mark).filter((x) => !['pong', 'social.state'].includes(x.t)).map((x) => x.t), [], 'no room or match frame reaches the removed spectator');
   assert.ok(s2.log.some((x) => x.t === 'm.public'), 'the other spectator still gets the match');
 
   // the freed seat can be taken again (no ban list: the key is all it takes)

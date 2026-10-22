@@ -6,6 +6,7 @@
 
 import { requiresTraitLayerAuthority } from '../operatorTraits.js';
 import { PHASE } from '../../../shared/constants.js';
+import { RESULT_LIMITS } from '../../../shared/protocol.js';
 import { DeadBattle, syntheticResult, RESULT_GRACE_MS, HARD_CAP_SECONDS, HeadlessJob } from '../fields.js';
 import { buildBattleSpec, createBattleFromSpec } from '../../sim/spec.js';
 import { captureReplayFields, finishReplayField } from '../replay.js';
@@ -84,6 +85,10 @@ export class MatchClientCombat {
 
   /** The connected human who simulates a field: lowest seat among its players (normal: the owner). */
   _authorityFor(f, exclude = null) {
+    // A helper can receive every leaker's enemies. compactResult caps both leaks per helper and unspawned rows,
+    // so an expanded wave beyond either cap must use the lossless server result, not a truncated client upload.
+    if (f.kind === 'unite' && f.spec.spawns.reduce((n, s) => n + Math.max(1, Math.floor(Number(s.count) || 1)), 0)
+      > Math.min(RESULT_LIMITS.leaked, RESULT_LIMITS.unspawned)) return null;
     // [ASSUMED] Layer traits require an authoritative run, even with SP_VERIFY=off.
     // Use the existing sliced server path (also for shared boss pools) before assigning any client.
     if (requiresTraitLayerAuthority(f.spec, this.gd)) return null;

@@ -12,6 +12,7 @@ import { PlayerAvatar } from './gameComponents.js';
 import { uiUrl } from './assetUrls.js';
 import { data } from '../data.js';
 import { t } from '../../../shared/i18n.js';
+import { MAX_SEATS } from '../../../shared/constants.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
@@ -60,6 +61,14 @@ export function preloadBootArt() {
  */
 export function bootLayout(n) {
   if (n <= 1) return [{ x: 703, y: 645, side: 'c' }];
+  // The extended roster uses four compact columns above the title; the original one-to-six layout stays intact.
+  if (n > 6) {
+    const count = Math.min(n, MAX_SEATS), rows = Math.ceil(count / 4);
+    return Array.from({ length: count }, (_, i) => ({
+      x: [100, 470, 1100, 1470][i % 4], y: 320 - (rows - 1) * 56 + Math.floor(i / 4) * 112,
+      side: i % 4 < 2 ? 'l' : 'r',
+    }));
+  }
   const NODES = [[939, 497], [1008, 513], [905, 548], [968, 575], [930, 610], [1000, 630]];
   return Array.from({ length: Math.min(n, 6) }, (_, i) => {
     const right = i % 2 === 1;
@@ -84,9 +93,9 @@ function Art({ k, class: cls, mask = false }) {
  * @param {{ players: any[], myId: any, leaving?: boolean }} props
  */
 export function ProtocolBoot({ players, myId, leaving = false }) {
-  const list = (Array.isArray(players) ? players : []).slice(0, 6);
+  const list = (Array.isArray(players) ? players : []).slice(0, MAX_SEATS);
   const spots = bootLayout(list.length);
-  return html`<div class=${cx('pboot', list.length <= 1 && 'pboot--solo', leaving && 'is-leaving')} role="status" aria-live="polite" aria-label=${t('协议启动！')}
+  return html`<div class=${cx('pboot', list.length <= 1 && 'pboot--solo', list.length > 6 && 'pboot--expanded', leaving && 'is-leaving')} role="status" aria-live="polite" aria-label=${t('协议启动！')}
       data-testid="protocol-boot">
     <div class="pboot__stage">
       <div class="pboot__scene" aria-hidden="true">
@@ -109,7 +118,7 @@ export function ProtocolBoot({ players, myId, leaving = false }) {
       ${list.map((p, i) => {
         const s = spots[i];
         return html`<div key=${p.playerId ?? i} class=${cx('pboot__card', `pboot__card--${s.side}`, p.playerId === myId && 'is-self')}
-            style=${`--x:${s.x};--y:${s.y};--i:${i}`}>
+            style=${`--x:${s.x};--y:${s.y};--i:${list.length > 6 ? Math.floor(i / 4) : i}`} title=${p.name}>
           <span class="pboot__txt">
             <b class="pboot__num num">${String(i + 1).padStart(2, '0')}</b>
             <span class="pboot__done">COMPLETE</span>

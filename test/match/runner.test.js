@@ -113,6 +113,20 @@ function realStart(seed = 7301) {
   return msg;
 }
 
+test('expanded Unite progress retains every leaker, including those beyond the fourth seat', async () => {
+  const base = realStart();
+  const left = Object.fromEntries(Array.from({ length: 18 }, (_, i) => [`leaker_${i}`, 1]));
+  const start = { ...base, kind: 'unite', fieldId: 'u', spec: { ...base.spec, kind: 'unite', fieldId: 'u',
+    spawns: Object.keys(left).map((sourcePlayerId) => ({ ...base.spec.spawns[0], time: 20, count: 1, sourcePlayerId })) } };
+  const r = rig();
+  try {
+    await r.runner.onStart(start); await r.settle(); r.advance(1100);
+    const report = r.net.sent.filter((m) => m.t === 'b.progress').at(-1);
+    assert.ok(report, 'the authoritative browser reports progress');
+    assert.deepEqual(report.left, left, 'unspawned enemies of all eighteen leakers remain visible');
+  } finally { r.runner.dispose(); }
+});
+
 test('authoritative battle: 2× pacing, ≤ max(8, 4·speed) ticks per frame, b.snap / b.ev feed, field meta in the store, progress ~1 Hz, the server-identical result', async () => {
   const start = realStart();
   assert.ok(start && start.authoritative);
@@ -232,6 +246,28 @@ test('b.end forced ends the local battle and reports at once; a new prep clears 
   assert.equal(r.runner._entries.size, 0);
   assert.equal(r.store.get().match.battle, null);
   r.runner.dispose();
+});
+
+test('a capped browser result requests takeover without publishing a partial outcome', async () => {
+  const start = realStart(7304), r = rig(), outcomes = [];
+  r.runner.on('result', e => outcomes.push(e));
+  try {
+    await r.runner.onStart(start);
+    await r.settle();
+    const e = r.runner._entries.get(start.battleId), raw = e.battle.result();
+    const pid = start.spec.players[0].playerId;
+    raw.perPlayer[pid].leaked = Array.from({ length: 401 }, () => ({ enemyKey: start.spec.spawns[0].enemyKey,
+      sourcePlayerId: pid, counted: true, lpr: 1 }));
+    raw.perPlayer[pid].perfect = false;
+    e.battle.result = () => raw;
+    r.net.emit('b.end', { battleId: start.battleId, fieldId: start.fieldId, reason: 'forced' });
+    await r.settle();
+    const report = r.net.sent.find(x => x.t === 'b.result');
+    assert.ok(report?.result.truncated);
+    assert.ok(Buffer.byteLength(JSON.stringify(report)) < specMod.RESULT_FRAME_BUDGET);
+    assert.deepEqual(outcomes, [], 'partial data must not drive the local settlement voice');
+    assert.equal(validateClientResult(start.spec, report.result, { gd: null }).reason, 'truncated result');
+  } finally { r.runner.dispose(); }
 });
 
 test('own battle statistics stay available when viewing a teammate; owner filtering excludes teammate damage', async () => {

@@ -5,7 +5,7 @@ import { normalLeakHistory } from '../leak-history.js';
 // Installed on Match.prototype by server/match/Match.js (a method container: never instantiated; `this` is the match).
 
 import { PHASE, layerGainRoom } from '../../../shared/constants.js';
-import { uniteSurvivors } from '../unite.js';
+import { uniteSurvivors, plannedUniteSurvivors } from '../unite.js';
 import { buildResult } from '../results.js';
 import { recordRound } from '../history.js';
 import { FLOW_TICKER_PRIORITY, DELAYS } from './common.js';
@@ -22,8 +22,9 @@ export class MatchSettle {
     for (const ps of this.order) if (ps.pendingLayerGains) { ps.pendingLayerGains = null; ps.dirty(); }
     const cap = this.gd.lpCapPerRound;
     // a 联防 battle that could not run at all (synthetic result) must not wipe the leakers' losses: charge their own leaks
-    const uniteRan = !!(plan && uniteResult && !uniteResult.synthetic);
-    const survivors = uniteRan ? uniteSurvivors(plan, uniteResult) : null;
+    const uniteResults = plan ? [...plan.history, uniteResult].filter((r) => r && !r.synthetic) : [];
+    const uniteRan = uniteResults.length > 0;
+    const survivors = plan ? (uniteResult && !uniteResult.synthetic ? uniteSurvivors(plan, uniteResult) : plannedUniteSurvivors(plan)) : null;
     // The 联防's outcome as data for the SETTLE view (m.public.uniteResult, views.js; GitHub #235, PR #112 by @Convey123):
     // each client pops the official result box from it (ui/gameLogic/phases.js uniteResultBox) — `through` = the leakers'
     // enemies that still got through (uncapped; only decides whether 「全员无伤！」 is true), `losses` = every alive
@@ -32,7 +33,7 @@ export class MatchSettle {
     // itself. No ticker line: the official reports the outcome in the one dialog. null when no 联防 resolved.
     this.uniteResultView = uniteRan && plan.leakers.length ? {
       through: plan.leakers.reduce((n, lk) => n + Math.max(0, survivors.get(lk.playerId) || 0), 0),
-      helpers: plan.helpers.map((p) => p.playerId),
+      helpers: [...plan.usedHelpers, ...plan.helpers].map((p) => p.playerId),
       leakers: plan.leakers.map((p) => p.playerId),
       losses: {},
     } : null;
@@ -40,7 +41,7 @@ export class MatchSettle {
     for (const ps of alive) {
       const r = this.lastResults.get(ps.playerId) || { leaked: [], perfect: true, coins: 0, layerGains: {}, killed: 0, damageDealt: 0 };
       const counted = (r.leaked || []).filter((l) => l && l.counted !== false).length;
-      const loss = uniteRan && plan.leakers.includes(ps) ? Math.min(cap, survivors.get(ps.playerId) || 0) : Math.min(cap, counted);
+      const loss = plan && plan.leakers.includes(ps) ? Math.min(cap, survivors.get(ps.playerId) || 0) : Math.min(cap, counted);
       if (this.uniteResultView) this.uniteResultView.losses[ps.playerId] = loss;
       ps.leakHistory = normalLeakHistory(this, ps, r, { plan, uniteResult, uniteRan, loss });
       ps.lp -= loss;
@@ -52,13 +53,14 @@ export class MatchSettle {
       if (r.perfect !== false && counted === 0) ps.stats.perfectRounds++;
       // bounty coins (own battle + unite kills) are credited to the next prep
       let coins = Math.max(0, Math.trunc(Number(r.coins) || 0));
-      const up = uniteResult && uniteResult.perPlayer && uniteResult.perPlayer[ps.playerId];
-      if (up) {
+      let uniteCreditedKills = 0;
+      for (const up of uniteResults.map((result) => result.perPlayer && result.perPlayer[ps.playerId]).filter(Boolean)) {
         coins += Math.max(0, Math.trunc(Number(up.coins) || 0));
         ps.stats.dmgDealt += Number(up.damageDealt) || 0;
         ps.stats.kills += Number(up.killed) || 0;
+        uniteCreditedKills += creditedKillsOf(up);
       }
-      ps.creditedKills += creditedKillsOf(r) + creditedKillsOf(up);
+      ps.creditedKills += creditedKillsOf(r) + uniteCreditedKills;
       // perfect-payout bounties (战术特训): own phase perfect
       for (const b of ps.bounties) if (b.card.payout === 'perfect' && counted === 0 && r.perfect !== false) coins += b.card.coin;
       if (coins > 0) { ps.pendingFunds += coins; ps.stats.fundsGained += coins; }
@@ -67,7 +69,12 @@ export class MatchSettle {
       // Normal gains, then the helper's 联防 gains under the field's latched custom rule. The latter are increments
       // from its carried layers, never absolute counts. Synthetic fields cannot grant layers.
       const layerSources = [r.layerGains];
-      if (uniteRan && this.uniteLayerGainsEnabled && plan.helpers.includes(ps) && up) layerSources.push(up.layerGains);
+      if (uniteRan && this.uniteLayerGainsEnabled) {
+        for (const result of uniteResults) {
+          const up = result.perPlayer?.[ps.playerId];
+          if (up) layerSources.push(up.layerGains);
+        }
+      }
       for (const source of layerSources) for (const [bondId, n] of Object.entries(source || {})) {
         if (!this.gd.bond(bondId) || !(n > 0)) continue;
         const before = ps.layers[bondId] || 0;
@@ -77,12 +84,12 @@ export class MatchSettle {
         this.dispatch(ps, 'onLayers', { bondId, from: before, to: ps.layers[bondId], reason: 'battle' });
       }
       this._charDamageTickers(ps, r);
-      this.dispatch(ps, 'onBattleResult', { result: r, lpLoss: loss, perfect: counted === 0 && r.perfect !== false, unite: uniteResult || null });
+      this.dispatch(ps, 'onBattleResult', { result: r, lpLoss: loss, perfect: counted === 0 && r.perfect !== false, unite: uniteResult || null, uniteResults });
       ps.recompute();
     }
     this.eliminateBroken();
     // local console: the round's LP / funds / battle record (history.js)
-    try { recordRound(this, { uniteResult }); } catch (e) { this.reportError('recordRound', e); }
+    try { recordRound(this, { uniteResults }); } catch (e) { this.reportError('recordRound', e); }
 
     this.fields = [];
     this.watchers.clear();

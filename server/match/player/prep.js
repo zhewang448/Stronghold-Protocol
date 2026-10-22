@@ -32,6 +32,7 @@ export class PlayerPrep {
     if (slot.kind === 'item') {
       if (!this.gd.item(slot.id)) return fail(ERR.BAD_TARGET);
       // Already displayed equipment rewards survive stock exhaustion (#624, maintainer 2026-10-14).
+      // acquireItem records the debt on the receiver's group stock.
       if (handFull) return fail(ERR.HAND_FULL);
     } else if (slot.kind === 'chess') {
       const rec = this.gd.chess(slot.id);

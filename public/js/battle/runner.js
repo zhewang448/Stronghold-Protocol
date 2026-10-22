@@ -83,6 +83,7 @@ import { net as appNet } from '../net.js';
 import { store as appStore } from '../store.js';
 import { contentFor as appContentFor, simContent as appSimContent, contentSet as appContentSet } from '../content.js';
 import { fxForm } from '../../../shared/protocol.js';
+import { MAX_SEATS } from '../../../shared/constants.js';
 import { spectateEffects } from './observe.js';
 import { recordError, setBattleSource } from '../diag.js';
 import { loadBrowserSim } from './simLoader.js';
@@ -509,8 +510,8 @@ export function createBattleRunner(deps) {
       }
     } else {
       msg.leaks = Math.min(1e6, p.leaks);
-      // 联防: the leakers' enemies still standing (shared/protocol.js b.progress `left`, ≤ 4 players)
-      if (p.left) msg.left = Object.fromEntries(Object.entries(p.left).slice(0, 4));
+      // Sources span the whole room; the field itself still has at most two helpers.
+      if (p.left) msg.left = Object.fromEntries(Object.entries(p.left).slice(0, MAX_SEATS));
     }
     try { net.send('b.progress', msg); } catch { /* offline */ }
   }
@@ -530,7 +531,7 @@ export function createBattleRunner(deps) {
         e.result = result;
         // the view answers with the settlement voice of this battle (screens/game.js → audio.voice result*): the
         // compact result carries the leaks and the kill count the slot is picked from
-        emit('result', { fieldId: e.fieldId, battleId: e.battleId, own: !!e.own, result });
+        if (!result.truncated) emit('result', { fieldId: e.fieldId, battleId: e.battleId, own: !!e.own, result });
         deliver(e);
       }
     }

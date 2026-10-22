@@ -111,7 +111,7 @@ export class MatchOffers {
 
   _offerAvailable(ps, card) {
     const effect = card.effect;
-    if (effect.item) return !!ps.gd.item(effect.item) && this.itemPool.canGain(effect.item);
+    if (effect.item) return !!ps.gd.item(effect.item) && this.itemPoolFor(ps).canGain(effect.item);
     if (effect.chess) {
       const rec = ps.gd.chess(effect.chess);
       return !!rec && (!rec.isDiy || !!rec.diyFor);

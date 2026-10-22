@@ -175,14 +175,14 @@ export class PlayerAcquire {
     return np;
   }
 
-  /** Normal item → golden version in place (整备). A golden occupies two shared copies and this piece
-   * already occupies one, so the upgrade waits when no second copy is free. The caller keeps its charge. */
+  /** Normal item → golden version in place (整备). Trait-fixed pieces carry their identity marker through the upgrade. */
   upgradeItem(piece) {
     const rec = this.gd.item(piece.id);
     if (!rec || rec.isGolden) return false;
     const gid = rec.upgradeChessId || rec.goldenId;
     if (!gid || !this.gd.item(gid)) return false;
-    if (this.m.itemPool.left(piece.id) < 1) return false;
+    const exempt = piece.noPool === true && this.gd.isTraitFixedItem(piece.id);
+    if (!exempt && this.m.itemPoolFor(this).left(piece.id) < 1) return false;
     piece.id = gid;
     this.recompute();
     return true;
@@ -209,7 +209,7 @@ export class PlayerAcquire {
       const fresh = (id) => !list.includes(id);
       for (let i = 0; i < ro.count; i++) { // loop-cap: rewardOffer().count ≤ MAX_OFFER_SLOTS
         let id = null;
-        for (let tt = t; tt >= 1 && !id; tt--) id = this.m.pool.roll(this.m.rngShop, { tier: tt, filter: fresh, extra: this.diyStockEntries() });
+        for (let tt = t; tt >= 1 && !id; tt--) id = this.pool.roll(this.m.rngShop, { tier: tt, filter: fresh, extra: this.diyStockEntries() });
         if (id) list.push(id);
       }
     }
@@ -225,7 +225,7 @@ export class PlayerAcquire {
    * 'item' under its `label` (the effect's name; player report #6 after 0.1.0).
    */
   pushItemOffer(ids, { source = 'effect', tier = null, label = null } = {}) {
-    const list = [...new Set(Array.isArray(ids) ? ids : [])].filter((id) => this.gd.item(id) && this.m.itemPool.canGain(id)).slice(0, MAX_OFFER_SLOTS);
+    const list = [...new Set(Array.isArray(ids) ? ids : [])].filter((id) => this.gd.item(id) && this.m.itemPoolFor(this).canGain(id)).slice(0, MAX_OFFER_SLOTS);
     if (!list.length) return null;
     const offer = { tier: Number.isInteger(tier) ? tier : null, source, label: typeof label === 'string' && label ? label : null, slots: list.map((id) => ({ kind: 'item', id, price: 0, sold: false })) };
     this.offers.push(offer);
@@ -269,23 +269,26 @@ export class PlayerAcquire {
    * is actually kept, record the copies that did not fit (`need` minus `left` before the gain). A failed stow or
    * merge records nothing. Fixed gift families stay unlimited without a debt entry. Every other grant still refuses.
    */
-  acquireItem(itemId, { source = 'grant', toTemp = false, silent = false, deferMerge = false, requirePool = true, displayed = false, forceStock = false } = {}) {
+  acquireItem(itemId, { source = 'grant', toTemp = false, silent = false, deferMerge = false, requirePool = true, noPool = false, displayed = false, forceStock = false } = {}) {
     const rec = this.gd.item(itemId);
     if (!rec) return null;
-    // Only the fixed operator-gift families can overdraw. Several unrelated strategy grants also pass
-    // requirePool:false; they must retain their stock limit (for example commercial packaging).
-    const unlimitedGift = !requirePool && this.gd.isUnlimitedGiftItem(itemId);
-    const pool = this.m.itemPool;
+    // Both grant APIs name the same identity-scoped stock exemption. Keep the fork's marker for inherited upgrades
+    // and all-fixed merges; SharedItemPool.held() still counts every owned normal/advanced piece as 1/2 copies.
+    // An unrelated strategy cannot bypass stock merely by setting either flag. Fixed gift families stay unlimited
+    // without a debt entry; a displayed shop card or reward records the shortfall on the receiver's group stock (#624).
+    const unlimitedGift = (noPool === true || requirePool === false) && this.gd.isUnlimitedGiftItem(itemId);
+    const exempt = unlimitedGift;
+    const pool = this.m.itemPoolFor(this);
     const leftBefore = pool.left(itemId);
     const need = pool.need(itemId);
     if (!forceStock && !unlimitedGift && !displayed && !pool.canGain(itemId)) {
       this.m.toast(this, 'warn', '装备库存不足，未获得该装备');
       return null;
     }
-    let piece = this.newPiece('item', itemId);
+    let piece = this.newPiece('item', itemId, exempt ? { noPool: true } : {});
     // Only the authenticated host console supplies forceStock, after explicit stock confirmation. Keep the
     // permitted copies on the piece (and its merged successor), so removal and rewind restore the audit naturally.
-    if (forceStock && !this.m.itemPool.canGain(itemId)) piece.adminStockCopies = this.m.itemPool.need(itemId);
+    if (forceStock && !pool.canGain(itemId)) piece.adminStockCopies = pool.need(itemId);
     // A prep-end grant may sit beside an identical copy until the next prep. The invariant counts only copies
     // without this mark, so the fight that is about to start is not reported as a missed merge.
     if (deferMerge) piece.deferMerge = true;
@@ -311,11 +314,20 @@ export class PlayerAcquire {
     const consumed = incoming ? [{ piece: incoming, area: 'new' }] : [];
     for (const l of locs) { if (consumed.length >= need) break; consumed.push(l); }
     if (consumed.length < need) return null;
+    // remember where equipped twins sat: with a full hand AND a full temp the golden item takes the first one's slot
+    const slotOf = consumed.filter((l) => l.area === 'equipped').map((l) => ({ holder: l.holder, idx: l.holder.items.indexOf(l.piece) }));
     for (const l of consumed) if (l.area !== 'new') this._detach(l);
-    const golden = this.newPiece('item', rec.upgradeChessId || rec.goldenId);
+    const golden = this.newPiece('item', rec.upgradeChessId || rec.goldenId, consumed.every((l) => l.piece.noPool) ? { noPool: true } : {});
     const adminStockCopies = consumed.reduce((n, l) => n + (l.piece.adminStockCopies || 0), 0);
     if (adminStockCopies) golden.adminStockCopies = adminStockCopies;
-    this.stow(golden, { allowTemp: true });
+    if (!this.stow(golden, { allowTemp: true })) {
+      const at = slotOf[0];
+      if (!at || !this.find(at.holder.uid)) {
+        this.m.toast(this, 'warn', '整备区已满，合成的装备已销毁');
+        return null;
+      }
+      at.holder.items.splice(Math.max(0, Math.min(at.idx, at.holder.items.length)), 0, golden);
+    }
     this.stats.itemMerges++;
     this.m.dispatch(this, 'onMerge', { kind: 'item', piece: golden, itemId, consumed: consumed.map((l) => l.piece.uid) });
     return golden;

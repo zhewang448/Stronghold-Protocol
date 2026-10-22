@@ -680,8 +680,8 @@
 /* ---- avatar frame ---------------------------------------------------------------------------------- */
 .avatar {
   --av: .9rem;
-  --seat-hue: 162;
-  --bk-c: var(--line-3);
+  --seat-color: #69adff;
+  --bk-c: var(--seat-color);
   --bk-l: calc(var(--av) * .16);
   position: relative;
   width: var(--av);
@@ -689,7 +689,8 @@
   flex: none;
   padding: calc(var(--av) * .045);
   background: #0a0d0c;
-  border: 1px solid var(--line);
+  border: 1px solid var(--seat-color, var(--line));
+  border: 1px solid color-mix(in srgb, var(--seat-color) 65%, var(--line));
 }
 .avatar__img {
   width: 100%;
@@ -697,17 +698,19 @@
   overflow: hidden;
   display: grid;
   place-items: center;
+  background: #101311;
   background:
     repeating-linear-gradient(45deg, rgba(255, 255, 255, .03) 0 2px, transparent 2px 7px),
-    radial-gradient(circle at 30% 18%, hsl(var(--seat-hue) 42% 30%), hsl(var(--seat-hue) 30% 11%) 72%);
+    radial-gradient(circle at 30% 18%, color-mix(in srgb, var(--seat-color) 35%, #101311), color-mix(in srgb, var(--seat-color) 12%, #101311) 72%);
 }
 .avatar__img img { width: 100%; height: 100%; object-fit: cover; }
 .avatar__glyph {
   font-size: calc(var(--av) * .44);
   font-weight: 900;
   line-height: 1;
-  color: hsl(var(--seat-hue) 70% 82%);
-  text-shadow: 0 0 calc(var(--av) * .12) hsl(var(--seat-hue) 80% 50% / .45);
+  color: var(--seat-color);
+  text-shadow: 0 0 calc(var(--av) * .12) var(--seat-color);
+  text-shadow: 0 0 calc(var(--av) * .12) color-mix(in srgb, var(--seat-color) 45%, transparent);
 }
 .avatar__bot { width: 56%; height: 56%; color: #a9c3d8; filter: drop-shadow(0 0 6px rgba(159, 212, 255, .35)); }
 .avatar__empty { width: 36%; height: 36%; color: var(--text-dim); }
