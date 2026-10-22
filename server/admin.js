@@ -111,8 +111,9 @@ export function matchView(m) {
     timerScale: m.timerScale, prep: m.prepOverride ?? getPrep(), prepInherited: m.prepOverride == null,
     enemyPlan: planView(m, BEFORE_COMBAT.has(m.phase)),
     fields: m.fields.filter((f) => f.cc && !f.done).map((f) => ({ id: f.fieldId, kind: f.kind, players: f.players.map((pid) => m.players.get(pid)?.name || pid) })),
+    poolGroups: (m.poolGroups || []).map(({ id, playerIds }) => ({ id, playerIds })),
     players: m.order.map((ps) => ({
-      id: ps.playerId, name: ps.name, bot: ps.isBot, connected: ps.connected && !ps.left, alive: ps.alive, ready: ps.ready,
+      id: ps.playerId, seat: ps.seat, name: ps.name, bot: ps.isBot, connected: ps.connected && !ps.left, alive: ps.alive, ready: ps.ready,
       lp: ps.lp, funds: ps.funds, level: ps.shop.level, freeRefreshes: ps.shop.freeRefreshes || 0,
       board: ps.board.size, hand: ps.hand.filter(Boolean).length, autoplay: !!ps.autoplay,
       bondPlan: ps.bondPlan ? m.gd.bond(ps.bondPlan)?.name || ps.bondPlan : null,
@@ -173,8 +174,8 @@ export function catalogView(lobby, code) {
   };
 }
 
-function itemStockConfirmation(m, id, force) {
-  return !m.itemPool.canGain(id) && !force ? {
+function itemStockConfirmation(m, ps, id, force) {
+  return !m.itemPoolFor(ps).canGain(id) && !force ? {
     error: `「${m.gd.item(id).name}」装备库存不足，是否强制加入？强制加入后仍占用库存，商店可用量最低为 0。`,
     code: 'ITEM_STOCK_CONFIRM',
   } : null;
@@ -224,7 +225,7 @@ const PLAYER_ACTIONS = {
     const rec = m.gd.item(id);
     if (!rec) return { error: `没有这个道具：${id}` };
     const force = obj(v).force === true;
-    const confirmation = itemStockConfirmation(m, id, force);
+    const confirmation = itemStockConfirmation(m, ps, id, force);
     if (confirmation) return confirmation;
     return ps.acquireItem(id, { source: 'admin', forceStock: force }) ? OK : { error: '手牌和整备区都满了' };
   },
@@ -325,10 +326,11 @@ const PLAYER_ACTIONS = {
     if (!rec || rec.itemType !== 'EQUIP') return { error: `不是装备：${id}` };
     if (typeof rec.kind === 'string' && rec.kind.startsWith('consume_on_equip')) return { error: '消耗型装备请用「发放道具」，再在游戏里使用' };
     const force = obj(v).force === true;
-    const confirmation = itemStockConfirmation(m, id, force);
+    const confirmation = itemStockConfirmation(m, ps, id, force);
     if (confirmation) return confirmation;
     const item = ps.newPiece('item', id);
-    if (force && !m.itemPool.canGain(id)) item.adminStockCopies = m.itemPool.need(id);
+    const pool = m.itemPoolFor(ps);
+    if (force && !pool.canGain(id)) item.adminStockCopies = pool.need(id);
     // an owned twin completes a merge: the elite item goes to the hand, as equip() does
     if (ps.completesItemMerge(id) && ps._mergeItem(id, item)) { ps.recompute(); return OK; }
     ps._attach(tloc.piece, item);
@@ -556,7 +558,7 @@ function lastMatchView(rec, id) {
   const r = rec.result;
   return {
     id, savedAt: rec.savedAt, victory: !!r.victory, hiddenCleared: !!r.hiddenCleared, reason: r.reason, roundsPassed: r.roundsPassed,
-    players: (r.players || []).map((p) => ({ id: p.playerId, name: p.name, stats: p.stats })),
+    players: (r.players || []).map((p) => ({ id: p.playerId, seat: p.seat, name: p.name, stats: p.stats })),
     history: rec.history,
   };
 }

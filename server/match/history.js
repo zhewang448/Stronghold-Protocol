@@ -27,16 +27,17 @@ function mergeUnits(units) {
 }
 
 /** Append m.round's entry to m.history (a no-op when the round is already recorded). */
-export function recordRound(m, { includeBattleResults = true, uniteResult = null } = {}) {
+export function recordRound(m, { includeBattleResults = true, uniteResult = null, uniteResults = null } = {}) {
   if (!Array.isArray(m.history)) m.history = [];
   if (m.history.some((h) => h.round === m.round)) return;
   const prev = m.history[m.history.length - 1];
   const before = new Map(prev ? prev.players.map((p) => [p.playerId, p]) : []);
+  const waves = includeBattleResults ? (uniteResults || [uniteResult]).filter((r) => r && !r.synthetic) : [];
   const players = m.order.map((ps) => {
     const s = ps.stats;
     const b = before.get(ps.playerId);
     const r = includeBattleResults && m.lastResults && m.lastResults.get(ps.playerId);
-    const units = mergeUnits([...(r?.unitStats || []), ...(includeBattleResults ? uniteResult?.perPlayer?.[ps.playerId]?.unitStats || [] : [])]);
+    const units = mergeUnits([...(r?.unitStats || []), ...waves.flatMap((wave) => wave.perPlayer?.[ps.playerId]?.unitStats || [])]);
     const dmg = Math.round(s.dmgDealt);
     return {
       playerId: ps.playerId,
@@ -88,12 +89,19 @@ export function roundChartHistory(m, { live = false } = {}) {
     const amount = Number.isFinite(dmg) ? dmg : (units || []).reduce((n, u) => n + (Number(u.dmg) || 0), 0);
     liveDamage.set(pid, liveDamage.get(pid) + Math.min(1e13, Math.max(0, amount)));
   };
+  // Completed waves disappear from m.fields when the next pair enters. Retain their accepted totals without
+  // counting the current field twice; synthetic waves have no actual damage or operator ranking to publish.
+  const addResult = (result) => {
+    if (!result || result.synthetic) return;
+    for (const [pid, p] of Object.entries(result.perPlayer || {})) if (liveUnits.has(pid)) {
+      liveUnits.get(pid).push(...(p.unitStats || []));
+      addDamage(pid, p.damageDealt, p.unitStats);
+    }
+  };
+  if (m.phase === PHASE.UNITE) for (const result of m.unitePlan?.history || []) addResult(result);
   for (const f of m.fields || []) {
     if (f.done && f.result?.perPlayer) {
-      for (const [pid, p] of Object.entries(f.result.perPlayer)) if (liveUnits.has(pid)) {
-        liveUnits.get(pid).push(...(p.unitStats || []));
-        addDamage(pid, p.damageDealt, p.unitStats);
-      }
+      addResult(f.result);
       continue;
     }
     // Headless bots may already have computed their whole fight: publish only the sample at the field clock.

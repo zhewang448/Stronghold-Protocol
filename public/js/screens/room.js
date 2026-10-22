@@ -327,9 +327,9 @@ function RoomOptions({ room, facts, myId, busy, online, variant, onPrivate, onMa
     <h4>${t('同盟设置')}${host ? null : html`<small>${t('由创建者设置')}</small>`}</h4>
     ${coop && CAN_PRIVATE ? html`<label class="rs-opt"><input type="checkbox" checked=${room.private === true} disabled=${!host || !!busy || !online} onChange=${(e) => onPrivate(e.currentTarget.checked)} />
       <span>${t('私密房间')}<small>${room.private ? t('仅凭同盟密钥或邀请加入，不能搜寻队友') : t('公开大厅可见，可以搜寻队友')}</small></span></label>` : null}
-    ${coop && MAX_SEATS > DEFAULT_SEATS ? html`<label class="rs-opt rs-opt--cap"><span>${t('人数上限')}<small>${facts.seats.length > DEFAULT_SEATS ? t('仅邀请加入 · 卡池扩大') : t('可搜寻队友')}</small></span>
+    ${coop && MAX_SEATS > DEFAULT_SEATS ? html`<label class="rs-opt rs-opt--cap"><span>${t('人数上限')}<small>${facts.seats.length > DEFAULT_SEATS ? t('扩展房间 · 固定分组卡池') : t('可搜寻队友')}</small></span>
       <select value=${String(facts.seats.length)} disabled=${!host || !!busy || !online} onChange=${(e) => onMaxSeats(Number(e.currentTarget.value))}>
-        ${Array.from({ length: MAX_SEATS - DEFAULT_SEATS + 1 }, (_, k) => DEFAULT_SEATS + k).map((n) => html`<option key=${n} value=${String(n)} selected=${n === facts.seats.length}>${t('{n} 人', { n })}</option>`)}
+        ${SEAT_CONST.ROOM_CAPACITIES.map((n) => html`<option key=${n} value=${String(n)} selected=${n === facts.seats.length}>${t('{n} 人', { n })}</option>`)}
       </select></label>` : null}
     <${AiLastToggle} option=${aiLastOption(room, myId)} busy=${busy} onToggle=${onAiLast} />
     ${typeof room.uniteLayerGains === 'boolean' ? html`<label class="rs-opt"><input name="unite-layer-gains" type="checkbox" checked=${room.uniteLayerGains} disabled=${!host || room.canSetUniteLayerGains !== true || !!busy || !online || room.inMatch === true} onChange=${(e) => onUniteLayerGains(e.currentTarget.checked)} />

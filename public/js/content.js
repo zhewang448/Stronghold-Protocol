@@ -440,15 +440,16 @@ export async function fetchChecked(url, want, { fetch: doFetch, retryDelays = CO
  * and every data file it lists (each one's bytes to its entry), and the official-bounds snapshot it lists (bounds.official:
  * the table the server validated the set against and its match host installs — the battle runner installs the same one,
  * public/js/battle/runner.js loadBrowserSim; checked by its bytes like a data file; null when the manifest lists none).
+ * Host replays may opt into vanilla manifests; their identity and data bytes undergo the same checks.
  * @param {string} cs
  * @param {{ fetch?: typeof fetch, retryDelays?: readonly number[], wait?: (ms: number) => Promise<void>, timeoutMs?: number,
- *   onProgress?: (loaded: number, total: number) => void }} [opts]
+ *   onProgress?: (loaded: number, total: number) => void, consent?: boolean, allowVanilla?: boolean }} [opts]
  * @returns {Promise<{ cs: string, index: any, values: Map<string, any>, bounds: any }>} (rejects with the reason)
  */
-export async function loadContentSet(cs, { fetch: doFetch = defaultFetch, retryDelays = CONTENT_RETRY_MS, wait = sleep, timeoutMs = CONTENT_TIMEOUT_MS, onProgress = null, consent = false } = {}) {
+export async function loadContentSet(cs, { fetch: doFetch = defaultFetch, retryDelays = CONTENT_RETRY_MS, wait = sleep, timeoutMs = CONTENT_TIMEOUT_MS, onProgress = null, consent = false, allowVanilla = false } = {}) {
   if (!isContentHash(cs)) throw new Error('no content hash');
   const index = await fetchChecked(`/cs/${csUrlPart(cs)}/index.json`, null, { fetch: doFetch, retryDelays, wait, timeoutMs });
-  if (!isObj(index) || index.cs !== cs || index.vanilla !== false || !isObj(index.data)) throw new Error('the manifest is not the room\'s content set');
+  if (!isObj(index) || index.cs !== cs || (index.vanilla !== false && !(allowVanilla && index.vanilla === true)) || !isObj(index.data)) throw new Error('the manifest is not the room\'s content set');
   const listed = (files) => (isObj(files) ? Object.entries(files).filter(([, f]) => isObj(f) && typeof f.url === 'string' && isContentHash(f.sha256)) : []);
   const entries = listed(index.data);
   const hashes = Object.fromEntries(entries.map(([name, f]) => [name, f.sha256]));

@@ -37,6 +37,9 @@ test('console overview, drawers, tabs, paging and notice presets', { skip: proce
   await page.click('[data-record-page="1"]');assert.match(await page.$eval('#record-pagination',e=>e.textContent),/第 2/);
   await page.type('#record-filter','FIND');assert.equal(await page.$$eval('#records-list tbody tr',es=>es.length),1);
   await page.click('[data-tab="settings"]');await page.waitForSelector('a[href="/studio"]');
+  const issueLink = await page.$eval('#issue-feedback a', e => ({ href: e.href, target: e.target, rel: e.rel }));
+  assert.deepEqual(issueLink, { href: 'https://github.com/zhewang448/Stronghold-Protocol/issues', target: '_blank', rel: 'noopener noreferrer' });
+  assert.match(await page.$eval('#issue-feedback', e => e.textContent), /欢迎反馈使用中遇到的问题.*功能拓展建议/);
   const redirect = await fetch(admin.url + '/studio', { redirect: 'manual', headers: { Cookie: 'sp_admin=' + admin.token } });
   assert.equal(redirect.status, 302);
   assert.equal(redirect.headers.get('location'), 'http://127.0.0.1:3000/studio/#key=fixture');

@@ -76,7 +76,7 @@ export class PlayerEconomy {
 
   _rollChessSlot() {
     // the slotted 自选 pieces join the draw once the 调度中心 reaches their slot's level (player/diy.js diyRollEntries)
-    const id = this.m.pool.roll(this.m.rngShop, { maxTier: this.shop.level, extra: this.diyRollEntries() });
+    const id = this.pool.roll(this.m.rngShop, { maxTier: this.shop.level, extra: this.diyRollEntries() });
     return id ? { kind: 'chess', id, basePrice: this.gd.chessPrice(id), frozen: false, sold: false } : null;
   }
 
@@ -90,7 +90,8 @@ export class PlayerEconomy {
       bias = new Set();
       for (const [id, st] of Object.entries(bonds)) if (st && st.active) bias.add(id);
     }
-    const id = this.m.pool.rollItem(this.m.rngShop, this.shop.level, this.m.itemPool, bias);
+    // this.pool is the drawer's group chess pool; itemPoolFor is its group-shared equipment stock (D029).
+    const id = this.pool.rollItem(this.m.rngShop, this.shop.level, this.m.itemPoolFor(this), bias);
     return id ? { kind: 'item', id, basePrice: this.gd.itemPrice(id), frozen: false, sold: false } : null;
   }
 
@@ -203,7 +204,8 @@ export class PlayerEconomy {
     } else {
       if (!this.gd.item(slot.id)) return fail(ERR.BAD_TARGET);
       // Already displayed equipment stays purchasable after stock runs out (#624, maintainer 2026-10-14).
-      // acquireItem records the debt. Future rolls still exclude empty stock. SOLD_OUT is only this slot, already sold.
+      // acquireItem records the debt on the receiver's group stock. Future rolls still exclude empty stock.
+      // SOLD_OUT is only this slot, already sold.
       if (handFull) return fail(ERR.HAND_FULL);
       this.spend(price, 'buy');
       slot.sold = true;

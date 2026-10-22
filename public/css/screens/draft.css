@@ -7,6 +7,16 @@
 .draft__main { position: relative; z-index: 1; flex: 1; min-height: 0; display: grid; grid-template-columns: 3.9rem 1fr 5rem; gap: .3rem; padding: .3rem .42rem .36rem; }
 
 .draft-order { display: flex; flex-direction: column; gap: .1rem; min-height: 0; }
+.draft-order__list { display: flex; flex-direction: column; gap: .1rem; flex: 1; min-height: 0; overflow-y: auto; padding-right: .06rem; scrollbar-width: thin; }
+.draft-order__list .dorder { flex: none; }
+.draft-order__group { position: relative; display: flex; flex: none; flex-direction: column; gap: .1rem; }
+.draft-order__group--framed { gap: .06rem; padding: .04rem;
+  border: 1px solid var(--pool-group-color); border: 1px solid color-mix(in srgb, var(--pool-group-color) 38%, transparent);
+  background: transparent; background: color-mix(in srgb, var(--pool-group-color) 4%, transparent); }
+.dorder__avatar { position: relative; display: block; }
+.dorder__group-badge { position: absolute; left: 0; bottom: 0; z-index: 2; display: grid; place-items: center;
+  min-width: max(.18rem, 12px); height: max(.18rem, 12px); font: 700 max(.12rem, 9px)/1 var(--font-num);
+  color: #101719; background: var(--pool-group-color); border: 1px solid rgba(8, 11, 10, .8); }
 .dorder {
   position: relative; display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: .12rem;
   padding: .1rem .12rem .1rem .08rem; background: rgba(12, 15, 14, .82); border: 1px solid var(--line);
@@ -46,6 +56,12 @@
 .dband__lp i { width: .12rem; height: .14rem; background: var(--mint-500); clip-path: polygon(0 0, 30% 0, 30% 20%, 45% 20%, 45% 0, 55% 0, 55% 20%, 70% 20%, 70% 0, 100% 0, 100% 35%, 85% 50%, 85% 80%, 100% 90%, 100% 100%, 0 100%, 0 90%, 15% 80%, 15% 50%, 0 35%); }
 .dband__who { position: absolute; right: .04rem; top: .04rem; display: flex; flex-direction: column; gap: .02rem; }
 .dband__who .pavatar { --pa: .3rem; border-radius: 50%; overflow: hidden; border: 2px solid var(--mint-400); }
+.dband__groups { position: absolute; right: .03rem; top: .09rem; display: flex; flex-direction: column; gap: max(.02rem, 1px); pointer-events: none; }
+.dband__group { display: grid; place-items: center; width: max(.15rem, 9px); height: max(.15rem, 9px);
+  font: 700 max(.11rem, 8px)/1 var(--font-num); color: var(--pool-group-color); border: 1px solid var(--pool-group-color);
+  background: #0b100e; background: color-mix(in srgb, var(--pool-group-color) 15%, #0b100e); }
+.draft-grid--grouped .dband .bandicon { width: min(1.1rem, calc(100% - max(.15rem, 9px))); height: auto; aspect-ratio: 1; align-self: flex-start; }
+.draft-grid--grouped .dband__who { right: max(.22rem, 13px); }
 .dband.is-sel { border-color: var(--mint-400); background: linear-gradient(180deg, rgba(78, 216, 175, .18), rgba(12, 15, 14, .85)); box-shadow: 0 0 0 1px var(--mint-400), 0 0 .24rem rgba(23, 249, 183, .2); }
 .dband.is-mine::after { content: '已选择'; position: absolute; left: 0; top: 0; font-size: calc(.11 * var(--t)); font-weight: 700; padding: 0 .06rem; background: var(--mint-500); color: var(--text-on-mint); }
 

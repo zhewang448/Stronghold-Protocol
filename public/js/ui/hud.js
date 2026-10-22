@@ -110,6 +110,10 @@ export function PhaseCapsule({ pub, hud, miss = null }) {
         fallback=${html`<${Icon} name="sword" class="capsule__icon" />`} />
       <span class="capsule__kills num"><b key=${hud?.resolved ?? hud?.killed ?? 0}>${hud?.resolved ?? hud?.killed ?? 0}</b>/${hud?.total ?? '--'}</span>
       ${phase === PHASE.UNITE ? html`<span class="capsule__tag">${t('联防')}</span>` : null}
+      ${phase === PHASE.UNITE && Number.isInteger(pub?.unite?.round) && pub.unite.roundsMax > 1
+        ? html`<span class="capsule__wave num" data-testid="unite-wave"
+          title=${t('第 {wave} 轮联防 · 最多 {max} 轮', { wave: pub.unite.round, max: pub.unite.roundsMax })}>
+          ${pub.unite.round}/${pub.unite.roundsMax}</span>` : null}
       ${phase === PHASE.UNITE && Number.isFinite(miss) ? html`<${MissTag} n=${miss} />` : null}
     </div>`;
   }
@@ -460,7 +464,8 @@ export function PauseButton({ paused, busy = false, onToggle }) {
  *   pen?:boolean, penAvail?:boolean, onPen?:(on:boolean)=>void, config?: any, frozenAt?: number|null,
  *   pause?: { show: boolean, paused: boolean, busy?: boolean, onToggle: () => void } | null,
  *   live?: { pending: number, unite: boolean, left?: number|null } | null,
- *   spectators?: any[]|null, myId?: any, isHost?: boolean, onRemoveSpectator?: ((playerId: any) => any)|null, view?: any }} props
+ *   spectator?: boolean, spectators?: any[]|null, myId?: any, isHost?: boolean,
+ *   onRemoveSpectator?: ((playerId: any) => any)|null, onUniteSkipVote?: (scope?: { voteId?: string }) => any, view?: any }} props
  *   spectators: the room's spectator seats (room.state) — the 观战席 capsule beside the latency (SpectatorPill; the host removes)
  *   room: room.state — a match with gameplay plugins shows the small MOD mark beside the difficulty (DESIGN §32.6)
  *   frozenAt: the server time every clock shows while the solo match is paused (null = live)
@@ -469,7 +474,7 @@ export function PauseButton({ paused, busy = false, onToggle }) {
  */
 export function TopBar({ pub, priv, conn, hud, total, drawer, onExit, onDrawer, onReady, readyBusy, readyCount, playerCount, pen = false, penAvail = false, onPen = () => {},
   config = null, frozenAt = null, pause = null, live = null, spectator = false,
-  spectators = null, myId = null, isHost = false, onRemoveSpectator = null, room = null, view = null }) {
+  spectators = null, myId = null, isHost = false, onRemoveSpectator = null, onUniteSkipVote = () => {}, room = null, view = null }) {
   const phase = pub?.phase;
   const boss = isBossPhase(phase);
   const lp = boss && Number.isFinite(pub?.teamLp) ? pub.teamLp : Number.isFinite(priv?.lp) ? priv.lp : null;
@@ -551,9 +556,28 @@ export function TopBar({ pub, priv, conn, hud, total, drawer, onExit, onDrawer, 
         ${pause && (pause.show || pause.paused) ? html`<${PauseButton} paused=${!!pause.paused} busy=${pause.busy} onToggle=${pause.onToggle} />` : null}
       </div>
       <${OvertimeWarning} ot=${ot} />
+      <${UniteSkipVote} pub=${pub} myId=${myId} onVote=${onUniteSkipVote} />
       ${showReady ? html`<${ReadyToggle} priv=${priv} onToggle=${onReady} busy=${readyBusy} readyCount=${readyCount} total=${playerCount} />` : null}
     </div>
   </header>`;
+}
+
+/** Vote status remains visible to the team; only eligible human seats can cast a vote. */
+export function UniteSkipVote({ pub, myId, onVote }) {
+  const unite = pub?.unite;
+  const vote = unite?.skipVote;
+  if (pub?.phase !== PHASE.UNITE || unite?.round >= unite?.roundsMax || !vote) return null;
+  const eligible = vote.eligible.includes(myId);
+  const voted = vote.voters.includes(myId);
+  return html`<div class="unite-vote" role="status">
+    <${Button} variant="secondary" size="sm" disabled=${!eligible || voted || vote.passed || !vote.open}
+      onClick=${() => onVote?.(vote.id == null ? {} : { voteId: vote.id })} data-testid="unite-skip-vote"
+      title=${t('超过半数在线且未托管的人类玩家同意后，本轮打完就跳过后续全部联防，剩余漏怪照常扣除目标生命值')}>
+      ${vote.passed ? t('已通过：跳过后续全部联防') : voted ? t('已投票跳过后续全部联防') : t('投票跳过后续全部联防')}
+    <//>
+    <span class="unite-vote__count">${vote.passed ? t('本轮结束后直接结算')
+      : vote.eligible.length ? t('{votes}/{eligible} 票 · 需 {needed} 票', { votes: vote.voters.length, eligible: vote.eligible.length, needed: vote.needed }) : t('暂无可投票玩家')}</span>
+  </div>`;
 }
 
 /** DP counter shown at the right edge during combat. */

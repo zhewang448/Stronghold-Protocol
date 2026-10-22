@@ -24,6 +24,7 @@ function opsCharIds(raw) {
 
 export class PlayerBasics {
   get isHumanActive() { return !this.isBot && !this.left; }
+  get pool() { return this.m.poolFor(this); }
   /** The engine acts for this seat (AI teammate or "AI 托管"; a departed human is eliminated, so nothing is left to do). */
   get botControlled() { return this.isBot || this.left || this.autoplay; }
 

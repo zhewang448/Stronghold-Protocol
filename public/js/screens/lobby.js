@@ -9,7 +9,8 @@ import { useHubBackdrop, HubBackdrop, HubRadar, BackdropSettings, BackdropGlyph,
 // Lobby screen — a hub (owner's request, 2026-10-13): an original backdrop (ui/hubBackdrop.js: generated night scenes or
 // the player's own picture) with the game's dot-matrix emblem in the middle, a left column (密钥加入 · tips), a right
 // column (缺人同盟 card · S.W.E.E.P.报告 (screens/sweep.js) · 干员调配) and four big entries at the bottom right:
-// 独立模拟 / 同盟模拟 / 无限火力 open the start sheet (difficulty 标准/险境/绝境/终极, 无限火力's variant, private room,
+// 独立模拟 / 无限火力 open their difficulty picker; 同盟模拟 goes through 选择同盟方式 → difficulty picker → room.
+// The existing start sheet also holds the mode settings (无限火力's variant, private room,
 // 快速匹配, create), 搜寻队友 opens the room list. The 密钥加入 dialog joins with a 同盟密钥 (recent codes remembered) —
 // as a player (加入同盟) or in one of its MAX_SPECTATORS spectator seats (观战: room.spectate, also while its match
 // runs; community report #26). The server is picked on the title screen.
@@ -608,8 +609,7 @@ function ProtocolSelect({ card, roomMode, random, variant, difficulty, onDifficu
 }
 
 /**
- * 选择同盟方式 (2026-10-13, the owner's request: the event's screen after 同盟模拟, video 5:22–6:29): the radar at the
- * left (ui/matchFlow.js), 创建同盟 (a room at the remembered difficulty — it is changed in the room) and 加入同盟 (the
+ * 选择同盟方式: the radar at the left (ui/matchFlow.js), 创建同盟 (choose a difficulty before a room is created) and 加入同盟 (the
  * key field, 观战, recent keys) at the right, 模拟邀约 (the public alliances) and 搜寻队友 between them, 入门协议 (玩法说明)
  * at the bottom left. Esc or ‹ returns to the hub.
  */
@@ -914,7 +914,7 @@ export function LobbyScreen() {
     if (!online) { toast(t('尚未连接到服务器，请稍候'), 'warn'); return; }
     inFlight.current = true;
     setBusy(kind);
-    try { await fn(); } catch (err) { toastError(err); } finally {
+    try { return await fn(); } catch (err) { toastError(err); return false; } finally {
       inFlight.current = false;
       if (alive.current) setBusy(null);
     }
@@ -935,6 +935,23 @@ export function LobbyScreen() {
       ...(CAN_FIREPOWER ? { random: randomMode, ...(randomMode ? { variant } : {}) } : {}),
       ...(CAN_PRIVATE ? { private: roomMode !== 'solo' && privateRoom } : {}),
     }));
+  };
+  const createCoop = async () => {
+    const result = await create();
+    // A key collision or connection error must return to key setup, not strand the host on the difficulty scene.
+    if (result === false) closeProtocol();
+  };
+  const openCoopCreate = () => {
+    if (!customCodeOk) {
+      toast(t('同盟密钥为 {ROOM_CODE_LEN} 位字母或数字', { ROOM_CODE_LEN }), 'warn');
+      return;
+    }
+    setSheetPurpose('create'); setSheetChained(true); setAllyOpen(false); setSheetOpen(true);
+  };
+  const closeProtocol = () => {
+    const returnToAlliance = sheetChained && roomMode === 'coop';
+    setSheetOpen(false); setSheetChained(false);
+    if (returnToAlliance) setAllyOpen(true);
   };
   const queueMatch = () => run('queue', () => net.request('match.queue', { mode: roomMode, difficulty, random: randomMode, ...(randomMode ? { variant } : {}), fillBots: false }));
   const cancelMatch = () => run('cancel', () => net.request('match.cancel'));
@@ -991,15 +1008,15 @@ export function LobbyScreen() {
   const [joinOpen, setJoinOpen] = useState(false);
   const [achOpen, setAchOpen] = useState(false);              // 成就统计 (ui/achievements.js)
   // 同盟模拟 → 选择同盟方式; 独立模拟 / 无限火力 → 选择模拟协议
-  const openMode = (m) => { modeTrigger.current = m === 'solo' ? '.hub-entry[aria-label="SOLO"]' : '.hub-entry[aria-label="ALLIANCE"]'; pickMode(m); if (m === 'coop') setAllyOpen(true); else { setSheetPurpose('create'); setSheetChained(false); setSheetOpen(true); } };
+  const openMode = (m) => { modeTrigger.current = m === 'solo' ? '.hub-entry[aria-label="SOLO"]' : '.hub-entry[aria-label="ALLIANCE"]'; pickMode(m); if (m === 'coop') { setSheetChained(false); setAllyOpen(true); } else { setSheetPurpose('create'); setSheetChained(false); setSheetOpen(true); } };
   const openSearch = () => { pickMode('coop'); setSheetChained(allyOpen); setAllyOpen(false); setSheetPurpose('search'); setSheetOpen(true); };
   const modeCard = MODE_CARDS.find((c) => c.id === simulation) || MODE_CARDS[0];
 
   if (sheetOpen) return html`<${ProtocolSelect} card=${modeCard} roomMode=${roomMode} random=${randomMode} variant=${variant} difficulty=${difficulty}
-      onDifficulty=${pickDifficulty} onClose=${() => setSheetOpen(false)} matchmaking=${matchmakingCounts}
+      onDifficulty=${pickDifficulty} onClose=${closeProtocol} matchmaking=${matchmakingCounts}
       brief=${randomMode ? html`<${FirepowerBrief} variant=${fpVariant} onVariant=${pickVariant} />` : null}
       privateRoom=${privateRoom} onPrivate=${setPrivateRoom} online=${online} maint=${maint} busy=${busy} isSearching=${isSearching}
-      onCreate=${create} onQueue=${async () => { await queueMatch(); setSheetOpen(false); }}
+      onCreate=${sheetChained && roomMode === 'coop' && sheetPurpose === 'create' ? createCoop : create} onQueue=${async () => { await queueMatch(); setSheetOpen(false); }}
       purpose=${sheetPurpose} onSearch=${queueMatch} onCancel=${cancelMatch} mm=${mm} onBrowse=${() => setModalOpen(true)} chained=${sheetChained} />`;
   return html`<div class="screen lobby-screen lobby-hub" data-hub-theme=${backdropTheme(bg)}>
     <${HubBackdrop} bg=${bg} />
@@ -1080,7 +1097,7 @@ export function LobbyScreen() {
 
     ${allyOpen ? html`<${AllianceSelect} customCode=${customCode} onCustomCode=${setCustomCode} customCodeOk=${customCodeOk} onClose=${() => setAllyOpen(false)} code=${code} onCode=${(v) => setCode(normalizeCode(v))} codeOk=${codeOk}
       recent=${recent} online=${online} maint=${maint} busy=${busy} difficulty=${difficulty} recruiting=${recruitingRooms(rooms).length}
-      onCreate=${create} onJoin=${() => join()} onSpectate=${() => spectate()} onBrowse=${() => setModalOpen(true)} onSearch=${openSearch} />` : null}
+      onCreate=${openCoopCreate} onJoin=${() => join()} onSpectate=${() => spectate()} onBrowse=${() => setModalOpen(true)} onSearch=${openSearch} />` : null}
 
     <${HubDialog} open=${joinOpen} micro="JOIN WITH ALLIANCE KEY" title=${t('密钥加入')} onClose=${() => setJoinOpen(false)}>
       <div class="join-row">

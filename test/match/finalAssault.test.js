@@ -64,7 +64,8 @@ test('boss pool = bloodPoint[difficulty] × the players alive at the fight\'s st
   const gd = new GameData(RAW, 'mode_multi_hard');
   for (const n of [1, 2, 3, 4]) assert.equal(bossPoolHp(gd, 'boss_1', n), 1800000 * n, `${n} alive`);
   assert.equal(bossPoolHp(gd, 'boss_1'), 1800000 * 4, 'no count given: a full team');
-  assert.equal(bossPoolHp(gd, 'boss_1', 9), 1800000 * 4, 'at most aliveFull (4) players');
+  assert.equal(bossPoolHp(gd, 'boss_1', 9), 1800000 * 9, 'expanded rooms scale the shared pool to all living players');
+  assert.equal(bossPoolHp(gd, 'boss_1', 20), 1800000 * 20, 'twenty living players');
   assert.equal(gd.bossPoolHp('boss_1', 2), bossPoolHp(gd, 'boss_1', 2), 'GameData agrees');
   assert.equal(bossPoolHp(new GameData(RAW, 'mode_single_abyss'), 'boss_5', 1), 3000000, 'solo: the table value');
   assert.equal(bossPoolHp(new GameData(RAW, 'mode_single_funny'), 'boss_2', 1), 225000);
@@ -80,7 +81,7 @@ test('boss pool = bloodPoint[difficulty] × the players alive at the fight\'s st
   assert.equal(bossPoolHp(scaled, 'boss_1', 2), 900000);
   assert.equal(bossPoolHp(scaled, 'boss_1', 1), 450000);
   assert.equal(bossPoolHp(scaled, 'boss_1'), 1800000, 'no count given: a full team');
-  assert.equal(bossPoolHp(scaled, 'boss_1', 9), 1800000, 'never above the data value');
+  assert.equal(bossPoolHp(scaled, 'boss_1', 9), 1800000 * 9 / 4, 'expanded alive scaling uses the configured four-seat baseline');
   // a mode's own entry overrides the global one
   const perMode = { ...RAW, config: { ...RAW.config, modes: { ...RAW.config.modes, mode_multi_hard: { ...RAW.config.modes.mode_multi_hard, bossHpScale: { ...RAW.config.modes.mode_multi_hard.bossHpScale, perPlayer: false } } } } };
   assert.equal(bossPoolHp(new GameData(perMode, 'mode_multi_hard'), 'boss_1', 3), 1800000, 'the mode entry first');

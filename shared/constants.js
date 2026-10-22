@@ -18,7 +18,12 @@ export const DEV_BUILD = /-dev$/.test(APP_VERSION);
  */
 export const PLUGIN_API = Object.freeze({ current: 2, min: 1 });
 
-export const MAX_SEATS = 4;
+// Experimental co-op capacity. Four seats remain the default and the balance baseline.
+export const BASE_SEATS = 4;
+export const DEFAULT_SEATS = 4;
+export const MAX_SEATS = 20;
+export const ROOM_CAPACITIES = Object.freeze([4, 8, 10, 16, 20]);
+export const MAX_DRAFT_CARDS = 6;
 /**
  * Spectator seats of a co-op room (community report #26, owner's decision 2026-10-04) — a remake feature: the official
  * room has 1–4 players and no spectator seat (there only eliminated players and 联防 bystanders watch, research 09 §3.1).

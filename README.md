@@ -265,3 +265,4 @@ npm run golden       # 确定性战斗与整局黄金结果
 本库在原项目基础上继续开发；原项目的介绍、版本记录及致谢见[原项目 README](https://github.com/sganggs/Stronghold-Protocol/blob/master/README.md)。文字聊天借鉴 RyantArgnisan/Stronghold-Protocol 的 GPL 实现，署名见 [NOTICE.md](NOTICE.md)；其他扩展的参考来源记录在相应开发文档中。
 
 代码以 **GPL-3.0-or-later** 发布，见 [LICENSE](LICENSE)。游戏素材与数据不适用代码许可证；版权、Spine 组合分发附加许可和第三方组件说明见 [NOTICE.md](NOTICE.md) 与 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。本项目保持非商业使用，不接受广告、付费服务或其他变现功能。
+> 多人扩容实验分支：默认四人，可选最多二十人；独立游戏端口 3188、主机控制台 3288。运行和规则见 [扩展联机说明](docs/EXPANDED-COOP.md)。这是社区实验，不是上游或官方人数规则。

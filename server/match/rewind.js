@@ -40,8 +40,11 @@ export function capturePrep(m) {
     }
     const match = {};
     for (const k of MATCH_KEYS) match[k] = m[k];
+    // PREP has no active draft. Group drafts retain timer callbacks that cannot be serialized.
+    match.draft = null;
+    const groups = m.poolGroups.map(g => ({ id: g.id, playerIds: g.playerIds.slice(), entries: g.pool.entries, itemDebt: g.itemPool.debt }));
     // one clone for everything: pieces shared between a player's areas stay shared
-    const data = structuredClone({ players, diyStock, match, pool: m.pool.entries, itemDebt: m.itemPool.debt, rng: RNGS.map((k) => m[k].state()) });
+    const data = structuredClone({ players, diyStock, match, groups, pool: m.pool.entries, itemDebt: m.itemPool.debt, rng: RNGS.map((k) => m[k].state()) });
     // class instances / PlayerState references: kept by reference (replaced, never mutated, after this point)
     return { round: m.round, at: m.sched.now(), data, refs: { bossPool: m.bossPool, uniteBounds: m._uniteBounds } };
   } catch (e) {
@@ -58,7 +61,9 @@ export function rewindToPrep(m, round) {
   const snap = m.prepSnapshots.get(r);
   if (!snap) return { error: `没有第 ${round} 回合的快照` };
   const errors = m.errorCount;
-  const { players, diyStock, match, pool, itemDebt, rng } = structuredClone(snap.data);
+  const { players, diyStock, match, groups, pool, itemDebt, rng } = structuredClone(snap.data);
+  if (groups ? groups.length !== m.poolGroups.length || groups.length > 1 && groups.some((g, i) => g.id !== m.poolGroups[i].id || g.playerIds.join() !== m.poolGroups[i].playerIds.join())
+    : m.poolGroups.length > 1) return { error: '回档的卡池分组与本局不一致' };
   m.guard(() => {
     if (m.runner) { try { m.runner.stop(); } catch { /* ignore */ } m.runner = null; }
     m._stopClientCombat();
@@ -68,6 +73,8 @@ export function rewindToPrep(m, round) {
     m._timers.clear();
     m._phaseTimer = null;
     m._turnTimer = null;
+    m._testDraftHolds?.clear();
+    m.sp = null;
     m._prepEndQueued = false;
     m.fields = [];
     m.watchers.clear();
@@ -80,8 +87,15 @@ export function rewindToPrep(m, round) {
     Object.assign(m, match);
     m.bossPool = snap.refs.bossPool;
     m._uniteBounds = snap.refs.uniteBounds;
-    m.pool.entries = pool;
-    m.itemPool.debt = itemDebt || new Map();
+    if (groups) {
+      for (const [i, g] of groups.entries()) {
+        m.poolGroups[i].pool.entries = g.entries;
+        m.poolGroups[i].itemPool.debt = g.itemDebt || new Map();
+      }
+    } else {
+      m.pool.entries = pool;
+      m.itemPool.debt = itemDebt || new Map();
+    }
     // the timeline after round r is gone; r itself is re-captured by enterPrep below
     for (const k of [...m.prepSnapshots.keys()]) if (k > r) m.prepSnapshots.delete(k);
     truncateReplay(m, r);

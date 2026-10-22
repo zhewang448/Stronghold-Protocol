@@ -783,6 +783,7 @@ export function validateClientResult(spec, raw, { gd = null } = {}) {
   const bad = (reason) => ({ ok: false, reason });
   try {
     if (!spec || !raw || typeof raw !== 'object' || !raw.perPlayer || typeof raw.perPlayer !== 'object') return bad('shape');
+    if (raw.truncated === true) return bad('truncated result');
     if (requiresTraitLayerAuthority(spec, gd)) return bad('trait layers require server authority');
     const B = specBounds(spec, gd);
     const bossLike = spec.kind === 'boss' || spec.kind === 'hidden';

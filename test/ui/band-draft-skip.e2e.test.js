@@ -85,8 +85,8 @@ describe('strategy skip eligibility (real server, normal browser operations)', {
   async function draft(humans, mode = 'coop') {
     const clients = [await player('轮选测试1')];
     const host = clients[0].page;
-    await click(host, '.mode-card', mode === 'solo' ? '独立模拟' : '同盟模拟');
-    await click(host, '.create-box button', mode === 'solo' ? '开始独立模拟' : '创建同盟');
+    if (mode === 'solo') { await click(host, '.hub-entry[aria-label="SOLO"]'); await click(host, '.proto-start', '开始模拟'); }
+    else { await click(host, '.hub-entry[aria-label="ALLIANCE"]'); await click(host, '[data-testid="create-alliance"]'); await click(host, '.proto-start', '创建同盟'); }
     await host.waitForFunction(() => !!globalThis.__SP__.store.get().room?.code);
     const code = (await state(host)).code;
     for (let i = 1; i < humans; i++) {

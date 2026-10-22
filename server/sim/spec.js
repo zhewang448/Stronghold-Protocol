@@ -401,9 +401,12 @@ function compactMods(m) {
  */
 export function compactResult(res) {
   const r = res && typeof res === 'object' ? res : {};
+  // Runtime splits/summons share this list with billable leaks. Never settle its capped prefix as a full result.
+  let truncated = r.truncated === true || (Array.isArray(r.unspawned) && r.unspawned.length > 400);
   const perPlayer = {};
   for (const pid of Object.keys(r.perPlayer || {}).slice(0, 4)) {
     const p = r.perPlayer[pid] || {};
+    if (Array.isArray(p.leaked) && p.leaked.length > 400) truncated = true;
     const layerGains = {};
     for (const [k, v] of Object.entries(p.layerGains || {}).slice(0, 40)) if (isKey(k) && fnum(v) > 0) layerGains[k] = Math.min(1e4, fnum(v));
     const total = Math.max(0, Math.trunc(fnum(p.total)));
@@ -456,28 +459,39 @@ export function compactResult(res) {
       time: Math.max(0, Math.min(1e6, fnum(u.time))),
     }));
   }
+  if (truncated) out.truncated = true;
   return out;
 }
 
 /** Bytes a b.result frame may use (the socket's inbound limit is 64 KB; headroom for the envelope). */
 export const RESULT_FRAME_BUDGET = 60 * 1024;
 
+/** A bounded takeover request in the existing result envelope; none of these partial rows may settle. */
+function truncatedResult(result) {
+  return { ...result, truncated: true, unspawned: [], perPlayer: Object.fromEntries(
+    Object.entries(result.perPlayer || {}).map(([pid, p]) => [pid, { ...p, leaked: [], layerGains: {}, unitsEnd: [], unitStats: [] }]),
+  ) };
+}
+
 /**
  * Keep a compact result under the frame budget (a larger frame closes the socket: the server would take the field over
  * at the very end). Never touches what settles LP / funds / layers of a normal field. In order: drop the per-unit
  * statistics, drop the leaks' `mods` (the server rebuilds them from the spec), and — boss fields only, whose leaks cost
- * team LP through b.progress — drop leak entries. Returns the (possibly) trimmed copy.
+ * team LP through b.progress — drop leak entries. An already-truncated result or a non-boss result still over budget
+ * becomes a small `truncated` report: the server re-simulates instead of accepting partial settlement data.
  * @param {object} result compactResult(...) output
  * @param {{ bossLike?: boolean, budget?: number, battleId?: string }} [o]
  */
 export function fitResult(result, { bossLike = false, budget = RESULT_FRAME_BUDGET, battleId = '' } = {}) {
   const size = (r) => JSON.stringify({ t: 'b.result', battleId, result: r, rid: 2147483647 }).length;
+  if (result?.truncated === true) return truncatedResult(result);
   if (!result || typeof result !== 'object' || size(result) <= budget) return result;
   const r = { ...result, perPlayer: {} };
   for (const [pid, p] of Object.entries(result.perPlayer || {})) r.perPlayer[pid] = { ...p, unitStats: [] };
   if (size(r) <= budget) return r;
   for (const p of Object.values(r.perPlayer)) p.leaked = (p.leaked || []).map((l) => ({ ...l, mods: null }));
-  if (size(r) <= budget || !bossLike) return r;
+  if (size(r) <= budget) return r;
+  if (!bossLike) return truncatedResult(r);
   for (const p of Object.values(r.perPlayer)) p.leaked = [];
   if (Array.isArray(r.unspawned)) r.unspawned = [];
   return r;

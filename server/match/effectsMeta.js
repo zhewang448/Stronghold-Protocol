@@ -601,7 +601,7 @@ export function makeCtx(m, ps, source, hook, ev = null, preview = null) {
       const base = gd.baseIdOf(id);
       // "some effects fail when the cap is hit" (research 06 §7): by default a chess of the pool needs a free copy (a
       // 自选 piece: one of the player's own stock — player/diy.js poolOf)
-      const pool = typeof ps.poolOf === 'function' ? ps.poolOf(base) : m.pool;
+      const pool = typeof ps.poolOf === 'function' ? ps.poolOf(base) : ps.pool;
       if (opts.requirePool !== false && pool.has(base) && pool.left(base) < 1) return null;
       const p = ps.acquireChess(id, { source: opts.source || source.key || 'effect', toTemp: !!opts.toTemp, fromPool: opts.fromPool !== false });
       // 「歌蕾蒂娅：获得斯卡蒂」 — every silent grantChess (a 特质, 余 SERVER_MOST_BOND, a band, an item, a choice).
@@ -618,9 +618,13 @@ export function makeCtx(m, ps, source, hook, ev = null, preview = null) {
     },
     grantItem: (itemId, opts = {}) => {
       if (!ps.alive || !gd.item(itemId)) return null;
+      // The legacy marker and the upstream grant flag share the fixed-family exemption. The stored marker keeps
+      // approved upgrade/merge inheritance; neither API exempts an ordinary item from its own group's stock.
+      const noPool = (opts.noPool === true || opts.requirePool === false) && gd.isUnlimitedGiftItem(itemId);
       const p = ps.acquireItem(itemId, {
         source: opts.source || source.key || 'effect',
         toTemp: !!opts.toTemp,
+        noPool,
         deferMerge: ps._deferItemMerge > 0,
         requirePool: opts.requirePool !== false,
       });
@@ -637,9 +641,9 @@ export function makeCtx(m, ps, source, hook, ev = null, preview = null) {
         return typeof opts.filter === 'function' ? !!opts.filter(id) : true;
       };
       const extra = typeof ps.diyStockEntries === 'function' ? ps.diyStockEntries() : null;
-      return m.pool.roll(rng, { maxTier: Number.isInteger(opts.maxTier) ? opts.maxTier : 6, tier: Number.isInteger(opts.tier) ? opts.tier : null, filter: f, extra, ignoreCounts: opts.ignoreCounts === true });
+      return ps.pool.roll(rng, { maxTier: Number.isInteger(opts.maxTier) ? opts.maxTier : 6, tier: Number.isInteger(opts.tier) ? opts.tier : null, filter: f, extra, ignoreCounts: opts.ignoreCounts === true });
     },
-    rollItem: (opts = {}) => rolls.rollItemId(opts),
+    rollItem: (opts = {}) => rolls.rollItemId({ ...opts, player: ps }),
     /**
      * Roll a choices.json pool: equip pools → { kind: 'item', id }; chess pools (items / weighted / shopEligible with
      * tier, minTier, bond, golden) → { kind: 'chess', id, golden } (a pool chess needs a free copy). null when empty.
@@ -648,7 +652,7 @@ export function makeCtx(m, ps, source, hook, ev = null, preview = null) {
       shopLevel: ps.shop.level,
       // a shared-pool draw also takes the player's 自选 stock, its bonds read through the player's view (rollChess)
       extra: typeof ps.diyStockEntries === 'function' ? ps.diyStockEntries() : null, chessOf: (id) => gd.chess(id),
-      ...opts,
+      ...opts, player: ps,
     }),
     /**
      * Run another owned chess's 特质 of `eventType` now (SERVER_GAIN / SERVER_PREP_START / SERVER_PREP_FIN /

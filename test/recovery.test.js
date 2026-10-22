@@ -28,16 +28,120 @@ function fixture(t, mode = 'coop', options = {}) {
   h.toPrep();
   host.playerId = h.m.order[0].playerId;
   registry.byPlayerId.clear(); registry.byPlayerId.set(host.playerId, host);
-  const room = new Room('TEST', mode, 'NORMAL', Date.now());
-  room.seats = Array(4).fill(null);
+  const room = new Room(options.code || 'TEST', mode, 'NORMAL', Date.now());
+  room.capacity = Math.max(4, h.m.order.length);
+  room.seats = Array(room.capacity).fill(null);
   for (const p of h.m.order) room.seats[p.seat] = { seat: p.seat, playerId: p.playerId, name: p.name, isBot: p.isBot, connected: true };
   room.hostId = host.playerId; room.match = h.m; room.matchCount = 1;
   host.roomCode = room.code; lobby.rooms.set(room.code, room);
   const recovery = createRecovery({ lobby, root: process.cwd(), dir: path.join(dir, 'recovery'), identity: 'test', log });
   t.after(() => { recovery.prepareShutdown(); lobby.shutdown(); h.m.dispose(); fs.rmSync(dir, { recursive: true, force: true }); });
   recovery.save(room, h.m, h.m.prepSnapshots.get(1));
-  return { dir, h, recovery, lobby, room, host, file: path.join(dir, 'recovery', 'TEST.bin') };
+  return { dir, h, recovery, lobby, room, host, file: path.join(dir, 'recovery', `room-${room.code}.bin`) };
 }
+
+test('disk recovery preserves the room AI-last choice; old snapshots keep the historical default off', t => {
+  const f = fixture(t);
+  class RestoredMatch extends Match {
+    constructor(opts) { super({ ...opts, scheduler: new VirtualScheduler(), BattleClass: FakeBattle, botRehearsal: 0, clientCombat: false }); }
+  }
+  const room = deserialize(fs.readFileSync(f.file));
+  for (const [value, expected] of [[true, true], [false, false], [undefined, false]]) {
+    room.room.aiPicksLast = value;
+    if (value === undefined) delete room.room.aiPicksLast;
+    fs.writeFileSync(f.file, serialize(room));
+    const registry = new SessionRegistry(), lobby = new Lobby({ registry, MatchClass: RestoredMatch, getData: () => DATA, log });
+    const recovery = createRecovery({ lobby, root: process.cwd(), dir: path.dirname(f.file), identity: 'test', log });
+    recovery.restore();
+    assert.equal(lobby.rooms.get('TEST')?.aiPicksLast, expected);
+    assert.equal(lobby.rooms.get('TEST')?.match.aiPicksLast, expected);
+    recovery.prepareShutdown(); lobby.shutdown();
+  }
+});
+
+for (const code of ['A1B2', '1234', 'COM1', 'LPT9']) test(`twenty-player custom code ${code} survives startup recovery and cleanup`, t => {
+  const f = fixture(t, 'coop', { humans: 20, bots: 0, code });
+  class RestoredMatch extends Match {
+    constructor(opts) { super({ ...opts, scheduler: new VirtualScheduler(), BattleClass: FakeBattle, botRehearsal: 0, clientCombat: false }); }
+  }
+  const registry = new SessionRegistry(), lobby = new Lobby({ registry, MatchClass: RestoredMatch, getData: () => DATA, log });
+  const recovery = createRecovery({ lobby, root: process.cwd(), dir: path.dirname(f.file), identity: 'test', log });
+  t.after(() => { recovery.prepareShutdown(); lobby.shutdown(); });
+  recovery.restore();
+  assert.equal(lobby.rooms.get(code)?.match.phase, 'PREP');
+  assert.equal(lobby.rooms.get(code).capacity, 20);
+  assert.equal(lobby.rooms.get(code).match.poolGroups.length, 5);
+  assert.equal(registry.byToken(f.host.token)?.roomCode, code);
+  assert.deepEqual(recovery.status().issues, []);
+  assert.ok(recovery.delete(path.basename(f.file)).ok);
+  assert.equal(fs.existsSync(f.file), false);
+  f.recovery.save(f.room, f.h.m, f.h.m.prepSnapshots.get(1));
+  assert.ok(fs.existsSync(f.file));
+  f.recovery.configure(false);
+  assert.deepEqual(fs.readdirSync(path.dirname(f.file)), []);
+});
+
+for (const code of ['A1B2', '1234', 'COM1', 'LPT9']) {
+  test(`legacy snapshot ${code} restores and migrates without leaving a stale copy`, t => {
+    const f = fixture(t, 'coop', { humans: 8, bots: 0, code });
+    const legacy = path.join(path.dirname(f.file), code + '.bin');
+    fs.renameSync(f.file, legacy);
+    class RestoredMatch extends Match {
+      constructor(opts) { super({ ...opts, scheduler: new VirtualScheduler(), BattleClass: FakeBattle, botRehearsal: 0, clientCombat: false }); }
+    }
+    const registry = new SessionRegistry(), lobby = new Lobby({ registry, MatchClass: RestoredMatch, getData: () => DATA, log });
+    const recovery = createRecovery({ lobby, root: process.cwd(), dir: path.dirname(f.file), identity: 'test', log });
+    t.after(() => { recovery.prepareShutdown(); lobby.shutdown(); });
+    recovery.restore();
+    assert.equal(lobby.rooms.get(code)?.match.phase, 'PREP');
+    assert.equal(registry.byToken(f.host.token)?.roomCode, code);
+    assert.deepEqual(recovery.status().issues, []);
+    f.recovery.save(f.room, f.h.m, f.h.m.prepSnapshots.get(1));
+    assert.ok(fs.existsSync(f.file));
+    assert.equal(fs.existsSync(legacy), false);
+  });
+
+  for (const action of ['delete', 'disable']) test(`${action} removes both snapshot names for ${code}`, t => {
+    const f = fixture(t, 'coop', { code });
+    const legacy = path.join(path.dirname(f.file), code + '.bin');
+    fs.copyFileSync(f.file, legacy);
+    const result = action === 'delete' ? f.recovery.delete(code + '.bin') : f.recovery.configure(false);
+    assert.ok(result.ok);
+    assert.deepEqual(fs.readdirSync(path.dirname(f.file)), []);
+  });
+}
+
+test('prefixed snapshot takes precedence over a corrupt legacy copy of the same room', t => {
+  const f = fixture(t, 'coop', { code: 'A1B2' });
+  fs.writeFileSync(path.join(path.dirname(f.file), 'A1B2.bin'), 'obsolete corrupt copy');
+  class RestoredMatch extends Match {
+    constructor(opts) { super({ ...opts, scheduler: new VirtualScheduler(), BattleClass: FakeBattle, botRehearsal: 0, clientCombat: false }); }
+  }
+  const lobby = new Lobby({ registry: new SessionRegistry(), MatchClass: RestoredMatch, getData: () => DATA, log });
+  const recovery = createRecovery({ lobby, root: process.cwd(), dir: path.dirname(f.file), identity: 'test', log });
+  t.after(() => { recovery.prepareShutdown(); lobby.shutdown(); });
+  recovery.restore();
+  assert.equal(lobby.rooms.size, 1);
+  assert.equal(lobby.rooms.get('A1B2')?.match.phase, 'PREP');
+  assert.deepEqual(recovery.status().issues, []);
+});
+
+for (const humans of [8, 20]) test(`${humans} players: disk recovery preserves room capacity and every group's inventory`, t => {
+  const f = fixture(t, 'coop', { humans, bots: 0 });
+  for (const g of f.h.m.poolGroups) g.itemPool.debt.set('fixture', g.id);
+  const snap = capturePrep(f.h.m);
+  f.recovery.save(f.room, f.h.m, snap);
+  const record = deserialize(fs.readFileSync(f.file));
+  assert.equal(record.room.capacity, humans);
+  const restored = makeMatch({ humans, bots: 0, seed: 77, fake: true, clientCombat: true, clients: false });
+  t.after(() => restored.m.dispose());
+  restoreMatch(restored.m, record);
+  for (const [i, g] of restored.m.poolGroups.entries()) {
+    assert.deepEqual(g.pool.entries, f.h.m.poolGroups[i].pool.entries);
+    assert.deepEqual(g.itemPool.debt, f.h.m.poolGroups[i].itemPool.debt);
+    assert.ok(g.playerIds.every(id => restored.m.players.get(id).pool === g.pool));
+  }
+});
 
 test('disk snapshot restores PREP identically and continues to the same final result and history', (t) => {
   const old = getReplayConfig(); setReplayConfig({ enabled: true, identity: 'test' });

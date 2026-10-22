@@ -35,6 +35,7 @@
 
 import { UI_SLOT_IDS, isPackPath, isPluginId } from './manifest.js';
 import { utf8 } from '../sha256.js';
+import { MAX_SEATS } from '../constants.js';
 
 export { UI_SLOT_IDS as UI_SLOTS };
 
@@ -90,11 +91,11 @@ const PLUGIN_TYPES = new Set(UI_PLUGIN_MESSAGES);
 const HOST_TYPES = new Set(UI_HOST_MESSAGES);
 
 /**
- * A client→server type (shared/protocol.js C2S): hello, ping, room.*, g.*, b.*.
+ * A client→server type (shared/protocol.js C2S): hello, ping, state.*, room.*, social.*, g.*, b.*.
  * The unit test asserts every current C2S key matches.
  * @param {unknown} s
  */
-export const isIntentType = (s) => typeof s === 'string' && /^(?:hello|ping|state\.[A-Za-z][A-Za-z0-9]*|room\.[A-Za-z][A-Za-z0-9]*|g\.[A-Za-z][A-Za-z0-9]*|b\.[A-Za-z][A-Za-z0-9]*)$/.test(s);
+export const isIntentType = (s) => typeof s === 'string' && /^(?:hello|ping|(?:state|room|social|g|b)\.[A-Za-z][A-Za-z0-9]*)$/.test(s);
 
 /**
  * Whether `value` is, or carries, a match intent. A plugin must not send one (no auto-play, no cheat).
@@ -324,7 +325,7 @@ const str = (v, max = 64) => (typeof v === 'string' ? v.slice(0, max) : null);
  */
 export function subsetPublic(pub) {
   if (!isObj(pub)) return null;
-  const players = Array.isArray(pub.players) ? pub.players.slice(0, 8).map((p) => {
+  const players = Array.isArray(pub.players) ? pub.players.slice(0, MAX_SEATS).map((p) => {
     const row = pick(p, ['playerId', 'seat', 'name', 'alive', 'lp', 'shopLevel']);
     return row || {};
   }) : [];
@@ -565,7 +566,7 @@ export function subsetRoom(room) {
   const out = {};
   if (isObj(room.content) && typeof room.content.cs === 'string' && /^[0-9a-f]{64}$/.test(room.content.cs)) out.cs = room.content.cs;
   if (hasSeats) {
-    out.seats = room.seats.slice(0, 8).map((s) => {
+    out.seats = room.seats.slice(0, MAX_SEATS).map((s) => {
       if (!isObj(s)) return null;
       /** @type {Record<string, unknown>} */
       const row = {};
@@ -589,7 +590,7 @@ export function subsetRoom(room) {
  */
 export function subsetResult(result) {
   if (!isObj(result)) return null;
-  const players = Array.isArray(result.players) ? result.players.slice(0, 8).map((p) => {
+  const players = Array.isArray(result.players) ? result.players.slice(0, MAX_SEATS).map((p) => {
     if (!isObj(p)) return {};
     const statsIn = isObj(p.stats) ? p.stats : {};
     /** @type {Record<string, number>} */

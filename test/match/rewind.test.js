@@ -19,6 +19,29 @@ function fingerprint(m) {
   });
 }
 
+for (const humans of [8, 20]) test(`${humans} players: rewind restores every fixed group's pool and equipment debt`, t => {
+  const h = makeMatch({ humans, fake: true }).start().toPrep();
+  t.after(() => h.m.dispose());
+  const m = h.m;
+  for (const g of m.poolGroups) g.itemPool.debt.set('fixture', g.id);
+  const snap = capturePrep(m);
+  assert.ok(snap, JSON.stringify(h.logs));
+  m.prepSnapshots.set(m.round, snap);
+  const before = m.poolGroups.map(g => ({ entries: structuredClone(g.pool.entries), debt: new Map(g.itemPool.debt) }));
+  for (const g of m.poolGroups) {
+    const id = [...g.pool.entries.keys()][0];
+    assert.ok(g.pool.take(id, 1));
+    g.itemPool.debt.set('fixture', 99);
+    g.itemPool.debt.set('abandoned', 2);
+  }
+  assert.deepEqual(rewindToPrep(m, m.round), { ok: true, round: m.round });
+  for (const [i, g] of m.poolGroups.entries()) {
+    assert.deepEqual(g.pool.entries, before[i].entries);
+    assert.deepEqual(g.itemPool.debt, before[i].debt);
+    for (const id of g.playerIds) assert.equal(m.players.get(id).pool, g.pool);
+  }
+});
+
 test('upstream merge: rewind restores equipment debt and cancels abandoned delegated rehearsals', t => {
   const h = makeMatch({ mode: 'coop', humans: 1, bots: 0, fake: true }).start().toPrep();
   const m = h.m;

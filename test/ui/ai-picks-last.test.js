@@ -1,5 +1,5 @@
-// The room screen's 「AI 队友最后选择」 switch (GitHub #338; server: room.setAiPicksLast, room.state.aiPicksLast): co-op
-// rooms only, the host toggles it, everybody else sees its state read-only; the texts go through t() with English in
+// The room screen's 「AI 队友最后选择」 switch (GitHub #338; server: room.setAiPicksLast, room.state.aiPicksLast): new co-op
+// rooms default on, the host toggles it, everybody else sees its state read-only; the texts go through t() with English in
 // public/i18n/en.json.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -18,7 +18,7 @@ const room = (o = {}) => ({
   ...o,
 });
 
-test('aiLastOption: hidden in solo, editable by the host only, the state from room.state (off when absent)', async () => {
+test('aiLastOption: hidden in solo, editable by the host only, the state from room.state (legacy absence stays off)', async () => {
   const { aiLastOption } = await mod();
   assert.equal(aiLastOption(room({ mode: 'solo' }), 'h'), null, 'solo: no AI teammates');
   assert.deepEqual(aiLastOption(room(), 'h'), { on: false, editable: true });

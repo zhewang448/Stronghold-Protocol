@@ -12,7 +12,7 @@ export function wallView(lobby, code) {
   if (m && !matches.has(m)) matches.set(m, ++nextMatch);
   return { room: code, matchId: m && !m.ended && !m.disposed ? matches.get(m) : null,
     phase: m ? PHASE_NAMES[m.phase] || m.phase : '对局未开始或已结束', round: m?.round ?? null,
-    seats: Array.from({ length: 4 }, (_, i) => {
+    seats: Array.from({ length: room.seats.length }, (_, i) => {
       const seat = room.seats[i]; if (!seat) return null;
       const ps = m?.players.get(seat.playerId);
       return { seat: i, playerId: seat.playerId, name: seat.name, connected: seat.connected, isBot: seat.isBot,

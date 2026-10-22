@@ -247,7 +247,7 @@ test('the briefing, the strategy draft and the in-game 本局信息 tab all read
   assert.match(draft, /data-testid="match-info-open"[\s\S]*?onClick=\$\{\(\) => setInfoOpen\(true\)\}>\$\{t\('查看禁用盟约与干员'\)\}</);
   assert.match(draft, /<\$\{MatchInfoDialog\} open=\$\{infoOpen\} onClose=\$\{\(\) => setInfoOpen\(false\)\} model=\$\{info\}/);
   // a turn change or my pick closes it; the draft's end unmounts the screen
-  assert.match(draft, /const turnKey = `\$\{draft\.turnPid \|\| ''\}\|\$\{myPick \|\| ''\}`;\n\s*useEffect\(\(\) => \{ setInfoOpen\(false\); \}, \[turnKey\]\);/);
+  assert.match(draft, /const turnKey = `\$\{draft\.id \|\| ''\}\|\$\{draft\.turnPid \|\| ''\}\|\$\{myPick \|\| ''\}`;\n\s*useEffect\(\(\) => \{ setInfoOpen\(false\); \}, \[turnKey\]\);/);
   const drawer = read('public/js/ui/enemyDrawer.js');
   assert.match(drawer, /import \{ matchInfoModel, DiyBannedLine, BannedOperatorGroups \} from '\.\/matchInfo\.js';/);
   assert.match(drawer, /matchInfoModel\(pub, \{\s*bonds: data\.list\('bonds'\), chess: \(id\) => data\.lookup\('chess', id\), mode: data\.get\('config'\)\?\.modes\?\.\[pub\?\.modeId\],/);

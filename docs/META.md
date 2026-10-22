@@ -852,6 +852,12 @@ parents' data allows (official `levels/enemydata/enemy_database.json` talent bla
 联防 — a forged flag on a normal field is dropped, not stored. [ASSUMED] This budget cannot prove origin: a key that
 is both a scheduled body and another enemy's child (27 such keys in the current tables) can still be flagged within
 that offspring cap; only `SP_VERIFY=all` closes that.
+**Complete settlement results** (2026-10-22): browser results whose actual leak / unspawned list exceeds 400, or whose
+essential non-boss payload exceeds the frame budget, carry `truncated: true` and cannot settle. The server re-simulates
+the same BattleSpec through the existing takeover path and settles its complete result. This also covers runtime
+splits/summons filling the list after a small initial input. Original escaped enemies retain their source-player LP
+charge and per-round cap; Unite runtime children remain exempt. See DESIGN §14 and `test/match/result-truncation.test.js`.
+
 **Live counter** (user playtest #6 item 7; PRTS 卫戍协议/帮助 "防卫失败的玩家可通过上方信息栏确认自身所属敌人的剩余数量"):
 while the 联防 runs, each leaker's `m.public players[].uniteLeft` = its enemies still standing on the field (not spawned
 yet, alive, or through again) + its leaks that could not re-enter — what settlement would charge before the cap —
@@ -1188,3 +1194,6 @@ blocking `battleCheck` window. Failed grants leave the seat unpicked; auto/bot f
 and skips when none grants [ASSUMED]. Native `g.offer`/`g.offerRefresh` use plugin id, local window id, sequence and slot; `m.public.offers` is a
 reconnectable, spectator-readable snapshot. Bots resolve immediately. Sources, bounds and [ASSUMED] defaults are
 [PLUGINS §10b](PLUGINS.md#10b-offers--interaction-windows); test journals carry declarations and intents.
+Experimental co-op capacity (maintainer authorized 2026-10-21): rooms default to four seats and optionally admit up to twenty. Fixed pool groups, parallel group drafts, multi-wave Unite, grouped rewind and recovery are described in [EXPANDED-COOP.md](EXPANDED-COOP.md). The existing private DIY stock convention remains unchanged.
+
+Expanded-coop review (2026-10-22): live/settled unit rankings retain every completed Unite wave; synthetic later waves retain planned survivor diagnostics. A Unite input above the 400-entry client result bound uses the existing sliced server simulation to avoid truncated settlement. Test-draft timer toggles restore all group deadlines with the time scale applied once. Details and validation limits: [EXPANDED-COOP.md](EXPANDED-COOP.md).

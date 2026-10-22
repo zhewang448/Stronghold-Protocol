@@ -6,6 +6,7 @@ import { html, Icon, TierChip, Tooltip } from './components.js';
 import { data, useData, localAsset } from '../data.js';
 import { parseRichText, rtClassName } from './richText.js';
 import { t as tr } from '../../../shared/i18n.js';
+import { playerSeatColor } from './playerSeries.js';
 import {
   uiUrl, chessAvatarUrl, itemIconUrl, tokenAvatarUrl, enemyIconUrl, bondIconUrl, bandIconUrl,
 } from './assetUrls.js';
@@ -262,9 +263,9 @@ export function PlayerAvatar({ player, size = 'md', self = false, class: cls, av
   const glyph = [...(player?.name || '').trim()][0] || '?';
   const dead = player?.alive === false || player?.status === 'dead';
   const left = player?.status === 'left';
-  const hue = [162, 196, 38, 280][((player?.seat | 0) % 4 + 4) % 4];
+  const color = playerSeatColor(player?.seat);
   return html`<span class=${cx('pavatar', `pavatar--${size}`, self && 'is-self', dead && 'is-dead', left && 'is-left', player?.isBot && 'is-bot',
-      player?.connected === false && !player?.isBot && 'is-offline', cls)} style=${`--seat-hue:${hue}`}>
+      player?.connected === false && !player?.isBot && 'is-offline', cls)} style=${`--seat-color:${color}`}>
     <span class="pavatar__img">
       <${Img} src=${src} fallback=${player?.isBot ? html`<${Icon} name="robot" class="pavatar__bot" />` : html`<span class="pavatar__glyph">${glyph}</span>`} />
     </span>

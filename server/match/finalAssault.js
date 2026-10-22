@@ -16,6 +16,8 @@
 //     @qingjingshenghuo, which replaces the fixed pool of 「保持固定血量」 (config bossHpScale perPlayer false / solo 0.25
 //     restores it); × the tuning bossHpMul when data/tuning.json still has one (docs/BALANCE.md); bosses are never scaled
 //     by enemyScale and their parts / escorts keep their own HP.
+//     This fork extends the count to 20 and rescales the pool when a player leaves mid-fight, preserving its remaining
+//     HP percentage (docs/development/DECISIONS.md D009); disconnecting or enabling autoplay does not remove a seat.
 //   * Overtime: bossTurnHpReduceTime counts REAL seconds like the level's 120 s maxPlayTime (which runs out first; the
 //     battle goes on): from 150 real s (300 game s on the 2× field clock) the team loses bossOvertimeDrainPerSec (1) LP
 //     per real second (gamedata.js bossOvertimeDue); m.public.deadline = the 120 s countdown, m.public.overtimeAt = the
@@ -32,12 +34,13 @@
 //     (player report after 0.1.0: "隐藏boss还没打就出了造成50%伤害播报").
 //   * Hidden Core eligibility (after an R14 win): difficulty in hiddenCore.difficulties, the mode has a hidden round,
 //     Σ activated layers of the alive players measured at the end of the boss round's prep > threshold (solo 350 /
-//     co-op 1200) and team LP > minTeamLpExclusive (1, so at least 2 left: PRTS's user-contributed 「剩余生命值 > 1」,
+//     co-op 1200 × living players / 4) and team LP > minTeamLpExclusive (1, so at least 2 left: PRTS's user-contributed 「剩余生命值 > 1」,
 //     which the community's measurement 路标月报#2 matches — GitHub #645).
 
 import { BOSS_ROW_OFFSET, COLS, BOSS_POOL_MIN_HP } from '../sim/constants.js';
 import { mirrorDir, normDir } from '../sim/dir.js';
 import { bossPoolShareOf } from './gamedata.js';
+import { coopHiddenLayerThreshold } from '../../shared/playerCapacity.js';
 
 /**
  * BOSS_HIT ticker thresholds (activity_table autoChessData.broadcastList comment_boss_hit_1..3, paramList 0.2 / 0.5 /
@@ -113,17 +116,25 @@ export class SharedBossPool {
     }
     return dealt;
   }
+
+  /** Preserve the remaining HP percentage when a player leaves the leader fight. */
+  rescale(maxHp) {
+    const next = Math.max(1, Math.round(maxHp));
+    if (next === this.maxHp) return;
+    this.hp = this.hp > 0 ? Math.max(1, Math.min(next, Math.round(this.hp * next / this.maxHp))) : 0;
+    this.maxHp = next;
+  }
 }
 
 /**
  * Hidden-core eligibility.
  * @param {import('./gamedata.js').GameData} gd
- * @param {{ layerSum: number, teamLp: number }} s
+ * @param {{ layerSum: number, teamLp: number, playerCount?: number }} s
  */
-export function hiddenEligible(gd, { layerSum, teamLp }) {
+export function hiddenEligible(gd, { layerSum, teamLp, playerCount = 4 }) {
   const hc = gd.hiddenCore;
   if (!gd.hiddenRound || !hc.difficulties.includes(gd.difficulty)) return false;
-  const threshold = gd.isSolo ? hc.single : hc.multi;
+  const threshold = gd.isSolo ? hc.single : coopHiddenLayerThreshold(hc.multi, playerCount);
   return layerSum > threshold && teamLp > hc.minTeamLpExclusive;
 }
 

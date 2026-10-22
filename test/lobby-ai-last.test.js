@@ -1,5 +1,5 @@
 // test/lobby-ai-last.test.js — the co-op room option 「AI 队友最后选择」 (room.setAiPicksLast {on}; GitHub #338): host-only,
-// before the match only, co-op rooms only, off by default; room.state.aiPicksLast shows it to everybody; the match gets
+// before the match only, co-op rooms only, on by default; room.state.aiPicksLast shows it to everybody; the match gets
 // it as opts.aiPicksLast when it starts (server/match/Match.js orders the drafts with it — test/match/ai-picks-last.test.js).
 import { describe, test, before, after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -77,21 +77,22 @@ describe('room.setAiPicksLast (lobby)', () => {
     assert.deepEqual(cap.errors, [], 'no server errors logged');
   });
 
-  test('off by default; host-only; every seat sees it in room.state; a change un-readies the guests like the difficulty', async () => {
+test('on by default; host-only; every seat sees it in room.state; a change un-readies the guests like the difficulty', async () => {
     const host = await pool.player('Host');
     const st = await createRoom(host);
-    assert.equal(st.aiPicksLast, false);
+    assert.equal(st.aiPicksLast, true);
     const guest = await pool.player('Guest');
     const js = await joinRoom(guest, st.code);
-    assert.equal(js.aiPicksLast, false);
-    await err(guest, { t: 'room.setAiPicksLast', on: true }, ERR.NOT_HOST);
+    assert.equal(js.aiPicksLast, true);
+    await err(guest, { t: 'room.setAiPicksLast', on: false }, ERR.NOT_HOST);
     await ok(guest, { t: 'room.ready', ready: true });
-    await host.waitFor('room.state', (s) => seatOf(s, guest.id)?.ready);
+    await host.waitFor('room.state', (s) => s.aiPicksLast === true && seatOf(s, guest.id)?.ready);
+    await ok(host, { t: 'room.setAiPicksLast', on: false });
+    const off = await guest.waitFor('room.state', (s) => s.aiPicksLast === false);
+    assert.equal(seatOf(off, guest.id).ready, false, 'the rules changed: the guest confirms again');
     await ok(host, { t: 'room.setAiPicksLast', on: true });
-    const on = await guest.waitFor('room.state', (s) => s.aiPicksLast === true);
-    assert.equal(seatOf(on, guest.id).ready, false, 'the rules changed: the guest confirms again');
-    await host.waitFor('room.state', (s) => s.aiPicksLast === true);
-    // the same value again changes nothing (no broadcast needed, still ok)
+    await guest.waitFor('room.state', (s) => s.aiPicksLast === true);
+    // The same value again changes nothing (no broadcast needed, still ok).
     await ok(host, { t: 'room.setAiPicksLast', on: true });
     await ok(host, { t: 'room.setAiPicksLast', on: false });
     await guest.waitFor('room.state', (s) => s.aiPicksLast === false);
@@ -136,9 +137,10 @@ describe('room.setAiPicksLast (lobby)', () => {
     await guest.waitFor('room.state', (s) => s.aiPicksLast === false);
   });
 
-  test('without the option the match gets aiPicksLast false', async () => {
+  test('an explicit host opt-out sends aiPicksLast false to the match', async () => {
     const host = await pool.player('Host');
     await createRoom(host);
+    await ok(host, { t: 'room.setAiPicksLast', on: false });
     await ok(host, { t: 'room.addBot' });
     const n = started.length;
     await ok(host, { t: 'room.start' });
@@ -201,6 +203,11 @@ describe('room.setAiPicksLast (lobby)', () => {
     await err(host, { t: 'room.setUniteLayerGains', on: false }, ERR.UNITE_LAYERS_LOCKED);
     assert.equal(room.uniteLayerGains, true, 'revocation never changes the selected rule');
   });
+});
+
+test('new co-op rooms default AI-last on; new solo rooms keep the irrelevant option off', () => {
+  assert.equal(new Room('COOP', 'coop', 'NORMAL', Date.now()).aiPicksLast, true);
+  assert.equal(new Room('SOLO', 'solo', 'NORMAL', Date.now()).aiPicksLast, false);
 });
 
 test('unite layers: boolean protocol, host defaults captured per room and explicit false survives worker transport', () => {

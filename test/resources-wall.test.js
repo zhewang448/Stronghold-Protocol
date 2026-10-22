@@ -10,6 +10,15 @@ import path from 'node:path';
 import { startServer } from '../server/index.js';
 import { startAdmin } from '../server/admin.js';
 
+test('expanded host wall exposes the twentieth player without dropping high seat indexes', t => {
+  const h = makeMatch({ humans: 20, fake: true });
+  t.after(() => h.m.dispose());
+  const room = { code: 'TEST', seats: h.m.order.map(p => ({ seat: p.seat, playerId: p.playerId, name: p.name, connected: true })), match: h.m };
+  const view = wallView({ rooms: new Map([['TEST', room]]) }, 'TEST');
+  assert.equal(view.seats.length, 20);
+  assert.equal(view.seats[19].playerId, 'p_19');
+});
+
 test('resource counters measure real traffic, heartbeat RTT, bounded retention and detach cleanly', (t) => {
   let at = 0;
   const ws = {}, session = { connected: true, ws, name: 'P', playerId: 'p', roomCode: 'TEST' };

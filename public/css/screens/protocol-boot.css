@@ -10,7 +10,8 @@
   background: radial-gradient(ellipse at 50% 42%, #0d2621, #040b0a 70%);
 }
 .pboot.is-leaving { animation: pboot-out 350ms ease-in forwards; }
-.pboot__stage { position: relative; width: calc(1920 * var(--px)); height: calc(1080 * var(--px)); }
+.pboot__stage { position: relative; left: auto; top: auto; transform: none; aspect-ratio: auto;
+  width: calc(1920 * var(--px)); height: calc(1080 * var(--px)); }
 .pboot__stage > *, .pboot__scene > * { position: absolute; }
 .pboot__scene { inset: 0; animation: pboot-in 300ms 1000ms ease-out both; }
 /* behind: the two mountains (top left, bottom right), the contour map and the ring around the ship, the mark above */
@@ -55,6 +56,12 @@
 .pboot__face { flex: none; width: calc(119 * var(--px)); height: calc(119 * var(--px)); border: calc(2 * var(--px)) solid #e9fffa; background: var(--teal-deep); overflow: hidden; }
 .pboot__face .pavatar { --pa: 100%; width: 100%; height: 100%; }
 .pboot__face .pavatar__img, .pboot__face img { width: 100%; height: 100%; object-fit: cover; }
+/* Expanded co-op: all twenty doctors fit above the title; column entrances complete within the same boot phase. */
+.pboot--expanded .pboot__card { width: calc(350 * var(--px)); height: calc(100 * var(--px)); }
+.pboot--expanded .pboot__face { width: calc(92 * var(--px)); height: calc(92 * var(--px)); }
+.pboot--expanded .pboot__num { font-size: calc(40 * var(--px)); }
+.pboot--expanded .pboot__check { width: calc(22 * var(--px)); height: calc(22 * var(--px)); margin-top: calc(4 * var(--px)); }
+.pboot--expanded .pboot__card.is-self { outline: calc(3 * var(--px)) solid #e9fffa; outline-offset: calc(3 * var(--px)); }
 /* 协议启动！ / STRONGHOLD PROTOCOL / 正在连接… */
 .pboot__title { left: 0; right: 0; top: calc(705 * var(--px)); margin: 0; text-align: center; font-size: calc(66 * var(--px)); font-weight: 900;
   letter-spacing: .04em; color: var(--teal); text-shadow: 0 0 calc(18 * var(--px)) rgba(63, 214, 180, .45); animation: pboot-title 260ms 1050ms ease-out both; }

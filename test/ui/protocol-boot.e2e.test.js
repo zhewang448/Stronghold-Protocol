@@ -36,11 +36,11 @@ describe('协议启动！ screen (headless Chrome)', { skip: !ENABLED && 'set SP
    * `noart` fails /assets/ui/ (the CI view) — also as /assets/~<hash>/ui/, the form the served manifest uses once the
    * server's asset index is ready (shared/assetPaths.js) —, `reduce` asks for reduced motion.
    */
-  async function open({ variant = '', noart = false, reduce = false, phase = 'PREP' } = {}) {
+  async function open({ variant = '', noart = false, reduce = false, phase = 'PREP', viewport = { width: 1920, height: 1080 } } = {}) {
     const context = await browser.createBrowserContext();
     const page = await context.newPage();
     await page.setBypassServiceWorker(true);
-    await page.setViewport({ width: 1920, height: 1080 });
+    await page.setViewport(viewport);
     const problems = [];
     page.on('console', (m) => { if (m.type() === 'error' && !(noart && /Failed to load resource/.test(m.text()))) problems.push(`console: ${m.text()}`); });
     page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
@@ -118,6 +118,32 @@ describe('协议启动！ screen (headless Chrome)', { skip: !ENABLED && 'set SP
     assert.deepEqual(await page.$$eval('.pboot__card', (c) => c.map((e) => e.className.includes('pboot__card--c'))), [true]);
     assert.deepEqual(problems, []);
     await context.close();
+  });
+
+  test('twenty doctors: the whole roster and the last-seat self card remain visible', async () => {
+    for (const [width, height] of [[1440, 900], [844, 390], [640, 360]]) {
+      const { page, problems, context } = await open({ reduce: true,
+        viewport: { width, height, isMobile: width < 1000, hasTouch: width < 1000, isLandscape: true } });
+      await page.evaluate(() => {
+        const M = globalThis.__MOCK__;
+        M.setPhase('BATTLE_CHECK');
+        const s = M.S(), first = s.pub.players[0];
+        s.pub.players = Array.from({ length: 20 }, (_, i) => ({ ...first, playerId: i === 19 ? first.playerId : `boot_${i}`, seat: i }));
+        M.pushPublic();
+      });
+      await page.waitForSelector('.pboot--expanded');
+      const visible = await page.$eval('.pboot', (root) => {
+        const cards = [...root.querySelectorAll('.pboot__card')], title = root.querySelector('.pboot__title').getBoundingClientRect();
+        return { numbers: cards.map((e) => e.querySelector('.pboot__num').textContent),
+          self: root.querySelector('.pboot__card.is-self .pboot__num').textContent,
+          within: cards.every((e) => { const r = e.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom < title.top; }) };
+      });
+      assert.equal(visible.numbers.length, 20);
+      assert.equal(visible.self, '20');
+      assert.equal(visible.within, true, `${width}×${height}: cards fit above the title`);
+      assert.deepEqual(problems, []);
+      await context.close();
+    }
   });
 
   test('reduced motion: no 请选择策略 band', async () => {

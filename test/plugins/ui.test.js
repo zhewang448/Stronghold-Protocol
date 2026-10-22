@@ -28,6 +28,22 @@ import { setUiPlugin, toggleRecommend, uiPlugins, uiRecommend, visibleRecommend 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const sha = (buf) => createHash('sha256').update(buf).digest('hex');
 
+test('read-only plugin feeds retain twenty seats and players without exposing private fields', () => {
+  const players = Array.from({ length: 21 }, (_, seat) => ({ seat, playerId: `p_${seat}`, name: `Player ${seat}`,
+    loadout: { secret: true }, diy: { secret: true }, stats: { dmgDealt: seat * 100 } }));
+  const seats = players.map((p, i) => i === 3 ? null : p);
+  for (const out of [subsetPublic({ players }), subsetResult({ players })]) {
+    assert.equal(out.players.length, 20);
+    assert.equal(out.players.at(-1).playerId, 'p_19');
+    assert.ok(out.players.every((p) => p.loadout === undefined && p.diy === undefined));
+  }
+  const room = subsetRoom({ seats, code: 'SECRET' });
+  assert.equal(room.seats.length, 20);
+  assert.equal(room.seats[3], null, 'unoccupied seats retain their indices');
+  assert.equal(room.seats.at(-1).playerId, 'p_19');
+  assert.equal(room.code, undefined);
+});
+
 const uiManifest = (extra = {}) => ({
   manifest: 2, name: { zh: '伤害统计', en: 'Damage tally' }, description: { zh: '只读的伤害合计' },
   version: '1.0.0', app: '*', api: 1, class: 'ui', scope: ['personal'], permissions: ['ui.frame'],

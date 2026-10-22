@@ -172,7 +172,7 @@ export function ResultView({ res, pub = null, myId = null, backLabel, onBack, qu
           : html`<p class="t-dim">${t('暂无结算数据')}</p>`}
       </section>
       ${slot ? html`<div class="ui-slot" data-ui-slot="result.tab" aria-label=${t('界面插件')} dangerouslySetInnerHTML=${{ __html: '' }}></div>` : null}
-      ${roundHistoryOpen ? html`<${RoundHistoryPanel} history=${r.roundHistory} players=${r.players} initialTab="units" onClose=${() => setRoundHistoryOpen(false)} />` : null}
+      ${roundHistoryOpen ? html`<${RoundHistoryPanel} history=${r.roundHistory} players=${r.players} viewerId=${myId} initialTab="units" onClose=${() => setRoundHistoryOpen(false)} />` : null}
 
     </main>
   </div>`;

@@ -248,3 +248,4 @@ DESIGN.md names the file that holds each) and the official source; a rule no sou
 `ui/resourcePanel.js` 显示阶段、字节 / 速度或文件数。`shared/announcements.js` 定义格式与长度契约，
 `server/announcements.js` 校验，控制台选择格式，`ui/announcement.js` 按需加载 `announcementMarkdown.js`，
 后者仅将 Marked tokens 转为固定 Preact 节点。Marked 的浏览器模块由 `tools/vendor.mjs` 安装到 vendor。
+本实验分支的可选 4–20 人房见 [EXPANDED-COOP.md](EXPANDED-COOP.md)：`shared/playerCapacity.js` 定义固定分组，`server/match/pool.js` 建立组库存，`rewind.js` / `recovery.js` 保存全部组，主机监视台每页订阅四席。

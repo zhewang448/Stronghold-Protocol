@@ -98,7 +98,7 @@ test('Damatzi fixed-round gifts survive exhaustion; ordinary strategy gifts cann
   checkInvariants(m);
   // The auditor still rejects ordinary over-cap ownership rather than globally relaxing equipment stock.
   ps.stow(ps.newPiece('item', PACK), { allowTemp: true });
-  assert.ok(collectViolations(m).some(v => v.includes(`item ${PACK}: held 3 > cap 2`)));
+  assert.ok(collectViolations(m).some(v => v.includes(`item group 1/${PACK}: held 3 > cap 2`)));
 });
 
 test('every data-defined fixed equipment trait produces at exhausted stock, including merged golden gifts', t => {

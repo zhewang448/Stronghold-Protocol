@@ -366,7 +366,7 @@ function MatchScreen() {
   const editable = !offerBlocksPrep(pub?.offers) && phase === PHASE.PREP && !!priv && alive && !priv.ready && !watchingOther && !hasPersonalChoice;
   const showShop = !!priv && alive && (phase === PHASE.PREP || phase === PHASE.SP_DRAFT || phase === PHASE.ROUND_START) && !watchingOther;
   const layersDisabled = phase === PHASE.UNITE || isBossPhase(phase);
-  const sp = phase === PHASE.SP_DRAFT ? normalizeSp(pub?.sp, players) : null;
+  const sp = phase === PHASE.SP_DRAFT ? normalizeSp(pub?.sp, players, myId, pub?.poolGroups) : null;
   const total = phaseTotalSeconds(pub, gd.config, myId);
   // solo pause: offered in the own battle; while m.public.paused every HUD clock stops at the pause moment
   const paused = isPaused(pub);
@@ -1791,7 +1791,7 @@ function MatchScreen() {
         pen=${pen} penAvail=${penAvail} onPen=${togglePen} config=${gd.config} frozenAt=${frozenAt}
         pause=${canPause || paused ? { show: canPause, paused, busy: pauseBusy, onToggle: () => togglePause(!paused) } : null}
         live=${liveLpNow} spectator=${spectator}
-        spectators=${specFacts.list} myId=${myId} isHost=${specFacts.isHost} onRemoveSpectator=${removeSpectator} room=${modRoom} />
+        spectators=${specFacts.list} myId=${myId} isHost=${specFacts.isHost} onRemoveSpectator=${removeSpectator} onUniteSkipVote=${actions.uniteSkipVote} room=${modRoom} />
 
       <div class="gm__bonds">
         <button type="button" class="bonds-toggle" aria-expanded=${!bondsCollapsed} aria-controls="match-bond-strip"
@@ -1853,7 +1853,7 @@ function MatchScreen() {
           armed=${pingArmed} view=${view} rect=${combat ? field?.rect || GEO.NORMAL_RECT : GEO.NORMAL_RECT} prep=${!combat}
           onDrag=${() => setPingArmed(false)} onSelect=${kind => { setPingKind(kind); setPingArmed(!pingArmed || pingKind !== kind); }} />` : null}
         ${showMetrics && metricsOpen ? html`<${CombatMetricsPanel} myId=${myId} onClose=${() => setMetricsOpen(false)} />` : null}
-        ${showHistory && historyOpen ? html`<${RoundHistoryPanel} history=${pub.roundHistory} players=${pub.players} onClose=${() => setHistoryOpen(false)} />` : null}
+        ${showHistory && historyOpen ? html`<${RoundHistoryPanel} history=${pub.roundHistory} players=${pub.players} poolGroups=${pub.poolGroups} viewerId=${myId} onClose=${() => setHistoryOpen(false)} />` : null}
         <${MatchCommunication} open=${emoteOpen} onToggle=${setEmoteOpen} onSend=${(id) => actions.emote(id)} disabled=${spectator || conn.status !== 'online'} />
         <div class="gm__corner-actions" role="group" aria-label=${t('对局工具')}>
         ${showHistory ? html`<button type="button" class="gm__gear gm__metrics" aria-label=${t('每回合统计')} title=${t('每回合统计')}
@@ -1901,7 +1901,7 @@ function MatchScreen() {
 
     ${hasOffers && !sp && !personalChoice ? html`<${OfferOverlay} pub=${pub} myId=${myId} readOnly=${spectator || !alive} onAction=${actions.offer} />` : null}
     ${sp ? html`<${ChoiceOverlay} pub=${pub} sp=${sp} myId=${myId} solo=${solo} busyIdx=${spBusy} total=${total}
-      onPick=${async (i) => { setSpBusy(i); await actions.choice(i); setSpBusy(null); }} />` : null}
+      onPick=${async (i, scope) => { setSpBusy(i); await actions.choice(i, scope); setSpBusy(null); }} />` : null}
     ${personalChoice ? html`<${ChoiceOverlay} key=${personalChoice.id} pub=${pub} sp=${personalChoice} myId=${myId} solo=${solo} personal=${true}
       busyIdx=${personalBusy?.choiceId === personalChoice.id ? personalBusy.idx : null} total=${total}
       onPick=${async (i) => {

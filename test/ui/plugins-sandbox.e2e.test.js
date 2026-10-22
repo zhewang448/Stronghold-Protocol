@@ -16,7 +16,7 @@ test('two sandbox-script players start without consent and Worker battles verify
  const P=(await import('puppeteer-core')).default;
  const host=new Client(P,srv.url,'host',{prefix:'plugins-sandbox',w:1600,h:900}), guest=new Client(P,srv.url,'guest',{prefix:'plugins-sandbox',w:1600,h:900});
  t.after(async()=>{await host.close();await guest.close();});
- await host.open();await host.enter('凯尔希');await host.click('.mode-card','同盟模拟');await host.click('.diff-card','标准模拟');await host.click('.create-box button','创建同盟');
+ await host.open();await host.enter('凯尔希');await host.click('.hub-entry[aria-label="ALLIANCE"]');await host.click('[data-testid="create-alliance"]');await host.click('.proto-start');
  const code=(await host.waitFor(s=>!!s.room?.code,'room created')).room.code;
  await guest.open();await guest.enter('阿米娅');await guest.click('.join-row input');await guest.page.keyboard.type(code);await guest.click('.join-row button','加入同盟');await guest.page.waitForSelector('.room-screen');
  await host.page.evaluate(()=>globalThis.__SP__.net.request('room.setPlugins',{plugins:[{id:'training'}]}));

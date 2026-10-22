@@ -298,9 +298,15 @@ describe('multi-device (Chrome device emulation)', { skip: !ENABLED && 'set SP_E
       await sleep(400);
       await page.screenshot({ path: path.join(OUT, `device-${dev}-lobby.png`) });
       assert.deepEqual(await layoutProblems(page), [], `${dev} lobby`);
-      await tapText('.mode-card', '同盟模拟');
-      await tapText('.create-box button', '创建同盟');
+      await tapText('.hub-entry[aria-label="ALLIANCE"]');
+      await tapText('[data-testid="create-alliance"]');
+      await page.waitForSelector('.proto-start');
+      assert.ok(await page.$('.proto[data-difficulty]'), `${dev}: difficulty comes before the team room`);
+      await tapText('.proto-start', '创建同盟');
       await page.waitForSelector('.rs-foot__right', { timeout: 15000 });
+      await tapText('.rs-pill__gear');
+      await page.waitForSelector('.rs-opts .ailast__opt[aria-checked="true"]');
+      assert.equal(await page.$eval('.ailast__opt', e => e.getAttribute('aria-checked')), 'true', `${dev}: AI picks last is checked by default`);
       await sleep(500);
       await page.screenshot({ path: path.join(OUT, `device-${dev}-room.png`) });
       assert.deepEqual(await layoutProblems(page), [], `${dev} room`);

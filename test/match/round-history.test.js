@@ -120,3 +120,25 @@ test('headless live history follows field time and unite merges both phases exac
     assert.equal(roundChartHistory(m, { live: true }).length, 1, 'settlement replaces the live round');
   } finally { m.dispose(); }
 });
+
+test('multi-wave Unite keeps prior helpers in live and settled operator rankings', () => {
+  const h = makeMatch({ humans: 8, fake: true }).start().toPrep(), m = h.m;
+  try {
+    const chessId = Object.keys(m.data.chess)[0], name = m.gd.chess(chessId).name;
+    const result = (pid, dmg) => ({ perPlayer: { [pid]: { damageDealt: dmg + 20,
+      unitStats: [{ defId: chessId, name, dmg, kills: 1 }] } } });
+    m.lastResults.set('p_0', { damageDealt: 120, unitStats: [{ defId: chessId, name, dmg: 100, kills: 1 }] });
+    m.phase = 'UNITE';
+    const prior = result('p_0', 50), current = result('p_4', 80);
+    m.unitePlan = { history: [prior, { ...result('p_0', 999), synthetic: true }] };
+    m.fields = [{ done: true, result: current }];
+    const live = roundChartHistory(m, { live: true }).at(-1);
+    assert.equal(live.players[0].roundDmg, 190, 'the first helper does not lose its completed wave');
+    assert.equal(live.players[0].units[0].dmg, 150);
+    assert.equal(live.players[4].roundDmg, 100, 'the current wave is counted once');
+    m.order[0].stats.dmgDealt = 190; m.order[4].stats.dmgDealt = 100;
+    recordRound(m, { uniteResults: [prior, current] });
+    const settled = roundChartHistory(m).at(-1);
+    assert.deepEqual(settled.players.map((p) => p.units), live.players.map((p) => p.units));
+  } finally { m.unitePlan = null; m.dispose(); }
+});

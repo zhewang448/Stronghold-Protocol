@@ -5,11 +5,12 @@
 import { PHASE, ERR } from '../../../shared/constants.js';
 import { createRng, deriveSeed } from '../../sim/rng.js';
 import { setupMatchWaves } from '../waves.js';
-import { drawDisabledBonds, SharedPool } from '../pool.js';
+import { drawDisabledBonds, createPoolGroups } from '../pool.js';
 import { OK, fail } from './common.js';
 
 export class MatchSetupVote {
   requestSetupReroll(playerId, revision) {
+    if (this.emergencyFrozen) return fail(ERR.SERVER_EMERGENCY);
     if (this.disposed || this.ended || this.phase !== PHASE.INFO_CHECK) return fail(ERR.WRONG_PHASE);
     const ps = this.players.get(playerId);
     if (!ps || ps.isBot || ps.left || !ps.connected) return fail(ERR.NOT_IN_ROOM);
@@ -50,6 +51,7 @@ export class MatchSetupVote {
   }
 
   cancelSetupReroll(playerId, voteId) {
+    if (this.emergencyFrozen) return fail(ERR.SERVER_EMERGENCY);
     if (this.disposed || this.ended || this.phase !== PHASE.INFO_CHECK || !this.setupVote) return fail(ERR.WRONG_PHASE);
     if (this.setupVote.id !== voteId) return fail(ERR.BAD_TARGET, 'setup vote changed');
     const ps = this.players.get(playerId);
@@ -64,7 +66,7 @@ export class MatchSetupVote {
     this.setupVote = null;
     if (this.phase === PHASE.INFO_CHECK && !this.disposed && !this.ended) {
       if (vote.remainingMs > 0) {
-        this.deadline = this.sched.now() + vote.remainingMs;
+        this.deadline = this.sched.gameNow() + vote.remainingMs;
         this._phaseTimer = this.later(vote.remainingMs, () => {
           this._phaseTimer = null;
           this.enterBandDraft();
@@ -83,18 +85,20 @@ export class MatchSetupVote {
       const setup = setupMatchWaves(this.gd, rng);
       const stage = setup.stageId ? this.gd.stage(setup.stageId) : null;
       const bans = drawDisabledBonds(this.gd, rng);
-      const pool = new SharedPool(this.gd, { banned: bans.banned });
-      if (!pool.entries.size) throw new Error('rerolled chess pool is empty');
+      // Keep the opening seat groups and their scaled copies; every player's transactions use playerPools.
+      const poolGroups = createPoolGroups(this.gd, this.order, { banned: bans.banned });
+      if (!poolGroups.length || poolGroups.some((g) => !g.pool.entries.size)) throw new Error('rerolled chess pool is empty');
+      const playerPools = new Map(poolGroups.flatMap((g) => g.playerIds.map((id) => [id, g.pool])));
       const off = new Set([...bans.drawn, ...bans.staticOff]);
       const stocks = this.order.map((ps) => ps.buildDiyStock(off));
-      prepared = { setup, stage, bans, pool, stocks };
+      prepared = { setup, stage, bans, poolGroups, playerPools, stocks };
     } catch (e) {
       this.reportError('reroll setup', e);
       this.cancelSetupVote();
       return fail(ERR.INTERNAL);
     }
     // All data-dependent work succeeds before any opening or player state changes.
-    const { setup, stage, bans, pool, stocks } = prepared;
+    const { setup, stage, bans, poolGroups, playerPools, stocks } = prepared;
     this.stageId = setup.stageId;
     this.stage = stage;
     this.factions = setup.factions;
@@ -103,7 +107,9 @@ export class MatchSetupVote {
     this.disabledBonds = bans.drawn;
     this.staticInactiveBonds = bans.staticOff;
     this.bannedChess = bans.banned;
-    this.pool = pool;
+    this.poolGroups = poolGroups;
+    this.playerPools = playerPools;
+    this.pool = poolGroups[0].pool;
     this._botPath = null;
     for (const [i, ps] of this.order.entries()) {
       ps.diyStock = stocks[i].stock;

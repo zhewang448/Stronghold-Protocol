@@ -19,8 +19,9 @@ export class PlayerItems {
    * @returns {number} copies repaid
    */
   releaseItemStock(piece) {
-    if (!piece || piece.kind !== 'item' || !this.m?.itemPool) return 0;
-    return this.m.itemPool.repay(piece.id, this.m.itemPool.need(piece.id));
+    if (!piece || piece.kind !== 'item' || !this.m?.itemPoolFor) return 0;
+    const pool = this.m.itemPoolFor(this);
+    return pool.repay(piece.id, pool.need(piece.id));
   }
 
   /**
