@@ -129,6 +129,9 @@ coverage/
 /dist/
 /artifacts/
 /out/
+/launcher/bin/
+/launcher/obj/
+/StrongholdProtocolLauncher.exe
 /SHA256SUMS.txt
 /SHA256SUMS.txt.sig
 *.zip

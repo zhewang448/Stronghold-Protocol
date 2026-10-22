@@ -171,6 +171,14 @@ html:not(.sp-in-match) .toast-host { margin-top: var(--sa-t); }
 
 .rotate-hint__pwa { pointer-events: auto; margin-top: 6px; }
 .rotate-hint__pwa[hidden] { display: none; }
+.pwa-install-help { display: grid; gap: .14rem; }
+/* Keep the permanent install entry reachable when translated/XL lobby actions fill the header. */
+.lobby-screen.lobby-hub > .hub-topbar {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: .12rem .2rem;
+}
+.hub-topbar > .topbar__left { flex-wrap: wrap; max-width: 100%; }
+.hub-topbar .topbar__tools { flex-wrap: wrap; min-width: 0; }
+.hub-topbar > .topbar__right { flex-wrap: wrap; justify-content: flex-end; max-width: 100%; margin-inline-start: auto; }
 
 /* ---- 6. 异形屏适配 (设置, ui/screenFit.js) ------------------------------------------------------------------------
 

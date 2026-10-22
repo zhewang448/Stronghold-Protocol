@@ -19,9 +19,9 @@
 //   reducedMotion()         prefers-reduced-motion (the CSS side lives in css/theme.css + css/devices.css).
 // CSS counterpart: public/css/devices.css (safe-area insets, touch-action, overscroll, tap-target expansion).
 
-import { useEffect, useState } from '../../vendor/hooks.module.js';
+import { useEffect, useLayoutEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { pwaInstall } from '../pwa.js';
-import { html, Icon, Button } from './components.js';
+import { html, Icon, Button, alertDialog } from './components.js';
 import { t } from '../../../shared/i18n.js';
 
 /** A touch held this long without moving opens the detail (contextmenu) on DOM controls. */
@@ -164,16 +164,46 @@ export function FullscreenButton({ class: cls = '' }) {
 }
 
 /**
- * Only a browser-issued install offer shows a button; installed and unsupported environments stay quiet.
+ * Keep installation discoverable before the browser offers it; explain manual installation when needed.
  * `square`: the glyph alone (the lobby's top bar, beside ⚙ / 📖), the name stays title / aria-label.
  */
 export function PwaInstallButton({ class: cls = '', size = 'sm', square = false }) {
-  const [available, setAvailable] = useState(pwaInstall.available);
-  useEffect(() => pwaInstall.subscribe(setAvailable), []);
-  if (!available) return null;
+  const [visible, setVisible] = useState(pwaInstall.visible);
+  const [busy, setBusy] = useState(false);
+  const opener = useRef(null);
+  useEffect(() => pwaInstall.subscribe(() => setVisible(pwaInstall.visible())), []);
+  useLayoutEffect(() => {
+    // A disabled opener cannot receive the dialog host's immediate focus restoration.
+    if (!busy && opener.current) { opener.current.focus(); opener.current = null; }
+  }, [busy]);
+  if (!visible) return null;
+  const install = async (event) => {
+    if (busy) return;
+    opener.current = event.currentTarget;
+    setBusy(true);
+    try { await requestPwaInstall(); } finally { setBusy(false); }
+  };
   return html`<${Button} variant="secondary" size=${size} icon="homePlus" square=${square} class=${cls}
     title=${t('添加到桌面')} aria-label=${t('添加到桌面')}
-    data-testid="pwa-install" onClick=${() => pwaInstall.request()}>${square ? null : t('添加到桌面')}<//>`;
+    data-testid="pwa-install" disabled=${busy} aria-busy=${busy} onClick=${install}>${square ? null : t('添加到桌面')}<//>`;
+}
+
+/** Native installation must start during the click; otherwise show the browser's manual route. */
+export function requestPwaInstall() {
+  if (!pwaInstall.visible()) return Promise.resolve(false);
+  if (pwaInstall.available()) return pwaInstall.request();
+  return alertDialog({
+    title: t('添加到桌面'), micro: '', okText: t('关闭'),
+    text: html`<div class="pwa-install-help" data-testid="pwa-install-help">
+      ${globalThis.isSecureContext === false ? html`<p class="modal__text">${t('当前连接不满足应用安装的安全要求。公网需要浏览器信任且匹配访问域名的 HTTPS 证书；本机可使用 localhost 或 127.0.0.1。')}</p>` : null}
+      <p class="modal__text">${t('浏览器暂未提供直接安装。你可以通过浏览器菜单将当前网站添加到桌面。')}</p>
+      <p class="modal__text">${t('如果 HTTPS 地址仍无法安装，请检查浏览器是否提示证书不受信任、域名不匹配或证书过期。仅开启隧道加密不能满足安装要求。')}</p>
+      <p class="modal__text">${t('Edge：打开右上角“⋯”菜单 → 更多工具 → 应用 → 将此站点作为应用安装。')}</p>
+      <p class="modal__text">${t('Chrome：在浏览器菜单中查找“安装应用”；支持的 Safari 可选择“添加到程序坞”。')}</p>
+      <p class="modal__text">${t('手机 / 平板：在浏览器菜单或分享菜单中选择“添加到主屏幕”或“安装应用”。内置浏览器请先选择在系统浏览器中打开。')}</p>
+      <p class="modal__text">${t('桌面图标会打开当前服务器。安装不会让游戏完全离线运行；本机开服时仍需先启动服务器。')}</p>
+    </div>`,
+  });
 }
 
 export function updateRotateHintPwaI18n(doc = globalThis.document) {

@@ -16,6 +16,32 @@ import { applyReleaseStage } from '../server/release-install.js';
 import { acquireLease } from '../scripts/host-runtime.mjs';
 import { manifest } from './helpers/release-fixture.js';
 
+
+test('desktop-required admin bind failure closes only its own game service', { timeout: 30000 }, async (t) => {
+  const f = checkout(t), port = await freePort();
+  const listener = net.createServer();
+  await new Promise(resolve => listener.listen(0, '127.0.0.1', resolve));
+  const adminPort = listener.address().port;
+  t.after(() => new Promise(resolve => listener.close(resolve)));
+  const child = spawn(process.execPath, [path.join(f.root, 'server/index.js')], {
+    cwd: f.root, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
+    env: { ...process.env, PORT: String(port), HOST: '127.0.0.1', SP_ADMIN: '1', SP_ADMIN_PORT: String(adminPort),
+      SP_REQUIRE_ADMIN: '1', SP_REPLAY: '0', SP_ASSET_INDEX: '0' },
+  });
+  let output = '';
+  child.stdout.on('data', value => { output += value; });
+  child.stderr.on('data', value => { output += value; });
+  t.after(() => { if (child.exitCode === null) child.kill(); });
+  const code = await new Promise((resolve, reject) => { child.once('error', reject); child.once('exit', resolve); });
+  assert.equal(code, 75, output);
+  assert.match(output, /Console: 未启动/);
+  assert.equal(listener.listening, true, 'the unrelated admin-port owner was not stopped');
+  assert.equal(await runningInstance(f.root, port), null);
+  const probe = net.createServer();
+  await new Promise((resolve, reject) => { probe.once('error', reject); probe.listen(port, '127.0.0.1', resolve); });
+  await new Promise(resolve => probe.close(resolve));
+});
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function until(fn) {
   for (let i = 0; i < 300; i++) { const result = await fn(); if (result) return result; await sleep(100); }

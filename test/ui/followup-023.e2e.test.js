@@ -201,8 +201,14 @@ describe('0.2.3 follow-up client features', { skip: !ENABLED }, () => {
       });
       await page.waitForSelector('[data-testid="pwa-install"]');
       await page.click('[data-testid="pwa-install"]');
-      await page.waitForFunction(() => !document.querySelector('[data-testid="pwa-install"]'));
+      await page.waitForFunction(() => !document.querySelector('[data-testid="pwa-install"]').disabled);
       assert.equal(await page.evaluate(() => window.promptCalls), 1);
+      await page.click('[data-testid="pwa-install"]');
+      await page.waitForSelector('[data-testid="pwa-install-help"]');
+      assert.equal(await page.evaluate(() => window.promptCalls), 1, 'a consumed offer is never reused');
+      await page.keyboard.press('Escape');
+      await page.evaluate(() => window.dispatchEvent(new Event('appinstalled')));
+      await page.waitForSelector('[data-testid="pwa-install"]', { hidden: true });
     } finally { await page?.close(); }
   });
   test('extra-large settings stay within a landscape phone in every shipped interface language', async () => {

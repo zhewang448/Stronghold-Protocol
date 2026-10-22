@@ -35,13 +35,47 @@ test('install offer is consumed even on dismissal, duplicate clicks, or rejected
 });
 test('installed / standalone hides stale offers; disposing removes listeners', async () => {
   const { pwa, win, display, offer } = rig();
+  assert.equal(pwa.installed(), false, 'manual installation remains available before a browser offer');
   offer(); display.matches = true; display.dispatchEvent(new Event('change'));
+  assert.equal(pwa.installed(), true);
   assert.equal(pwa.available(), false); assert.equal(await pwa.request(), false);
-  display.matches = false; win.dispatchEvent(new Event('appinstalled')); offer();
+  display.matches = false;
+  assert.equal(pwa.installed(), false);
+  win.dispatchEvent(new Event('appinstalled')); offer();
+  assert.equal(pwa.installed(), true);
   assert.equal(pwa.available(), false);
   pwa.dispose();
   assert.equal(offer().e.defaultPrevented, false);
   const native = rig(true); native.offer(); assert.equal(native.pwa.available(), false); native.pwa.dispose();
+});
+test('Apple standalone mode hides manual installation without an install offer', () => {
+  const win = new EventTarget();
+  win.navigator = { standalone: true };
+  const pwa = createPwaInstall(win);
+  assert.equal(pwa.installed(), true);
+  assert.equal(pwa.available(), false);
+  pwa.dispose();
+});
+test('host visibility hides every entry, blocks prompting, and restores an unconsumed offer', async () => {
+  const { pwa, offer } = rig();
+  const states = [];
+  pwa.subscribe(() => states.push(pwa.visible()));
+  assert.equal(pwa.visible(), true);
+  pwa.setEnabled(false);
+  assert.equal(pwa.visible(), false);
+  const native = offer('dismissed');
+  assert.equal(native.e.defaultPrevented, true, 'the offer is retained without auto prompting');
+  assert.equal(pwa.available(), false);
+  assert.equal(await pwa.request(), false);
+  assert.equal(native.calls(), 0);
+  pwa.setEnabled('true');
+  assert.equal(pwa.visible(), false, 'only boolean policy updates are accepted');
+  pwa.setEnabled(true);
+  assert.equal(pwa.available(), true);
+  assert.equal(await pwa.request(), false);
+  assert.equal(native.calls(), 1);
+  assert.ok(states.includes(false));
+  pwa.dispose();
 });
 test('manifest provides opaque mint-rook 192/512 icons for both purposes with a safe maskable mark', () => {
   const m = JSON.parse(readFileSync(new URL('../../public/manifest.json', import.meta.url)));

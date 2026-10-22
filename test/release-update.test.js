@@ -59,14 +59,16 @@ test('first console open checks once per server launch, concurrent check shares 
 
 test('Release list: numeric ordering, version relations, missing assets, explicit downgrade confirmation and pagination', async (t) => {
   const root = temp(t), current = RELEASE_TAG, older = 'v0.2.5', base = `v${APP_VERSION}`;
+  const missing = tag.replace(/\d+$/, revision => String(Number(revision) + 1));
+  const prerelease = missing.replace(/\d+$/, revision => String(Number(revision) + 1));
   const list = [releaseFor(undefined, older), releaseFor(), releaseFor(undefined, current),
-    { tag_name: `${base}-extended.10`, assets: [] }, { tag_name: `${base}-extended.11`, prerelease: true }, { tag_name: 'other' }];
+    { tag_name: missing, assets: [] }, { tag_name: prerelease, prerelease: true }, { tag_name: 'other' }];
   let installed;
   const updater = createReleaseUpdater({ root, fetchImpl: async () => new Response(JSON.stringify(list)), onReady() {},
     stageRelease: async ({ release }) => { installed = release.tag_name; throw new Error('stop before restart'); }, log: { warn() {} } });
   const d = await updater.check();
   assert.deepEqual(d.versions.map((r) => [r.tag, r.relation]), [
-    [`${base}-extended.10`, 'new'], [tag, 'new'], [current, 'current'], [older, 'old'],
+    [missing, 'new'], [tag, 'new'], [current, 'current'], [older, 'old'],
   ]);
   assert.equal(d.versions[0].installable, false);
   assert.match(d.versions[0].reason, /完整素材包/);

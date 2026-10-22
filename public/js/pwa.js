@@ -1,10 +1,12 @@
 // Install prompts are browser-issued, one-use capabilities. This module does not register a service worker
 // and does not offline the server. Imported art is served by public/sw.js (see assetCache.js).
 export function createPwaInstall(win) {
-  let prompt = null, installed = false;
+  let prompt = null, installed = false, enabled = true;
   const listeners = new Set();
   const display = win?.matchMedia?.('(display-mode: standalone), (display-mode: fullscreen)');
-  const available = () => !!prompt && !installed && !display?.matches && !win?.navigator?.standalone;
+  const isInstalled = () => installed || !!display?.matches || !!win?.navigator?.standalone;
+  const visible = () => enabled && !isInstalled();
+  const available = () => !!prompt && visible();
   const emit = () => { for (const fn of listeners) fn(available()); };
   const offer = (event) => {
     if (installed || display?.matches || win?.navigator?.standalone || typeof event.prompt !== 'function') return;
@@ -18,6 +20,13 @@ export function createPwaInstall(win) {
   display?.addEventListener?.('change', emit);
   return {
     available,
+    visible,
+    setEnabled(value) {
+      if (typeof value !== 'boolean' || value === enabled) return;
+      enabled = value;
+      emit();
+    },
+    installed: isInstalled,
     subscribe(fn) { listeners.add(fn); fn(available()); return () => listeners.delete(fn); },
     async request() {
       if (!available()) return false;

@@ -170,6 +170,8 @@ export async function runMain(start) {
       removeInstance = recordInstance(ROOT, { port: srv.port, adminPort: admin.port, token: admin.token });
     } catch (e) {
       console.warn(`  Console: 未启动（${e.code || e.message}）\n`);
+      // A desktop launch must retain its authenticated stop/restart entry. Close only our own service.
+      if (process.env.SP_REQUIRE_ADMIN === '1') { stop('ADMIN_FAILED', 75); return; }
     }
   }
 
