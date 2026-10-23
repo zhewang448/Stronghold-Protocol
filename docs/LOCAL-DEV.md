@@ -40,7 +40,7 @@
 - 合并上游新版本时从 `main` 开功能分支，完成适配与测试后再合并回 `main`。
 - 同步上游：`git fetch upstream` → `git merge upstream/master` → `npm install` → `npm run setup`（上游常会加素材）→ `node --test`。
 - 素材 `public/assets/`、`.cache/`、`.claude/` 都在 `.gitignore` 里，不进仓库。新机器 clone 后要先 `npm install && npm run setup`。
-- 当前版本为 `v0.3.1-extended.9`，基于上游 `v0.3.1`（`b3deebda`）。上一正式版为 `v0.3.1-extended.8`。本版新增 Windows 服主 EXE、桌面安装与控制台显示开关，保留多人扩容、安全启动和更新恢复。完整包仍需包含 11 个官方战场场景（提取版本 4）、官方 FX、多语言语音、174 套皮肤和海报素材；lite 需保留或另行安装素材，发布预检使用 `--require-local-art`。EXE 通过同版独立 Windows x64 附件提供，生成物不进 Git。
+- 当前版本为 `v0.3.1-extended.10`，基于上游 `v0.3.1`（`b3deebda`）。上一正式版为 `v0.3.1-extended.9`。本版新增多域名找回、一键迁移、恢复撤销及控制台交互优化，保留多人扩容、安全启动和更新恢复。完整包仍需包含 11 个官方战场场景（提取版本 4）、官方 FX、多语言语音、174 套皮肤和海报素材；lite 需保留或另行安装素材，发布预检使用 `--require-local-art`。EXE 通过同版独立 Windows x64 附件提供，生成物不进 Git。
 
 当前源码已整合上游 `v0.3.1`（`b3deebda`）；`package.json` / APP_VERSION 为基础版本 0.3.1；`server/release-version.js` 单独记录扩展标签。发布附件与公开状态以 Releases 为准。
 
