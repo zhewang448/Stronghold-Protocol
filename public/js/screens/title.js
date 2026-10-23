@@ -28,6 +28,8 @@ import { html, Button, Icon, MicroLabel, TextField, PingPill } from '../ui/compo
 import { GuideButton } from '../ui/guide.js';
 import { openStats } from './stats.js';
 import { openPersonalData } from '../ui/personalDataPanel.js';
+import { openRecovery } from '../ui/domainRecovery.js';
+import { markGameEntry } from '../ui/domainRecoveryModel.js';
 import { toast } from '../ui/toasts.js';
 import { net, identity } from '../net.js';
 import { store, useStore, shallowEqual } from '../store.js';
@@ -56,6 +58,7 @@ export { stripLoneSurrogates, sanitizeName, isValidName } from '../ui/playerName
 export function enterSession(rawName) {
   const name = sanitizeName(rawName);
   if (!name) return false;
+  markGameEntry();
   identity.saveName(name);
   identity.setEntered(true);
   store.set((s) => ({ me: { ...s.me, name }, session: { ...s.session, entered: true } }));
@@ -241,7 +244,6 @@ export function TitleScreen() {
           <${Button} variant="ghost" size="sm" icon="chart" class="title-stats" onClick=${openStats} title=${t('统计数据')}>${t('统计')}<//>
           <${LangToggle} class="title-lang" />
         </div>
-        <div><${Button} variant="ghost" size="sm" icon="download" class="title-personal-data" onClick=${openPersonalData}>${t('导出 / 导入个人数据')}<//></div>
         <${MicroLabel} tone="hi">TARGET POINT<//><br /><${MicroLabel}>STRONGHOLD PROTOCOL<//>
       </div>
     </div>
@@ -264,6 +266,10 @@ export function TitleScreen() {
           placeholder=${t('输入你的代号（最多 {NAME_MAX_LEN} 字）', { NAME_MAX_LEN })} autoFocus=${!touchUi}
           onInput=${setName} onEnter=${start} />
         <${Button} variant="primary" size="xl" block=${true} iconRight="chevrons" disabled=${!valid} onClick=${start}>${t('开始')}<//>
+        <nav class="title-data-actions" aria-label=${t('个人数据')} data-testid="title-data-actions">
+          <${Button} variant="secondary" icon="refresh" class="title-data-recover" onClick=${openRecovery}>${t('找回数据')}<//>
+          <${Button} variant="ghost" icon="download" class="title-personal-data" onClick=${openPersonalData}>${t('导出 / 导入个人数据')}<//>
+        </nav>
         <div class="title-conn">
           <span class=${`status-dot ${dotClass}`}></span>
           <span>${STATUS_TEXT[conn.status] ? t(STATUS_TEXT[conn.status]) : conn.status}</span>

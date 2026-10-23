@@ -1,6 +1,5 @@
 /* Shares the root/font scale and modal focus/scroll rules; the entry reuses HubTile. */
 .title-screen .title-corner--tr { z-index: 3; }
-.title-personal-data { min-height: 44px; background: var(--bg-0); }
 @media (max-height: 500px) { .title-screen .title-corner--tr > div > .micro, .title-screen .title-corner--tr > div > br { display: none; } }
 .personal-data-veil { padding: 12px; }
 .modal__box.personal-data-modal { width: min(max(8rem, 440px), calc(100vw - 24px)); max-height: calc(100dvh - 24px); }
@@ -21,4 +20,19 @@
 .personal-data-error { color: var(--red-premium); }
 .personal-data-origin { color: var(--mint-400); overflow-wrap: anywhere; user-select: text; }
 .personal-data-preview { border: 1px solid var(--mint-a35); padding: .16rem; }
+.recovery-source { padding: .16rem; border: 1px solid var(--line-3); min-width: 0; }
+.recovery-source + .recovery-source { margin-top: .12rem; }
+.recovery-source h4 { margin: 0 0 .06rem; font-size: inherit; color: var(--text-hi); }
+.recovery-summary { display: flex; gap: .16rem; align-items: flex-start; min-width: 0; }
+.recovery-summary > div { min-width: 0; overflow-wrap: anywhere; }
+.recovery-avatar { width: 56px; height: 56px; object-fit: cover; flex: 0 0 56px; border: 1px solid var(--line-3); }
+.domain-bridge-page { overflow: auto; min-height: 100dvh; height: auto; touch-action: auto; }
+.domain-bridge { max-width: 720px; margin: 8vh auto; padding: 24px; font: 16px/1.7 system-ui, sans-serif; color: var(--text-hi); overflow-wrap: anywhere; }
+.domain-bridge h1 { font-size: 28px; margin: 0 0 20px; }
+.domain-bridge .btn { min-height: 44px; font-size: 16px; margin-top: 16px; white-space: normal; padding: 10px 16px; }
+.domain-bridge a { color: var(--mint-400); }
+.domain-bridge a.btn--primary { color: var(--bg-0); }
+.domain-bridge p { margin-block: 12px; }
+.domain-notice { position: fixed; bottom: 12px; left: 12px; right: 12px; z-index: 50; padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 12px; background: var(--bg-1); color: var(--text-hi); border: 1px solid var(--line-3); font-size: 14px; overflow-wrap: anywhere; }
+.domain-notice a { color: var(--mint-400); min-height: 24px; }
 @media (max-height: 500px) { .personal-data-modal .modal__head { padding-top: 10px; } .personal-data-modal .modal__actions { padding-top: 8px; padding-bottom: 8px; } }

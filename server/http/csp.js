@@ -13,7 +13,7 @@ export const SIM_WORKER_CSP = "default-src 'none'; script-src 'self' 'unsafe-eva
 export function siteCsp(publicDir, cdn = deploymentCdn()) {
   const origins = [...new Set([cdn.assetsCdn, cdn.dataCdn, ...cdn.resourcePackRoutes.map((route) => route.replaceAll('{file}', 'file.zip').replaceAll('{id}', 'pack'))].filter((url) => /^https?:/.test(url)).map((url) => new URL(url).origin))].join(' ');
   const hashes = new Set();
-  for (const rel of ['index.html', 'studio/index.html', 'studio/console.html', 'dev/game-mock.html', 'dev/render-demo.html', 'dev/battle-perf.html', 'dev/uikit.html']) {
+  for (const rel of ['index.html', 'personal-data-bridge.html', 'studio/index.html', 'studio/console.html', 'dev/game-mock.html', 'dev/render-demo.html', 'dev/battle-perf.html', 'dev/uikit.html']) {
     let html;
     try { html = fs.readFileSync(path.join(publicDir, rel), 'utf8'); } catch { continue; }
     for (const m of html.matchAll(/<script\s+type=["']importmap["']\s*>([\s\S]*?)<\/script>/g)) {

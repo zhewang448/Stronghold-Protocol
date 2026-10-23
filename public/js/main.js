@@ -63,7 +63,9 @@ import { pwaInstall } from './pwa.js';
 import { registerImportedAssetWorker } from './assetCache.js';
 import { LoadoutHost } from './screens/loadout.js';
 import { StatsHost } from './screens/stats.js';
-import { PersonalDataHost } from './ui/personalDataPanel.js';
+import { PersonalDataHost, hasPersonalDataMigration } from './ui/personalDataPanel.js';
+import { RecoveryHost, bootDomainGate } from './ui/domainRecovery.js';
+import { markGameEntry } from './ui/domainRecoveryModel.js';
 import { installRehearsal } from './battle/rehearsal.js';
 import { recordResult, installStatsRecorder } from './ui/stats.js';
 import { installLoadoutSync, installOwnershipSync, installDiySync, installSkinsSync } from './ui/loadoutSync.js';
@@ -368,6 +370,7 @@ function App() {
     <${LoadoutHost} />
     <${StatsHost} />
     <${PersonalDataHost} />
+    <${RecoveryHost} />
     <${ResourceHost} enabled=${resources.preload} optional=${resources.preloadOptional} voiceLang=${resources.preloadVoiceLang}
       onChange=${(preload) => updateSettings({ preload })} onOptional=${(preloadOptional) => updateSettings({ preloadOptional })}
       onVoiceLang=${(preloadVoiceLang) => updateSettings({ preloadVoiceLang })} />
@@ -407,6 +410,7 @@ function installGlobalErrorHandlers() {
 }
 
 async function boot() {
+  if (await bootDomainGate()) return;
   const installPolicyReady = fetchBuild((...args) => fetch(...args), {
     onHealth: h => pwaInstall.setEnabled(h.siteSettings?.showPwaInstall),
   });
@@ -426,6 +430,7 @@ async function boot() {
   const pendingJoin = parseRoomParam(location.search);
   const savedName = sanitizeName(identity.loadName());
   const entered = identity.wasEntered() && !!savedName;
+  if (entered && !hasPersonalDataMigration) markGameEntry();
   store.set((s) => ({
     me: { ...s.me, name: savedName },
     session: { entered },

@@ -38,6 +38,7 @@ import { GameData } from './match/gamedata.js';
 import { getPrep, setPrep, normalizePrep, getUniteLayerGains, setUniteLayerGains, getRoundCharts, setRoundCharts, getLiveRoundDamage, setLiveRoundDamage } from './match/hostSettings.js';
 import { getAllowRoomUniteLayerGains, setAllowRoomUniteLayerGains } from './match/hostSettings.js';
 import { getShowPwaInstall, setShowPwaInstall } from './match/hostSettings.js';
+import { readPersonalDataConfig, writePersonalDataConfig } from './http/personalDataConfig.js';
 import { AnnouncementDrafts } from './announcement-drafts.js';
 import { getSocialSettings, setSocialSettings, normalizeSocialSettings } from './match/hostSettings.js';
 import { DEFAULT_SOCIAL_SETTINGS } from '../shared/social.js';
@@ -797,6 +798,16 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
       }
       if (!url.pathname.startsWith('/api/')) return send(404, { error: 'not found' });
       if (!authed(req)) return send(403, { error: 'bad token' });
+      if (url.pathname === '/api/domain-recovery') {
+        const file = path.join(root, 'local', 'personal-data.json');
+        if (req.method === 'GET') return send(200, { ok: true, config: readPersonalDataConfig(file) });
+        if (req.method === 'POST') {
+          const body = await readJson(req);
+          try { return send(200, { ok: true, config: writePersonalDataConfig(body, file) }); }
+          catch (e) { return send(400, { error: e.message }); }
+        }
+        return send(405, { error: 'method not allowed' });
+      }
       if (req.method === 'GET' && url.pathname === '/api/devtools') return send(200, {
         pages: DEV_PAGES.map(([file]) => ({ file, available: fs.existsSync(path.join(root, 'public', 'dev', file)) })),
       });

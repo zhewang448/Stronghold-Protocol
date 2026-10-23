@@ -246,6 +246,24 @@ describe('personal data backup and domain migration', { skip: !ENABLED }, () => 
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForSelector('.title-screen');
     await page.evaluate(() => document.getAnimations().forEach((a) => { if (a.effect?.getTiming().iterations !== Infinity) a.finish(); }));
+    for (const [width,height] of [[1920,1080],[1280,720],[844,390],[640,360]]) {
+      await page.setViewport({width,height});
+      await page.screenshot({path:`.cache/personal-data/title-data-actions-${width}.png`});
+      const layout=await page.evaluate(()=>{
+        const group=document.querySelector('.title-data-actions'),start=document.querySelector('.title-login > .btn--primary');
+        const startBox=start.getBoundingClientRect(),groupBox=group.getBoundingClientRect();
+        return {top:groupBox.top,startBottom:startBox.bottom,right:groupBox.right,bottom:groupBox.bottom,
+          corner:document.querySelectorAll('.title-corner--tr .title-personal-data,.title-corner--tr .title-data-recover').length,
+          controls:[...group.querySelectorAll('button')].map(e=>{const r=e.getBoundingClientRect(),label=e.querySelector('.btn__label').getBoundingClientRect();return {text:e.textContent.trim(),height:r.height,x:r.x,y:r.y,right:r.right,bottom:r.bottom,hit:e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)),fits:label.left>=r.left&&label.right<=r.right+1};})};
+      });
+      assert.equal(layout.corner,0);assert.ok(layout.top>=layout.startBottom,JSON.stringify(layout));
+      assert.equal(layout.controls.length,2);
+      for(const row of layout.controls){assert.ok(row.hit,JSON.stringify({width,height,layout}));assert.ok(row.height>=44);assert.ok(row.fits,JSON.stringify({width,height,layout}));assert.ok(row.x>=0&&row.y>=0&&row.right<=width&&row.bottom<=height,JSON.stringify({width,height,layout}));}
+    }
+    await page.evaluate(async()=>{const {switchLang}=await import('/js/ui/lang.js');await switchLang('en');});
+    await page.screenshot({path:'.cache/personal-data/title-data-actions-640-en.png'});
+    assert.equal(await page.$eval('.title-data-actions',group=>[...group.querySelectorAll('button')].every(e=>{const r=e.getBoundingClientRect(),label=e.querySelector('.btn__label').getBoundingClientRect();return r.height>=44&&label.right<=r.right+1&&e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));})),true);
+    await page.evaluate(async()=>{const {switchLang}=await import('/js/ui/lang.js');await switchLang('zh');});
     await page.screenshot({ path: '.cache/personal-data/title-640.png' });
     const button = await page.evaluateHandle(() => [...document.querySelectorAll('.title-screen button')].find((b) => b.textContent.trim() === '导出 / 导入个人数据'));
     assert.equal(await button.evaluate((e) => { const r = e.getBoundingClientRect(); return e.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); }), true);

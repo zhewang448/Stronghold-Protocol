@@ -35,6 +35,7 @@ import { toast, toastError } from '../ui/toasts.js';
 import { GuideButton, openGuide } from '../ui/guide.js';
 import { openStats } from './stats.js';
 import { openPersonalData, PersonalDataReminder } from '../ui/personalDataPanel.js';
+import { openRecovery } from '../ui/domainRecovery.js';
 import { AchievementEntry, AchievementPanel } from '../ui/achievements.js';
 import { FriendsTile } from '../ui/friends.js';
 
@@ -1068,6 +1069,7 @@ export function LobbyScreen() {
         </div>
         <${HubTile} icon="chart" label=${t('统计数据')} en="LOCAL RECORDS" onClick=${openStats} />
         <${HubTile} icon="download" label=${t('导出 / 导入个人数据')} en="PERSONAL DATA" onClick=${openPersonalData} />
+        <${HubTile} icon="refresh" label=${t('找回数据')} en="RECOVER DATA" onClick=${openRecovery} />
         <${PersonalDataReminder} />
       </aside>
 

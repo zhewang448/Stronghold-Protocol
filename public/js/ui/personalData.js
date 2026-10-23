@@ -172,17 +172,19 @@ export const readMusic = () => mediaStore('readonly', (s) => s.get('lobby'), 'sp
 export const writeMusic = (track) => mediaStore('readwrite', (s) => track ? s.put(track, 'lobby') : s.delete('lobby'), 'sp-lobby-music', 'tracks');
 
 export async function restorePersonalData(raw, { storage = globalThis.localStorage, readMedia = readBackdrop, writeMedia = writeBackdrop,
-  readTrack = readMusic, writeTrack = writeMusic } = {}) {
+  readTrack = readMusic, writeTrack = writeMusic, replace = false } = {}) {
   const data = validatePersonalData(raw), entries = { ...data.entries };
   if (!storage) fail('storage');
-  if (entries[STATS]) {
+  if (entries[STATS] && !replace) {
     const current = storage.getItem(STATS);
     entries[STATS] = JSON.stringify(mergeStats(current ? checkedStats(current) : { records: [] }, checkedStats(entries[STATS])));
   }
-  const previous = new Map(Object.keys(entries).map((key) => [key, storage.getItem(key)]));
-  const changed = [], mediaChanged = !!data.backdrop || Object.hasOwn(entries, 'sp.pref.hub.backdrop');
+  const keys = new Set(Object.keys(entries));
+  if (replace) for (let i = 0; i < storage.length; i++) { const key = storage.key(i); if (personalKey(key)) keys.add(key); }
+  const previous = new Map([...keys].map((key) => [key, storage.getItem(key)]));
+  const changed = [], mediaChanged = replace || !!data.backdrop || Object.hasOwn(entries, 'sp.pref.hub.backdrop');
   const oldMedia = mediaChanged ? await readMedia() : null;
-  const trackChanged = Object.hasOwn(data, 'music');
+  const trackChanged = replace || Object.hasOwn(data, 'music');
   const oldTrack = trackChanged ? await readTrack() : null;
   let backdropWritten = false, trackWritten = false;
   try {
@@ -195,9 +197,11 @@ export async function restorePersonalData(raw, { storage = globalThis.localStora
         paused: data.music.paused, enabled: data.music.enabled } : null);
       trackWritten = true;
     }
-    for (const [key, value] of Object.entries(entries)) {
+    for (const key of keys) {
+      const value = Object.hasOwn(entries, key) ? entries[key] : null;
       if (previous.get(key) === value) continue;
-      storage.setItem(key, value); changed.push(key);
+      if (value === null) storage.removeItem(key); else storage.setItem(key, value);
+      changed.push(key);
       if (storage.getItem(key) !== value) fail('storage');
     }
   } catch (err) {
@@ -212,6 +216,19 @@ export async function restorePersonalData(raw, { storage = globalThis.localStora
     throw Object.assign(err, { code: 'storage' });
   }
   return personalSummary(data);
+}
+
+// A durable, origin-local undo point; never exported and never uploaded.
+export const readRecoveryBackup = () => mediaStore('readonly', (s) => s.get('before-restore'), 'sp-recovery-backup');
+export async function saveRecoveryBackup() {
+  const data = await capturePersonalData();
+  await mediaStore('readwrite', (s) => s.put(data, 'before-restore'), 'sp-recovery-backup');
+}
+export async function undoRecoveryBackup() {
+  const data = await readRecoveryBackup();
+  if (!data) fail('invalid');
+  await restorePersonalData(data, { replace: true });
+  await mediaStore('readwrite', (s) => s.delete('before-restore'), 'sp-recovery-backup');
 }
 
 export function migrationOrigin(value, current = globalThis.location?.origin) {

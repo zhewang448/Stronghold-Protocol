@@ -5,7 +5,7 @@ import { t } from '../../../shared/i18n.js';
 import { copyText } from './clipboard.js';
 import { backupDue, initializeReminder, isTemporaryHost, reminderState, updateReminder } from './backupReminder.js';
 import { capturePersonalData, encodePersonalData, decodePersonalData, restorePersonalData, personalSummary,
-  migrationOrigin, validMigrationMessage, MAX_CODE_CHARS } from './personalData.js';
+  migrationOrigin, validMigrationMessage, MAX_CODE_CHARS, saveRecoveryBackup } from './personalData.js';
 
 const panel = createStore({ open: false });
 export const openPersonalData = () => panel.set({ open: true });
@@ -21,6 +21,7 @@ function sourceRequest() {
   } catch { return null; }
 }
 const incomingRequest = typeof window === 'object' ? sourceRequest() : null;
+export const hasPersonalDataMigration = !!incomingRequest;
 function errorText(err) {
   switch (err?.code) {
     case 'newer': return t('恢复码版本较新，请更新游戏后重试。');
@@ -110,6 +111,7 @@ function PersonalDataPanel({ source, onClose }) {
   };
   const restore = () => work('restore', async () => {
     if (store.get().room) { setError(t('请先离开当前同盟，再恢复个人数据。')); return; }
+    await saveRecoveryBackup();
     await restorePersonalData(preview);
     if (active.current) { setDone(true); setPreview(null); setMessage(t('个人数据已恢复，刷新页面后生效。')); }
   });

@@ -106,7 +106,7 @@ export const FOLDER = 'Stronghold-Protocol';
 /** Root files a player gets. */
 export const ROOT_FILES = ['package.json', 'package-lock.json', 'LICENSE', 'NOTICE.md', 'THIRD-PARTY-NOTICES.md', 'README.md', 'CHANGELOG.md'];
 /** The player docs. */
-export const PLAYER_DOCS = ['docs/PLAYING.md', 'docs/DEPLOY.md', 'docs/SKINS.md', 'docs/LOCAL-CHANGELOG.md',
+export const PLAYER_DOCS = ['docs/PLAYING.md', 'docs/DEPLOY.md', 'docs/SKINS.md', 'docs/LOCAL-CHANGELOG.md', 'docs/DOMAIN-RECOVERY.md',
   'docs/LOCAL-DEV.md', 'docs/PRIVACY.md', 'docs/COMMUNITY-PLUGINS.md', 'docs/EXPANDED-COOP.md', 'docs/RELEASE-CANDIDATE.md', 'scripts/README.md'];
 /** Real interface screenshots referenced by the extension README. */
 export const PLAYER_DOC_DIRS = ['docs/img/features/'];

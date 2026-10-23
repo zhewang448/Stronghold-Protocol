@@ -10,7 +10,7 @@
 放在其他位置时，使用「选择服务器目录」选择当前源码 / 整合包目录。
 启动器所选目录必须包含 `scripts/host-launcher.mjs`，不能只把 EXE 放进未升级的旧安装。
 启动器文案已接入四语言包；日、韩、繁中包中的新增启动器文案目前以英文提供，默认中文不受影响。
-从同版 Release 下载 `Stronghold-Protocol-v0.3.1-extended.9-launcher-win-x64.zip`，解压后将 EXE 放入已安装或升级至同版的游戏根目录。该附件与游戏完整包、轻量包分开提供。
+从同版 Release 下载 `Stronghold-Protocol-v0.3.1-extended.10-launcher-win-x64.zip`，解压后将 EXE 放入已安装或升级至同版的游戏根目录。该附件与游戏完整包、轻量包分开提供。
 
 1. 双击 EXE，确认窗口中的服务器目录正确。
 2. 选择开服方式和游戏端口，查看右侧检查结果。
