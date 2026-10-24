@@ -139,12 +139,22 @@ function statsOf(ps) {
   };
 }
 
+/** Connection state belongs to the lobby; a match host may still be processing its socket event. */
+function roomPresence(room, match) {
+  if (!match?.players) return match;
+  const seats = new Map(room.seats.filter(Boolean).map(seat => [seat.playerId, seat]));
+  return { ...match, players: match.players.map(player => {
+    const seat = seats.get(player.id);
+    return seat ? { ...player, connected: !!(seat.isBot || (seat.connected && !seat.left)) } : player;
+  }) };
+}
+
 /** GET /api/rooms */
 export function roomsView(lobby) {
   if ([...lobby.rooms.values()].some(r => r.match?.hosted)) {
     return Promise.all([...lobby.rooms.values()].map(async room => {
       const view = roomsView({ rooms: new Map([[room.code, { ...room, match: room.match?.hosted ? null : room.match }]]) })[0];
-      if (room.match?.hosted) view.match = await room.match.admin('view');
+      if (room.match?.hosted) view.match = roomPresence(room, await room.match.admin('view'));
       return view;
     }));
   }
@@ -153,7 +163,7 @@ export function roomsView(lobby) {
     seats: r.seats.filter(Boolean).map((s) => ({ id: s.playerId, seat: s.seat, left: !!s.left, muted: !!r.chat?.muted.has(s.playerId), name: s.name, bot: s.isBot, connected: s.connected && !s.left })),
     spectators: (r.spectators || []).map((s) => ({ id: s.playerId, name: s.name, connected: s.connected })),
     chat: r.chat?.history(r.code) || { messages: [] },
-    match: r.match && r.match.order ? matchView(r.match) : null,
+    match: r.match && r.match.order ? roomPresence(r, matchView(r.match)) : null,
     // the room's last ended match, while no new one runs: its statistics stay on the room card
     lastMatch: r.match ? null : r.adminLastMatch || null,
     log: r.adminLog || [],

@@ -1,5 +1,7 @@
 # META.md — match & meta engine (server/match)
 
+控制台 roomsView 将普通与独立 host 对局的玩家数据按 ID 与房间席位合并：connected 采用当前席位连接及离开标记，LP 等仍来自对局；读取投影不回写模拟状态。
+
 Audience: **content authors** writing prep-side ("SERVER_*") effects in `server/sim/content/*.js → registerMeta(registry)`,
 the **UI owner** consuming `m.public` / `m.private` / `m.result`, and anyone driving matches in tests or tools.
 Normative contracts stay in DESIGN.md §6 and §8 ([design/match.md](design/match.md),
