@@ -1,6 +1,6 @@
 # 卫戍协议：盟约 · Stronghold Protocol: Alliance
 
-![扩展版本](https://img.shields.io/badge/version-0.3.1--extended.10-blue)
+![扩展版本](https://img.shields.io/badge/version-0.3.1--extended.11-blue)
 ![上游基础版本](https://img.shields.io/badge/version-0.3.1-2ea44f)
 ![许可](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
 
@@ -12,7 +12,7 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 [下载正式版](https://github.com/zhewang448/Stronghold-Protocol/releases/latest) · [开始运行](#开始运行) · [本库特色](#本库特色) · [和朋友一起玩](#和朋友一起玩) · [更新记录](docs/LOCAL-CHANGELOG.md) · [反馈问题](https://github.com/zhewang448/Stronghold-Protocol/issues)
 
-> 当前版本为 **`v0.3.1-extended.10`**（基础版本 `0.3.1`，上一正式版为 `v0.3.1-extended.9`）。本版新增多域名存档找回、一键迁移、恢复撤销及控制台导航和反馈优化；首页存档入口移至开始按钮下方，保留 Windows 启动器、多人扩容和签名增量更新。正式附件见 Releases，使用与验证边界见[发布说明](docs/RELEASE-CANDIDATE.md)。
+> 当前版本为 **`v0.3.1-extended.11`**（基础版本 `0.3.1`，上一正式版为 `v0.3.1-extended.10`）。本版统一素材与资源管理、合并重复下载，自动适配安全预载与普通 HTTP 下载，并修复控制台在线状态，保留 Windows 启动器、多人扩容和签名增量更新。正式附件见 Releases，使用与验证边界见[发布说明](docs/RELEASE-CANDIDATE.md)。
 >
 > 非官方、非商业同人项目，与《明日方舟》官方无隶属或授权关系。游戏素材与数据的权利归原权利人；代码、素材及截图的许可边界见 [NOTICE.md](NOTICE.md)。
 
@@ -50,7 +50,7 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 | [数据迁移](#个人数据备份与域名迁移) | 恢复码与文件导入 / 导出，覆盖本机配置、战绩、调配、皮肤、背景和音乐；旧域名授权传输 |
 | [干员与外观](#联动干员皮肤与组队海报) | 7 名联动自选干员、174 套可选皮肤、可搜索的组队海报、随机外观与素材预加载 |
 | [手机与个性化](#手机适配与个性化) | 手机横屏 HUD、可拖动聊天与标点、小屏统计和触控适配；自定义背景、音乐、界面设置及 FPS 显示 |
-| [素材与加载](#素材与加载管理) | 按画面、音频和语音语言预载；暂停、继续、重试、缓存清理和资源 ZIP 导入 / 导出 |
+| [素材与加载](#素材与加载管理) | 统一入口与唯一下载按钮；按浏览器能力预载或兼容下载，本地素材与缓存 ZIP 导入 / 导出 |
 | [插件与测试工具](#插件与测试工具) | 沿用上游插件工作台与 Forge 导入；本库控制台提供开发者模式、6 个模拟工具和 30 个场景入口 |
 | [开服与维护](#开服更新与恢复) | 一键开服、公网隧道、重启恢复、签名增量更新与完整包回退；提供启动保护、更新验证和备份管理 |
 

@@ -1,5 +1,5 @@
-// The title screen's 导入素材包 (docs/history/0.3.0.md §32.14.23, §32.14.39): its own button and dialog beside 下载完整素材
-// (ui/assetDownload.js), so a player who only imports never starts the server download.
+// The resource manager's 导入素材包 (docs/history/0.3.0.md §32.14.23, §32.14.39) keeps its own dialog beside 下载完整素材,
+// so a player who only imports never starts the server download.
 //
 // Opening the dialog reads nothing from the server: no art, not the manifests (assetPack.js reads the three served
 // manifests only once an import starts) and not the download queue. The dialog: a folder (showDirectoryPicker, else an
@@ -8,6 +8,7 @@
 // running import; what was stored stays, and the download queue skips it (assetDownload.js).
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { html, Button, Modal, ProgressBar, confirmDialog } from './components.js';
+import { createStore, useStore } from '../store.js';
 import { assetImport } from '../assetPack.js';
 import { askPersistStorage, clearImportedAssets, countImportedFiles, importSupport, storageEstimate } from '../assetCache.js';
 import { t } from '../../../shared/i18n.js';
@@ -64,9 +65,21 @@ async function walkHandle(dir, prefix, out) {
   }
 }
 
-/** 导入素材包: the button, its hint line and the import dialog. */
-export function AssetImportButton() {
-  const [open, setOpen] = useState(false);
+const importUi = createStore({ open: false });
+export const openAssetImport = () => importUi.set({ open: true });
+
+/** 导入素材包: an entry in the resource manager. */
+export function AssetImportButton({ beforeOpen } = {}) {
+  const support = importSupport();
+  return html`<div class="title-assets__item">
+    <${Button} variant="secondary" block=${true} size="sm" data-testid="asset-import" aria-describedby="title-asset-import-hint"
+      onClick=${() => { beforeOpen?.(); openAssetImport(); }}>${t('导入素材包')}<//>
+    <small id="title-asset-import-hint">${support.ok ? t('读取自己的素材包，美术不占服务器流量。') : t('导入需要 HTTPS 或 localhost。')}</small>
+  </div>`;
+}
+
+export function AssetImportHost() {
+  const { open } = useStore((s) => s, Object.is, importUi);
   const [imported, setImported] = useState(() => assetImport.get());
   const [storeInfo, setStoreInfo] = useState(null);
   const [persistNote, setPersistNote] = useState(null);
@@ -104,7 +117,7 @@ export function AssetImportButton() {
   }, [open, imported.phase, imported.accepted]);
   const close = () => {
     assetImport.cancel();
-    setOpen(false);
+    importUi.set({ open: false });
   };
   const support = importSupport();
   const importText = importStatus(imported);
@@ -187,11 +200,7 @@ export function AssetImportButton() {
     setPersistNote(null);
   };
 
-  return html`<div class="title-assets__item">
-    <${Button} variant="secondary" block=${true} size="sm" data-testid="asset-import" aria-describedby="title-asset-import-hint"
-      onClick=${() => setOpen(true)}>${t('导入素材包')}<//>
-    <small id="title-asset-import-hint">${support.ok ? t('读取自己的素材包，美术不占服务器流量。') : t('导入需要 HTTPS 或 localhost。')}</small>
-    <${Modal} open=${open} onClose=${close} title=${t('导入素材包')} class="asset-import-dialog" actions=${html`
+  return html`<${Modal} open=${open} onClose=${close} title=${t('导入素材包')} class="asset-import-dialog" actions=${html`
       <${Button} onClick=${close}>${t('关闭')}<//>`}>
       <p class="t-lo">${t('从素材包 zip、完整包 zip 或自己的 public/assets 文件夹导入。只收下和服务器清单哈希一致的文件，不上传任何内容。')}</p>
       <p class="t-lo">${t('导入只从服务器读取素材清单，美术文件不走网络；没有导入的素材仍在用到时从服务器加载。')}</p>
@@ -225,6 +234,5 @@ export function AssetImportButton() {
       })}</p>` : null}
       ${persistNote === true ? html`<p class="t-lo">${t('已请求浏览器尽量保留这些素材。')}</p>` : null}
       ${persistNote === false ? html`<p class="t-lo">${t('浏览器可能在存储空间不足时清掉导入的素材。')}</p>` : null}
-    <//>
-  </div>`;
+  <//>`;
 }

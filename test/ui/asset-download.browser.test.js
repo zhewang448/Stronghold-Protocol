@@ -6,7 +6,7 @@ import path from 'node:path';
 import { startServer } from '../../server/index.js';
 import { CHROME, hasChrome } from '../e2e/client.mjs';
 
-test('homepage download, visible failure/retry, pause, cache reuse, and the two asset buttons\' responsive placement', {
+test('one primary download action automatically uses HTTP compatibility, retry, pause, cache reuse, and responsive entry', {
   skip: process.env.SP_E2E !== '1' || !hasChrome(), timeout: 90000,
 }, async (t) => {
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=', 'base64');
@@ -42,19 +42,27 @@ test('homepage download, visible failure/retry, pause, cache reuse, and the two 
   const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox'] });
   t.after(() => browser.close());
   const page = await browser.newPage();
+  await page.evaluateOnNewDocument(() => Object.defineProperty(window, 'isSecureContext', { configurable: true, value: false }));
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.setViewport({ width: 1280, height: 900 });
   await page.goto(srv.url);
-  await page.waitForSelector('[data-testid="asset-download"]');
+  await page.waitForSelector('.title-preload .res-pill__head');
+  assert.equal(await page.$('.title-assets'), null, 'the homepage has no duplicate asset actions');
   assert.equal(counts.size, 0, 'opening the homepage does not download the asset pack');
   if (process.env.SP_ASSET_SCREENSHOTS) {
     fs.mkdirSync(process.env.SP_ASSET_SCREENSHOTS, { recursive: true });
     await new Promise((resolve) => setTimeout(resolve, 500));
     await page.screenshot({ path: path.join(process.env.SP_ASSET_SCREENSHOTS, 'title.png') });
   }
-  await page.click('[data-testid="asset-download"]');
+  await page.click('.title-preload .res-pill__head');
+  await page.waitForSelector('[data-testid="resource-download"]');
+  assert.equal(await page.$('[data-testid="asset-download"]'), null, 'there is no second download action');
+  assert.equal(counts.size, 0, 'opening the manager never starts downloads');
+  if (process.env.SP_ASSET_SCREENSHOTS) await page.screenshot({ path: path.join(process.env.SP_ASSET_SCREENSHOTS, 'manager.png') });
+  await page.click('[data-testid="resource-download"]');
   await page.waitForFunction(() => document.querySelector('[data-testid="asset-download-status"]')?.textContent.includes('1 个素材下载失败'));
+  assert.equal(await page.$('.resource-modal'), null, 'opening a dedicated asset action closes the resource manager');
   assert.equal(await page.$eval('.asset-download [role="progressbar"]', (el) => el.getAttribute('aria-valuenow')), '1');
   assert.equal(counts.get(image), 1);
   fixed = true;
@@ -71,8 +79,7 @@ test('homepage download, visible failure/retry, pause, cache reuse, and the two 
     await page.screenshot({ path: path.join(process.env.SP_ASSET_SCREENSHOTS, 'complete.png') });
   }
   await page.keyboard.press('Escape');
-  // 下载完整素材 and 导入素材包 side by side (ui/assetDownload.js, ui/assetImport.js): both inside the viewport, uncovered, on one
-  // row, not overlapping, their hint lines clear of the footer — on a desktop and on a landscape phone
+  // The single homepage resource entry remains inside the viewport and uncovered on desktop and landscape phone.
   for (const viewport of [{ width: 1280, height: 900 }, { width: 844, height: 390 }]) {
     await page.setViewport(viewport);
     const box = (sel) => page.$eval(sel, (el) => {
@@ -80,35 +87,34 @@ test('homepage download, visible failure/retry, pause, cache reuse, and the two 
       return { left: b.left, top: b.top, right: b.right, bottom: b.bottom,
         visible: el.contains(document.elementFromPoint((b.left + b.right) / 2, (b.top + b.bottom) / 2)) };
     });
-    const download = await box('[data-testid="asset-download"]');
-    const importer = await box('[data-testid="asset-import"]');
-    for (const [name, bounds] of [['download', download], ['import', importer]]) {
-      assert.ok(bounds.left >= 0 && bounds.right <= viewport.width && bounds.top >= 0 && bounds.bottom <= viewport.height, `${name} ${JSON.stringify(bounds)}`);
-      assert.ok(bounds.visible, `the ${name} button is not covered`);
-    }
-    assert.ok(Math.abs(download.top - importer.top) < 1 && download.right <= importer.left, `side by side ${JSON.stringify({ download, importer })}`);
-    const hints = await page.$$eval('.title-assets__item > small', (els) => els.map((el) => el.getBoundingClientRect().bottom));
-    const foot = await page.$eval('.title-foot', (el) => [...el.children].map((c) => c.getBoundingClientRect())
-      .filter((b) => b.width > 0).map((b) => ({ top: b.top, left: b.left, right: b.right })));
-    const block = await page.$eval('.title-assets', (el) => el.getBoundingClientRect().toJSON());
-    assert.equal(hints.length, 2, 'a hint line under each button');
-    for (const f of foot) {
-      const across = f.left < block.right && f.right > block.left;
-      assert.ok(!across || Math.max(...hints) <= f.top, `the hints stay above the footer ${JSON.stringify({ hints, f })}`);
-    }
+    const entry = await box('.title-preload .res-pill__head');
+    assert.ok(entry.left >= 0 && entry.right <= viewport.width && entry.top >= 0 && entry.bottom <= viewport.height, JSON.stringify(entry));
+    assert.ok(entry.visible, 'the resource manager entry is not covered');
+    assert.equal(await page.$('[data-testid="asset-download"]'), null, 'separate asset actions stay inside the manager');
+    assert.equal(await page.$('[data-testid="asset-import"]'), null, 'separate asset actions stay inside the manager');
     if (process.env.SP_ASSET_SCREENSHOTS) await page.screenshot({ path: path.join(process.env.SP_ASSET_SCREENSHOTS, `title-${viewport.width}.png`) });
+    await page.click('.title-preload .res-pill__head');
+    await page.waitForSelector('[data-testid="asset-import"]');
+    await page.$eval('[data-testid="asset-import"]', (el) => el.scrollIntoView({ block: 'center' }));
+    const importer = await box('[data-testid="asset-import"]');
+    assert.ok(importer.visible && importer.left >= 0 && importer.right <= viewport.width, 'the local import action remains reachable');
+    if (process.env.SP_ASSET_SCREENSHOTS) await page.screenshot({ path: path.join(process.env.SP_ASSET_SCREENSHOTS, `manager-${viewport.width}.png`) });
+    await page.keyboard.press('Escape');
   }
   // A new browser context has an empty HTTP cache. Closing the dialog must stop a hanging request.
   const context = await browser.createBrowserContext();
   const other = await context.newPage();
+  await other.evaluateOnNewDocument(() => Object.defineProperty(window, 'isSecureContext', { configurable: true, value: false }));
   hanging = true;
   await other.goto(srv.url);
-  await other.click('[data-testid="asset-download"]');
+  await other.click('.title-preload .res-pill__head');
+  await other.click('[data-testid="resource-download"]');
   await other.waitForFunction(async () => (await import('/js/assetDownload.js')).assetDownload.get().phase === 'downloading');
   await other.keyboard.press('Escape');
   await other.waitForFunction(async () => (await import('/js/assetDownload.js')).assetDownload.get().phase === 'paused');
   hanging = false;
-  await other.click('[data-testid="asset-download"]');
+  await other.click('.title-preload .res-pill__head');
+  await other.click('[data-testid="resource-download"]');
   await other.waitForFunction(() => document.querySelector('[data-testid="asset-download-status"]')?.textContent.includes('本次素材下载完成'));
   assert.deepEqual(errors, []);
 });

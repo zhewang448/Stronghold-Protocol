@@ -4,8 +4,10 @@ import { html, Button, MicroLabel, Modal, ProgressBar } from './components.js';
 import { createStore, useStore } from '../store.js';
 import { formatBytes, resourcePackPercent, PRELOAD_VOICE_LANGS, normalizePreloadVoiceLang } from '../resources/common.js';
 import { clearResources, exportResources, importResources, inspectResources, pauseResources,
-  resourceState, startResources, subscribeResources } from '../resources/index.js';
+  resourceState, startResources, subscribeResources, unsupportedReason } from '../resources/index.js';
 import { t, N_ } from '../../../shared/i18n.js';
+import { openAssetDownload, AssetDownloadHost } from './assetDownload.js';
+import { AssetImportButton, AssetImportHost } from './assetImport.js';
 
 const PRELOAD_VOICE_LABELS = { cn: N_('中文语音'), jp: N_('日语语音'), en: N_('英语语音'), kr: N_('韩语语音') };
 
@@ -86,11 +88,11 @@ export function ResourceRow({ enabled }) {
 export function ResourceLauncher({ enabled }) {
   const st = useResources();
   return html`<div class=${`res-pill${enabled ? ' is-on' : ''}`}>
-    <button type="button" class="res-pill__head" title=${t('管理预载资源和 ZIP 资源包')} onClick=${openResources}>
-      <span class="res-pill__label">${t('预载资源')}<${MicroLabel}>PRELOAD<//></span>
+    <button type="button" class="res-pill__head" title=${t('管理素材与资源')} aria-label=${t('管理素材与资源')} onClick=${openResources}>
+      <span class="res-pill__label">${t('素材与资源')}<${MicroLabel}>RESOURCES<//></span>
       <span class="res-pill__state">${stateText(st, enabled)}</span>
     </button>
-    <p class="res-pill__hint">${t('必备 / 可选资源 · ZIP 导入与导出')}</p>
+    <p class="res-pill__hint">${t('预载、下载、导入与导出')}</p>
   </div>`;
 }
 
@@ -138,7 +140,9 @@ export function ResourceHost({ enabled, optional, voiceLang = 'cn', onVoiceLang,
   const { open } = useStore((s) => s, Object.is, resourceUi);
   const st = useResources();
   const fileInput = useRef(null);
-  useEffect(() => { if (open) void inspectResources().catch(() => {}); }, [open]);
+  const compatibilityReason = unsupportedReason();
+  const compatibility = !!compatibilityReason;
+  useEffect(() => { if (open && !compatibility) void inspectResources().catch(() => {}); }, [open, compatibility]);
   const archiveBusy = !!st.archive;
   const importFile = async (e) => {
     const file = e.currentTarget.files?.[0];
@@ -159,39 +163,49 @@ export function ResourceHost({ enabled, optional, voiceLang = 'cn', onVoiceLang,
       setTimeout(() => URL.revokeObjectURL(url), 60000);
     } catch { /* controller displays the error */ }
   };
-  return html`<${Modal} open=${open} onClose=${closeResources} title=${t('预载资源管理')} micro="RESOURCE MANAGER" class="resource-modal" utility=${true}
+  return html`<${Modal} open=${open} onClose=${closeResources} title=${t('素材与资源')} micro="RESOURCE MANAGER" class="resource-modal" utility=${true}
     actions=${html`
-      ${busy(st) ? html`<${Button} variant="secondary" icon="hourglass" onClick=${pauseResources}>${archiveBusy ? t('取消处理') : t('暂停下载')}<//>`
-        : html`<${Button} variant="primary" icon="play" disabled=${!st.supported}
+      ${compatibility ? html`<${Button} variant="primary" icon="play" data-testid="resource-download" onClick=${() => { closeResources(); openAssetDownload(); }}>${t('开始下载')}<//>`
+        : busy(st) ? html`<${Button} variant="secondary" icon="hourglass" onClick=${pauseResources}>${archiveBusy ? t('取消处理') : t('暂停下载')}<//>`
+        : html`<${Button} variant="primary" icon="play" data-testid="resource-download" disabled=${!st.supported}
           onClick=${() => enabled ? startResources() : onChange(true)}>${st.selectionComplete ? t('检查资源') : enabled ? t('继续下载') : t('开始预载')}<//>`}
       <${Button} variant="secondary" onClick=${closeResources}>${t('关闭')}<//>`}>
     <div class="resource-manager">
-      <p class="resource-manager__intro">${t('先预载必备资源；可选资源可按需加载。关闭此窗口后，下载会在后台继续。')}</p>
-      <div class="resource-manager__tiers">
+      <p class="resource-manager__intro">${compatibility ? t('当前浏览器使用兼容下载：下载全部素材到浏览器缓存，关闭下载窗口会暂停。预载、缓存 ZIP 和本地导入需要 HTTPS 或 localhost 及浏览器缓存支持。') : t('先预载必备资源；可选资源可按需加载。关闭此窗口后，下载会在后台继续。')}</p>
+      ${compatibility ? html`<p class="resource-manager__warn">${compatibilityReason}</p>` : html`<div class="resource-manager__tiers">
         <${ResourceTier} st=${st} tier=${1} />
         <${ResourceTier} st=${st} tier=${2} optional=${optional} onOptional=${onOptional} voiceLang=${voiceLang} onVoiceLang=${onVoiceLang} disabled=${archiveBusy} />
-      </div>
+      </div>`}
       <p class=${`resource-manager__status${st.error ? ' is-error' : ''}`} role="status" aria-live="polite">
-        ${st.message || (enabled ? t('预载已开启') : t('选择下载范围，然后开始预载；也可以直接导入资源包。'))}</p>
+        ${compatibility ? t('点击开始下载；已有素材包可查看下方导入说明。') : st.message || (enabled ? t('预载已开启') : t('选择下载范围，然后开始预载；也可以直接导入资源包。'))}</p>
       <${ResourcePackProgress} progress=${st.packProgress} />
       ${st.worker ? html`<p class="resource-manager__warn">${st.worker}</p>` : null}
       ${st.failed ? html`<p class="resource-manager__warn">${t('{failed} 个文件下载失败，继续下载时重试。', { failed: st.failed })}</p>` : null}
       ${st.skipped ? html`<p class="resource-manager__warn">${t('{skipped} 个文件超过单文件缓存上限，使用时按需加载。', { skipped: st.skipped })}</p>` : null}
       <section class="resource-archive">
-        <h3>${t('ZIP 资源包')}</h3>
-        <p>${t('可将已缓存的资源导出为 ZIP。导入时校验完整性，只复用当前版本仍有效的文件，并下载缺少的资源。')}</p>
+        <h3>${t('导入素材包')}</h3>
+        <p>${t('已有素材包、完整安装包或素材文件夹时可直接导入。导入不会启动下载；没有素材包时使用面板底部的下载按钮。')}</p>
+        <div class="resource-archive__actions">
+          <${AssetImportButton} beforeOpen=${closeResources} />
+        </div>
+      </section>
+      <section class="resource-archive">
+        <h3>${t('缓存 ZIP')}</h3>
+        <p>${t('用于本面板导出的缓存 ZIP。导入后复用有效文件并补齐所选资源；安装包、素材包或文件夹请使用“导入素材包”。')}</p>
         ${st.archive ? html`<${ProgressBar} value=${st.archivePercent} max=${100} size="sm" tone="mint" />` : null}
         <input ref=${fileInput} type="file" accept=".zip,application/zip,application/x-zip-compressed" hidden onChange=${importFile} />
         <div class="res-actions">
-          <${Button} variant="secondary" disabled=${archiveBusy || !st.supported} onClick=${() => fileInput.current?.click()}>${t('导入 ZIP')}<//>
-          <${Button} variant="secondary" disabled=${archiveBusy || !st.supported || !st.done} onClick=${exportFile}>${t('导出 ZIP')}<//>
+          <${Button} variant="secondary" disabled=${compatibility || archiveBusy || !st.supported} onClick=${() => fileInput.current?.click()}>${t('导入 ZIP')}<//>
+          <${Button} variant="secondary" disabled=${compatibility || archiveBusy || !st.supported || !st.done} onClick=${exportFile}>${t('导出 ZIP')}<//>
         </div>
       </section>
       <div class="resource-manager__maintenance">
-        <button type="button" class="res-link" disabled=${archiveBusy} onClick=${() => { void clearResources(); }}>${t('清理缓存')}</button>
-        ${enabled ? html`<button type="button" class="res-link" onClick=${() => onChange(false)}>${t('关闭预载')}</button>` : null}
+        <button type="button" class="res-link" disabled=${compatibility || archiveBusy} onClick=${() => { void clearResources(); }}>${t('清理缓存')}</button>
+        ${enabled && !compatibility ? html`<button type="button" class="res-link" onClick=${() => onChange(false)}>${t('关闭预载')}</button>` : null}
         <span>${t('关闭预载会保留已缓存资源。')}</span>
       </div>
     </div>
-  <//>`;
+  <//>
+  <${AssetDownloadHost} />
+  <${AssetImportHost} />`;
 }

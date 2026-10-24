@@ -24,6 +24,8 @@ test('resource manager downloads to real Cache Storage; the worker answers offli
   await page.goto(`http://127.0.0.1:${srv.port}/`,{waitUntil:'domcontentloaded'});
   await page.waitForSelector('.res-pill__head'); await page.click('.res-pill__head');
   await page.waitForSelector('.resource-modal');
+  assert.equal(await page.$('[data-testid="asset-download"]'), null, 'the duplicate download entry is removed');
+  assert.equal(await page.$$eval('[data-testid="resource-download"]', (items) => items.length), 1, 'one primary download action');
   await page.waitForFunction(()=>document.querySelector('.resource-manager__tiers').textContent.includes('2'));
   await page.click('.resource-modal .modal__actions .btn--primary');
   await page.waitForFunction(async()=>{const m=await import('/js/resources/index.js');return m.resourceState().done===2&&m.resourceState().phase==='ready';},{timeout:30000});

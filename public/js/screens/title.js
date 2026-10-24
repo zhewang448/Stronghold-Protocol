@@ -10,9 +10,8 @@
 // entry/loading illustration names) it is layered under the CSS art; otherwise the screen is
 // pure CSS/SVG (radar, ridgelines, glow), so it never issues a request that can 404.
 //
-// The full art, under the login box: 下载完整素材 (ui/assetDownload.js — its dialog downloads from this server) and
-// 导入素材包 (ui/assetImport.js — the player's own folder or zip, no server download) side by side, so an import never
-// opens the download (docs/history/0.3.0.md §32.14.39).
+// Resource actions live under one global resource manager (ui/resourcePanel.js): preload selection, complete asset
+// download, local-pack import, and ZIP cache transfer share one entry point while retaining their independent flows.
 //
 // Plugins (DESIGN §32 P1a, the design study's §7.4): when the server has unofficial plugins (content.plugins of /healthz or
 // welcome — content.js installedCount), the footer says 「本服务器安装了 N 个插件」 — a button that loads the list
@@ -20,8 +19,6 @@
 // the page never asks for its catalogue — and the title page loads none of the panel's code.
 
 import { ResumeMatchButton } from '../ui/resumeMatch.js';
-import { AssetDownloadButton } from '../ui/assetDownload.js';
-import { AssetImportButton } from '../ui/assetImport.js';
 import { useEffect, useMemo, useState } from '../../vendor/hooks.module.js';
 import { NAME_MAX_LEN, APP_VERSION, DEV_BUILD } from '../../../shared/constants.js';
 import { html, Button, Icon, MicroLabel, TextField, PingPill } from '../ui/components.js';
@@ -43,7 +40,6 @@ import { SettingsModal } from '../ui/settings.js';
 import { AnnouncementButton } from '../ui/announcement.js';
 import { ResourceLauncher } from '../ui/resourcePanel.js';
 import { useSettings } from '../ui/settings.js';
-import { unsupportedReason } from '../resources/index.js';
 import { installedCount } from '../content.js';
 import { NoticesButton } from '../ui/notices.js';
 import { sanitizeName, isValidName } from '../ui/playerName.js';
@@ -281,13 +277,9 @@ export function TitleScreen() {
           <${FullscreenButton} class="title-fs" />
         </div>
       </div>
-      <div class="title-assets">
-        <${AssetDownloadButton} />
-        <${AssetImportButton} />
-      </div>
     </main>
 
-    ${unsupportedReason() ? null : html`<div class="title-preload"><${ResourceLauncher} enabled=${settings.preload} /></div>`}
+    <div class="title-preload"><${ResourceLauncher} enabled=${settings.preload} /></div>
     <${SettingsModal} open=${settingsOpen} onClose=${() => setSettingsOpen(false)} />
     ${Installed ? html`<${Installed} open=${true} onClose=${() => setInstalled(null)} />` : null}
 

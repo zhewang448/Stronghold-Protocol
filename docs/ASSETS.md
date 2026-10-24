@@ -738,7 +738,9 @@ bandwidth, layer 1) the server hands out a view of each (`server/http/assetIndex
 
 ## Player-initiated predownload
 
-The title screen's **下载完整素材** button (`public/js/ui/assetDownload.js`, queue in
+The resource manager now exposes one primary download action. Secure cache-capable browsers use the scoped resource preloader; ordinary HTTP or missing cache APIs automatically use the legacy HTTP-cache queue described below. No separate complete-download button remains. Local asset import stays independent.
+
+The resource manager's **下载完整素材** action (title screen → **素材与资源**) (`public/js/ui/assetDownload.js`, queue in
 `public/js/assetDownload.js`) downloads every unique art/font URL in the server's current `assets.json` and optional
 `local-assets.json`, including Spine skeletons, atlases, pages, scene files, and audio. Audio uses the same `/media/`
 URLs as playback. Four concurrent requests consume complete response bodies without decoding them or retaining
@@ -746,8 +748,7 @@ all files in memory. This warms the existing browser HTTP cache and works over H
 require a service worker. Freshness and eviction remain under the browser's control, so completion is not persisted
 as a permanent/offline guarantee. A later check reads current manifests and uses ordinary HTTP cache validation.
 
-The dialog shows successful file count, progress, and bytes read (including cache hits). Closing it or leaving the
-title screen pauses and aborts pending requests. Resume keeps completed files for this page; retry requests only
+The dialog shows successful file count, progress, and bytes read (including cache hits). Closing its dialog pauses and aborts pending requests. Resume keeps completed files for this page; retry requests only
 unfinished files. Network errors/timeouts/5xx/408/429 receive at most two retries; a 404, HTML fallback, empty body,
 or partial response is never counted as successful. A missing optional local manifest is disclosed, while a failed
 base manifest or any listed missing file prevents successful completion. Server owners still install missing art
@@ -755,7 +756,7 @@ with setup; this button only transfers files already supplied by the server.
 
 ## Importing a local asset pack
 
-The title screen's **导入素材包** button (`public/js/ui/assetImport.js`), beside 下载完整素材, opens its own dialog. Opening it requests nothing from the server and never starts the download queue; the manifests are read once an import starts. It imports art the player already has: the example asset pack `node tools/package.mjs --assets` writes (one folder holding `public/assets/…`, `public/fonts/…` and a `README.txt`; the maintainer offers it for download outside the GitHub release), a setup `public/assets` folder, or a published full zip whose paths contain `public/assets/`. The page reads a zip's central directory in the browser, and a picked or dropped zip File slice by slice, so a whole pack (some 700 MB) is never held in memory at once. Method 0 (stored) is copied. Method 8 is inflated with `DecompressionStream('deflate-raw')`. Any other method, and an encrypted entry, is counted and skipped. Nothing is uploaded.
+The resource manager's **导入素材包** action (title screen → **素材与资源**) (`public/js/ui/assetImport.js`), beside 下载完整素材, opens its own dialog. Opening it requests nothing from the server and never starts the download queue; the manifests are read once an import starts. It imports art the player already has: the example asset pack `node tools/package.mjs --assets` writes (one folder holding `public/assets/…`, `public/fonts/…` and a `README.txt`; the maintainer offers it for download outside the GitHub release), a setup `public/assets` folder, or a published full zip whose paths contain `public/assets/`. The page reads a zip's central directory in the browser, and a picked or dropped zip File slice by slice, so a whole pack (some 700 MB) is never held in memory at once. Method 0 (stored) is copied. Method 8 is inflated with `DecompressionStream('deflate-raw')`. Any other method, and an encrypted entry, is counted and skipped. Nothing is uploaded.
 
 Verification uses the served manifests (`GET /data/assets.json`, and `GET /data/local-assets.json` and `GET /data/local-fx.json` when the server has them). A hashed URL maps back to a plain `assets/…` or `fonts/…` path. A file is stored only when the first 16 hex digits of its SHA-256 equal the hash in that URL. A Spine model is accepted only as a whole group, with the same model hash the server uses: SHA-256 of the members' file hashes joined by newlines (skeleton, atlas, then pages — the default `<skel>.png` when the manifest lists no textures). A mismatch, or a file the manifest does not list, is not stored. A path with no hash segment cannot be checked, so it is not imported; the download queue can still fetch it.
 

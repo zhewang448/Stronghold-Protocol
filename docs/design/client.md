@@ -2,6 +2,12 @@
 
 Part of [DESIGN.md](../DESIGN.md) (the index; section numbers are global).
 
+下载收敛（2026-10-24）：移除独立「下载完整素材」按钮。资源面板只有一个主下载按钮；支持安全缓存的浏览器使用分级预载，普通 HTTP 或缺少缓存能力时自动使用 HTTP 缓存兼容下载。兼容模式不显示范围选项，下载全部素材、关闭下载窗口暂停；本地导入继续独立，缓存 ZIP 按能力禁用。
+
+资源统一入口（2026-10-24）：首页仅显示「素材与资源」，包含预载范围、完整素材下载、本地素材包 / 文件夹导入和缓存 ZIP 导入 / 导出。普通 HTTP 仍可进入并下载，预载 / 导入说明能力限制；完整素材操作使用独立常驻对话框，不叠加父面板，导入不启动下载。
+
+本机控制台房间概览与玩家详情的 connected 以房间席位的当前连接为准，按玩家 ID 合并对局 LP 等数据；断线、重连及离开不等待对局或独立 match host 的状态同步。AI 显示在线，淘汰不等于离线。
+
 ### 本机控制台栏目切换（2026-10-24）
 
 交互反馈：设置保存成功以薄荷色及 120ms 淡入确认，失败保持红色文字与草稿；手动打开房间、玩家详情及折叠区时内容 140ms 淡入，展开箭头旋转，轮询不重播。记录刷新显示忙碌、完成和重试状态，原表格保持可见，仅新增记录 180ms 轻亮；重复请求合并。操作提示复用一条，120ms 淡入、100ms 淡出，新提示取消旧退出动画。减少动态效果时统一缩短为 70ms 并去掉位移与箭头旋转。
@@ -460,7 +466,7 @@ Title-screen asset download (downstream request, 2026-10-14, PR #628): **下载�
 manifest-listed models, textures, audio and optional local art into the browser's HTTP cache. Show file progress,
 bytes read, pause/resume and failed-file retry. Do not mark completion until every listed response is fully read;
 missing server files remain visible failures. Closing the dialog pauses the queue. Cache eviction and refreshes
-do not retain a permanent completion flag. The same dialog can import a local folder or zip. Only bytes whose
+do not retain a permanent completion flag. A separate dialog, reached from the resource manager, imports a local folder or zip. Only bytes whose
 SHA-256 matches the served manifest are kept (a Spine model only as a whole group). They are stored in Cache
 Storage and served by `public/sw.js` for hashed `/assets/`, `/fonts/` and `/media/` URLs alone. Import requires
 HTTPS or localhost. Files already imported are not requested again. See [ASSETS.md](../ASSETS.md#player-initiated-predownload).

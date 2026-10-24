@@ -540,6 +540,10 @@
 .resource-manager__status.is-error, .resource-manager__warn { color: var(--amber); }
 .resource-archive .res-actions { margin-top: .14rem; }
 .resource-archive .pbar { margin-top: .14rem; }
+.resource-archive__actions { display: flex; flex-wrap: wrap; gap: .1rem; margin-top: .12rem; }
+.resource-archive__actions .title-assets__item { min-width: 0; margin: 0; }
+.resource-archive__actions .title-assets__item > .btn { height: auto; white-space: normal; line-height: 1.3; }
+.resource-archive__actions .title-assets__item > small { display: block; margin-top: .08rem; color: var(--text-md); font-size: max(calc(.14 * var(--t)), 12px); line-height: 1.6; }
 .resource-manager__maintenance { display: flex; align-items: center; gap: .15rem; flex-wrap: wrap; color: var(--text-lo); font-size: max(calc(.14 * var(--t)), 12px); }
 .resource-modal .btn { min-height: 44px; font-size: max(calc(.18 * var(--t)), 14px); }
 .resource-modal .res-link { color: var(--text-lo); font-size: max(calc(.13 * var(--t)), 12px); }

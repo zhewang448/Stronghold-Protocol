@@ -1,27 +1,26 @@
-// The title screen's 下载完整素材 (docs/history/0.3.0.md §32.14.23): the button, its hint line and the dialog, which starts the
-// download queue (assetDownload.js) as it opens; closing it pauses. The import of a local pack has its own button beside
-// this one (ui/assetImport.js, §32.14.39): a file already imported counts as ready here and is not requested again.
+// Compatibility host for the resource manager's single download action. Closing pauses its HTTP-cache queue.
+// A file already imported counts as ready here and is not requested again.
 import { useEffect, useState } from '../../vendor/hooks.module.js';
 import { html, Button, Modal, ProgressBar } from './components.js';
+import { createStore, useStore } from '../store.js';
 import { assetDownload } from '../assetDownload.js';
 import { t } from '../../../shared/i18n.js';
 
-/** 下载完整素材: the button, its hint line and the download dialog. */
-export function AssetDownloadButton() {
-  const [open, setOpen] = useState(false);
+const downloadUi = createStore({ open: false });
+// Only the resource manager's primary action reaches this compatibility host.
+export function openAssetDownload() {
+  downloadUi.set({ open: true });
+  if (assetDownload.get().phase !== 'complete') void assetDownload.start();
+}
+
+export function AssetDownloadHost() {
+  const { open } = useStore((s) => s, Object.is, downloadUi);
   const [state, setState] = useState(() => assetDownload.get());
-  useEffect(() => {
-    const off = assetDownload.subscribe(setState);
-    setState(assetDownload.get());
-    return () => {
-      off();
-      assetDownload.pause();
-    };
-  }, []);
+  useEffect(() => assetDownload.subscribe(setState), []);
   const busy = ['preparing', 'downloading'].includes(state.phase);
   const close = () => {
     assetDownload.pause();
-    setOpen(false);
+    downloadUi.set({ open: false });
   };
   const status = state.phase === 'complete' ? t('本次素材下载完成')
     : state.phase === 'preparing' ? t('正在读取素材清单…')
@@ -29,18 +28,9 @@ export function AssetDownloadButton() {
         : state.phase === 'error' ? t('无法读取素材清单，请检查网络后重试。')
           : state.phase === 'partial' ? t('有 {n} 个素材下载失败', { n: state.failures.length })
             : t('正在下载素材…');
-  const label = state.phase === 'complete' ? t('素材已下载')
-    : state.phase === 'paused' ? t('继续下载素材') : t('下载完整素材');
-
   const ready = state.cached || 0;
   const missing = Math.max(0, (state.total || 0) - ready);
-  return html`<div class="title-assets__item">
-    <${Button} variant="secondary" block=${true} size="sm" data-testid="asset-download" aria-describedby="title-asset-download-hint" onClick=${() => {
-      setOpen(true);
-      if (state.phase !== 'complete') void assetDownload.start();
-    }}>${label}<//>
-    <small id="title-asset-download-hint">${t('含模型、贴图和音频，建议使用 Wi-Fi 下载。')}</small>
-    <${Modal} open=${open} onClose=${close} title=${t('下载完整素材')} class="asset-download" actions=${html`
+  return html`<${Modal} open=${open} onClose=${close} title=${t('下载完整素材')} class="asset-download" actions=${html`
       ${busy ? html`<${Button} onClick=${() => assetDownload.pause()}>${t('暂停下载')}<//>`
         : html`<${Button} variant="primary" data-testid="asset-download-resume" onClick=${() => void assetDownload.start()}>
           ${state.phase === 'complete' ? t('重新检查') : state.phase === 'paused' ? t('继续下载素材') : t('重试下载')}<//>`}
@@ -58,6 +48,5 @@ export function AssetDownloadButton() {
           ${state.failures.slice(0, 30).map((item) => html`<li key=${item.url}><code>${item.url}</code> (${item.status})</li>`)}
         </ul></details>
       </div>` : null}
-    <//>
-  </div>`;
+  <//>`;
 }

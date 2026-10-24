@@ -1,5 +1,5 @@
 // SP_E2E=1 node --test test/ui/asset-import.browser.test.js
-// The title screen's 导入素材包 (ui/assetImport.js): opening its dialog asks the server for nothing (no art, no manifest,
+// The resource manager's 导入素材包 (ui/assetImport.js): opening its dialog asks the server for no art,
 // no download); a pack laid out like `node tools/package.mjs --assets` writes it (one folder, public/assets/…, a
 // README.txt) goes in through the dialog's zip picker. Then a one-file zip and a folder-shaped file list are imported,
 // and the server is not asked for those bytes, not even by 下载完整素材. A second page with isSecureContext forced off
@@ -112,10 +112,13 @@ test('import has its own dialog that requests nothing on opening; imported art i
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(srv.url);
   await page.waitForFunction(() => navigator.serviceWorker.controller != null, { timeout: 20000 });
-  await page.waitForSelector('[data-testid="asset-import"]');
+  await page.waitForSelector('.title-preload .res-pill__head');
   // a first gesture unlocks audio (public/js/audio.js): make it elsewhere, so what follows is the dialog's own traffic
   await page.click('.title-tag');
   await new Promise((resolve) => setTimeout(resolve, 500));
+  await page.click('.title-preload .res-pill__head');
+  await page.waitForSelector('[data-testid="asset-import"]');
+  await page.waitForFunction(() => !document.querySelector('.resource-manager__status')?.textContent.includes('正在检查'));
   const quiet = requests.length;
   await page.click('[data-testid="asset-import"]');
   await page.waitForSelector('.asset-import-dialog [data-testid="asset-import-zip"]');
@@ -124,6 +127,7 @@ test('import has its own dialog that requests nothing on opening; imported art i
   assert.deepEqual(opening.filter((url) => /^\/(?:assets|media|fonts)\//.test(url) || /^\/data\//.test(url)), [],
     'opening the import dialog requests no art and no manifest');
   assert.equal(await page.$('.asset-download'), null, 'the download dialog stays closed');
+  assert.equal(await page.$('.resource-modal'), null, 'only the import dialog stays open');
   assert.deepEqual(await page.evaluate(async () => ({
     download: (await import('/js/assetDownload.js')).assetDownload.get().phase,
     import: (await import('/js/assetPack.js')).assetImport.get().phase,
@@ -170,7 +174,10 @@ test('import has its own dialog that requests nothing on opening; imported art i
   await page.evaluate(() => fetch('/healthz?import-probe=1'));
   assert.ok(probes > beforeProbe, 'a non-asset URL still reaches the server');
 
-  await page.click('[data-testid="asset-download"]');
+  // The same primary action keeps the HTTP download fallback and skips already imported files.
+  await page.evaluate(() => Object.defineProperty(window, 'isSecureContext', { configurable: true, value: false }));
+  await page.click('.title-preload .res-pill__head');
+  await page.click('[data-testid="resource-download"]');
   await page.waitForFunction(() => document.querySelector('[data-testid="asset-download-status"]')?.textContent.includes('1 个素材下载失败'));
   assert.equal(counts.get(zipUrl) || 0, 0, 'download skips the imported zip file');
   assert.equal(counts.get(folderUrl) || 0, 0, 'download skips the imported folder file');
@@ -183,6 +190,8 @@ test('import has its own dialog that requests nothing on opening; imported art i
     Object.defineProperty(window, 'isSecureContext', { configurable: true, value: false });
   });
   await insecure.goto(srv.url);
+  await insecure.waitForSelector('.title-preload .res-pill__head');
+  await insecure.click('.title-preload .res-pill__head');
   await insecure.waitForSelector('[data-testid="asset-import"]');
   assert.match(await insecure.$eval('#title-asset-import-hint', (el) => el.textContent), /HTTPS/, 'the hint under the button says why');
   await insecure.click('[data-testid="asset-import"]');
