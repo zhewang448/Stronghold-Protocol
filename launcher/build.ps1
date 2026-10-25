@@ -15,6 +15,7 @@ $releaseDirectory = Join-Path $projectRoot "dist/$releaseName"
 New-Item -ItemType Directory -Force -Path $releaseDirectory | Out-Null
 Copy-Item -LiteralPath $executable -Destination (Join-Path $releaseDirectory 'StrongholdProtocolLauncher.exe')
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'README.md') -Destination (Join-Path $releaseDirectory 'README.md')
+Copy-Item -LiteralPath (Join-Path $projectRoot 'THIRD-PARTY-NOTICES.md') -Destination (Join-Path $releaseDirectory 'THIRD-PARTY-NOTICES.md')
 $archive = Join-Path $projectRoot "dist/$releaseName.zip"
 Compress-Archive -Path (Join-Path $releaseDirectory '*') -DestinationPath $archive -Force
 Get-Item -LiteralPath $archive | Select-Object FullName,Length

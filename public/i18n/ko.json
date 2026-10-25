@@ -3369,5 +3369,16 @@
   "【启动器】端口识别暂不可用，仍可读取实例索引或手动导入。": "Port discovery is temporarily unavailable. The local index and manual import remain available.",
   "【启动器】暂无": "없음",
   "【启动器】收起": "Close list",
-  "【启动器】已停止且未登记的旧实例，请使用「导入已有实例」直接选择项目根目录。": "For a stopped, unregistered instance, use Import existing and select its project root directly."
+  "【启动器】已停止且未登记的旧实例，请使用「导入已有实例」直接选择项目根目录。": "For a stopped, unregistered instance, use Import existing and select its project root directly.",
+  "【启动器】启动器更新": "런처 업데이트",
+  "【启动器】下载并重启启动器": "다운로드 후 런처 재시작",
+  "【启动器】取消 / 收起": "취소 / 닫기",
+  "【启动器】正在检查启动器更新…": "Checking for launcher updates…",
+  "【启动器】启动器已是最新版本。": "The launcher is up to date.",
+  "【启动器】发现启动器新版本 {version}。独立更新此 EXE，服务器保持运行。": "Launcher {version} is available. Update this executable independently; servers keep running.",
+  "【启动器】启动器更新检查失败：{error}": "Could not check for launcher updates: {error}",
+  "【启动器】将下载并验签启动器，关闭当前窗口后自动替换并重新打开。后台服务器不会停止。确定更新？": "Download and verify the launcher, then close this window, replace it and reopen it? Background servers keep running.",
+  "【启动器】正在下载并校验启动器… {received} MB": "Downloading and verifying launcher… {received} MB",
+  "【启动器】启动器更新已取消，原文件未变。": "Launcher update cancelled. The original file is unchanged.",
+  "【启动器】启动器更新失败：{error}": "Launcher update failed: {error}"
 }

@@ -7,6 +7,7 @@ import { applyReleaseStage } from '../server/release-install.js';
 import { updatePaths, saveUpdateStatus, installedIdentity, installedTag } from '../server/release-update.js';
 import { supportsUpdateProbe, probeRelease, waitReleaseHealth } from '../server/release-health.js';
 import { markBackup, restoreReleaseBackup, pruneBackups } from '../server/update-backups.js';
+import { startLauncherWorker } from '../server/release-launcher.js';
 
 const [root, stage, pidText, tag] = process.argv.slice(2);
 const pid = Number(pidText), port = Number(process.env.SP_UPDATE_PORT) || Number(process.env.PORT) || 3000;
@@ -67,9 +68,10 @@ try {
   await waitReleaseHealth(root, port, { app: JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version, exited: () => exited });
   if (validated) {
     markBackup(root, path.basename(result.backup), { state: 'verified', verifiedAt: Date.now() });
-    saveUpdateStatus(root, { state: 'installed', tag, backup: result.backup });
+    saveUpdateStatus(root, { state: 'installed', tag, backup: result.backup, ...(result.launcher ? { launcher: result.launcher, warning: result.launcher.warning } : {}) });
+    if (result.launcher?.state === 'pending') startLauncherWorker(root, result.backup);
     try { fs.rmSync(path.dirname(stage), { recursive: true, force: true }); pruneBackups(root); }
-    catch (cleanupError) { saveUpdateStatus(root, { state: 'installed', tag, backup: result.backup, warning: `更新已验证，但清理未完成：${cleanupError.message}` }); }
+    catch (cleanupError) { saveUpdateStatus(root, { state: 'installed', tag, backup: result.backup, ...(result.launcher ? { launcher: result.launcher } : {}), warning: `更新已验证，但清理未完成：${cleanupError.message}` }); }
   } else saveUpdateStatus(root, { state: 'error', tag, backup: result?.backup, error: error || '更新取消，原程序已启动。' });
 } catch (e) {
   // Normal startup can touch persistent data; never automatically reverse it after accepting traffic.

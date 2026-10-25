@@ -23,6 +23,7 @@ import { startAdmin, loadSettings } from '../admin.js';
 import { updatePaths } from '../release-update.js';
 import { prepareRestart } from '../service-control.js';
 import { recordInstance } from '../instance.js';
+import { resumeLauncherUpdate } from '../release-launcher.js';
 
 /**
  * Non-internal addresses as http URLs — IPv4 first, then IPv6 (an IPv6 literal needs brackets: `http://[240e:…]:3000`).
@@ -175,6 +176,7 @@ export async function runMain(start) {
     process.exit(1);
   }
   printBanner(srv);
+  try { resumeLauncherUpdate(ROOT); } catch (error) { console.warn('[launcher-update] ' + error.message); }
   // the host's local console (server/admin.js): 127.0.0.1 only, never part of what the LAN / tunnel can reach
   let admin = null;
   let removeInstance = () => {};

@@ -32,11 +32,22 @@
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
         <TextBlock x:Name="BuildVersionText" Margin="0,0,16,0" VerticalAlignment="Center" FontSize="11" FontFamily="Consolas" Foreground="{StaticResource TextDim}" />
+        <Button x:Name="SelfUpdateButton" Margin="0,0,8,0" Style="{StaticResource SecondaryButton}" Click="SelfUpdateButton_Click" AutomationProperties.AutomationId="LauncherSelfUpdate" />
         <Button x:Name="BrowseTopButton" Style="{StaticResource SecondaryButton}" Click="BrowseButton_Click" AutomationProperties.Name="Change server directory" />
       </StackPanel>
     </Grid>
 
     <StackPanel Grid.Row="1" Margin="0,0,0,16">
+      <Border x:Name="SelfUpdatePanel" Visibility="Collapsed" BorderBrush="{StaticResource Line}" BorderThickness="1" Background="{StaticResource Bg1}" Padding="12" Margin="0,0,0,12">
+        <StackPanel>
+          <TextBlock x:Name="SelfUpdateStatus" Foreground="{StaticResource TextHi}" TextWrapping="Wrap"/>
+          <ProgressBar x:Name="SelfUpdateProgress" Height="4" Margin="0,8,0,0" Foreground="{StaticResource Mint}" Visibility="Collapsed"/>
+          <WrapPanel Margin="0,8,0,0">
+            <Button x:Name="SelfUpdateInstall" Style="{StaticResource PrimaryButton}" Click="SelfUpdateInstall_Click" Visibility="Collapsed"/>
+            <Button x:Name="SelfUpdateCancel" Margin="8,0,0,0" Style="{StaticResource SecondaryButton}" Click="SelfUpdateCancel_Click"/>
+          </WrapPanel>
+        </StackPanel>
+      </Border>
       <Grid>
         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
         <TextBlock x:Name="InstancesLabel" VerticalAlignment="Center" Margin="0,0,12,0"/>

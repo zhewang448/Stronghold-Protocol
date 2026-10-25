@@ -16,6 +16,7 @@ import { SIGNATURE_ASSET, SUMS_ASSET, parseSignature, sumFor, verifySums } from 
 import { fetch as networkFetch, ProxyAgent } from 'undici';
 import { DEFAULT_GITHUB_PROXY, normalizeProxyPrefix } from '../tools/assets/sources.mjs';
 import { assertUpdateSpace } from './update-backups.js';
+import { pickLauncherAsset, stageLauncherArchive } from './release-launcher.js';
 
 export const UPDATE_REPOSITORY = 'zhewang448/Stronghold-Protocol';
 const API = `https://api.github.com/repos/${UPDATE_REPOSITORY}/releases`;
@@ -297,7 +298,7 @@ async function expectedHash({ release, asset, request, listing, keys }) {
 }
 
 /** Stream with backpressure, verify published ZIP SHA-256, then verify individual program files. */
-export async function downloadAndStage({ root, release, fetchImpl = fetch, listing = 'direct', keys, progress = () => {},
+export async function downloadAndStage({ root, release, fetchImpl = fetch, listing = 'direct', keys, progress = () => {}, platform = process.platform,
   request = async (url, consume, timeout) => consume(await responseFor(url, fetchImpl, timeout), 'direct') }) {
   const full = pickReleaseAsset(release);
   const installed = installedTag(root);
@@ -311,6 +312,7 @@ export async function downloadAndStage({ root, release, fetchImpl = fetch, listi
   try {
     let lastError;
     for (const asset of candidates) {
+      let gameStaged = false;
       try {
         assertUpdateSpace(root, Number.isSafeInteger(asset.size) && asset.size > 0 ? asset.size : 0);
         const want = await expectedHash({ release, asset, request, listing, keys });
@@ -333,10 +335,36 @@ export async function downloadAndStage({ root, release, fetchImpl = fetch, listi
           fs.rmSync(zip);
           return { stage, app: manifest.app, tag: release.tag_name, asset: asset.name };
         }, 15 * 60 * 1000);
-        return staged;
+        gameStaged = true;
+        let launcher = { state: platform === 'win32' ? 'unavailable' : 'not-applicable' };
+        const launcherAsset = platform === 'win32' ? pickLauncherAsset(release) : null;
+        if (launcherAsset) {
+          if (!release.assets?.some(a => a.name === SIGNATURE_ASSET)) throw new Error('启动器更新要求维护者发布签名，未安装任何文件');
+          const wantLauncher = await expectedHash({ release, asset: launcherAsset, request, listing, keys });
+          if (launcherAsset.size > 160 * 1024 * 1024) throw new Error('启动器附件过大');
+          const launcherZip = path.join(work, 'launcher.zip');
+          assertUpdateSpace(root, launcherAsset.size || 160 * 1024 * 1024);
+          launcher = await request(assetUrl(launcherAsset), async response => {
+            if (!response.body) throw new Error('启动器附件响应为空');
+            let received = 0; const hash = crypto.createHash('sha256');
+            const meter = new Transform({ transform(chunk, _encoding, callback) {
+              received += chunk.length;
+              if (received > 160 * 1024 * 1024) { callback(new Error('启动器附件过大')); return; }
+              hash.update(chunk); progress({ state: 'downloading', launcher: { state: 'downloading', asset: launcherAsset.name },
+                asset: launcherAsset.name, received, size: launcherAsset.size || 0 }); callback(null, chunk);
+            } });
+            await pipeline(Readable.fromWeb(response.body), meter, fs.createWriteStream(launcherZip));
+            if (launcherAsset.size && received !== launcherAsset.size) throw new Error('启动器附件大小不符');
+            if (hash.digest('hex') !== wantLauncher) throw new Error('启动器附件 SHA-256 校验失败');
+            const result = stageLauncherArchive(launcherZip, staged.stage, { tag: release.tag_name, asset: launcherAsset.name });
+            fs.rmSync(launcherZip); return result;
+          }, 10 * 60 * 1000);
+        }
+        progress({ state: 'verifying', asset: staged.asset, received: 0, size: asset.size || 0, launcher });
+        return { ...staged, launcher };
       } catch (e) {
         lastError = e;
-        if (asset === delta && full) {
+        if (asset === delta && full && !gameStaged) {
           fs.rmSync(zip, { force: true });
           progress({ state: 'downloading', received: 0, size: full.size || 0, fallback: true, fallbackReason: e.message, asset: full.name });
           continue;
@@ -392,6 +420,7 @@ export function createReleaseUpdater({ root, port = Number(process.env.PORT) || 
     const delta = preferredUpdate(release, installedTag(root));
     const asset = delta || full;
     let reason = '';
+    let launcherAsset;
     try {
       if (!asset) throw new Error('缺少完整素材包，无法保证素材完整');
       const sums = release.assets?.find((a) => a.name === SUMS_ASSET);
@@ -402,17 +431,25 @@ export function createReleaseUpdater({ root, port = Number(process.env.PORT) || 
         assetUrl(sig);
         if (!sums) throw new Error('签名附件缺少对应的 SHA256SUMS.txt');
       } else if (listedVia.get(release.tag_name) === 'mirror') throw new Error(UNSIGNED_VIA_MIRROR);
+      launcherAsset = process.platform === 'win32' ? pickLauncherAsset(release) : null;
+      if (launcherAsset) {
+        assetUrl(launcherAsset);
+        if (!sig) throw new Error('包含启动器的更新必须提供发布签名');
+      }
       if (!sums && !/^sha256:[a-f0-9]{64}$/i.test(asset.digest || '')
         && (!full || !/^sha256:[a-f0-9]{64}$/i.test(full.digest || ''))) throw new Error('缺少 SHA-256 校验值');
     } catch (e) { reason = e.message; }
     return { tag: release.tag_name, relation: relation > 0 ? 'new' : relation < 0 ? 'old' : 'current',
       asset: asset?.name, size: asset?.size || 0, publishedAt: release.published_at,
       fallbackAsset: delta ? full?.name : undefined, fallbackSize: delta ? (full?.size || 0) : undefined,
+      launcherAsset: launcherAsset?.name,
       signed: !!release.assets?.some((a) => a.name === SIGNATURE_ASSET), installable: !reason, reason };
   }
   const status = () => {
-    if (['starting', 'validating', 'rolling-back'].includes(current.state)) {
-      try { const disk = JSON.parse(fs.readFileSync(updatePaths(root).status, 'utf8')); if (disk.tag === current.tag) current = disk; } catch {}
+    if (['starting', 'validating', 'rolling-back'].includes(current.state) || current.launcher?.state === 'pending') {
+      try { const disk = JSON.parse(fs.readFileSync(updatePaths(root).status, 'utf8'));
+        if (disk.tag === current.tag || (current.launcher?.state === 'pending' && disk.backup === current.backup)) current = disk;
+      } catch {}
     }
     const versions = releases.map(releaseView);
     const currentVersion = installedTag(root);
@@ -463,7 +500,8 @@ export function createReleaseUpdater({ root, port = Number(process.env.PORT) || 
           .sort((a, b) => compareReleaseTags(b.tag_name, a.tag_name));
         const latest = releases[0];
         const newer = latest && compareReleaseTags(latest.tag_name, installedTag(root)) > 0;
-        current = { state: newer ? 'available' : 'up-to-date', tag: latest?.tag_name, source: current.source };
+        current = { state: newer ? 'available' : 'up-to-date', tag: latest?.tag_name, source: current.source,
+          ...(current.launcher ? { launcher: current.launcher, backup: current.backup, warning: current.warning } : {}) };
         return status();
       } catch (e) { return fail(e); }
       finally { checking = null; }
@@ -492,6 +530,7 @@ export function createReleaseUpdater({ root, port = Number(process.env.PORT) || 
     install({ force = false, tag, allowDowngrade = false, repairAssets = false } = {}) {
       if (current.state === 'recovery-required') return { ...status(), error: '更新需要人工恢复，请按恢复说明操作后重新启动服务器。' };
       if (BUSY.has(current.state)) return status();
+      if (current.launcher?.state === 'pending') return { ...status(), error: '启动器仍待替换，请先关闭启动器并等待完成后再安装其他版本。' };
       if (!onReady) return { ...status(), error: '当前启动方式不支持自动重启' };
       const release = releases.find((r) => r.tag_name === tag);
       if (!release) return { ...status(), error: '请先检查更新并选择列表中的 Release' };
@@ -513,6 +552,7 @@ export function createReleaseUpdater({ root, port = Number(process.env.PORT) || 
       (async () => {
         try {
           prepared ||= await stageRelease({ root, release, fetchImpl, request, listing: listedVia.get(tag), progress: (p) => { current = { ...current, ...p }; } });
+          if (prepared.launcher) current = { ...current, launcher: prepared.launcher };
           await launch(force);
         } catch (e) { prepared = null; fail(e); }
       })();

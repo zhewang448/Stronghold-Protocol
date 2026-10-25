@@ -8,15 +8,22 @@
     <DefineConstants Condition="Exists('$(LauncherRoot)/Services/InstanceIndex.cs')">$(DefineConstants);INSTANCE_INDEX</DefineConstants>
     <DefineConstants Condition="Exists('$(LauncherRoot)/Services/LiveInstanceDiscovery.cs')">$(DefineConstants);LIVE_DISCOVERY</DefineConstants>
     <DefineConstants Condition="Exists('$(LauncherRoot)/Services/InstanceNaming.cs')">$(DefineConstants);INSTANCE_NAMING</DefineConstants>
+    <DefineConstants Condition="Exists('$(LauncherRoot)/Services/LauncherLocation.cs')">$(DefineConstants);LAUNCHER_LOCATION</DefineConstants>
+    <DefineConstants Condition="Exists('$(LauncherRoot)/Services/LauncherSelfUpdate.cs')">$(DefineConstants);SELF_UPDATE</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(LauncherRoot)/Services/InstallationLocator.cs" Link="InstallationLocator.cs" />
     <Compile Include="$(LauncherRoot)/Services/LauncherPreferences.cs" Link="LauncherPreferences.cs" />
+    <Compile Include="$(LauncherRoot)/Services/LauncherLocation.cs" Link="LauncherLocation.cs" Condition="Exists('$(LauncherRoot)/Services/LauncherLocation.cs')" />
+    <Compile Include="$(LauncherRoot)/Services/LauncherSelfUpdate.cs" Link="LauncherSelfUpdate.cs" Condition="Exists('$(LauncherRoot)/Services/LauncherSelfUpdate.cs')" />
     <Compile Include="$(LauncherRoot)/Services/InstanceProfiles.cs" Link="InstanceProfiles.cs" Condition="Exists('$(LauncherRoot)/Services/InstanceProfiles.cs')" />
     <Compile Include="$(LauncherRoot)/Services/InstanceNaming.cs" Link="InstanceNaming.cs" Condition="Exists('$(LauncherRoot)/Services/InstanceNaming.cs')" />
     <Compile Include="$(LauncherRoot)/Services/InstanceDiscovery.cs" Link="InstanceDiscovery.cs" Condition="Exists('$(LauncherRoot)/Services/InstanceDiscovery.cs')" />
     <Compile Include="$(LauncherRoot)/Services/InstanceIndex.cs" Link="InstanceIndex.cs" Condition="Exists('$(LauncherRoot)/Services/InstanceIndex.cs')" />
     <Compile Include="$(LauncherRoot)/Services/LiveInstanceDiscovery.cs" Link="LiveInstanceDiscovery.cs" Condition="Exists('$(LauncherRoot)/Services/LiveInstanceDiscovery.cs')" />
     <Compile Include="$(LauncherRoot)/Services/BootstrapInstaller.cs" Link="BootstrapInstaller.cs" Condition="Exists('$(LauncherRoot)/Services/BootstrapInstaller.cs')" />
+  </ItemGroup>
+  <ItemGroup Condition="Exists('$(LauncherRoot)/Services/LauncherSelfUpdate.cs')">
+    <PackageReference Include="NSec.Cryptography" Version="25.4.0" />
   </ItemGroup>
 </Project>

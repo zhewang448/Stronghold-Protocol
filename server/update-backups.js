@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { digestFile, removalProblem } from './update.js';
 import { releaseTarget } from './release-art.js';
+import { validateLauncherBackup, restoreLaunchers, refreshLauncherLocation } from './release-launcher.js';
 
 const ID = /^release-[A-Za-z0-9]+$/;
 const base = (root) => path.join(root, 'logs', 'update-backups');
@@ -28,6 +29,7 @@ export function readBackup(root, id) {
   if (record.versionBefore != null && typeof record.versionBefore !== 'string') throw new Error('备份版本元数据无效');
   for (const rel of record.files) if (typeof rel !== 'string' || (rel !== 'MANIFEST.json' && rel !== 'UPDATE.json' && removalProblem(rel))) throw new Error('备份文件路径无效');
   if (new Set(record.files).size !== record.files.length || record.existing.some((rel) => !record.files.includes(rel))) throw new Error('备份清单无效');
+  if (record.launchers !== undefined && !Array.isArray(record.launchers)) throw new Error('启动器备份清单无效');
   return { dir, record };
 }
 export function markBackup(root, id, patch) {
@@ -37,27 +39,42 @@ export function markBackup(root, id, patch) {
 }
 export function restoreReleaseBackup(root, id, { requireTarget = true } = {}) {
   const { dir, record } = readBackup(root, id);
-  if (requireTarget && (!record.target || record.files.some((rel) => !Object.hasOwn(record.target, rel)))) throw new Error('恢复清单缺少当前目标状态，请人工检查，未写入任何文件。');
-  // Verify every backup byte and every destination before modifying the installation.
-  for (const rel of record.existing) {
-    const file = releaseTarget(dir, rel), got = digestFile(file), want = record.hashes?.[rel];
-    if (!got || !want || got.size !== want.size || got.sha256 !== want.sha256) throw new Error(`备份校验失败：${rel}`);
+  const launcherLock = path.join(dir, 'launcher-update.lock');
+  let launcherFd;
+  if (record.launchers?.length) {
+    try { launcherFd = fs.openSync(launcherLock, 'wx'); fs.writeSync(launcherFd, String(process.pid)); }
+    catch (error) { if (error.code === 'EEXIST') throw new Error('启动器正在替换，请稍后再恢复'); throw error; }
   }
-  if (requireTarget) for (const [rel, want] of Object.entries(record.target || {})) {
-    const got = digestFile(releaseTarget(root, rel));
-    if (want ? (!got || got.sha256 !== want.sha256 || got.size !== want.size) : got) throw new Error('当前程序已变化，请按备份顺序恢复或人工检查，未写入任何文件。');
+  try {
+    validateLauncherBackup(dir, record.launchers || [], { target: requireTarget });
+    if (requireTarget && (!record.target || record.files.some((rel) => !Object.hasOwn(record.target, rel)))) throw new Error('恢复清单缺少当前目标状态，请人工检查，未写入任何文件。');
+    // Verify every backup byte and every destination before modifying the installation.
+    for (const rel of record.existing) {
+      const file = releaseTarget(dir, rel), got = digestFile(file), want = record.hashes?.[rel];
+      if (!got || !want || got.size !== want.size || got.sha256 !== want.sha256) throw new Error(`备份校验失败：${rel}`);
+    }
+    if (requireTarget) for (const [rel, want] of Object.entries(record.target || {})) {
+      const got = digestFile(releaseTarget(root, rel));
+      if (want ? (!got || got.sha256 !== want.sha256 || got.size !== want.size) : got) throw new Error('当前程序已变化，请按备份顺序恢复或人工检查，未写入任何文件。');
+    }
+    for (const rel of record.files) releaseTarget(root, rel);
+    // Stop any queued replacement before reversing the program transaction.
+    if (record.launchers?.length) markBackup(root, id, { state: 'rolling-back' });
+    restoreLaunchers(dir, record.launchers || [], { target: requireTarget });
+    refreshLauncherLocation(root, record.launchers || [], true);
+    for (const rel of [...record.files].reverse()) {
+      const dst = releaseTarget(root, rel);
+      if (record.existing.includes(rel)) { fs.mkdirSync(path.dirname(dst), { recursive: true }); fs.copyFileSync(releaseTarget(dir, rel), dst); }
+      else fs.rmSync(dst, { force: true });
+    }
+    const version = path.join(root, 'logs', 'release-version.json');
+    if (record.versionBefore == null) fs.rmSync(version, { force: true });
+    else fs.writeFileSync(version, record.versionBefore);
+    markBackup(root, id, { state: 'restored', restoredAt: Date.now() });
+    return record;
+  } finally {
+    if (launcherFd !== undefined) { fs.closeSync(launcherFd); fs.rmSync(launcherLock, { force: true }); }
   }
-  for (const rel of record.files) releaseTarget(root, rel);
-  for (const rel of [...record.files].reverse()) {
-    const dst = releaseTarget(root, rel);
-    if (record.existing.includes(rel)) { fs.mkdirSync(path.dirname(dst), { recursive: true }); fs.copyFileSync(releaseTarget(dir, rel), dst); }
-    else fs.rmSync(dst, { force: true });
-  }
-  const version = path.join(root, 'logs', 'release-version.json');
-  if (record.versionBefore == null) fs.rmSync(version, { force: true });
-  else fs.writeFileSync(version, record.versionBefore);
-  markBackup(root, id, { state: 'restored', restoredAt: Date.now() });
-  return record;
 }
 export function backupSettings(root) {
   try { const v = JSON.parse(fs.readFileSync(configFile(root), 'utf8')); if (Number.isInteger(v.keep) && v.keep >= 1 && v.keep <= 20) return { keep: v.keep }; } catch {}
@@ -81,11 +98,12 @@ function bytesIn(dir) {
 export function listBackups(root) {
   let ids = []; try { ids = fs.readdirSync(base(root)).filter((id) => ID.test(id)); } catch (e) { if (e.code !== 'ENOENT') throw e; }
   const backups = ids.map((id) => {
-    try { const { dir, record } = readBackup(root, id); return { id, bytes: bytesIn(dir), at: record.at || 0, state: record.state || 'pending', from: record.from, to: record.to }; }
+    try { const { dir, record } = readBackup(root, id); return { id, bytes: bytesIn(dir), at: record.at || 0, state: record.state || 'pending', from: record.from, to: record.to,
+      launcherPending: record.launchers?.some(target => target.state === 'pending') || false }; }
     catch (e) { return { id, state: 'unrecognized', error: e.message, bytes: null, at: 0 }; }
   }).sort((a, b) => b.at - a.at || b.id.localeCompare(a.id));
   const latest = backups.find((r) => r.state === 'verified');
-  return { ...backupSettings(root), bytes: backups.some((r) => r.bytes == null) ? null : backups.reduce((sum, r) => sum + r.bytes, 0), backups: backups.map((r) => ({ ...r, protected: r.id === latest?.id || ['pending', 'recovery-required'].includes(r.state) })) };
+  return { ...backupSettings(root), bytes: backups.some((r) => r.bytes == null) ? null : backups.reduce((sum, r) => sum + r.bytes, 0), backups: backups.map((r) => ({ ...r, protected: r.id === latest?.id || r.launcherPending || ['pending', 'rolling-back', 'recovery-required'].includes(r.state) })) };
 }
 export function deleteBackup(root, id) {
   if (fs.existsSync(path.join(root, 'logs', 'release-update.lock'))) throw new Error('更新进行中，不能清理备份');

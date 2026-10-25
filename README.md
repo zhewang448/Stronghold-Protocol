@@ -1,6 +1,6 @@
 # 卫戍协议：盟约 · Stronghold Protocol: Alliance
 
-![扩展版本](https://img.shields.io/badge/version-0.3.3--extended.1-blue)
+![扩展版本](https://img.shields.io/badge/version-0.3.3--extended.2-blue)
 ![上游基础版本](https://img.shields.io/badge/version-0.3.3-2ea44f)
 ![许可](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
 
@@ -12,9 +12,15 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 [下载正式版](https://github.com/zhewang448/Stronghold-Protocol/releases/latest) · [开始运行](#开始运行) · [本库特色](#本库特色) · [和朋友一起玩](#和朋友一起玩) · [更新记录](docs/LOCAL-CHANGELOG.md) · [反馈问题](https://github.com/zhewang448/Stronghold-Protocol/issues)
 
-> 当前版本为 **`v0.3.3-extended.1`**，基于上游 0.3.3。默认开放四版，新增完整更新历史、224 套可选皮肤与多实例 Windows 启动器；外部 LLM 不随发行包启用。详情见[扩展更新记录](docs/LOCAL-CHANGELOG.md)。
+> 当前版本为 **`v0.3.3-extended.2`**，基于上游 0.3.3。默认开放四版，新增完整更新历史、224 套可选皮肤与多实例 Windows 启动器；外部 LLM 不随发行包启用。详情见[扩展更新记录](docs/LOCAL-CHANGELOG.md)。
 >
 > 非官方、非商业同人项目，与《明日方舟》官方无隶属或授权关系。游戏素材与数据的权利归原权利人；代码、素材及截图的许可边界见 [NOTICE.md](NOTICE.md)。
+
+## 启动器有新版本：1.2.0
+
+1.1.0及更早版本请先从本次 Release 下载 StrongholdProtocolLauncher-v1.2.0-win-x64.zip，关闭旧启动器，解压替换 EXE 后重新打开。关闭窗口不会停止后台游戏服务。此后可使用启动器顶部「启动器更新」独立更新，不需要与游戏实例放在同一目录。控制台同步更新需要先升级游戏更新器；实例外 EXE 需新版运行后登记位置。详见 [启动器说明](launcher/README.md)。
+
+如果本项目帮到了你，欢迎点一下仓库右上角的 Star ⭐，也欢迎反馈问题，帮助这个非商业同人项目继续改进。
 
 ## 仓库索引
 
@@ -58,7 +64,7 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 ## 开始运行
 
-Windows 服主从同版本 Release 下载 StrongholdProtocolLauncher-v1.1.0-win-x64.zip，解压后双击 StrongholdProtocolLauncher.exe。可新建空目录自动安装完整游戏包和便携 Node.js，也可导入已有根目录；EXE 可放在实例目录外。启动器支持多实例、监听端口＋索引发现、回收站删除和安全控制，不提供文件搜索。
+Windows 服主从同版本 Release 下载 StrongholdProtocolLauncher-v1.2.0-win-x64.zip，解压后双击 StrongholdProtocolLauncher.exe。可新建空目录自动安装完整游戏包和便携 Node.js，也可导入已有根目录；EXE 可放在实例目录外。启动器支持多实例、监听端口＋索引发现、回收站删除和安全控制，不提供文件搜索。
 
 **关闭启动器窗口后服务继续运行；停服请点击「停止服务器」。** 公网隧道另需 cloudflared。使用与构建见 [启动器说明](launcher/README.md)，原脚本继续可用。
 

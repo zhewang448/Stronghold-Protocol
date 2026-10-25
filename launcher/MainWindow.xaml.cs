@@ -104,6 +104,7 @@ public partial class MainWindow : Window
         await RefreshIndexedInstancesAsync(includeLive: true);
         WatchInstanceIndex();
         _timer.Start();
+        _ = CheckSelfUpdateAsync(false);
     }
 
     private void ApplyText()
@@ -112,6 +113,9 @@ public partial class MainWindow : Window
         ProductTitle.Text = t("卫戍协议：盟约");
         ProductSubtitle.Text = "TACTICAL CO-OP NODE // HOST CONTROL";
         BuildVersionText.Text = "LAUNCHER v" + (typeof(App).Assembly.GetName().Version?.ToString(3) ?? "1.0.0");
+        SelfUpdateButton.Content = t("启动器更新");
+        SelfUpdateInstall.Content = t("下载并重启启动器");
+        SelfUpdateCancel.Content = t("取消 / 收起");
         BrowseTopButton.Content = t("导入已有实例");
         InstancesLabel.Text = t("服务器实例");
         NewInstanceButton.Content = t("新建实例");
@@ -695,6 +699,8 @@ public partial class MainWindow : Window
     private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         if (App.PreviewDirectory is not null) return;
+        if (_selfUpdateRestart) return;
+        _selfUpdateCancellation?.Cancel();
         if (_installCancellation is not null)
         {
             _installCancellation.Cancel();
@@ -767,6 +773,9 @@ public partial class MainWindow : Window
         }
         try { InstanceProfiles.Save(new InstanceSettings(_selectedId, _profiles)); }
         catch (Exception error) { AppendVisibleLog(t("保存实例列表失败：{error}", ("error", error.Message))); }
+        if (_root is not null)
+            try { LauncherLocation.Register(_root); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException) { /* Console still updates the root-directory EXE. */ }
         PreferencesStore.Save(new LauncherPreferences(_root, CurrentPort() ?? 3000, _mode switch
         {
             HostMode.Local => "local",
@@ -854,7 +863,12 @@ public partial class MainWindow : Window
             await CapturePreviewAsync(directory, "first-install-demo");
             Width = 900; Height = 700;
             await CapturePreviewAsync(directory, "first-install-compact-demo");
-            File.WriteAllText(Path.Combine(directory, "preview-result.txt"), "Rendered eight WPF layouts. Online/address/error/instance/discovery states are synthetic; no server was started.");
+            InstallPanel.Visibility=Visibility.Collapsed;SelfUpdatePanel.Visibility=Visibility.Visible;
+            SelfUpdateStatus.Text=t("发现启动器新版本 {version}。独立更新此 EXE，服务器保持运行。",("version","9.9.9"));
+            SelfUpdateInstall.Visibility=Visibility.Visible;
+            await CapturePreviewAsync(directory,"self-update-compact-demo");
+            Width=1080;Height=820;await CapturePreviewAsync(directory,"self-update-demo");
+            File.WriteAllText(Path.Combine(directory, "preview-result.txt"), "Rendered ten WPF layouts. Update/online/address/error/instance states are synthetic; no download or server was started.");
         }
         catch (Exception error)
         {

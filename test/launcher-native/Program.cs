@@ -6,6 +6,35 @@ using System.Text.Json;
 using StrongholdProtocolLauncher.Services;
 
 #if BOOTSTRAP
+if (args.Length == 1 && args[0] == "--self-update")
+{
+#if SELF_UPDATE
+    await LauncherSelfUpdateChecks.Run();
+#else
+    Console.WriteLine("RESULT self_update=false checks=0");
+#endif
+    return;
+}
+if (args.Length == 1 && args[0] == "--launcher-location")
+{
+#if LAUNCHER_LOCATION
+    var locationWork = Path.Combine(Path.GetTempPath(), "sp-location-" + Guid.NewGuid().ToString("N"));
+    Directory.CreateDirectory(Path.Combine(locationWork, "server")); Directory.CreateDirectory(Path.Combine(locationWork, "scripts"));
+    try
+    {
+        foreach (var file in new[] { "package.json", "server/index.js", "scripts/launch.mjs", "scripts/host-launcher.mjs" }) File.WriteAllText(Path.Combine(locationWork, file), "fixture");
+        var exe = Path.Combine(locationWork, "StrongholdProtocolLauncher.exe"); File.WriteAllText(exe, "test executable bytes");
+        LauncherLocation.Register(locationWork, exe);
+        using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(locationWork, "logs/launcher-location.json")));
+        if (doc.RootElement.GetProperty("path").GetString() != exe || doc.RootElement.GetProperty("sha256").GetString() != Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(exe))).ToLowerInvariant()) throw new Exception("Location/hash mismatch");
+        Console.WriteLine("RESULT launcher_location=true exact_path_and_hash=true");
+    }
+    finally { Directory.Delete(locationWork, true); }
+#else
+    Console.WriteLine("RESULT launcher_location=false");
+#endif
+    return;
+}
 if (args.Length == 1 && args[0] == "--naming")
 {
 #if INSTANCE_NAMING

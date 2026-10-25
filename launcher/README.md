@@ -103,4 +103,24 @@ Get-FileHash ./StrongholdProtocolLauncher.exe -Algorithm SHA256
 
 ## 命名与本版
 
-启动器版本 1.1.0；EXE 固定 StrongholdProtocolLauncher.exe，附件 StrongholdProtocolLauncher-v1.1.0-win-x64.zip。新目录 server-01、server-02；显示名按游戏/扩展版本生成，旧自动 MODIFIED_FILE 显示名迁移，自定义名称保留，原目录和端口不移动。
+启动器版本 1.2.0；EXE 固定 StrongholdProtocolLauncher.exe，附件 StrongholdProtocolLauncher-v1.2.0-win-x64.zip。新目录 server-01、server-02；显示名按游戏/扩展版本生成，旧自动 MODIFIED_FILE 显示名迁移，自定义名称保留，原目录和端口不移动。
+
+### 控制台同时更新 Windows 启动器（2026-10-26）
+
+Windows 控制台升级、回退或同版修复时，若 Release 包含启动器附件，在游戏包准备后继续下载启动器。要求同一标签的 Ed25519 签名和 SHA-256；附件损坏、未签名、路径或 EXE 格式异常在停服前拒绝。非 Windows 不下载，旧 Release 无附件保留原版。
+
+安装目标为游戏根目录 StrongholdProtocolLauncher.exe，以及新版启动器在所选实例 logs/launcher-location.json 自行登记的绝对路径和精确哈希；不扫描任意 EXE。游戏和启动器共用更新备份，失败及手动回滚同时恢复；原先不存在的根目录 EXE 回滚时移除。
+
+EXE 占用或暂不可写时保留已验签载荷和受保护备份，控制台显示等待关闭。独立后台进程重试最多30分钟；服务器下次启动恢复未完成队列。不会强杀启动器或为此停止玩家服务。超时、权限、路径移动及目标被改写等情况不冒充成功，应检查状态、关闭启动器并正常重启服务后重试。
+
+独立位置登记需要新版启动器实际运行一次。旧版1.1.0不含此登记逻辑，已发布 v0.3.3-extended.1 的旧更新器不会凭空获得此能力；首次先升级更新器代码，根目录 EXE 从后续控制台更新开始同步。放在其他位置的旧 EXE 首次需换用支持登记的新版启动器。现有 Release 标签和附件不覆盖，本节功能随 v0.3.3-extended.2 发布。
+
+### 启动器独立自更新（1.2.0，2026-10-26）
+
+顶部「启动器更新」不依赖游戏实例、Node或控制台运行；启动器启动时只自动检查正式Release，不自动下载安装。按启动器附件的独立版本比较，仅提示更高版本。用户点击下载并确认后，以同一游戏Release标签绑定的Ed25519公钥验证SHA256SUMS和签名，再核对ZIP哈希、路径、EXE格式。使用NSec.Cryptography 25.4.0/libsodium实现验签，相关许可随启动器附件提供。
+
+准备完成后从临时目录启动同版辅助进程，辅助进程重新验签并确认就绪，等待原启动器退出后替换原EXE并重新打开；仅重启启动器，不停止任何游戏服务器。目标字节被其他进程改变、验签失败或重启失败时拒绝覆盖或恢复旧EXE，结果和previous.exe保留在本用户StrongholdProtocol/launcher-updates/update-*目录。权限失败不会静默提权。取消下载保持原EXE不变。与控制台更新共用目标EXE.update.lock避免同时替换。
+
+目录关系：控制台更新总能处理游戏根目录启动器；实例外启动器只有在新版实际运行并将自身绝对路径/哈希登记到实例logs/launcher-location.json后才可由该实例控制台同步更新。同目录不是必要条件。独立自更新直接以当前运行EXE为目标，放在其他文件夹也可用，不依赖任何实例位置。
+
+旧版1.1.0不具备自更新和位置登记能力，需首次手动换用包含此功能的新版本；之后使用启动器自更新。现有已发布v0.3.3-extended.1和1.1.0附件不覆盖。本轮功能随 v0.3.3-extended.2 和启动器1.2.0发布；旧版本附件不覆盖。

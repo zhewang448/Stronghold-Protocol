@@ -1150,6 +1150,8 @@ function drawReleaseUpdate() {
     ${selected?.reason ? `<p class="note">该版本不可安装：${esc(selected.reason)}</p>` : ''}
     ${selected?.relation === 'old' ? '<p class="note">回退使用目标旧版的完整素材包。安装前备份程序及变化素材；设置与记录保留原样，不会自动恢复为旧版格式。</p>' : ''}
     <p id="release-update-state" role="status" aria-live="polite" ${d.error || d.state === 'recovery-required' ? 'class="bad"' : 'class="meta"'}>${esc(d.state === 'recovery-required' ? `${messages[d.state]} ${d.error || ''}` : d.error ? `更新失败：${d.error}。可重新检查后重试。` : messages[d.state] || '')}</p>
+    ${selected?.launcherAsset ? '<p class="meta" data-testid="launcher-update-plan">同时更新 Windows 启动器：' + esc(selected.launcherAsset) + '。使用同一发布签名验签，更新根目录 EXE 和已登记的独立启动器；占用时关闭窗口后完成替换。</p>' : ''}
+    ${d.launcher ? '<p class="meta" id="launcher-update-state" role="status">启动器：' + esc(({ downloading: '正在下载', staged: '已校验，等待安装', installed: '已更新', pending: '等待关闭启动器后替换', unavailable: '该 Release 无启动器附件，保留原版', 'not-applicable': '当前系统无需 Windows 启动器', changed: '目标已变化，请重新检查更新' })[d.launcher.state] || d.launcher.state) + '</p>' : ''}
     ${d.warning ? `<p class="note" role="status">${esc(d.warning)}</p>` : ''}
     ${d.recovery ? `<p class="note">停服后，在安装目录运行：<code>${esc(d.recovery)}</code>。程序会核对备份和当前文件；状态不匹配时会拒绝覆盖。</p>` : ''}
     ${d.state === 'recovery-required' ? '<p class="note">先关闭启动窗口、服务及外部守护器，再离线恢复。恢复完成后重新启动服务器并刷新本页。恢复不会续接已经被跨版本更新结束的对局。</p>' : ''}
