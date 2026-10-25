@@ -34,6 +34,10 @@
 `SP_ADMIN_PORT` 覆盖。已有服务的控制台入口则从实际实例记录读取。
 若需要自定义管理端口、计划任务或无桌面的 Linux 服务，请使用 [原启动脚本和部署方式](../docs/DEPLOY.md)。
 
+## 玩法版本
+
+当前游戏默认开放四个玩法版本，默认选中第二期下半；玩家从大厅切换，已有同盟仍需房主提案与真人一致投票。桌面启动器沿用所选项目的服务器默认，并保留继承的 `SP_VERSIONS`、`SP_VERSION_DEFAULT` 和 `SP_MAX_VERSION_HOSTS` 配置。需要命令行指定时，`scripts/host-launcher.mjs` 与 `scripts/launch.mjs` 均支持 `--versions all`、`--versions act2autochess` 或逗号分隔列表，以及 `--version-default <id>`。已有服务须正常重启后应用新配置。
+
 ## 数据与日志
 
 服主偏好保存在 `%LOCALAPPDATA%/StrongholdProtocol/launcher.json`。

@@ -514,9 +514,22 @@ Node 22 的 `--permission` **不限制网络**（TCP/UDP/DNS/监听均可能可�
 网络命名空间限制出站与内网访问，并设置 OS 内存/CPU 限额。父进程已对日志、启动错误、发送帧、RPC 回复等 IPC
 做形态和长度复核（DESIGN §32.11），但 Node 在复核前已解码 IPC，不能据此声称免疫内存炸弹或消息洪泛。
 
-## 11. 历史版本迁移计划
+## 11. 四版本开放与部署配置
 
-本扩展分支默认只开放第二期下半；四版本切换、房间投票、按干员设置、分版本统计、回放指纹和历史宿主 PREP 重启恢复已经接入。显式设置 `SP_VERSIONS=all` 可开放三个历史预览版本，也可写版本 id 的逗号列表；默认仍为 `act2autochess`。历史版使用隔离宿主，仅首次开局启动，受 `SP_MAX_VERSION_HOSTS` 限制。本地七名联动仅默认版开放，旧安装快照不承诺跨升级恢复。外部 LLM 仍禁用，观战接替 AI 需显式 `SP_AI_TAKEOVER=1`；额外策略、Worker 和事件循环采样默认关闭。
+本扩展分支默认开放四个玩法版本：第二期下半、第二期上半、第一期下半、第一期上半；默认选中仍为 `act2autochess`。大厅可自行选择，已有房间仍通过房主提案与真人一致投票切换，不会因默认启用列表改变而强制切版。`SP_VERSIONS=act2autochess` 可恢复单版部署，也可指定版本 id 的逗号列表；`SP_VERSIONS=all` 与当前默认一致。`SP_VERSION_DEFAULT` 必须属于启用列表，`startServer({ versions })` 显式选项优先于环境变量。历史版使用隔离宿主，仅首次开局启动，受 `SP_MAX_VERSION_HOSTS` 限制。本地七名联动仅默认版开放，旧安装快照不承诺跨升级恢复。外部 LLM 仍禁用，观战接替 AI 需显式 `SP_AI_TAKEOVER=1`；额外策略、Worker 和事件循环采样默认关闭。
+
+启动脚本支持直接指定启用版本与默认选中项，无需先修改终端环境变量：
+
+```powershell
+# 默认开放四版，默认选第二期下半
+node scripts/launch.mjs --port 3001 --host 127.0.0.1 --no-open
+# 仅开放第二期下半与第一期下半，默认选第一期下半
+node scripts/launch.mjs --port 3001 --host 127.0.0.1 --versions act2autochess,act1autochess --version-default act1autochess --no-open
+# 单版部署
+node scripts/host-launcher.mjs --port 3001 --host 127.0.0.1 --versions act2autochess --no-open
+```
+
+显式命令行版本参数覆盖当前进程继承的对应环境变量；不写参数则沿用环境变量或服务器默认。配置仅在新进程启动时生效，已有服务不会因再次打开启动器而切版。
 
 ## 12. 容量与调优（服务端配额）
 

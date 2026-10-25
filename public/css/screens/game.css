@@ -588,13 +588,14 @@
 .pavatar {
   --pa: .8rem;
   position: relative; display: block; width: var(--pa); height: var(--pa); flex: none;
-  background: linear-gradient(135deg, hsl(var(--seat-hue) 40% 22%), hsl(var(--seat-hue) 30% 10%));
-  border: 1px solid var(--line-2);
+  background: #101311;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--seat-color) 24%, #101311), color-mix(in srgb, var(--seat-color) 10%, #101311));
+  border: 1px solid var(--seat-color, var(--line-2));
 }
 .pavatar--sm { --pa: .42rem; }
 .pavatar__img { position: absolute; inset: 0; overflow: hidden; display: grid; place-items: center; }
 .pavatar__img img { width: 100%; height: 100%; object-fit: cover; }
-.pavatar__glyph { font-weight: 900; font-size: calc(var(--pa) * .5); color: hsl(var(--seat-hue) 70% 72%); }
+.pavatar__glyph { font-weight: 900; font-size: calc(var(--pa) * .5); color: var(--seat-color); }
 .pavatar__bot { width: 56%; height: 56%; color: #a9c3d8; }
 .pavatar.is-dead .pavatar__img, .pavatar.is-left .pavatar__img, .pavatar.is-offline .pavatar__img { filter: grayscale(1) brightness(.4); }
 .pavatar__x, .pavatar__door { position: absolute; inset: 0; display: grid; place-items: center; color: var(--red-premium); }
@@ -1337,7 +1338,9 @@
 .gtop__cap .capsule--unite { --cap: #ff6d2e; }
 .gtop__cap .capsule--combat .capsule__kills { color: #eef1f1; }
 .gtop__cap .capsule--combat .capsule__kills b { color: #ff6a48; }
-.gtop__half .roundbox__num, .gtop__cap .capsule__kills b { display: inline-block; animation: capfx-flip 260ms var(--ease-out) both; }
+.gtop__cap .capsule__kills b { display: inline-block; }
+/* Keep the round chip grid-centred for digits, hidden-core ?? and the pre-round -- placeholder. */
+.gtop__half .roundbox__num, .gtop__cap .capsule__kills b { animation: capfx-flip 260ms var(--ease-out) both; }
 @keyframes gtop-drop { from { transform: translateY(-.5rem); opacity: 0; } }
 @keyframes capfx-flip { from { transform: translateY(-55%); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {.gtop__center, .gtop__half .roundbox__num, .gtop__cap .capsule__kills b, .gtop__cap .capsule, .gtop__cap .capsule > * { animation: none; }}

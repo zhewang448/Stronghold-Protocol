@@ -360,3 +360,7 @@ npm run golden       # 确定性战斗与整局黄金结果
 本库在原项目基础上继续开发；原项目的介绍、版本记录及致谢见[原项目 README](https://github.com/sganggs/Stronghold-Protocol/blob/master/README.md)。文字聊天借鉴 RyantArgnisan/Stronghold-Protocol 的 GPL 实现，署名见 [NOTICE.md](NOTICE.md)；其他扩展的参考来源记录在相应开发文档中。
 
 代码以 **GPL-3.0-or-later** 发布，见 [LICENSE](LICENSE)。游戏素材与数据不适用代码许可证；版权、Spine 组合分发附加许可和第三方组件说明见 [NOTICE.md](NOTICE.md) 与 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。本项目保持非商业使用，不接受广告、付费服务或其他变现功能。
+
+## 四版本默认开放（本地扩展）
+
+可从大厅选择第二期下半、第二期上半、第一期下半、第一期上半，默认选中第二期下半。已有同盟通过房主提案及真人一致投票切换。历史版保留规则推算提示，本地联动仅默认版提供；服主可用 `--versions act2autochess` 限制单版，或用 `--versions <id,id> --version-default <id>` 指定列表与默认项，详见 [部署配置](docs/DEPLOY.md#11-四版本开放与部署配置)。

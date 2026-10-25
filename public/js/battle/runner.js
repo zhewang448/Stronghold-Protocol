@@ -530,6 +530,8 @@ export function createBattleRunner(deps) {
     e.meter = e.host.meter;
     const p = e.host.progress();
     const msg = { battleId: e.battleId, gt: Math.min(1e5, p.gt), killed: Math.min(p.killed, p.total), total: Math.min(1e5, p.total), done: !!p.done };
+    // Forward the host's bounded live counters; settlement still uses the accepted battle result.
+    if (Array.isArray(p.damage)) msg.damage = p.damage;
     // the HUD capsule's numerator of this field (shared/protocol.js b.progress `resolved`): the field's own scheduled
     // enemies knocked out or leaked. Sent only when the battle reports one (Battle.resolved) — an absent field leaves
     // the teammate UI on its `resolved ?? killed` fallback

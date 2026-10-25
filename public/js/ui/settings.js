@@ -115,7 +115,7 @@ function Slider({ label, micro, value, onInput, icon }) {
 function Toggle({ label, micro, value, onChange }) {
   return html`<div class="set-row">
     <span class="set-row__label">${label}<${MicroLabel}>${micro}<//></span>
-    <button type="button" class=${`set-toggle${value ? ' is-on' : ''}`} role="switch" aria-checked=${value ? 'true' : 'false'}
+    <button type="button" class=${`set-toggle${value ? ' is-on' : ''}`} role="switch" aria-label=${label} aria-checked=${value ? 'true' : 'false'}
       onClick=${() => onChange(!value)}><i></i><span>${value ? tc('toggle', '开启') : tc('toggle', '关闭')}</span></button>
   </div>`;
 }
@@ -500,6 +500,11 @@ export function SettingsModal({ open, onClose }) {
                  onInput=${(v) => { updateSettings({ sfx: v }); if (!tested) { setTested(true); setTimeout(() => setTested(false), 400); audio.sfx('click'); } }} />
       <${Toggle} label=${t('静音')} micro="MUTE" value=${s.muted} onChange=${(v) => updateSettings({ muted: v })} />
       <${Toggle} label=${t('显示消息提示气泡')} micro="CHAT PREVIEWS" value=${s.chatBubbles} onChange=${(v) => updateSettings({ chatBubbles: v })} />
+      <div data-testid="release-notes-settings">
+        <${Toggle} label=${t('显示上游更新内容')} micro="UPSTREAM UPDATES" value=${s.upstreamReleaseNotes} onChange=${(v) => updateSettings({ upstreamReleaseNotes: v })} />
+        <${Toggle} label=${t('显示扩展更新内容')} micro="EXTENSION UPDATES" value=${s.extensionReleaseNotes} onChange=${(v) => updateSettings({ extensionReleaseNotes: v })} />
+        <p class="set-hint">${t('上游与扩展版本更新时分别提醒；同时更新时并排显示。关闭某一项不会影响另一项。')}</p>
+      </div>
       <${Toggle} label=${t('显示伤害数字')} micro="DAMAGE NUMBERS" value=${s.damageNumbers} onChange=${(v) => updateSettings({ damageNumbers: v })} />
       <${Toggle} label=${t('官方伤害数字')} micro="OFFICIAL NUMBERS" value=${s.officialDamageNumbers} onChange=${(v) => updateSettings({ officialDamageNumbers: v })} />
       <p class="set-hint">${t('只显示达到官方暴击条件的红色数字。关闭时仍显示每一次命中。')}</p>

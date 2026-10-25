@@ -29,8 +29,11 @@ function run(opts = {}, env = {}) {
 
 const ALL = ['act2autochess', 'act2autochess@V2_1', 'act1autochess', 'act1autochess@V1_1'];
 
-test('explicit all enables every version in registry order; integration default stays act2autochess only', () => {
-  assert.deepEqual(run().enabled, ['act2autochess']);
+test('default and explicit all enable every version in registry order; selection stays act2autochess', () => {
+  assert.deepEqual(run().enabled, ALL);
+  assert.equal(run().default, 'act2autochess');
+  assert.equal(run().maxHosts, 3);
+  assert.deepEqual(run().warnings, []);
   const r = run({ versions: { enabled: 'all' } });
   assert.deepEqual(r, run({}, { SP_VERSIONS: 'all' }));
   assert.deepEqual(r, run({ versions: { enabled: 'all' } }));

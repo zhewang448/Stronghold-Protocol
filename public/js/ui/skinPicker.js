@@ -24,10 +24,46 @@ import { useState } from '../../vendor/hooks.module.js';
 import { html, MicroLabel, Modal, Button } from './components.js';
 import { useStore } from '../store.js';
 import { useData, data } from '../data.js';
-import { skinsStore, availableSkins, chosenSkin, hasAnySkinChoices, setSkin, clearSkin, SKINS_KEY } from './skins.js';
+import { skinsStore, availableSkins, chosenSkin, hasAnySkinChoices, setSkin, clearSkin, SKINS_KEY,
+  skinRandomStore, updateSkinRandom, setSkinLocked, randomizeSkins } from './skins.js';
+import { toast } from './toasts.js';
 import { t } from '../../../shared/i18n.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
+
+/** Shared by the card and list headers; one persisted policy across all four versions. */
+export function SkinRandomControls({ ready = true }) {
+  const policy = useStore((s) => s, Object.is, skinRandomStore);
+  const skinReady = useData('assets', 'skins');
+  const [open, setOpen] = useState(false);
+  const scopeLabel = policy.scope === 'equipped' ? t('已装扮皮肤的干员')
+    : policy.scope === 'unequipped' ? t('未装扮皮肤的干员') : t('全部干员');
+  return html`<span class="lo-skin-random">
+    <${Button} variant="ghost" size="sm" data-testid="skins-random" disabled=${!ready || !skinReady}
+      title=${t('随机范围：{scope}；跳过锁定干员', { scope: scopeLabel })}
+      onClick=${() => toast(t('已更换 {n} 名干员的皮肤', { n: randomizeSkins() }), 'info')}>${t('随机装备皮肤')}<//>
+    <${Button} variant="ghost" size="sm" data-testid="skins-random-settings" title=${t('皮肤随机设置')} onClick=${() => setOpen(true)}>${t('随机设置')}<//>
+    <${Modal} open=${open} onClose=${() => setOpen(false)} title=${t('皮肤随机设置')} micro="SKIN RANDOMIZATION" width="7.4rem"
+      actions=${html`<${Button} variant="primary" onClick=${() => setOpen(false)}>${t('完成')}<//>`}>
+      <div class="set-list" data-testid="skin-random-settings">
+        <div class="set-row"><span class="set-row__label">${t('随机范围')}</span>
+          <select class="lo-skin-random__scope" aria-label=${t('随机范围')} value=${policy.scope} onChange=${(e) => updateSkinRandom({ scope: e.currentTarget.value })}>
+            <option value="all">${t('全部干员')}</option>
+            <option value="equipped">${t('已装扮皮肤的干员')}</option>
+            <option value="unequipped">${t('未装扮皮肤的干员')}</option>
+          </select>
+        </div>
+        <p class="set-hint">${t('按当前实际装扮判断范围；范围外和已锁定的干员保持不变。')}</p>
+        <div class="set-row"><span class="set-row__label">${t('每局自动随机皮肤')}</span>
+          <button type="button" class=${cx('set-toggle', policy.auto && 'is-on')} role="switch" aria-label=${t('每局自动随机皮肤')}
+            aria-checked=${String(policy.auto)} onClick=${() => updateSkinRandom({ auto: !policy.auto })}><i></i><span>${policy.auto ? t('已开启') : t('未开启')}</span></button>
+        </div>
+        <p class="set-hint">${t('每局开始时随机一次，使用当前随机范围并跳过锁定干员。刷新、重连和回档不会重新随机。')}</p>
+        <p class="set-hint">${t('已锁定 {n} 名干员，可在各干员的皮肤栏中解锁。', { n: Object.keys(policy.locked).length })}</p>
+      </div>
+    <//>
+  </span>`;
+}
 
 /**
  * One tile of the grid: the 默认 appearance of the operator (which has real art of its own) or one of its skins.
@@ -94,6 +130,7 @@ export function SkinSection({ charId }) {
   // the choice (this module's store) and the composed manifest (the catalogue): either can change while the panel is
   // open — the player picks a skin, a plugin's document lands, a layer is switched off
   const s = useStore((v) => v, Object.is, skinsStore);
+  const randomPolicy = useStore((v) => v, Object.is, skinRandomStore);
   const ready = useData('assets', 'skins');
   const [preview, setPreview] = useState(null);
 
@@ -130,6 +167,9 @@ export function SkinSection({ charId }) {
             this section with the 默认 tile alone, and the count is what says the plugin is on and this operator simply
             has no 时装 — omitting it would leave the header looking like an empty section. One branch fewer, too. */ null}
       <span class="lo-sec__note">${t('{n} 套外观', { n: shown.length - 1 })}</span>
+      <button type="button" class=${cx('lo-skin-lock', randomPolicy.locked[id] && 'is-on')} data-testid="skin-lock"
+        aria-pressed=${String(!!randomPolicy.locked[id])} title=${t('锁定后，随机和批量恢复默认都不会更改此干员的皮肤。')}
+        onClick=${() => setSkinLocked(id, !randomPolicy.locked[id])}>${randomPolicy.locked[id] ? t('皮肤已锁定') : t('锁定皮肤')}</button>
     </header>
     <div class="lo-skins" role="radiogroup" aria-label=${t('选择皮肤')}>
       ${shown.map((row) => html`<${SkinTile} key=${row.own ? 'default' : row.id} row=${row} chosen=${row.own ? !chosen : chosen === row.id}

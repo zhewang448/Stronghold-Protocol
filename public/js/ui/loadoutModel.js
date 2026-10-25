@@ -260,25 +260,56 @@ export const LOADOUT_EXPORT_KIND = 'stronghold.loadout';
 /** A picked file / pasted payload longer than this is refused before parsing (a real payload is a few KB). */
 export const LOADOUT_IMPORT_MAX_BYTES = 256 * 1024;
 
+/** Selectable sections of the existing v2 export; operator identities remain charId-based. */
+export const LOADOUT_EXPORT_PARTS = Object.freeze(['skills', 'modules', 'potential', 'cultivate', 'skins', 'skinRandom', 'skinLocks']);
+
+/** Native exports describe explicit selected sections; upstream envelopes keep their original v2 shape. */
+function exportSections(raw) {
+  return isObj(raw) ? Object.fromEntries(LOADOUT_EXPORT_PARTS.map((key) => [key, raw[key] === true])) : null;
+}
+
+function skinPolicy(raw) {
+  return isObj(raw) ? { scope: ['all', 'equipped', 'unequipped'].includes(raw.scope) ? raw.scope : 'all', auto: raw.auto === true } : null;
+}
+
+function skinLocks(raw) {
+  return isObj(raw) ? Object.fromEntries(Object.entries(raw).filter(([id, on]) => /^char_\d+_[a-z0-9]+$/.test(id) && on === true).slice(0, 256)) : {};
+}
+
 /**
- * Portable payload of a loadout, as downloaded / copied by 导出 — v2 (DESIGN §35.23): the choices by operator
- * (`byChar`, every version's), with the per-operator 潜能 / 练度 (`ops`, 0.2.2).
- * @param {Record<string, any>} byChar the stored choices by charId
- * @param {{ now?: number, ops?: Record<string, any> }} [o]
+ * @param {Record<string, any>} byChar
+ * @param {{ now?: number, ops?: Record<string, any>, skins?: Record<string, string>|null,
+ *   sections?: Record<string, boolean>|null, upstream?: boolean, random?: {scope?: string, auto?: boolean}|null,
+ *   locks?: Record<string, boolean>|null }} [options]
  */
-export function exportPayload(byChar, { now = Date.now(), ops = {}, skins = null } = {}) {
+export function exportPayload(byChar, { now = Date.now(), ops = {}, skins = null, sections = null, upstream = false, random = null, locks = null } = {}) {
+  const selected = exportSections(sections);
+  const includes = (key) => !selected || selected[key];
   const clean = {};
-  for (const [id, e] of Object.entries(byChar || {})) if (isObj(e)) clean[id] = { ...e };
+  for (const [id, e] of Object.entries(parseStored({ entries: byChar }))) {
+    const row = {};
+    if (includes('skills') && e.skill !== undefined) row.skill = e.skill;
+    if (includes('modules') && e.module !== undefined) row.module = e.module;
+    if (Object.keys(row).length) clean[id] = row;
+  }
   const cleanOps = {};
-  for (const [id, e] of Object.entries(ops || {})) if (isObj(e)) cleanOps[id] = { ...e };
+  for (const [id, e] of Object.entries(parseStoredOps({ ops }))) {
+    const row = {};
+    if (includes('potential') && e.potential !== undefined) row.potential = e.potential;
+    if (includes('cultivate') && e.cultivate !== undefined) row.cultivate = e.cultivate;
+    if (Object.keys(row).length) cleanOps[id] = row;
+  }
   return {
     kind: LOADOUT_EXPORT_KIND,
     v: LOADOUT_VERSION,
     exportedAt: new Date(Number.isFinite(now) ? now : Date.now()).toISOString(),
     count: Object.keys(clean).length,
     byChar: clean,
-    ops: cleanOps,
-    ...(skins ? { skins: cleanSkins(skins) } : {}),
+    ...(!upstream || includes('potential') || includes('cultivate') ? { ops: cleanOps } : {}),
+    ...(!upstream && includes('skins') && skins ? { skins: cleanSkins(skins) } : {}),
+    ...(!upstream && selected ? { extension: { v: 1, sections: selected,
+      ...(selected.skinRandom ? { skinRandom: skinPolicy(random) || { scope: 'all', auto: false } } : {}),
+      ...(selected.skinLocks ? { skinLocks: skinLocks(locks) } : {}) } } : {}),
   };
 }
 
@@ -297,7 +328,9 @@ export function serializeExport(byChar, opts) {
  * A v2 payload (DESIGN §35.23) gives `byChar` (choices by operator) instead of `entries`; a v1 one gives `entries` by
  * 第二期下半's chess ids (the caller maps them: ui/loadoutSync.js).
  * @param {any} input payload object or serialised text
- * @returns {{ ok: true, entries?: Record<string, any>, byChar?: Record<string, any>, ops?: Record<string, any> } | { ok: false, error: string }}
+ * @returns {{ ok: true, entries?: Record<string, any>, byChar?: Record<string, any>, ops?: Record<string, any>,
+ *   skins?: Record<string, string>, sections?: Record<string, boolean>, skinRandom?: {scope: string, auto: boolean},
+ *   skinLocks?: Record<string, boolean> } | { ok: false, error: string }}
  */
 export function parseImport(input) {
   let raw = input;
@@ -313,12 +346,17 @@ export function parseImport(input) {
   if (v != null && v > LOADOUT_VERSION) return { ok: false, error: t('这份调配来自更新的版本（v{v}），请先更新游戏', { v }) };
   const kind = typeof raw.kind === 'string' ? raw.kind : null;
   if (kind && kind !== LOADOUT_EXPORT_KIND) return { ok: false, error: t('这不是干员调配的数据') };
+  const sections = raw.extension?.v === 1 ? exportSections(raw.extension.sections) : null;
+  if (sections && !Object.values(sections).some(Boolean)) return { ok: false, error: t('里面没有有效的调配条目') };
+  const extra = sections ? { sections,
+    ...(sections.skinRandom && isObj(raw.extension.skinRandom) ? { skinRandom: skinPolicy(raw.extension.skinRandom) } : {}),
+    ...(sections.skinLocks && isObj(raw.extension.skinLocks) ? { skinLocks: skinLocks(raw.extension.skinLocks) } : {}) } : {};
   const ops = isObj(raw.ops) ? parseStoredOps(raw) : null;
   const skins = isObj(raw.skins) ? { skins: cleanSkins(raw.skins) } : {};
   if (v === 2) {
     const byChar = parseStoredByChar(raw);
-    if (!Object.keys(byChar).length && !(ops && Object.keys(ops).length) && !Object.hasOwn(skins, 'skins')) return { ok: false, error: t('里面没有有效的调配条目') };
-    return ops ? { ok: true, byChar, ops, ...skins } : { ok: true, byChar, ...skins };
+    if (!Object.keys(byChar).length && !(ops && Object.keys(ops).length) && !Object.hasOwn(skins, 'skins') && !sections) return { ok: false, error: t('里面没有有效的调配条目') };
+    return ops ? { ok: true, byChar, ops, ...skins, ...extra } : { ok: true, byChar, ...skins, ...extra };
   }
   const entries = parseStored(raw);
   if (!Object.keys(entries).length && !(ops && Object.keys(ops).length) && !Object.hasOwn(skins, 'skins')) return { ok: false, error: t('里面没有有效的调配条目') };

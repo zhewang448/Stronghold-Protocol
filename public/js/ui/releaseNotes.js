@@ -20,6 +20,17 @@ function createReleaseDialog(title, label = title) {
         user-select: text; -webkit-user-select: text;
       }
       .release-notes[open] { display: flex; flex-direction: column; }
+      .release-notes--dual { width: min(1120px, calc(100% - 32px)); }
+      .release-notes__columns { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+      .release-notes--dual .release-notes__columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .release-notes__column { min-width: 0; }
+      .release-notes__column + .release-notes__column { border-left: 1px solid var(--release-line); padding-left: 24px; }
+      .release-notes__source { margin: 0 0 8px; font-size: 18px; line-height: 1.5; color: var(--text-hi, #f2f2f2); }
+      .release-notes__version { margin: 0 0 16px !important; color: var(--text-lo, #a3afa9); font-size: 14px; }
+      @media (max-width: 700px) {
+        .release-notes--dual .release-notes__columns { grid-template-columns: minmax(0, 1fr); }
+        .release-notes__column + .release-notes__column { border-left: 0; border-top: 1px solid var(--release-line); padding: 24px 0 0; }
+      }
       .release-notes::backdrop { background: rgba(3, 5, 4, .78); }
       .release-notes__head { display: block; flex: none; padding: 20px 24px 16px; border-bottom: 1px solid var(--release-line); }
       .release-notes__head::before {
@@ -103,20 +114,51 @@ export function shouldShowReleaseNotes(previous, current) {
   return !!previous && !!current && previous !== current;
 }
 
-export function showReleaseNotes(notes, { storage = globalThis.localStorage, storageKey = 'sp.release-notes', chineseOnly = false } = {}) {
-  if (!notes?.version) return null;
-  let previous;
-  try { previous = storage.getItem(storageKey); } catch { return null; }
-  const remember = () => { try { storage.setItem(storageKey, notes.version); } catch { /* optional storage */ } };
-  if (!shouldShowReleaseNotes(previous, notes.version) || !notes.entries?.length) { remember(); return null; }
-  const { dialog, body, actions } = createReleaseDialog(notes.title, t('更新记录'));
+/**
+ * @param {any} notes
+ * @param {{ storage?: Pick<Storage, 'getItem'|'setItem'>, storageKey?: string, upstream?: any,
+ *   preferences?: { upstreamReleaseNotes?: boolean, extensionReleaseNotes?: boolean }, chineseOnly?: boolean }} [options]
+ */
+export function showReleaseNotes(notes, { storage = globalThis.localStorage, storageKey = 'sp.release-notes', upstream = null, preferences = {}, chineseOnly = false } = {}) {
+  const save = (key, version) => { try { storage.setItem(key, version); } catch { /* optional storage */ } };
+  const sources = [
+    { id: 'upstream', notes: upstream, key: `${storageKey}.upstream`, enabled: preferences.upstreamReleaseNotes !== false, changed: false },
+    { id: 'extension', notes, key: storageKey, enabled: preferences.extensionReleaseNotes !== false, changed: false },
+  ].filter((source) => source.notes?.version);
+  let legacy;
+  try { legacy = storage.getItem(storageKey); } catch { return null; }
+  for (const source of sources) {
+    let previous;
+    try { previous = storage.getItem(source.key); } catch { return null; }
+    // Existing installs already know the upstream part of their last extension tag.
+    if (!previous && source.id === 'upstream') {
+      previous = /^v?(\d+\.\d+\.\d+)-extended\./.exec(legacy || '')?.[1] || null;
+      if (previous) save(source.key, previous);
+    }
+    source.changed = source.enabled && shouldShowReleaseNotes(previous, source.notes.version) && Array.isArray(source.notes.entries) && source.notes.entries.length > 0;
+    if (!previous || previous === source.notes.version || !source.notes.entries?.length) save(source.key, source.notes.version);
+  }
+  if (!sources.some((source) => source.changed)) return null;
+  if (document.querySelector('dialog.release-notes[data-release-notes]')) return null;
+  const visible = sources.filter((source) => source.enabled && Array.isArray(source.notes.entries) && source.notes.entries.length);
+  const { dialog, body, actions } = createReleaseDialog(t('更新记录'));
+  dialog.dataset.releaseNotes = 'true';
+  if (visible.length > 1) dialog.classList.add('release-notes--dual');
   if (chineseOnly) { const p = document.createElement('p'); p.className = 'release-notes__language'; p.textContent = t('仅提供中文'); body.append(p); }
-  const list = document.createElement('ul'); list.className = 'release-notes__list';
-  for (const entry of notes.entries) { const li = document.createElement('li'); li.textContent = entry; list.append(li); }
+  const columns = document.createElement('div'); columns.className = 'release-notes__columns';
+  for (const source of visible) {
+    const section = document.createElement('section'); section.className = 'release-notes__column'; section.dataset.releaseSource = source.id;
+    const title = document.createElement('h3'); title.className = 'release-notes__source';
+    title.textContent = source.id === 'upstream' ? t('上游更新内容') : t('扩展更新内容');
+    const version = document.createElement('p'); version.className = 'release-notes__version'; version.textContent = source.notes.title || source.notes.version;
+    const list = document.createElement('ul'); list.className = 'release-notes__list';
+    for (const entry of source.notes.entries) { const li = document.createElement('li'); li.textContent = entry; list.append(li); }
+    section.append(title, version, list); columns.append(section);
+  }
   const close = releaseButton(t('关闭'), true);
   close.onclick = () => dialog.close();
-  body.append(list); actions.append(close); document.body.append(dialog);
-  dialog.addEventListener('close', () => { remember(); dialog.remove(); }, { once: true });
+  body.append(columns); actions.append(close); document.body.append(dialog);
+  dialog.addEventListener('close', () => { for (const source of visible) save(source.key, source.notes.version); dialog.remove(); }, { once: true });
   dialog.showModal(); close.focus();
   return dialog;
 }

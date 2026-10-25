@@ -2,7 +2,7 @@
 // scripts/launch.mjs — cross-platform "prepare + start + open the browser", used by scripts/start-windows.bat,
 // scripts/start-windows.ps1 and scripts/start.sh (docs/DEPLOY.md).
 //
-//   node scripts/launch.mjs [--port 3000] [--host ::] [--no-open] [--no-setup] [--scripts sandbox] [--test-mode 1] [setup options…]
+//   node scripts/launch.mjs [--port 3000] [--host ::] [--no-open] [--no-setup] [--versions all|id,id] [--version-default id] [--scripts sandbox] [--test-mode 1] [setup options…]
 //
 //   1. If our server already answers on the port, just open the browser (double-clicking twice is harmless).
 //   2. An update package extracted over the folder (UPDATE.json) is finished (server/update.js; the server does it too,
@@ -57,7 +57,12 @@ export function parseArgs(argv) {
     if (k === '--port') o.port = Number(val()) || o.port;
     else if (k === '--host') o.host = val() || o.host;
     else if (k === '--room-code') o.roomCode = val() ?? '';
-    else if (a === '--no-open') o.open = false;
+    else if (k === '--versions' || k === '--version-default') {
+      const value = val();
+      if (!value || value.startsWith('-')) throw new Error(`${k} requires a version id${k === '--versions' ? ' list or all' : ''}`);
+      if (k === '--versions') o.versions = value;
+      else o.versionDefault = value;
+    } else if (a === '--no-open') o.open = false;
     else if (a === '--tunnel') o.tunnel = true;
     else if (a === '--no-tunnel') o.tunnel = false;
     else if (a === '--no-setup') o.setup = false;
@@ -70,10 +75,12 @@ export function parseArgs(argv) {
   return o;
 }
 
-/** The server's environment: PORT / HOST, SP_PLUGIN_SCRIPTS from --scripts, SP_TEST_MODE from --test-mode (off removes an inherited one). */
+/** The server's environment: PORT / HOST, SP_VERSIONS / SP_VERSION_DEFAULT from explicit flags, SP_PLUGIN_SCRIPTS from --scripts, SP_TEST_MODE from --test-mode (off removes an inherited one). */
 export function serverEnv(o, base = process.env) {
   const env = { ...base, PORT: String(o.port), HOST: o.host };
   delete env.SP_ROOM_CODE;
+  if (o.versions !== undefined) env.SP_VERSIONS = o.versions;
+  if (o.versionDefault !== undefined) env.SP_VERSION_DEFAULT = o.versionDefault;
   if (o.scripts === 'off') delete env.SP_PLUGIN_SCRIPTS;
   else if (o.scripts) env.SP_PLUGIN_SCRIPTS = o.scripts;
   if (o.testMode === 'off') delete env.SP_TEST_MODE;
@@ -161,6 +168,7 @@ export async function launch(argv = process.argv.slice(2)) {
     console.log(`${mark.ok} 服务器已经在运行（端口 ${o.port}），直接打开浏览器。`);
     if (o.scripts !== undefined) console.log(c.warn(`  --scripts ${o.scripts} 不会改变正在运行的服务器：先停止它（关掉它的窗口），再重新启动。`));
     if (o.testMode !== undefined) console.log(c.warn(`  --test-mode ${o.testMode} 不会改变正在运行的服务器：先停止它（关掉它的窗口），再重新启动。`));
+    if (o.versions !== undefined || o.versionDefault !== undefined) console.log(c.warn('  版本参数不会改变正在运行的服务器；请正常停止后重新启动以应用启用列表和默认版本。'));
     if (fs.existsSync(path.join(ROOT, UPDATE_FILE))) {
       console.log(c.warn(`  解压过的更新包还没有应用：正在运行的仍是旧版本。先停止它（关掉它的窗口；开机自启用 install-service-windows.ps1 -Restart），再重新启动即可。`));
     }

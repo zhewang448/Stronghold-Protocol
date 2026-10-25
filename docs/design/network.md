@@ -198,7 +198,7 @@ for byte what they were; everything below appears only in a room whose host swit
 ### 8.5 Official version messages (M1, §35.23)
 
 A server offers the official versions its owner enables (docs/DATA.md "Serving the versions (M1)"). This extension enables
-only 第二期下半 / `act2autochess` by default; explicit `SP_VERSIONS=all` opens all four preview versions and lists them in `welcome.versions` (upstream §35.23.11).
+all four registered versions by default and lists them in `welcome.versions`; 第二期下半 / `act2autochess` stays the default selection. `SP_VERSIONS=act2autochess` narrows a deployment to the default version alone (§36.4).
 `welcome.versions` is omitted only when the live list is exactly that one version (`SP_VERSIONS=act2autochess`). A room
 plays one version; `act2autochess` is a code constant: a message or a record without a version means it, whatever the
 server's default.

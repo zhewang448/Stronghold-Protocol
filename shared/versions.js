@@ -18,8 +18,8 @@
 // tools/versions/<slug>.mjs holds each version's build profile (pins, adapters, expected counts). M0 built the data;
 // M2 tools bootstrap a selected version per process/worker (DESIGN §35.22.7–§35.22.9). Since M1 (DESIGN §35.23) a
 // server serves the versions it enables, plays their rooms in version match hosts, and the page loads their data
-// (server/versions.js, public/js/versions.js). This extension enables act2autochess alone unless SP_VERSIONS or the `versions`
-// option explicitly opens historical preview versions.
+// (server/versions.js, public/js/versions.js). All four versions are enabled by default. SP_VERSIONS or the `versions` option may narrow the enabled list;
+// act2autochess remains the default selection and the identity of unversioned records.
 
 import { N_ } from './i18n.js';
 

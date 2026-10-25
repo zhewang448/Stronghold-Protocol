@@ -1056,3 +1056,7 @@ window is [ASSUMED]; damage, attack timing and targeting are unchanged.
 Skill model fallback (#786, §35.90): when facing up, a skill with an authored Front clip and only an attack fallback
 on Back uses Front through the skill clip and ending. Back-authored skills keep Back. [ASSUMED] This model choice
 is presentation inferred from the available animation roles; simulation facing and targeting do not change.
+
+### Independent upstream and extension release notices (§36.5)
+
+Settings `upstreamReleaseNotes` and `extensionReleaseNotes` both default to true, with stored false preserved. The game loads upstream notes keyed by APP_VERSION from the installed CHANGELOG.md and extension notes keyed by RELEASE_TAG from LOCAL-CHANGELOG.md. Each has its own acknowledged version. First visits establish baselines; legacy extension tags seed the upstream baseline. An enabled changed source opens one dialog; available enabled sources appear side by side on desktop, stacked below 700 px. Close/Esc acknowledges displayed sources only. Disabled sources retain their previous baseline. No external update check or installation occurs.

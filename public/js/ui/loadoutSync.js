@@ -303,17 +303,58 @@ export function importedNotOwned(parsed) {
  * sanitised and replace the current ones as well; without, the current ones stay.
  * @param {Record<string, any>} entries `parseImport(...).entries` (chess ids of the data on screen: importedEntries)
  * @param {(id: string) => any} lookup chess lookup
- * @param {{ ops?: Record<string, any>|null, isOperator?: (charId: string) => boolean }} [o]
- * @returns {{ applied: number, dropped: number, ops?: number }} entries kept / entries (and settings) not imported / settings
+ * @param {{ ops?: Record<string, any>|null, isOperator?: (charId: string) => boolean, sections?: Record<string, boolean>|null }} [o]
+ * @returns {{ applied: number, dropped: number, ops?: number, partial?: boolean, refused?: boolean }} entries kept / entries (and settings) not imported / settings
  *   kept (only with `ops`)
  */
-export function applyLoadoutEntries(entries, lookup, { ops = null, isOperator = null } = {}) {
+export function applyLoadoutEntries(entries, lookup, { ops = null, isOperator = null, sections = null } = {}) {
   const asked = Object.keys(entries || {}).length;
   const clean = sanitizeEntries(entries, lookup);
   const applied = Object.keys(clean).length;
   const cleanOps = ops && isOperator ? sanitizeOps(ops, isOperator) : null;
   const nOps = cleanOps ? Object.keys(cleanOps).length : 0;
   const askedOps = ops ? Object.keys(ops).length : 0;
+  if (sections) {
+    if (((sections.skills || sections.modules) && asked > 0 && applied === 0)
+      || ((sections.potential || sections.cultivate) && askedOps > 0 && nOps === 0)) {
+      return { applied: 0, dropped: asked + askedOps, ops: 0, partial: true, refused: true };
+    }
+    // Native partial imports replace only selected fields; an empty selected section restores its defaults.
+    const next = {};
+    for (const [id, entry] of Object.entries(loadoutStore.get().entries || {})) {
+      const row = { ...entry };
+      if (sections.skills) delete row.skill;
+      if (sections.modules) delete row.module;
+      if (Object.keys(row).length) next[id] = row;
+    }
+    for (const [id, entry] of Object.entries(clean)) {
+      const row = { ...(next[id] || {}) };
+      if (sections.skills && entry.skill !== undefined) row.skill = entry.skill;
+      if (sections.modules && entry.module !== undefined) row.module = entry.module;
+      if (Object.keys(row).length) next[id] = row;
+    }
+    const nextOps = { ...(loadoutStore.get().ops || {}) };
+    if ((sections.potential || sections.cultivate) && isOperator) {
+      for (const [id, entry] of Object.entries(nextOps)) if (isOperator(id)) {
+        const row = { ...entry };
+        if (sections.potential) delete row.potential;
+        if (sections.cultivate) delete row.cultivate;
+        if (Object.keys(row).length) nextOps[id] = row;
+        else delete nextOps[id];
+      }
+      for (const [id, entry] of Object.entries(cleanOps || {})) {
+        const row = { ...(nextOps[id] || {}) };
+        if (sections.potential && entry.potential !== undefined) row.potential = entry.potential;
+        if (sections.cultivate && entry.cultivate !== undefined) row.cultivate = entry.cultivate;
+        if (Object.keys(row).length) nextOps[id] = row;
+      }
+      loadoutStore.set({ ops: nextOps });
+    }
+    if (sections.skills || sections.modules || sections.potential || sections.cultivate) {
+      setEntries(sections.skills || sections.modules ? next : loadoutStore.get().entries, { lookup });
+    }
+    return { applied, dropped: Math.max(0, asked - applied) + Math.max(0, askedOps - nOps), ops: nOps, partial: true };
+  }
   if (applied || nOps) {
     if (cleanOps) loadoutStore.set({ ops: cleanOps });
     setEntries(applied ? clean : loadoutStore.get().entries, { lookup });

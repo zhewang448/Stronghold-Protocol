@@ -12,7 +12,7 @@
 //     (assetIndex.js); the index of the default public/ persists in .cache/asset-hashes.json;
 //   * SP_VERSIONS ('all' or a comma list of shared/versions.js ids), SP_VERSION_DEFAULT and SP_MAX_VERSION_HOSTS (or the
 //     `versions: { enabled, default, maxHosts }` option, which wins) → the official versions this server offers
-//     (DESIGN §35.23, versionsFrom): the default version only unless explicitly expanded (SP_VERSIONS=act2autochess
+//     (DESIGN §35.23, versionsFrom): all four versions unless explicitly narrowed (SP_VERSIONS=act2autochess
 //     is 第二期下半 alone, the switch off);
 //   * the served directories (public/, data/, shared/, the content packs' packs/ and the plugins' plugins/ of this
 //     repository unless the options name others), and which startServer() options are handed on to net.js Network and
@@ -186,8 +186,7 @@ function applyEnvLimits(target, table, log) {
 
 /**
  * The official versions this server offers (DESIGN §35.23): the `versions` option, else SP_VERSIONS ('all' or a comma
- * list of registry ids), SP_VERSION_DEFAULT and SP_MAX_VERSION_HOSTS. Nothing set enables act2autochess only in this extension. SP_VERSIONS=all or `versions.enabled`
- * explicitly opens the historical preview versions; the default stays act2autochess —
+ * list of registry ids), SP_VERSION_DEFAULT and SP_MAX_VERSION_HOSTS. Nothing set enables every registered version; the default stays act2autochess —
  * SP_VERSIONS=act2autochess is 第二期下半 alone, the switch off. An unknown id is warned about and dropped; nothing left
  * keeps act2autochess alone; a default that is not enabled is warned about and replaced by the first enabled id in
  * registry order. `enabled` comes out in registry order. `maxHosts` caps the version match hosts (server/match/host,
@@ -202,8 +201,8 @@ export function versionsFrom(opts, log = null) {
   const envList = String(process.env.SP_VERSIONS ?? '').trim();
   /** @type {unknown} */
   let wanted = o.enabled ?? (envList === '' ? null : (envList.toLowerCase() === 'all' ? 'all' : envList.split(',')));
-  // Extension rollout: the default alone unless a version list is explicitly supplied.
-  if (wanted == null) wanted = ['act2autochess']; // integration rollout: historical versions remain explicit opt-in
+  // Offer all registered versions; an explicit list still narrows this deployment.
+  if (wanted == null) wanted = 'all';
   let ids;
   if (wanted === 'all') ids = VERSIONS.map((v) => v.id);
   else {

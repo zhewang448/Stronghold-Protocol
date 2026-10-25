@@ -52,7 +52,7 @@ async function withUnsetVersions(fn) {
 
 /** A fresh co-op/NORMAL room's room.state and the host's welcome, on the default data, with nothing narrowing the versions. */
 async function freshRoom() {
-  const srv = await withUnsetVersions(() => startServer({ port: 0, host: '127.0.0.1', quiet: true, versions: { enabled: 'all' } }));
+  const srv = await withUnsetVersions(() => startServer({ port: 0, host: '127.0.0.1', quiet: true }));
   const c = await TestClient.connect(`ws://127.0.0.1:${srv.port}/ws`);
   try {
     const welcome = await c.hello('Guard');

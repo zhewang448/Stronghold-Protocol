@@ -25,6 +25,17 @@ test('--scripts sets SP_PLUGIN_SCRIPTS for the server; off removes an inherited 
   assert.deepEqual([env.PORT, env.SP_PLUGIN_SCRIPTS], ['3001', 'trusted-force']);
 });
 
+test('version flags override inherited version settings without leaking into setup', () => {
+  const options = parseArgs(['--versions', 'act2autochess,act1autochess', '--version-default=act1autochess']);
+  assert.deepEqual(options.setupArgs, []);
+  const env = serverEnv(options, { SP_VERSIONS: 'all', SP_VERSION_DEFAULT: 'act2autochess' });
+  assert.equal(env.SP_VERSIONS, 'act2autochess,act1autochess');
+  assert.equal(env.SP_VERSION_DEFAULT, 'act1autochess');
+  assert.equal(serverEnv(parseArgs([]), { SP_VERSIONS: 'act2autochess' }).SP_VERSIONS, 'act2autochess');
+  assert.throws(() => parseArgs(['--versions']), /requires/);
+  assert.throws(() => parseArgs(['--version-default', '--no-open']), /requires/);
+});
+
 test('public start delegates Node bootstrapping, and stop never kills port owners', () => {
   const tunnelBat = readFileSync(path.join(ROOT, 'scripts/start-tunnel.bat'), 'utf8');
   assert.match(tunnelBat, /call "%~dp0start-windows\.bat" --tunnel/);

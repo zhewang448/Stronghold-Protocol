@@ -74,6 +74,8 @@ export class MatchViews {
   publicView() {
     const v = {
       t: 'm.public',
+      // Stable across reconnects and rewinds, distinct for another match in the same room.
+      matchId: `${this.roomCode}:${this.battlePrefix}`,
       phase: this.phase,
       roundCharts: getRoundCharts(),
       roundHistory: getRoundCharts() ? roundChartHistory(this, { live: getLiveRoundDamage() }) : [],

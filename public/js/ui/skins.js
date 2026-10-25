@@ -96,6 +96,39 @@ export function parseStoredSkins(raw) {
  */
 export const skinsStore = createStore({ [SKINS_KEY]: parseStoredSkins(loadPref(SKINS_PREF, null)), [SKINS_SYNC_KEY]: 'idle' });
 
+export const SKIN_RANDOM_PREF = 'skinRandom';
+export const SKIN_RANDOM_SCOPES = Object.freeze(['all', 'equipped', 'unequipped']);
+
+function parseRandomSettings(raw) {
+  const value = isObj(raw) ? raw : {};
+  const locked = Object.fromEntries(Object.entries(isObj(value.locked) ? value.locked : {})
+    .filter(([id, on]) => isCharId(id) && on === true).slice(0, SKIN_LIMITS.entries));
+  return { scope: SKIN_RANDOM_SCOPES.includes(value.scope) ? value.scope : 'all', auto: value.auto === true, locked };
+}
+
+/** Local-only policy; the existing room.skins sync publishes the resolved choices. */
+export const skinRandomStore = createStore(parseRandomSettings(loadPref(SKIN_RANDOM_PREF, null)));
+
+export function updateSkinRandom(patch) {
+  const next = parseRandomSettings({ ...skinRandomStore.get(), ...patch });
+  savePref(SKIN_RANDOM_PREF, next);
+  skinRandomStore.set(next);
+}
+
+export function setSkinLocked(charId, on) {
+  if (!isCharId(charId)) return;
+  const locked = { ...skinRandomStore.get().locked };
+  if (on) locked[charId] = true;
+  else delete locked[charId];
+  updateSkinRandom({ locked });
+}
+
+/** Lock protects bulk operations; deliberate manual selections remain editable. */
+export function clearUnlockedSkins() {
+  const locked = skinRandomStore.get().locked;
+  setSkins(Object.fromEntries(Object.entries(skinsStore.get()[SKINS_KEY]).filter(([id]) => locked[id])));
+}
+
 /**
  * Replace the whole stored selection (persisted at once; the sync engine picks the change up). Out-of-match data, so
  * nothing is sanitised away here: a stored id whose plugin is switched off today is kept, and comes back with it
@@ -263,14 +296,78 @@ export function loadSkinData() {
 }
 
 // Extension controls share the composed manifest with the plugin picker.
-export function randomSkins(catalogue, manifest, random = Math.random) {
-  const result = {};
+export function randomSkins(catalogue, manifest, random = Math.random, { entries = {}, scope = 'all', locked = {} } = {}) {
+  const result = { ...entries };
   if (!catalogue) return result;
   for (const [charId, rec] of Object.entries(manifest?.chars || {})) {
+    if (locked[charId]) continue;
+    const equipped = !!entries[charId] && !!rec.skins?.[entries[charId]]
+      && (skinHasModel(rec.skins[entries[charId]]) || skinHasPictures(rec.skins[entries[charId]]));
+    if ((scope === 'equipped' && !equipped) || (scope === 'unequipped' && equipped)) continue;
     const ids = Object.entries(rec.skins || {}).filter(([, skin]) => skinHasModel(skin) && (skin.avatar || rec.avatar)).map(([id]) => id);
     if (ids.length) result[charId] = ids[Math.floor(random() * ids.length)];
   }
   return result;
+}
+
+export function randomizeSkins() {
+  const before = skinsStore.get()[SKINS_KEY];
+  const policy = skinRandomStore.get();
+  const next = randomSkins(data.get('skins'), data.get('assets'), Math.random, { ...policy, entries: before });
+  const changed = Object.keys(next).filter((id) => next[id] !== before[id]).length;
+  if (changed) setSkins(next);
+  return changed;
+}
+
+/** One roll per match, persisted before the normal skin sync; reconnect/rewind never rolls again. */
+export function installAutoSkinRandom(app = store) {
+  const savedMatches = loadPref('skinRandom.matches', []);
+  const seen = new Set((Array.isArray(savedMatches) ? savedMatches : []).filter((id) => typeof id === 'string').slice(-32));
+  let pending = null, fallbackKey = '', waitingRoom = '', disposed = false;
+  const remember = (id) => {
+    seen.add(id);
+    while (seen.size > 32) seen.delete(seen.values().next().value);
+    savePref('skinRandom.matches', [...seen]);
+  };
+  const inspect = () => {
+    if (disposed) return;
+    const state = app.get(), room = state.room, pub = state.match?.public;
+    if (!room?.inMatch) {
+      pending = null;
+      if (room?.code) {
+        waitingRoom = room.code; fallbackKey = '';
+        savePref('skinRandom.active', null);
+      }
+      return;
+    }
+    if (!pub?.phase || pub.phase === 'RESULT') { pending = null; return; }
+    if (!pub.players?.some((p) => p.playerId === state.me?.playerId && !p.isBot)) return;
+    if (!fallbackKey) {
+      const saved = loadPref('skinRandom.active', null);
+      fallbackKey = waitingRoom !== room.code && saved?.room === room.code && saved?.player === state.me?.playerId && typeof saved?.key === 'string'
+        ? saved.key : `${room.code}:${state.me?.playerId}:${Date.now()}`;
+      savePref('skinRandom.active', { room: room.code, player: state.me?.playerId, key: fallbackKey });
+      waitingRoom = '';
+    }
+    const id = typeof pub.matchId === 'string' ? `${state.me?.playerId}:${pub.matchId}` : fallbackKey;
+    if (seen.has(id) || seen.has(fallbackKey)) { if (pending === id) pending = null; return; }
+    if (pending !== id) {
+      // Enabling in an existing combat takes effect next match, including an initial mid-match page load.
+      const starting = ['INFO_CHECK', 'BAND_DRAFT', 'BATTLE_CHECK', 'ROUND_START'].includes(pub.phase) && Number(pub.round || 0) <= 1;
+      if (!skinRandomStore.get().auto || !starting) { remember(id); remember(fallbackKey); return; }
+      pending = id;
+      Promise.all([data.load('assets'), data.load('skins')]).then(inspect, () => {});
+      return;
+    }
+    if (!skinRandomStore.get().auto) { remember(id); remember(fallbackKey); pending = null; return; }
+    if (data.status('assets') !== 'ready' || data.status('skins') !== 'ready') return;
+    remember(id); remember(fallbackKey); pending = null;
+    randomizeSkins();
+  };
+  const offApp = app.subscribe(inspect);
+  const offData = data.subscribe((name) => { if (name === 'assets' || name === 'skins') inspect(); });
+  inspect();
+  return () => { disposed = true; offApp(); offData(); };
 }
 
 export function skinForUnit(info) {

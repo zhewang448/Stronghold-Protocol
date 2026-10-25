@@ -55,8 +55,8 @@ import { loadoutStore, openLoadout, closeLoadout, setEntries, setOpsMap, applyLo
 import { OperatorVoice } from '../ui/operatorVoice.js';
 // 皮肤 (docs/SKINS.md): a self-contained section — everything it does lives in ui/skinPicker.js, so this screen keeps
 // one import and one line in its detail body
-import { SkinSection } from '../ui/skinPicker.js';
-import { skinsStore, setSkin, setSkins, randomSkins } from '../ui/skins.js';
+import { SkinSection, SkinRandomControls } from '../ui/skinPicker.js';
+import { skinsStore, setSkin, setSkins, clearUnlockedSkins, skinRandomStore, updateSkinRandom } from '../ui/skins.js';
 import { CultivationSelects, CultivationSection, cultivationView, potentialEditable } from './cultivation.js';
 import { cultivationCharIds } from '../../../shared/protocol.js';
 import { setOwned, notOwnedCount, serializeOwnership, parseOwnershipImport, OWNERSHIP_IMPORT_MAX_BYTES } from '../ui/ownershipModel.js';
@@ -78,6 +78,10 @@ export { openLoadout, closeLoadout };
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI'];
+const EXPORT_PARTS = [
+  ['skills', N_('技能选择')], ['modules', N_('模组选择')], ['potential', N_('潜能设置')], ['cultivate', N_('练度设置')],
+  ['skins', N_('皮肤装扮')], ['skinRandom', N_('皮肤随机设置')], ['skinLocks', N_('皮肤锁定')],
+];
 
 // ---- export / import (干员调配 presets) -----------------------------------------------------------------------------
 //
@@ -787,25 +791,41 @@ function LoadoutScreen({ st }) {
     for (const [id, e] of Object.entries(loadoutStore.get().ops || {})) if (!rosterChars.has(id)) keep[id] = e;
     setOpsMap(keep);
     setEntries({});
-    setSkins({});
+    clearUnlockedSkins();
   };
 
   // 导出 / 导入 the loadout (or, on the 干员持有 tab, the not-owned list) as the versioned payload (a downloaded file,
   // the clipboard, or the textarea); `io.kind` says which
-  const ioText = io?.text ?? '';
   const ioOwn = io?.kind === 'ownership';
   const ioDiy = io?.kind === 'diy';
+  const selectiveExport = io?.mode === 'export' && !ioOwn && !ioDiy;
+  const exportParts = io?.parts || {};
+  const upstreamExport = io?.format === 'upstream';
+  const ioText = selectiveExport ? serializeExport(io.snapshot.byChar, { now: io.now, ops: io.snapshot.ops, skins: io.snapshot.skins,
+    sections: exportParts, upstream: upstreamExport, random: io.snapshot.random, locks: io.snapshot.locks }) : io?.text ?? '';
+  const exportData = selectiveExport ? JSON.parse(ioText) : null;
+  // Upstream refuses a payload containing only extension fields or no non-default gameplay settings.
+  const canExport = !selectiveExport || (upstreamExport
+    ? Object.keys(exportData.byChar || {}).length + Object.keys(exportData.ops || {}).length > 0
+    : Object.values(exportParts).some(Boolean));
+  const changeExportPart = (key, on) => setIo({ ...io, parts: { ...exportParts, [key]: on } });
+  const changeExportFormat = (format) => setIo({ ...io, format, parts: format === 'upstream'
+    ? { ...exportParts, skins: false, skinRandom: false, skinLocks: false } : exportParts });
   const openExport = () => setIo(tab === 'ownership'
     // (by operator, every version's — DESIGN §35.23; a v1 store still migrating exports what it has)
     ? { mode: 'export', kind: 'ownership', text: serializeOwnership(loadoutStore.get().notOwnedChars || []) }
     : tab === 'diy' ? { mode: 'export', kind: 'diy', text: serializeDiy(loadoutStore.get().diy, { version: loadoutStore.get().diyVersion }) }
-      : { mode: 'export', kind: 'loadout', text: serializeExport(loadoutStore.get().byChar || {}, { ops: loadoutStore.get().ops, skins: skinsStore.get().skins }) });
+      : { mode: 'export', kind: 'loadout', format: 'upstream', now: Date.now(),
+        parts: { skills: true, modules: true, potential: true, cultivate: true, skins: false, skinRandom: false, skinLocks: false },
+        snapshot: { byChar: loadoutStore.get().byChar || {}, ops: loadoutStore.get().ops || {}, skins: skinsStore.get().skins,
+          random: { scope: skinRandomStore.get().scope, auto: skinRandomStore.get().auto }, locks: skinRandomStore.get().locked } });
   const openImport = () => setIo({ mode: 'import', kind: tab, text: '' });
   const ioCopy = async () => {
+    if (!canExport) return;
     const ok = await copyText(ioText);
     toast(ok ? t('已复制到剪贴板') : t('复制失败，请在文本框中手动全选复制'), ok ? 'success' : 'warn');
   };
-  const ioDownload = () => downloadText(exportFilename(new Date(), ioOwn ? 'ownership' : ioDiy ? 'diy' : 'loadout'), ioText);
+  const ioDownload = () => { if (canExport) downloadText(exportFilename(new Date(), ioOwn ? 'ownership' : ioDiy ? 'diy' : 'loadout'), ioText); };
   const ioPick = () => fileRef.current?.click();
   const ioFile = async (e) => {
     const f = e.currentTarget.files && e.currentTarget.files[0];
@@ -846,12 +866,22 @@ function LoadoutScreen({ st }) {
     if (opsRefused) { toast(opsRefused.text, opsRefused.tone); return; }
     // 0.2.2: a payload with `ops` replaces the 潜能 / 练度 too (an older export leaves them alone)
     const opIds = res.ops ? cultivationCharIds(data.get('chess'), data.get('backups')) : null;
+    const imported = importedEntries(res);
+    if (res.sections && (res.sections.skills || res.sections.modules)
+      && Object.keys(res.byChar || res.entries || {}).length && !Object.keys(imported).length) {
+      toast(t('导入失败：这份数据在当前版本没有可用的调配，未做任何改动'), 'error'); return;
+    }
     // (v2 by operator, v1 by 第二期下半's chess ids: as entries of the data on screen — DESIGN §35.23)
-    const r = applyLoadoutEntries(importedEntries(res), getChess, res.ops ? { ops: res.ops, isOperator: (id) => opIds.has(id) } : {});
+    const r = applyLoadoutEntries(imported, getChess, { ...(res.ops ? { ops: res.ops, isOperator: (id) => opIds.has(id) } : {}),
+      ...(res.sections ? { sections: res.sections } : {}) });
+    if (r.refused) { toast(t('导入失败：这份数据在当前版本没有可用的调配，未做任何改动'), 'error'); return; }
     const { applied, dropped } = r;
     const nOps = r.ops ?? 0;
-    const hasSkins = res.skins !== undefined;
+    const hasSkins = res.skins !== undefined && (!res.sections || res.sections.skins);
     if (hasSkins) setSkins(res.skins);
+    if (res.skinRandom) updateSkinRandom(res.skinRandom);
+    if (res.skinLocks) updateSkinRandom({ locked: res.skinLocks });
+    if (res.sections) { setIo(null); toast(t('已导入勾选的配置，未包含的部分保持不变'), 'success'); return; }
     // nothing survived sanitising (unknown chess, or every choice already the default): keep the current loadout
     if (!applied && !nOps && !hasSkins) { toast(t('导入失败：这份数据在当前版本没有可用的调配，未做任何改动'), 'error'); return; }
     setIo(null);
@@ -1018,12 +1048,12 @@ function LoadoutScreen({ st }) {
               </div>
             </div>` : null}
           </div>
-              <button type="button" class="lo-tbtn" data-testid="skins-random" disabled=${!ready} onClick=${() => { setMenu(null); setSkins(randomSkins(data.get('skins'), data.get('assets'))); }}><${Icon} name="refresh" />${t('随机装备皮肤')}</button>
+        <${SkinRandomControls} ready=${ready} />
           <div class="lo-popwrap">
             <button type="button" class=${cx('lo-tbtn', 'lo-popbtn', menu === 'more' && 'is-on')} aria-expanded=${menu === 'more' ? 'true' : 'false'} aria-label=${t('更多')}
               data-testid="loadout-more" title=${t('导出 / 导入 / 全部恢复默认')} onClick=${() => setMenu(menu === 'more' ? null : 'more')}><${Icon} name="dots" /></button>
             ${menu === 'more' ? html`<div class="lo-pop lo-pop--menu" role="menu">
-              <button type="button" role="menuitem" data-testid="loadout-export" disabled=${!nChanged && !Object.keys(st.ops || {}).length && !Object.keys(skinsStore.get().skins).length}
+              <button type="button" role="menuitem" data-testid="loadout-export" disabled=${!ready}
                 onClick=${() => { setMenu(null); openExport(); }}><${Icon} name="copy" />${t('导出调配')}</button>
               <button type="button" role="menuitem" data-testid="loadout-import" disabled=${!ready} onClick=${() => { setMenu(null); openImport(); }}><${Icon} name="link" />${t('导入调配')}</button>
               <button type="button" role="menuitem" class="is-danger" disabled=${!nChanged && !Object.keys(skinsStore.get().skins).length} onClick=${() => { setMenu(null); resetAll(); }}><${Icon} name="refresh" />${t('全部恢复默认')}</button>
@@ -1044,8 +1074,8 @@ function LoadoutScreen({ st }) {
         ${inMatch && hasDeadline(infoDeadline) ? html`<${Countdown} deadline=${infoDeadline} size="sm" gauge=${false} label=${t('调配截止')} class="lo-deadline" />` : null}
         ${syncText ? html`<span class=${cx('lo-sync', syncCls)} role="status">${t(syncText)}</span>` : null}
         <span class="lo-count">${t('已调整')} <b class="num">${nChanged}</b><span class="num t-dim">/${roster.length}</span></span>
-        <${Button} variant="ghost" size="sm" data-testid="loadout-export" disabled=${!nChanged && !Object.keys(st.ops || {}).length && !Object.keys(skinsStore.get().skins).length} onClick=${openExport} title=${t('导出当前调配（可复制或下载）')}>${t('导出')}<//>
-        <${Button} variant="ghost" size="sm" data-testid="skins-random" disabled=${!ready} onClick=${() => setSkins(randomSkins(data.get('skins'), data.get('assets')))}>${t('随机装备皮肤')}<//>
+        <${Button} variant="ghost" size="sm" data-testid="loadout-export" disabled=${!ready} onClick=${openExport} title=${t('导出当前调配（可复制或下载）')}>${t('导出')}<//>
+        <${SkinRandomControls} ready=${ready} />
         <${Button} variant="ghost" size="sm" data-testid="loadout-import" disabled=${!ready} onClick=${openImport} title=${t('导入调配（粘贴或选择文件）')}>${t('导入')}<//>
         <${Button} variant="secondary" size="sm" icon="refresh" disabled=${!nChanged} onClick=${resetAll}>${t('全部恢复默认')}<//>
       </div>`}
@@ -1097,8 +1127,8 @@ function LoadoutScreen({ st }) {
       micro=${ioOwn ? 'OPERATOR ROSTER' : ioDiy ? 'SELF-SELECT SQUAD' : 'OPERATOR LOADOUT'}
       actions=${io.mode === 'export'
         ? html`<${Button} variant="ghost" onClick=${() => setIo(null)}>${t('关闭')}<//>
-            <${Button} variant="secondary" icon="copy" data-testid="loadout-io-copy" onClick=${ioCopy}>${t('复制')}<//>
-            <${Button} variant="primary" data-testid="loadout-io-download" onClick=${ioDownload}>${t('下载文件')}<//>`
+            <${Button} variant="secondary" icon="copy" data-testid="loadout-io-copy" disabled=${!canExport} onClick=${ioCopy}>${t('复制')}<//>
+            <${Button} variant="primary" data-testid="loadout-io-download" disabled=${!canExport} onClick=${ioDownload}>${t('下载文件')}<//>`
         : html`<${Button} variant="ghost" onClick=${() => setIo(null)}>${t('取消')}<//>
             <${Button} variant="secondary" data-testid="loadout-io-pick" onClick=${ioPick}>${t('选择文件')}<//>
             <${Button} variant="primary" icon="check" data-testid="loadout-io-apply" disabled=${!ioText.trim() || !ready} onClick=${ioApply}>${t('导入')}<//>`}>
@@ -1113,6 +1143,26 @@ function LoadoutScreen({ st }) {
         : io.mode === 'export'
           ? html`${tParts('共 {n} 名干员已调整。复制或下载这份数据，即可在别的设备或浏览器上导入。', { n: html`<b class="num">${nChanged}</b>`, count: nChanged })}`
           : html`${t('把导出的内容粘贴到下方，或点「选择文件」。')}${nChanged ? html`${tParts('导入会{overwrite}当前的 {nChanged} 名干员调配。', { overwrite: html`<strong>${t('覆盖')}</strong>`, nChanged })}` : null}`}</p>
+      ${selectiveExport ? html`<fieldset class="lo-export" data-testid="loadout-export-options">
+        <legend>${t('选择导出内容')}</legend>
+        <label class="lo-export__format">${t('导出格式')}
+          <select value=${io.format} aria-label=${t('导出格式')} onChange=${(e) => changeExportFormat(e.currentTarget.value)}>
+            <option value="upstream">${t('上游兼容格式（v2）')}</option>
+            <option value="native">${t('本库格式（含扩展配置）')}</option>
+          </select>
+        </label>
+        <div class="lo-export__parts">${EXPORT_PARTS.map(([key, label], index) => html`<label class=${upstreamExport && index >= 4 ? 'is-disabled' : ''}>
+          <input type="checkbox" data-export-part=${key} checked=${!!exportParts[key]} disabled=${upstreamExport && index >= 4}
+            onChange=${(e) => changeExportPart(key, e.currentTarget.checked)} />${t(label)}
+        </label>`)}</div>
+        <p class="lo-io__hint">${upstreamExport
+          ? t('保持上游原生 stronghold.loadout v2 格式，仅包含技能、模组、潜能和练度。皮肤、随机和锁定配置需使用本库格式。')
+          : t('仅导出勾选部分；导回本库时，未包含的部分保持不变。')}</p>
+        ${upstreamExport ? html`<p class="lo-io__hint">${t('适配本次整合的上游 v0.3.3；目标版本需包含相同干员及选项。上游导入仍遵循其原有覆盖规则。')}</p>` : null}
+        ${!canExport ? html`<p class="lo-export__warning" role="status">${upstreamExport
+          ? t('勾选部分没有可供上游导入的非默认配置，已禁用导出以避免空文件报错。')
+          : t('请至少勾选一项导出内容。')}</p>` : null}
+      </fieldset>` : null}
       <textarea class="lo-io__text" data-testid="loadout-io-text" spellcheck=${false} readOnly=${io.mode === 'export'} value=${ioText}
         placeholder=${io.mode === 'export' ? '' : ioDiy ? t('在此粘贴导出的自选编队内容…') : ioOwn ? t('在此粘贴导出的干员持有内容…') : t('在此粘贴导出的调配内容…')}
         onInput=${(e) => setIo({ ...io, text: e.currentTarget.value })}></textarea>

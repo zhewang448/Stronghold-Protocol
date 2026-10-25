@@ -25,7 +25,12 @@ export function parseDesktopArgs(args) {
     else if (arg === '--restart') options.action = 'restart';
     else if (arg === '--port') options.port = Number(args[++i]);
     else if (arg === '--host') options.host = args[++i];
-    else if (arg === '--tunnel') options.tunnel = true;
+    else if (arg === '--versions' || arg === '--version-default') {
+      const value = args[++i];
+      if (!value || value.startsWith('-')) throw new Error(arg + ' requires a version id' + (arg === '--versions' ? ' list or all' : ''));
+      if (arg === '--versions') options.versions = value;
+      else options.versionDefault = value;
+    } else if (arg === '--tunnel') options.tunnel = true;
     else if (arg === '--no-setup') options.setup = false;
     else if (arg !== '--no-open') throw new Error('Unknown desktop launcher option: ' + arg);
   }
@@ -95,6 +100,8 @@ export async function launchDesktop(options, { root = ROOT, spawnImpl = spawn, p
     try {
       log('\n[launcher] ' + new Date().toISOString() + ' starting on port ' + port + '\n');
       const args = [path.join(root, 'scripts', 'launch.mjs'), '--port', String(port), '--host', host, '--no-open'];
+      if (options.versions !== undefined) args.push('--versions', options.versions);
+      if (options.versionDefault !== undefined) args.push('--version-default', options.versionDefault);
       if (options.tunnel) args.push('--tunnel');
       if (!options.setup) args.push('--no-setup');
       const child = spawnImpl(process.execPath, args, { cwd: root, env: { ...process.env, NO_COLOR: '1', SP_ADMIN: '1', SP_REQUIRE_ADMIN: '1' },

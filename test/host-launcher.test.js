@@ -34,6 +34,14 @@ test('desktop flags validate ports and bind addresses and reject arbitrary argum
     assert.throws(() => parseDesktopArgs(args));
 });
 
+test('desktop version flags remain separate from installation options', () => {
+  const options = parseDesktopArgs(['--versions', 'act2autochess,act1autochess', '--version-default', 'act1autochess']);
+  assert.equal(options.versions, 'act2autochess,act1autochess');
+  assert.equal(options.versionDefault, 'act1autochess');
+  assert.throws(() => parseDesktopArgs(['--versions']), /requires/);
+  assert.throws(() => parseDesktopArgs(['--version-default', '--no-open']), /requires/);
+});
+
 test('unknown HTTP listener never becomes this installations running server', async (t) => {
   const report = await desktopStatus({ root: fixture(t), running: async () => null, probe: async () => ({ state: 'ours' }) });
   assert.equal(report.state, 'busy'); assert.deepEqual(report.addresses, []);
@@ -88,9 +96,9 @@ test('launcher logs scrub plugin studio keys and ANSI codes', () => {
 
 test('wrapper forwards startup flags and Unicode logs without retaining split access keys', async (t) => {
   const root = fixture(t);
-  const result = await launchDesktop({ port: 19388, host: '127.0.0.1', setup: false, tunnel: true }, {
+  const result = await launchDesktop({ port: 19388, host: '127.0.0.1', setup: false, tunnel: true, versions: 'act2autochess,act1autochess', versionDefault: 'act1autochess' }, {
     root, probe: async () => ({ state: 'free' }), spawnImpl(_executable, args, options) {
-      assert.deepEqual(args.slice(1), ['--port', '19388', '--host', '127.0.0.1', '--no-open', '--tunnel', '--no-setup']);
+      assert.deepEqual(args.slice(1), ['--port', '19388', '--host', '127.0.0.1', '--no-open', '--versions', 'act2autochess,act1autochess', '--version-default', 'act1autochess', '--tunnel', '--no-setup']);
       assert.equal(options.windowsHide, true);
       const child = Object.assign(new EventEmitter(), { stdout: new PassThrough(), stderr: new PassThrough() });
       setImmediate(() => {
