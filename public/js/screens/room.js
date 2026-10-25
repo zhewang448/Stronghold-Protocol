@@ -57,7 +57,7 @@ import { net } from '../net.js';
 import { store, useStore, shallowEqual, emptyMatch, isSpectating, serverNow, loadPref, savePref } from '../store.js';
 import { data, useData, getConfig } from '../data.js';
 import { chessAvatarUrl } from '../ui/assetUrls.js';
-import { CARD_PREF, CARD_SKIN_PREF, cardOperators, seatPortrait, cardAvatarUrl } from '../ui/seatArt.js';
+import { CARD_PREF, CARD_KEY, CARD_SKIN_KEY, cardStore, setCard, cardOperators, seatPortrait, cardAvatarUrl } from '../ui/seatArt.js';
 import { C2S } from '../../../shared/protocol.js';
 import { difficultyInfo, ProtoCard } from './lobby.js';
 import { ProtocolScene } from '../ui/protocolScene.js';
@@ -391,25 +391,16 @@ export function RoomScreen() {
   const m = data.get('assets');
   // 名片干员: the pickable operators, the default pool (5★/6★ by charId, the same order on every client), one's pick
   const cardList = useMemo(() => cardOperators(data.list('chess'), data.get('seat-art')), [data.get('chess'), data.get('seat-art')]);
-  const [myCard, setMyCard] = useState(() => { const v = loadPref(CARD_PREF, ''); return typeof v === 'string' ? v : ''; });
-  const [mySkin, setMySkin] = useState(() => { const v = loadPref(CARD_SKIN_PREF, ''); return typeof v === 'string' ? v : ''; });
+  const myCard = useStore(s => s[CARD_KEY], Object.is, cardStore);
+  const mySkin = useStore(s => s[CARD_SKIN_KEY], Object.is, cardStore);
   const [picking, setPicking] = useState(false);
   const portraits = useMemo(() => ({
     pool: cardList.filter((c) => (c.rarity ?? 0) >= 5 && c.assets).sort((a, b) => (a.charId < b.charId ? -1 : 1)),
     byChar: new Map(cardList.map((c) => [c.charId, c])), m, myId: me.playerId, myCard, mySkin,
   }), [cardList, m, me.playerId, myCard, mySkin]);
   const pickCard = (charId, skinId = '') => {
-    setMyCard(charId); savePref(CARD_PREF, charId); setMySkin(skinId); savePref(CARD_SKIN_PREF, skinId); setPicking(false);
+    setCard(charId, skinId); setPicking(false);
   };
-  // tell the server (teammates see it) once it knows room.card; a refused id stays local
-  const seatCard = room ? (roomFacts(room, me.playerId).mine?.card || '') : '';
-  const seatSkin = room ? (roomFacts(room, me.playerId).mine?.cardSkin || '') : '';
-  useEffect(() => {
-    if (!CARD_SYNC || !room || conn.status !== 'online' || seatCard === (myCard || '') && seatSkin === (mySkin || '')) return;
-    if (myCard && !portraits.byChar.has(myCard)) return;
-    net.request('room.card', { charId: myCard || '', skinId: mySkin || '' }).catch(toastError);
-  }, [room?.code, myCard, mySkin, seatCard, seatSkin, conn.status, cardList]);
-
   // arrived through 搜寻队友 (match.found for this room): 搜寻成功 once
   useEffect(() => {
     if (room && mm?.status === 'found' && mm.roomCode === room.code) {

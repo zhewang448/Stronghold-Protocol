@@ -1936,7 +1936,7 @@ export class Lobby {
     const data = this.dataFor(room);
     const all = data['seat-art']?.chars || {};
     const fallback = Object.values(data.chess || {}).some(c => c.charId === charId && !c.isDiy && c.visible !== false);
-    if (charId && (!fallback || skinId && !all[charId]?.choices?.some(s => s.id === skinId))) return fail(ERR.BAD_MSG, 'unknown operator or skin');
+    if (charId && (!(Object.hasOwn(all, charId) || fallback) || skinId && !all[charId]?.choices?.some(s => s.id === skinId))) return fail(ERR.BAD_MSG, 'unknown operator or skin');
     if (!charId && skinId) return fail(ERR.BAD_MSG, 'unknown operator or skin');
     session.card = charId; session.cardSkin = skinId;
     const seat = room?.seatOf(session.playerId);

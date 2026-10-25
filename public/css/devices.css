@@ -179,3 +179,35 @@ html[data-fit] :is(.app-root, .st, .lo, .guide) {
 .set-fit__step { flex: none; width: .4rem; min-width: 28px; height: .34rem; min-height: 26px; padding: 0; border: 1px solid var(--line-2); background: rgba(0, 0, 0, .3);
   color: var(--text-hi); font-size: calc(.2 * var(--t)); line-height: 1; cursor: pointer; }
 .set-fit__step:disabled { opacity: .35; cursor: default; }
+
+/* Local extensions no longer squeeze three rows of overlapping 44px hit areas into the shop's left margin.
+   Keep the existing communication entry and expose all utility buttons in one touch-scrollable row. */
+@media (max-width: 767px) and (pointer: coarse) {
+  .gm:not(.is-collapsed) .gm__corner { flex-direction: column-reverse; flex-wrap: nowrap; align-items: flex-start; width: var(--corner-available-width, 110px); }
+  .gm:not(.is-collapsed) .gm__corner-actions { display: flex; gap: 4px; width: 100%; padding: 0;
+    overflow-x: auto; overscroll-behavior-x: contain; touch-action: pan-x; scrollbar-width: thin;
+    scrollbar-color: var(--mint-700) var(--bg-1); scroll-snap-type: x proximity; }
+  .gm:not(.is-collapsed) .gm__corner-actions > * { flex: 0 0 44px; min-width: 44px; height: 44px; scroll-snap-align: start; }
+  .gm:not(.is-collapsed) .gm__corner-actions .gm__gear::before { inset: 0; width: 100%; height: 100%; transform: none; }
+  .gm__corner[data-tight] .ewheel { width: 100%; }
+  .gm__corner[data-tight] .ewheel__btn { width: 100%; min-width: 0; height: 44px; padding: 0;
+    background: rgba(8, 11, 10, .85); border: 1px solid var(--line-2); }
+  .gm__corner[data-tight] .ewheel__label { position: static; display: grid; place-items: center; width: 100%; height: 100%; font-size: 14px; }
+}
+
+/* Restored extension-only rules absent from upstream merge. */
+.pwa-install-help { display: grid; gap: .14rem; }
+.lobby-screen.lobby-hub > .hub-topbar {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: .12rem .2rem;
+}
+.hub-topbar > .topbar__left { flex-wrap: wrap; max-width: 100%; }
+.hub-topbar .topbar__tools { flex-wrap: wrap; min-width: 0; }
+.hub-topbar > .topbar__right { flex-wrap: wrap; justify-content: flex-end; max-width: 100%; margin-inline-start: auto; }
+html[data-fit] :is(.app-root, .st, .sw, .proto, .lo, .guide, .ach) {
+
+  left: var(--fit-l, 0px); right: var(--fit-r, 0px); top: var(--fit-t, 0px); bottom: var(--fit-b, 0px);
+}
+@media (max-height: 600px) and (pointer: coarse), (max-height: 600px) and (any-pointer: coarse) {.spov--grouped .spov__groups { gap: 6px; }}
+@media (max-height: 600px) and (pointer: coarse), (max-height: 600px) and (any-pointer: coarse) {.spov--grouped .spov__group-tab { flex: none; min-height: 44px; padding: 6px 8px; font-size: 12px; }}
+@media (max-height: 600px) and (pointer: coarse), (max-height: 600px) and (any-pointer: coarse) {.spov--grouped .spov__readonly { flex: none; font-size: 12px; gap: 8px; }}
+@media (max-height: 600px) and (pointer: coarse), (max-height: 600px) and (any-pointer: coarse) {.spov--grouped .spov__readonly button { min-height: 44px; padding: 6px 8px; font-size: 12px; }}

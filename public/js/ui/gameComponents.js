@@ -1,3 +1,4 @@
+import { playerSeatColor } from './playerSeries.js';
 // Shared in-match building blocks (Preact + htm): data hook, images with fallbacks, rich text,
 // unit thumbnails, LP tower, coin badge, official UI sprites. Styles: css/screens/game*.css.
 
@@ -207,6 +208,7 @@ export function gearPath({ teeth = 8, rTip = 10, rRoot = 7.4, tipW = 3.2, rootW 
 
 /** Extra 24×24 glyphs used by the in-match HUD (original shapes). */
 export const GLYPHS = Object.freeze({
+  history: 'M12 3a9 9 0 1 1-8.6 11.7l1.9-.6A7 7 0 1 0 6.4 7.8L9 10H2V3l2.8 2.8A9 9 0 0 1 12 3zM11 7h2v5.4l3.3 2-1 1.7L11 13.5z',
   gear: gearPath(),
   eye: 'M12 5c5 0 9 4.5 10 7-1 2.5-5 7-10 7S3 14.5 2 12c1-2.5 5-7 10-7zm0 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4z',
   emote: 'M8.2 2h7.6L22 8.2v7.6L15.8 22H8.2L2 15.8V8.2zM8.5 8.5v3h2v-3zm5 0v3h2v-3zM7.8 14.2a5.5 5.5 0 0 0 8.4 0l-1.5-1.3a3.5 3.5 0 0 1-5.4 0z',
@@ -285,14 +287,14 @@ export function RichTip({ text, children, placement = 'top' }) {
  * Seat-coloured player avatar: band icon when a band is picked, else glyph/robot.
  * @param {{ player: any, size?: 'sm'|'md', self?: boolean, class?: string }} props
  */
-export function PlayerAvatar({ player, size = 'md', self = false, class: cls }) {
-  const src = player?.bandId ? bandIconUrl(data.get('assets'), player.bandId) : null;
+export function PlayerAvatar({ player, size = 'md', self = false, class: cls, avatar = null }) {
+  const src = avatar || (player?.bandId ? bandIconUrl(data.get('assets'), player.bandId) : null);
   const glyph = [...(player?.name || '').trim()][0] || '?';
   const dead = player?.alive === false || player?.status === 'dead';
   const left = player?.status === 'left';
-  const hue = [162, 196, 38, 280][((player?.seat | 0) % 4 + 4) % 4];
+  const color = playerSeatColor(player?.seat);
   return html`<span class=${cx('pavatar', `pavatar--${size}`, self && 'is-self', dead && 'is-dead', left && 'is-left', player?.isBot && 'is-bot',
-      player?.connected === false && !player?.isBot && 'is-offline', cls)} style=${`--seat-hue:${hue}`}>
+      player?.connected === false && !player?.isBot && 'is-offline', cls)} style=${`--seat-color:${color}`}>
     <span class="pavatar__img">
       <${Img} src=${src} fallback=${player?.isBot ? html`<${Icon} name="robot" class="pavatar__bot" />` : html`<span class="pavatar__glyph">${glyph}</span>`} />
     </span>

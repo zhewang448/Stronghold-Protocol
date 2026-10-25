@@ -105,7 +105,7 @@ test('outfit selection persists, synchronizes, draws real front/back models and 
     await c.waitFor((s) => s.phase === 'PREP' && s.hand > 0, 'prep');
     await c.page.waitForFunction((skin) => {
       const views = globalThis.__SP_VIEW__?.raw?.debug?.views;
-      return views && [...views.values()].some((v) => v._skinId === skin && v.spineReady && v._actorEntry?.skel.includes('kitchen_2/front/'));
+      return views && [...views.values()].some((v) => v.info?.skin === skin && v.spineReady && v._actorEntry?.skel.includes('kitchen_2/front/'));
     }, { timeout: 30000 }, SKIN);
     const [piece] = (await c.handPieces('chess')).filter((p) => p.id === CHESS);
     assert.ok(piece);
@@ -134,7 +134,7 @@ test('outfit selection persists, synchronizes, draws real front/back models and 
     await c.click('.readybtn'); await c.waitFor((s) => s.phase === 'COMBAT', 'combat');
     await c.page.waitForFunction((skin) => {
       const raw = globalThis.__SP_VIEW__?.raw;
-      return raw?.mode === 'battle' && [...raw.debug.views.values()].some((v) => v._skinId === skin && v.spineReady && v._actorEntry?.skel.includes('kitchen_2'));
+      return raw?.mode === 'battle' && [...raw.debug.views.values()].some((v) => v.info?.skin === skin && v.spineReady && v._actorEntry?.skel.includes('kitchen_2'));
     }, { timeout: 30000 }, SKIN);
     await c.shot('battle-model');
     await c.page.evaluate(async () => { const s = await import('/js/ui/skins.js'); s.setSkin('char_498_inside', null); });

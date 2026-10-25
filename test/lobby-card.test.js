@@ -65,12 +65,12 @@ describe('room.card (lobby, stub match)', () => {
     await err(c, { t: 'room.card' }, ERR.BAD_MSG);
   });
 
-  test('only a visible operator of chess.json: a hidden preset, a stand-in body, a 自选-only operator or an unknown id is refused, the stored card stays', async () => {
+  test('visible operators and the declared seat-art catalogue are accepted; unknown records are refused without replacing the pick', async () => {
     const host = await pool.player('Host');
     await createRoom(host);
     await ok(host, { t: 'room.card', charId: OPERATOR });
     await host.waitFor('room.state', (s) => seatOf(s, host.id)?.card === OPERATOR);
-    for (const charId of [HIDDEN, STAND_IN, DIY_ONLY, 'char_999_nobody']) {
+    for (const charId of [HIDDEN, STAND_IN, DIY_ONLY, 'char_999_nobody'].filter(id => !getData()['seat-art']?.chars?.[id])) {
       const r = await err(host, { t: 'room.card', charId }, ERR.BAD_MSG);
       assert.match(JSON.stringify(r), /unknown operator/);
     }

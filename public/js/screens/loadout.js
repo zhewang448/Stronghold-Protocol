@@ -39,8 +39,8 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from '../../vendor/hooks.module.js';
 import { html, Icon, MicroLabel, Button, TierChip, TextField, Countdown, Spinner, confirmDialog, hasDeadline, Modal, Fragment } from '../ui/components.js';
-import { OperatorImage, Img, UnitThumb, PromotionIcon } from '../ui/gameComponents.js';
-import { profGlyphUrl, subProfIconUrl, bondIconUrl, uiUrl } from '../ui/assetUrls.js';
+import { OperatorImage, Img, RichText, UnitThumb, PromotionIcon } from '../ui/gameComponents.js';
+import { profGlyphUrl, subProfIconUrl, bondIconUrl, uiUrl, itemIconUrl } from '../ui/assetUrls.js';
 import { GarrisonBlock } from '../ui/detailPanel.js';
 import { data, useData, localAsset, DATA_FILES } from '../data.js';
 import { useStore, loadPref, savePref } from '../store.js';
@@ -56,7 +56,7 @@ import { OperatorVoice } from '../ui/operatorVoice.js';
 // 皮肤 (docs/SKINS.md): a self-contained section — everything it does lives in ui/skinPicker.js, so this screen keeps
 // one import and one line in its detail body
 import { SkinSection } from '../ui/skinPicker.js';
-import { skinsStore, setSkins } from '../ui/skins.js';
+import { skinsStore, setSkin, setSkins, randomSkins } from '../ui/skins.js';
 import { CultivationSelects, CultivationSection, cultivationView, potentialEditable } from './cultivation.js';
 import { cultivationCharIds } from '../../../shared/protocol.js';
 import { setOwned, notOwnedCount, serializeOwnership, parseOwnershipImport, OWNERSHIP_IMPORT_MAX_BYTES } from '../ui/ownershipModel.js';
@@ -314,7 +314,7 @@ function Filters({ m, filters, onFilters, bonds, onDeck = null }) {
 
 const VIEW_PREF = 'loadout.view';
 /** The stored view: 'list' (the aligned rows, the default) or 'deck' (the cards). */
-export const loadoutViewPref = () => (loadPref(VIEW_PREF, 'list') === 'deck' ? 'deck' : 'list');
+export const loadoutViewPref = () => (loadPref(VIEW_PREF, 'deck') === 'list' ? 'list' : 'deck');
 const DECK_TIERS = [1, 2, 3, 4, 5, 6];
 
 /** 潜能 as six pips (the card's star row). */
@@ -490,8 +490,91 @@ function DeckView({ m, list, getChess, st, selId, quick, onPick, onChange, onOps
  * match's loadout is locked (`locked`: the full notice, its title) — a 「本局已锁定 · 下一局生效」 chip: the bar is the one
  * strip every width and 快速配置 keep on screen (the top bar's note is cut short or hidden on narrow screens).
  */
-export function DeckBar({ counts, active, onJump, diyOpen, quick, onConfirm, locked = null }) {
+/** The equipment of the codex: this game's shop items (data/items.json), base forms, by tier then shop order. */
+export function codexItems(items) {
+  return Object.values(items || {})
+    .filter((x) => x && !x.isGolden && x.itemType === 'EQUIP' && !x.hideInShop)
+    .sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0) || (a.shopSortId ?? 0) - (b.shopSortId ?? 0));
+}
+
+/** 道具: the equipment codex — a tile per item (icon, tier, name, base effect), grouped by tier; a tile opens ItemDetail. */
+function ItemCodex({ m, items, deckRef, onOpen, onTier }) {
+  const groups = DECK_TIERS.map((tier) => ({ tier, items: items.filter((x) => x.tier === tier) })).filter((g) => g.items.length);
+  const raf = useRef(0);
+  const dragScroll = useDragScroll();
+  const onScroll = (e) => {
+    const el = e.currentTarget;
+    cancelAnimationFrame(raf.current);
+    raf.current = requestAnimationFrame(() => {
+      const left = el.getBoundingClientRect().left + 24;
+      let cur = groups[0]?.tier || 1;
+      for (const sec of el.querySelectorAll('.lo-tgroup')) if (sec.getBoundingClientRect().left <= left) cur = Number(sec.dataset.tier);
+      onTier(cur);
+    });
+  };
+  const onWheel = (e) => {
+    if (e.ctrlKey || Math.abs(e.deltaX) >= Math.abs(e.deltaY)) return;
+    e.currentTarget.scrollLeft += e.deltaY;
+    e.preventDefault();
+  };
+  if (!items.length) return html`<div class="lo-deck lo-deck--empty" ref=${deckRef}><p class="lo-empty t-dim">${t('装备数据载入中…')}</p></div>`;
+  let n = -1;
+  return html`<div class="lo-deck lo-deck--items" ref=${deckRef} onScroll=${onScroll} onWheel=${onWheel} ...${dragScroll} role="list" aria-label=${t('装备一览')}>
+    ${groups.map((g) => html`<section key=${g.tier} class=${cx('lo-tgroup', `lo-tgroup--t${g.tier}`)} data-tier=${g.tier}>
+      <div class=${cx('lo-tmark', `tier--${g.tier}`)} aria-hidden="true">
+        <span class="lo-tmark__no">NO.</span><b class="lo-tmark__n">${ROMAN[g.tier]}</b><span class="lo-tmark__cnt num">${g.items.length}</span>
+      </div>
+      <div class="lo-igrid">${g.items.map((it) => { n += 1; const idx = n; return html`<button key=${it.id} type="button" role="listitem" class="lo-item" data-item=${it.id} onClick=${() => onOpen(idx)}>
+        <span class="lo-item__icon"><${Img} src=${itemIconUrl(m, it)} fallback=${html`<${Icon} name="box" />`} /></span>
+        <span class="lo-item__body">
+          <span class="lo-item__head"><${TierChip} tier=${it.tier} size="sm" /><b class="lo-item__name">${it.name}</b></span>
+          <${RichText} class="lo-item__desc" text=${it.descRaw || it.desc || ''} />
+        </span>
+        ${it.shopExcluded ? html`<span class="lo-item__tag">${t('特殊获取')}</span>` : null}
+        <span class="lo-item__zoom" aria-hidden="true"><${Icon} name="search" /></span>
+      </button>`; })}</div>
+    </section>`)}
+  </div>`;
+}
+
+/** One item, base and advanced (the merged golden form), its flavour text and price; ‹ / › browse the codex. */
+function ItemDetail({ m, items, index, all, onIndex, onClose }) {
+  const it = items[index];
+  if (!it) return null;
+  const adv = it.goldenId ? all?.[it.goldenId] : null;
+  const same = adv && (adv.descRaw || adv.desc) === (it.descRaw || it.desc);
+  const go = (d) => onIndex((index + d + items.length) % items.length);
+  return html`<div class="lo-idetail" role="dialog" aria-modal="true" aria-label=${it.name} onMouseDown=${(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <button type="button" class="lo-idetail__nav is-prev" onClick=${() => go(-1)} aria-label=${t('上一件')}><${Icon} name="chevronLeft" /></button>
+    <div class="lo-idetail__box">
+      <button type="button" class="lo-idetail__close" onClick=${onClose} aria-label=${t('关闭')}><${Icon} name="close" /></button>
+      <header class="lo-idetail__head"><${TierChip} tier=${it.tier} size="md" /><h3>${it.name}</h3>
+        <span class="lo-idetail__price">${t('售价')} <b class="num">${it.price ?? '—'}</b></span>
+        ${it.shopExcluded ? html`<span class="lo-item__tag">${t('特殊获取')}</span>` : null}</header>
+      <div class="lo-idetail__main">
+        <span class="lo-idetail__icon"><${Img} src=${itemIconUrl(m, it)} fallback=${html`<${Icon} name="box" />`} /></span>
+        <div class="lo-idetail__text">
+          <span class="lo-idetail__chip">${same ? t('基础 & 进阶效果') : t('基础效果')}</span>
+          <${RichText} as="p" class="lo-idetail__eff" text=${it.descRaw || it.desc || ''} />
+          ${adv && !same ? html`<span class="lo-idetail__chip is-adv">${t('进阶效果')}</span>
+            <${RichText} as="p" class="lo-idetail__eff" text=${adv.descRaw || adv.desc || ''} />` : null}
+          ${it.flavor ? html`<p class="lo-idetail__flavor">${it.flavor}</p>` : null}
+        </div>
+      </div>
+      <footer class="lo-idetail__foot num">${index + 1} / ${items.length}</footer>
+    </div>
+    <button type="button" class="lo-idetail__nav is-next" onClick=${() => go(1)} aria-label=${t('下一件')}><${Icon} name="chevronRight" /></button>
+  </div>`;
+}
+
+export function DeckBar({ deckTab = 'ops', onDeckTab = null, counts, active, onJump, diyOpen, quick, onConfirm, locked = null }) {
   return html`<nav class="lo-bbar" aria-label=${t('按阶级跳转')}>
+    <div class="lo-bbar__seg" role="tablist">
+      <button type="button" role="tab" aria-selected=${deckTab === 'ops' ? 'true' : 'false'} class=${cx(deckTab === 'ops' && 'is-on')} onClick=${() => onDeckTab('ops')}>
+        <${Icon} name="users" />${t('干员')}</button>
+      <button type="button" role="tab" aria-selected=${deckTab === 'items' ? 'true' : 'false'} class=${cx(deckTab === 'items' && 'is-on')} onClick=${() => onDeckTab('items')}>
+        <${Icon} name="box" />${t('道具')}</button>
+    </div>
     <div class="lo-bbar__tiers">
       ${DECK_TIERS.map((tier) => html`<button key=${tier} type="button" class=${cx('lo-bbar__tier', active === tier && 'is-on')} disabled=${!counts[tier]}
           data-tier=${tier} onClick=${() => onJump(tier)} title=${t('{tier}阶', { tier })}>
@@ -638,6 +721,10 @@ function LoadoutScreen({ st }) {
   const tierSink = useRef(null);                           // the bottom bar's tier (DeckBarLive), set without a redraw here
   const setActiveTier = (tier) => tierSink.current?.(tier);
   const deckRef = useRef(null);
+  const [deckTab, setDeckTab] = useState('ops');
+  const [itemIdx, setItemIdx] = useState(null);
+  useData('items', 'skins');
+  const codex = codexItems(data.get('items'));
   const ui = useRef({});
   ui.current = { drawer, menu, quick, setDrawer, setMenu, setQuick };
   const diySlots = ready ? diySlotList(diyData()) : [];
@@ -688,9 +775,10 @@ function LoadoutScreen({ st }) {
     if (!base) return;
     setOpsMap(resetOps(loadoutStore.get().ops, base.charId));
     setEntries(resetChoice(st.entries, base.chessId), { base: st.entries });
+    setSkin(base.charId, null);
   };
   const resetAll = async () => {
-    if (!nChanged) return;
+    if (!nChanged && !Object.keys(skinsStore.get().skins).length) return;
     const ok = await confirmDialog({ title: t('全部恢复默认'), text: t('将 {nChanged} 名干员的技能、模组、潜能与练度恢复为默认配置？', { nChanged }), okText: t('恢复默认'), danger: true });
     if (!ok) return;
     // the roster's operators only: a 自选 pick's settings belong to the 自选编队 tab
@@ -699,6 +787,7 @@ function LoadoutScreen({ st }) {
     for (const [id, e] of Object.entries(loadoutStore.get().ops || {})) if (!rosterChars.has(id)) keep[id] = e;
     setOpsMap(keep);
     setEntries({});
+    setSkins({});
   };
 
   // 导出 / 导入 the loadout (or, on the 干员持有 tab, the not-owned list) as the versioned payload (a downloaded file,
@@ -841,7 +930,7 @@ function LoadoutScreen({ st }) {
     setActiveTier(tier);
   };
   const nFilters = ['tier', 'prof', 'bond', 'changedOnly'].filter((k) => !!st.filters?.[k]).length + (String(st.filters?.query || '').trim() ? 1 : 0);
-  const tierCounts = Object.fromEntries(DECK_TIERS.map((tier) => [tier, list.filter((c) => c.tier === tier).length + (nFilters ? 0 : diySlots.filter((s) => s.tier === tier).length)]));
+  const tierCounts = deckTab === 'items' ? Object.fromEntries(DECK_TIERS.map(tier => [tier, codex.filter(x => x.tier === tier).length])) : Object.fromEntries(DECK_TIERS.map((tier) => [tier, list.filter((c) => c.tier === tier).length + (nFilters ? 0 : diySlots.filter((s) => s.tier === tier).length)]));
   const diyOpen = Object.fromEntries(DECK_TIERS.map((tier) => [tier, diySlots.filter((s) => s.tier === tier && !diyLegal[s.slotId]).length]));
   const clearFilters = () => loadoutStore.set({ filters: { ...st.filters, tier: null, prof: null, bond: null, query: '', changedOnly: false } });
 
@@ -929,14 +1018,15 @@ function LoadoutScreen({ st }) {
               </div>
             </div>` : null}
           </div>
+              <button type="button" class="lo-tbtn" data-testid="skins-random" disabled=${!ready} onClick=${() => { setMenu(null); setSkins(randomSkins(data.get('skins'), data.get('assets'))); }}><${Icon} name="refresh" />${t('随机装备皮肤')}</button>
           <div class="lo-popwrap">
             <button type="button" class=${cx('lo-tbtn', 'lo-popbtn', menu === 'more' && 'is-on')} aria-expanded=${menu === 'more' ? 'true' : 'false'} aria-label=${t('更多')}
               data-testid="loadout-more" title=${t('导出 / 导入 / 全部恢复默认')} onClick=${() => setMenu(menu === 'more' ? null : 'more')}><${Icon} name="dots" /></button>
             ${menu === 'more' ? html`<div class="lo-pop lo-pop--menu" role="menu">
-              <button type="button" role="menuitem" data-testid="loadout-export" disabled=${!nChanged && !Object.keys(st.ops || {}).length}
+              <button type="button" role="menuitem" data-testid="loadout-export" disabled=${!nChanged && !Object.keys(st.ops || {}).length && !Object.keys(skinsStore.get().skins).length}
                 onClick=${() => { setMenu(null); openExport(); }}><${Icon} name="copy" />${t('导出调配')}</button>
               <button type="button" role="menuitem" data-testid="loadout-import" disabled=${!ready} onClick=${() => { setMenu(null); openImport(); }}><${Icon} name="link" />${t('导入调配')}</button>
-              <button type="button" role="menuitem" class="is-danger" disabled=${!nChanged} onClick=${() => { setMenu(null); resetAll(); }}><${Icon} name="refresh" />${t('全部恢复默认')}</button>
+              <button type="button" role="menuitem" class="is-danger" disabled=${!nChanged && !Object.keys(skinsStore.get().skins).length} onClick=${() => { setMenu(null); resetAll(); }}><${Icon} name="refresh" />${t('全部恢复默认')}</button>
             </div>` : null}
           </div>
           <button type="button" class="lo-assist" data-testid="loadout-ownership" onClick=${() => { setMenu(null); setTab('ownership'); }}
@@ -954,7 +1044,8 @@ function LoadoutScreen({ st }) {
         ${inMatch && hasDeadline(infoDeadline) ? html`<${Countdown} deadline=${infoDeadline} size="sm" gauge=${false} label=${t('调配截止')} class="lo-deadline" />` : null}
         ${syncText ? html`<span class=${cx('lo-sync', syncCls)} role="status">${t(syncText)}</span>` : null}
         <span class="lo-count">${t('已调整')} <b class="num">${nChanged}</b><span class="num t-dim">/${roster.length}</span></span>
-        <${Button} variant="ghost" size="sm" data-testid="loadout-export" disabled=${!nChanged && !Object.keys(st.ops || {}).length} onClick=${openExport} title=${t('导出当前调配（可复制或下载）')}>${t('导出')}<//>
+        <${Button} variant="ghost" size="sm" data-testid="loadout-export" disabled=${!nChanged && !Object.keys(st.ops || {}).length && !Object.keys(skinsStore.get().skins).length} onClick=${openExport} title=${t('导出当前调配（可复制或下载）')}>${t('导出')}<//>
+        <${Button} variant="ghost" size="sm" data-testid="skins-random" disabled=${!ready} onClick=${() => setSkins(randomSkins(data.get('skins'), data.get('assets')))}>${t('随机装备皮肤')}<//>
         <${Button} variant="ghost" size="sm" data-testid="loadout-import" disabled=${!ready} onClick=${openImport} title=${t('导入调配（粘贴或选择文件）')}>${t('导入')}<//>
         <${Button} variant="secondary" size="sm" icon="refresh" disabled=${!nChanged} onClick=${resetAll}>${t('全部恢复默认')}<//>
       </div>`}
@@ -971,14 +1062,15 @@ function LoadoutScreen({ st }) {
       : tab === 'ownership'
       ? html`<${OwnershipPanel} m=${m} roster=${ownRoster} notOwned=${st.notOwned} onToggle=${toggleOwned} />`
       : deck ? html`<main class="lo-deckwrap">
-        <${DeckView} m=${m} list=${list} getChess=${getChess} st=${st} selId=${selId} quick=${quick} onPick=${pick} onChange=${quickChange} onOps=${setOpsOf}
+        ${deckTab === 'items' ? html`<${ItemCodex} m=${m} items=${codex} deckRef=${deckRef} onOpen=${setItemIdx} onTier=${setActiveTier} />${itemIdx != null ? html`<${ItemDetail} m=${m} items=${codex} index=${itemIdx} all=${data.get('items')} onIndex=${setItemIdx} onClose=${() => setItemIdx(null)} />`: null}`: html`        <${DeckView} m=${m} list=${list} getChess=${getChess} st=${st} selId=${selId} quick=${quick} onPick=${pick} onChange=${quickChange} onOps=${setOpsOf}
           onDiy=${() => setTab('diy')} diySlots=${diySlots} diyPicks=${diyLegal} deckRef=${deckRef} drawer=${drawer && !!base} onTier=${setActiveTier} filtered=${nFilters > 0} />
         ${drawer && base ? html`<div class="lo-drawer" data-testid="loadout-drawer">
           <button type="button" class="lo-drawer__close" onClick=${() => setDrawer(false)} title=${t('收起 (Esc)')}><${Icon} name="chevronLeft" />${t('收起')}</button>
           ${loadoutDetail}
         </div>` : null}
+`}
       </main>
-      <${DeckBarLive} sink=${tierSink} counts=${tierCounts} onJump=${jumpTier} diyOpen=${diyOpen} quick=${quick} onConfirm=${() => setQuick(null)}
+      <${DeckBarLive} deckTab=${deckTab} onDeckTab=${k => { setDeckTab(k); setItemIdx(null); setQuick(null); if (deckRef.current) deckRef.current.scrollLeft = 0; }} sink=${tierSink} counts=${tierCounts} onJump=${jumpTier} diyOpen=${diyOpen} quick=${quick} onConfirm=${() => setQuick(null)}
         locked=${locked ? lockedText : null} />`
       : html`<main class=${cx('lo-body', narrowDetail && 'is-detail')}>
       <section class="lo-roster">

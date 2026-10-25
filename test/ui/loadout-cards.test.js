@@ -43,15 +43,17 @@ const textOf = (v) => (v == null || typeof v === 'boolean' ? '' : typeof v !== '
 
 const card = (props) => DeckCard({ m: null, chess: get(INSIDE), golden: get(get(INSIDE).goldenId), entries: {}, ops: {}, onPick: () => {}, onChange: () => {}, onOps: () => {}, ...props });
 
-test('the view: the list unless this browser chose the cards', () => {
+test('the view: retain the extension card default and an explicit list preference', () => {
   mem.clear();
-  assert.equal(loadoutViewPref(), 'list', 'nothing stored: the list (0.3.x default)');
+  assert.equal(loadoutViewPref(), 'deck', 'nothing stored: extension card default');
   localStorage.setItem('sp.pref.loadout.view', JSON.stringify('deck'));
   assert.equal(loadoutViewPref(), 'deck');
   localStorage.setItem('sp.pref.loadout.view', JSON.stringify('grid'));
-  assert.equal(loadoutViewPref(), 'list', 'an unknown value falls back to the list');
+  assert.equal(loadoutViewPref(), 'deck', 'an unknown value falls back to cards');
   localStorage.setItem('sp.pref.loadout.view', '{oops');
-  assert.equal(loadoutViewPref(), 'list', 'unreadable JSON falls back to the list');
+  assert.equal(loadoutViewPref(), 'deck', 'unreadable JSON falls back to cards');
+  localStorage.setItem('sp.pref.loadout.view', JSON.stringify('list'));
+  assert.equal(loadoutViewPref(), 'list', 'explicit list preference is retained');
   mem.clear();
 });
 

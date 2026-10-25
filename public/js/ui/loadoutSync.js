@@ -48,7 +48,7 @@ import { OWNERSHIP_PREF, parseStoredOwnership, parseStoredOwnershipChars, toStor
   notOwnedView, rebaseChars } from './ownershipModel.js';
 import { parseStoredDiy, toStoredDiy, cleanPicks, sanitizeDiyPicks, diyPrefKey } from './diyModel.js';
 import { skinsStore, SKINS_KEY, SKINS_SYNC_KEY, parseStoredSkins } from './skins.js';
-import { cardStore, CARD_KEY, CARD_SYNC_KEY, cardOperators } from './seatArt.js';
+import { cardStore, CARD_KEY, CARD_SKIN_KEY, CARD_SYNC_KEY, cardOperators } from './seatArt.js';
 import { needsContent, serverDefaultVersion } from '../versions.js';
 import { DEFAULT_VERSION } from '../../../shared/versions.js';
 import { toast } from './toasts.js';
@@ -676,14 +676,17 @@ export function installCardSync({ net, timers, target = cardStore, getChessReady
   const ready = getChessReady || (() => data.load('chess'));
   const list = listChess || (() => data.list('chess'));
   return installPrefSync({
-    net, timers, target, notify, key: CARD_KEY, stateKey: CARD_SYNC_KEY, msgType: 'room.card', field: null, tag: 'card',
+    net, timers, target, notify, key: [CARD_KEY, CARD_SKIN_KEY], stateKey: CARD_SYNC_KEY, msgType: 'room.card', field: null, tag: 'card',
     lockedText: null, // room.card has no phase gate: never WRONG_PHASE / ROOM_STARTED
     content, app, gate, seatBound: false,
     async prepare() {
       const want = target.get()[CARD_KEY];
       if (!want) return { charId: '' };
       if (await ready() == null) return null;
-      return { charId: cardOperators(list()).some((c) => c.charId === want) ? want : '' };
+      const catalogue = getChessReady ? null : await data.load('seat-art');
+      const record = cardOperators(list(), catalogue).find(c => c.charId === want);
+      const skin = target.get()[CARD_SKIN_KEY] || '';
+      return { charId: record ? want : '', ...(skin ? { skinId: record?.choices?.some(s => s.id === skin) ? skin : '' } : {}) };
     },
   });
 }

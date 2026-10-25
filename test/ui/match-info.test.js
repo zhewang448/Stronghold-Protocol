@@ -24,7 +24,7 @@ globalThis.fetch = async (url) => {
   }
 };
 
-const { matchInfoModel, MatchBondRow, MatchLegend, BannedOperators, MatchInfo, MatchInfoDialog } = await import('../../public/js/ui/matchInfo.js');
+const { matchInfoModel, MatchBondRow, MatchLegend, BannedOperators, BannedOperatorGroups, MatchInfo, MatchInfoDialog } = await import('../../public/js/ui/matchInfo.js');
 const { MatchEnemies, factionDescId, leaderBlockOf } = await import('../../public/js/ui/matchEnemies.js');
 const { briefingBondTip } = await import('../../public/js/ui/gameLogic.js');
 const { BondDisc, Tooltip, Modal, Button, placeTooltip } = await import('../../public/js/ui/components.js');
@@ -136,8 +136,8 @@ test('BannedOperators: the count and dimmed avatars in tier order; none ⇒ 本�
   const m = model();
   const block = BannedOperators({ model: m });
   assert.match(textOf(block), /本局禁用干员BANNED OPERATORS4/);
-  const thumbs = [...walk(block)].filter((v) => v.type === UnitThumb);
-  assert.deepEqual(thumbs.map((v) => v.props.id), m.banned);
+  const thumbs = [...walk(BannedOperatorGroups({ model: m }))].filter((v) => v.type === UnitThumb);
+  assert.deepEqual([...new Set(thumbs.map((v) => v.props.id))].sort(), [...m.banned].sort());
   assert.ok(thumbs.every((v) => v.props.kind === 'chess' && v.props.dim === true && v.props.size === 'sm'));
   const none = BannedOperators({ model: matchInfoModel({}, SRC('mode_single_normal')) });
   assert.match(textOf(none), /本局没有禁用干员/);
@@ -355,7 +355,7 @@ test('draftInfoStatus: the dialog repeats the turn and its seconds (warning at �
 
 test('briefing, draft and info drawer reuse one match model and the draft keeps its local information entry',()=>{
  const brief=read('public/js/screens/briefing.js'),draft=read('public/js/screens/bandDraft.js'),game=read('public/js/screens/game.js');
- assert.match(brief,/MatchInfo, matchInfoModel/);assert.match(brief,/MatchInfo.*model=/);assert.match(brief,/MatchEnemies.*pub=.*gd=/);
+ assert.match(brief,/MatchInfo, matchInfoModel/);assert.match(brief,/MatchInfo.*model=/);assert.match(brief,/brief__left/);assert.match(brief,/brief__right/);assert.match(draft,/MatchEnemies/);
  assert.match(draft,/MatchInfoDialog, matchInfoModel/);assert.match(draft,/data-testid="match-info-open"/);assert.match(draft,/setInfoOpen\(true\)/);assert.match(draft,/infoStatus/);
  assert.match(game,/EnemyDrawer/);assert.match(read('public/js/ui/enemyDrawer.js'),/matchInfoModel/);assert.doesNotMatch(brief,/function BondRow|bannedPerBond/);
 });

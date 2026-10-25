@@ -1,3 +1,4 @@
+import { MatchEnemies } from '../ui/matchEnemies.js';
 import { cardOperators, seatOperator, seatCardSkin, seatArtSrc } from '../ui/seatArt.js';
 import { chessPortraitUrl } from '../ui/assetUrls.js';
 import { skinsStore } from '../ui/skins.js';
@@ -431,7 +432,7 @@ export function BandDraftScreen({ held = null } = {}) {
     </main>
     <${ExitModal} open=${exit} onClose=${() => setExit(false)} solo=${solo} />
     <${BondPlanDialog} open=${planOpen} onClose=${() => setPlanOpen(false)} current=${myPlan} />
-    <${MatchInfoDialog} open=${infoOpen} onClose=${() => setInfoOpen(false)} model=${info}
+    <${MatchInfoDialog} open=${infoOpen} onClose=${() => setInfoOpen(false)} model=${info} enemies=${html`<${MatchEnemies} pub=${pub} gd=${gd} />`}
       status=${infoStatus ? html`<span class=${cx('minfo-dlg__turn', `is-${infoStatus.tone}`)}>
         <${Icon} name=${infoStatus.tone === 'mint' ? 'check' : 'hourglass'} />${infoStatus.text}${infoStatus.secs != null ? html`<b class="num">${infoStatus.secs}s</b>` : null}
       </span>` : null} />

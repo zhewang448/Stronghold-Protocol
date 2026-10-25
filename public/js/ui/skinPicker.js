@@ -21,9 +21,9 @@
 // placeholder, so the 默认 tile of a picture-only plugin draws the picture that plugin wrote.
 
 import { useState } from '../../vendor/hooks.module.js';
-import { html, MicroLabel, Modal } from './components.js';
+import { html, MicroLabel, Modal, Button } from './components.js';
 import { useStore } from '../store.js';
-import { useData } from '../data.js';
+import { useData, data } from '../data.js';
 import { skinsStore, availableSkins, chosenSkin, hasAnySkinChoices, setSkin, clearSkin, SKINS_KEY } from './skins.js';
 import { t } from '../../../shared/i18n.js';
 
@@ -47,7 +47,7 @@ function SkinTile({ row, chosen, onPick, onPreview }) {
   const title = isDefault ? t('干员本体，不使用时装') : chosen ? t('点击放大预览') : t('点击选择这套外观');
   return html`<button type="button" role="radio" aria-checked=${chosen ? 'true' : 'false'} data-skin=${row.id}
       class=${cx('lo-skin', isDefault && 'lo-skin--default', chosen && 'is-on', row.fallbackArt && 'lo-skin--fallback')}
-      title=${title} onClick=${() => (chosen && !isDefault ? onPreview() : onPick())}>
+      title=${title} disabled=${row.playable === false} onClick=${() => (chosen && !isDefault ? onPreview() : onPick())}>
     <span class=${cx('lo-skin__art', row.face && 'lo-skin__art--face')}>
       ${row.art
         ? html`<img class="lo-skin__art--big" src=${row.art} alt="" loading="lazy" />`
@@ -94,18 +94,27 @@ export function SkinSection({ charId }) {
   // the choice (this module's store) and the composed manifest (the catalogue): either can change while the panel is
   // open — the player picks a skin, a plugin's document lands, a layer is switched off
   const s = useStore((v) => v, Object.is, skinsStore);
-  const ready = useData('assets');
+  const ready = useData('assets', 'skins');
   const [preview, setPreview] = useState(null);
 
   const id = typeof charId === 'string' && charId ? charId : null;
-  if (!id || !ready) return null;
+  if (!id) return null;
+  const missing = ['assets', 'skins'].filter(name => data.status(name) === 'missing');
+  if (!ready || missing.length) return html`<section class="lo-sec lo-sec--skins" data-skin-char=${charId} data-state=${missing.length ? 'missing' : 'loading'}>
+    <header class="lo-sec__head"><h3>${t('皮肤')}</h3></header>
+    <p role="status">${missing.length ? t('皮肤数据加载失败，请重试。') : t('正在载入皮肤目录…')}</p>
+    ${missing.length ? html`<${Button} size="sm" onClick=${() => Promise.all(missing.map(name => data.invalidate(name)))}>${t('重试')}<//>` : null}
+  </section>`;
   // the GLOBAL gate (docs/SKINS.md): shown for every operator as soon as any operator of the manifest has a wear-able
   // skin, and for none while none has. A per-operator gate lived here and was removed on purpose — see the header.
+  const declared = data.get('skins')?.chars?.[id] || [];
   if (!hasAnySkinChoices()) return null;
   const rows = availableSkins(id).filter((x) => x.own || x.playable);
   // an operator the composed manifest does not hold at all has nothing to draw — not even a 默认 tile — so it gets no
   // section rather than an empty grid: the global rule can only show what the manifest has
   if (!rows.length) return null;
+  const own = rows[0];
+  for (const row of declared) if (!rows.some(r => r.id === row.id)) rows.push({ ...row, own: false, playable: false, portrait: own.portrait, avatar: own.avatar, illust: null });
   const chosen = chosenSkin(id, s[SKINS_KEY]);
   // the tile art of a row is already resolved (its own portrait, else the operator's); `face` is the same appearance's
   // 1:1 avatar, which CSS draws instead of the 1:2 art when the panel is too short for it. The enlarged preview prefers
@@ -114,7 +123,7 @@ export function SkinSection({ charId }) {
   const previewRow = preview ? rows.find((x) => !x.own && x.id === preview) || null : null;
   const previewArt = previewRow ? (previewRow.illust || previewRow.portrait || previewRow.avatar) : null;
 
-  return html`<section class="lo-sec lo-sec--skin" data-testid="skin-section">
+  return html`<section class="lo-sec lo-sec--skin" data-testid="skin-section" data-skin-char=${charId} data-state=${rows.length > 1 ? 'ready' : 'empty'}>
     <header class="lo-sec__head">
       <h3>${t('皮肤')}<${MicroLabel}>SKIN<//></h3>
       ${/* always the count, 0 included ("0 套外观"): with the global rule an operator that has no skin of its own gets

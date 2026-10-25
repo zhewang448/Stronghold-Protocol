@@ -142,6 +142,7 @@ describe('干员调配 卡片视图 (real server, headless Chrome)', { skip: !EN
   test('desktop: list by default → cards (kept), drawer, 快速配置, Esc layers, tier jump, back to the list', async () => {
     const { ctx, page, problems } = await open();
     try {
+      await page.evaluate(() => localStorage.setItem('sp.pref.loadout.view', JSON.stringify('list')));
       await openOverlay(page);
       assert.equal(await page.$$eval('.lo-card', (els) => els.length), 112, 'the list is the default');
       assert.equal(await page.$('.lo-deck'), null);
@@ -348,6 +349,7 @@ describe('干员调配 卡片视图 (real server, headless Chrome)', { skip: !EN
   test('the list (the default) keeps its own opening at 844×390: lo-in, no 转场, the detail toggle replays nothing', async () => {
     const { ctx, page, problems } = await open({ w: 844, h: 390, touch: true });
     try {
+      await page.evaluate(() => localStorage.setItem('sp.pref.loadout.view', JSON.stringify('list')));
       await openOverlay(page);
       await page.waitForSelector('.lo .lo-card', { visible: true });
       const opening = await page.evaluate(() => ({

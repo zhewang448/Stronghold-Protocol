@@ -1,6 +1,8 @@
-// The full settlement report (research 06 §10.6): victory / defeat hero with rounds passed, boss medallions, and a
-// card per player — band, final lineup avatars with elite marks, stats, title (评语) with its icon. The live RESULT
-// screen opens it as 数据详情 over the settlement flow (screens/settle.js); the stats page re-views a stored match with it.
+import { ResultAvatar } from '../ui/resultAvatar.js';
+// Result screen (research 06 §10.6): victory / defeat hero with rounds passed, boss medallions, and a
+// card per player — band, final lineup avatars with elite marks, stats, title (评语) with its icon —
+// plus 返回同盟.
+
 //
 // Expected m.result (free-form in DESIGN §8.2; fields read tolerantly, see gameLogic.normalizeResult):
 //   { victory, roundsPassed, lastRound?, hiddenCleared?, bossId?, hiddenBossId?, difficulty?, modeId?, durationMs?,
@@ -15,7 +17,7 @@
 //                 stats: { dmgDealt, kills, leaks, gold /* funds SPENT */, refreshes, merges, bossDamage?, itemsEquipped?,
 //                          activatedLayers?, lpLost?, perfectRounds? } }] }
 
-import { useEffect } from '../../vendor/hooks.module.js';
+import { useEffect, useState } from '../../vendor/hooks.module.js';
 import { html, Button, Icon, MicroLabel, DifficultyTag } from '../ui/components.js';
 import { useGameData, Img, UnitThumb, BandIcon, PlayerAvatar, BondGlyph, LpTower, Sprite } from '../ui/gameComponents.js';
 import { normalizeResult, fmtNum, diyRecordFor, cardStandIn, standInForText } from '../ui/gameLogic.js';
@@ -24,7 +26,9 @@ import { enemyIconUrl, titleIconUrl, uiUrl } from '../ui/assetUrls.js';
 import { audio } from '../audio.js';
 import { sentText } from '../ui/lang.js';
 import { UnofficialMark, VersionTag } from '../ui/pluginTag.js';
+import { RoundHistoryPanel } from '../ui/roundHistory.js';
 import { TestMark } from '../ui/testConsole.js';
+
 import { t, tParts, N_ } from '../../../shared/i18n.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
@@ -76,7 +80,7 @@ function PlayerCard({ p, myId, titles, best, solo = false, skinOwnerId = null })
   const bonds = resultBonds(p.bonds, (id) => gd.bond(id));
   return html`<article class=${cx('rcard', p.playerId === myId && 'is-self', p.alive === false && 'is-dead')}>
     <header class="rcard__head">
-      <${PlayerAvatar} player=${p} self=${p.playerId === myId} />
+      <${ResultAvatar} player=${p} self=${p.playerId === myId} />
       <div class="rcard__who">
         <b class="rcard__name">${p.name}${p.isBot ? html`<span class="rcard__ai">AI</span>` : null}${p.playerId === myId ? html`<span class="rcard__you">${t('你')}</span>` : null}</b>
         ${Number.isInteger(p.aiTakeoverRound) ? html`<small>${t('第 {round} 回合接替 AI；含此前席位数据，不计入个人统计或奖励。', { round: p.aiTakeoverRound })}</small>` : null}
@@ -129,6 +133,7 @@ export function ResultView({ res, pub = null, myId = null, backLabel, onBack, qu
   const hidden = r.hiddenBossId && r.hiddenReached ? gd.boss(r.hiddenBossId) : null;
   const bg = uiUrl(gd.m, r.victory ? 'settle/settlemen_teamshow_success' : 'settle/settlemen_teamshow_fail');
   const mins = r.durationMs ? Math.round(r.durationMs / 60000) : null;
+  const [roundHistoryOpen, setRoundHistoryOpen] = useState(false);
 
   return html`<div class=${cx('screen', 'result', r.victory ? 'is-win' : 'is-lose')}>
     <div class="result__bg" aria-hidden="true" style=${bg ? `--result-bg:url("${bg}")` : undefined}></div>
@@ -159,6 +164,7 @@ export function ResultView({ res, pub = null, myId = null, backLabel, onBack, qu
         ${mins ? html`<p class="result__time t-lo">${tParts('本局耗时 {n} 分钟', { n: html`<b class="num">${mins}</b>`, mins })}</p>` : null}
         </div>
         <footer class="result__foot">
+          ${r.roundHistory.length ? html`<${Button} variant="secondary" size="xl" icon="chart" onClick=${() => setRoundHistoryOpen(true)}>${t('查看每回合伤害')}<//>` : null}
           <${Button} variant="primary" size="xl" icon="chevronLeft" onClick=${onBack}>${backLabel}<//>
         </footer>
       </section>
@@ -168,6 +174,8 @@ export function ResultView({ res, pub = null, myId = null, backLabel, onBack, qu
           : html`<p class="t-dim">${t('暂无结算数据')}</p>`}
       </section>
       ${slot ? html`<div class="ui-slot" data-ui-slot="result.tab" aria-label=${t('界面插件')} dangerouslySetInnerHTML=${{ __html: '' }}></div>` : null}
+      ${roundHistoryOpen ? html`<${RoundHistoryPanel} history=${r.roundHistory} players=${r.players} viewerId=${myId} initialTab="units" onClose=${() => setRoundHistoryOpen(false)} />` : null}
+
     </main>
   </div>`;
 }

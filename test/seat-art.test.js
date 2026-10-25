@@ -25,6 +25,9 @@ test('seat artwork validates ownership, broadcasts to peers and survives leaving
   const code=srv.lobby.rooms.keys().next().value;
   const peer=await TestClient.connect('ws://127.0.0.1:'+srv.port+'/ws');clients.push(peer);await peer.hello('Poster Peer');await peer.request({t:'room.join',code});
   const charId='char_498_inside', skinId=catalogue.chars[charId].choices.find(s=>s.id.includes('@')).id;
+  const catalogueOnly = Object.values(catalogue.chars).find(c => !Object.values(srv.lobby.safeData().chess).some(chess => chess.charId === c.charId && !chess.isDiy && chess.visible !== false));
+  assert.ok(catalogueOnly, 'the picker includes operators outside the current card pool');
+  assert.equal((await host.request({t:'room.card',charId:catalogueOnly.charId,skinId:catalogueOnly.choices[0].id})).t,'ok');
   assert.equal((await host.request({t:'room.card',charId,skinId})).t,'ok');
   await peer.waitFor('room.state',m=>(m.room||m).seats?.some(s=>s?.playerId===me.playerId && s.cardSkin===skinId));
   assert.equal((await host.request({t:'room.card',charId:'char_112_siege',skinId})).t,'error');

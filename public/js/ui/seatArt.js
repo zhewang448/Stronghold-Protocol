@@ -69,6 +69,7 @@ export function chosenPortrait(charId, skinId, manifest, catalogue, chess = []) 
 /** The store field of the pick (ui/loadoutSync.js installCardSync `key`) and its sync state field. */
 export const CARD_KEY = 'card';
 export const CARD_SYNC_KEY = 'cardSync';
+export const CARD_SKIN_KEY = 'cardSkin';
 
 /** A stored pick as the store holds it: a charId string, '' for none (默认). */
 export function parseStoredCard(v) {
@@ -76,16 +77,16 @@ export function parseStoredCard(v) {
 }
 
 /** This browser's pick and its sync state (survives room / match resets like ui/skins.js' store). */
-export const cardStore = createStore({ [CARD_KEY]: parseStoredCard(loadPref(CARD_PREF, '')), [CARD_SYNC_KEY]: 'idle' });
+export const cardStore = createStore({ [CARD_KEY]: parseStoredCard(loadPref(CARD_PREF, '')), [CARD_SKIN_KEY]: parseStoredCard(loadPref(CARD_SKIN_PREF, '')), [CARD_SYNC_KEY]: 'idle' });
 
 /**
  * Pick the 名片干员 ('' = 默认): persisted at once, the sync engine sends it.
  * @param {string} charId
  */
-export function setCard(charId) {
+export function setCard(charId, skinId = '') {
   const next = parseStoredCard(charId);
-  try { savePref(CARD_PREF, next); } catch { /* private mode: the session keeps it */ }
-  cardStore.set({ [CARD_KEY]: next });
+  try { savePref(CARD_PREF, next); savePref(CARD_SKIN_PREF, parseStoredCard(skinId)); } catch { /* private mode: the session keeps it */ }
+  cardStore.set({ [CARD_KEY]: next, [CARD_SKIN_KEY]: parseStoredCard(skinId) });
 }
 
 /**

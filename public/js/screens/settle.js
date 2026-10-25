@@ -20,7 +20,7 @@ import { html, Icon, DifficultyIcon, Spinner } from '../ui/components.js';
 import { OperatorImage, useGameData, Img, Sprite, PromotionIcon, PlayerAvatar, BondGlyph, BandIcon } from '../ui/gameComponents.js';
 import { normalizeResult, diyRecordFor, cardStandIn, standInForText } from '../ui/gameLogic.js';
 import { data } from '../data.js';
-import { itemIconUrl, enemyIconUrl, titleIconUrl } from '../ui/assetUrls.js';
+import { itemIconUrl, enemyIconUrl, titleIconUrl, chessPortraitUrl, chessAvatarUrl } from '../ui/assetUrls.js';
 import { store, useStore, emptyMatch } from '../store.js';
 import { audio } from '../audio.js';
 import { sentText } from '../ui/lang.js';
@@ -28,6 +28,7 @@ import { reducedMotion } from '../ui/device.js';
 import { recordId, selfRowOf, loadStats, isModdedRecord, recordsOfSeason } from '../ui/stats.js';
 import { UnofficialMark, VersionTag, isModdedRoom } from '../ui/pluginTag.js';
 import { shownVersion, seasonOf } from '../versions.js';
+import { ResultAvatar, ResultPortrait } from '../ui/resultAvatar.js';
 import { TestMark } from '../ui/testConsole.js';
 import { ResultView, resultBonds } from './result.js';
 import { DIFFICULTY_NAMES, DIFFICULTY_COLORS } from '../../../shared/constants.js';
@@ -335,6 +336,8 @@ function unitView(u, gd) {
   const tier = Math.max(0, Math.min(6, Number(u.tier) || Number(rec?.tier) || 0));
   return {
     rec,
+    art: chessPortraitUrl(gd.m, rec, { skin: u.skin }),
+    avatar: chessAvatarUrl(gd.m, rec, { skin: u.skin }),
     si,
     tier,
     golden: !!(u.golden ?? rec?.isGolden),
@@ -462,13 +465,13 @@ function SelfPage({ r, res, raw, self, gd, prog, content, onNext, version = null
       <${Target} lose=${!cleared} />
       <div class="sself__fx" aria-hidden="true"></div>
       <${Logo} />
-      <div class="sself__band">${self.bandId ? html`<${BandIcon} bandId=${self.bandId} size="lg" />` : html`<${PlayerAvatar} player=${self} self=${true} />`}<i aria-hidden="true"></i></div>
+      <div class="sself__band">${self.bandId ? html`<${BandIcon} bandId=${self.bandId} size="lg" />` : html`<${ResultAvatar} player=${self} self=${true} />`}<i aria-hidden="true"></i></div>
       <div class="sself__mode"><${ModePill} r=${r} /><${UnofficialMark} room=${content ? { content } : null} class="sself__modmark" /><${VersionTag} version=${version} class="sself__vertag" /><${SettleTestMark} res=${res} /></div>
       <${SettleTitle} class="sself__title">${cleared ? t('模拟完成') : t('模拟中断')}</${SettleTitle}>
       <div class="sself__rounds"><span>${t('通过回合')}</span><b class="num">${rounds}</b></div>
       ${medals.length ? html`<div class="sself__medals">${medals.map((m, i) => html`<${Medal} key=${m.kind} m=${m} i=${i} />`)}</div>` : null}
       <div class="splate">
-        <${PlayerAvatar} player=${self} self=${true} class="splate__ava" />
+        <${ResultAvatar} player=${self} self=${true} class="splate__ava" />
         <div class="splate__info">
           <b class="splate__name"><${Sprite} k=${plateArt(self, true)} class="splate__namebg" /><span>${self.name}</span></b>
           <span class="splate__rank" title=${t('累计奖杯')}><${Sprite} k="settle/id_info_cup_icon" class="splate__cup" fallback=${html`<${Icon} name="crown" />`} /><b class="num">${prog.trophies}</b></span>
@@ -519,7 +522,7 @@ function TeamCard({ p, i, gd, self, victory, raw }) {
   return html`<article class=${cx('tcard', self && 'is-self', p.alive === false && 'is-dead', p.left && 'is-left', cleared ? 'is-clear' : 'is-fail')} style=${`--i:${i}`}>
     <header class="tcard__head" aria-hidden="true"><i class="tcard__pin"></i><span class="tcard__code"><i></i><i></i><i></i>STRONGHOLD PROTOCOL</span><span class="tcard__seat num">${pad2(p.seat + 1)}</span></header>
     <div class="tcard__art">
-      <${OperatorImage} m=${gd.m} chess=${v?.rec} ownerId=${p.playerId} skin=${ace?.skin} portrait avatarFallback portraitClass="tcard__img is-portrait" avatarClass="tcard__img is-avatar" fallback=${html`<span class="tcard__glyph">${[...(p.name || '?')][0]}</span>`} />
+      <${ResultPortrait} player=${p} self=${self} fallbackSrc=${v?.art || v?.avatar} class="tcard__img" fallbackClass=${v?.art ? 'is-portrait' : 'is-avatar'} fallback=${html`<span class="tcard__glyph">${[...(p.name || '?')][0]}</span>`} />
       ${p.left ? html`<span class="tcard__cut">${t('连接中断')}</span>` : null}
       ${title ? html`<div class="tcard__title" title=${title.text}>
         <${Img} src=${title.icon} class="tcard__ticon" fallback=${html`<${Icon} name="crown" class="tcard__ticon" />`} /><b>${title.name}</b></div>` : null}
@@ -527,7 +530,7 @@ function TeamCard({ p, i, gd, self, victory, raw }) {
     </div>
     <div class="tcard__plate">
       <${Sprite} k=${plateArt(p, self)} class="tcard__platebg" />
-      <${PlayerAvatar} player=${p} self=${self} class="tcard__ava" />
+      <${ResultAvatar} player=${p} self=${self} class="tcard__ava" />
       <span class="tcard__who">
         <b class="tcard__name"><span>${p.name}</span>${p.isBot ? html`<span class="tcard__ai">AI</span>` : null}</b>
         ${band ? html`<span class="tcard__band"><${BandIcon} bandId=${band.bandId} size="xs" /><span>${band.name}</span></span>` : null}

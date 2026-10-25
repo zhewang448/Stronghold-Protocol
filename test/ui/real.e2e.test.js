@@ -247,17 +247,17 @@ class Client {
 
   buyItem() { return this.buyOne('.shopbar__item .scard:not(.scard--sold):not(.is-disabled)'); }
 
-  /** Right-click a board unit on the canvas → detail panel with its name. */
+  /** Click a board unit on the canvas → detail panel with its name. */
   async inspectUnit() {
     // the front-most unit (nothing is drawn in front of it)
     const unit = (await this.boardPieces()).filter((b) => b.kind === 'chess').sort((a, b) => a.row - b.row || b.col - a.col)[0];
     if (!unit) return false;
     const name = await this.page.evaluate((id) => globalThis.__SP__.data.lookup('chess', id)?.name || '', unit.id);
     const pt = await this.piecePoint(unit.uid);
-    await this.page.mouse.click(pt.x, pt.y, { button: 'right' });
+    await this.page.mouse.click(pt.x, pt.y);
     await this.page.waitForSelector('.dpanel', { timeout: 5000 });
     const shown = await this.page.$eval('.dpanel .dhead__name', (e) => e.textContent);
-    assert.equal(shown, name, `${this.label}: detail panel shows the right-clicked unit`);
+    assert.equal(shown, name, `${this.label}: detail panel shows the clicked unit`);
     await sleep(300);
     await this.shot(`detail-${this.label}`);
     await this.page.keyboard.press('Escape');
@@ -537,7 +537,7 @@ describe('real server + real browsers', { skip: !ENABLED && 'set SP_REAL_E2E=1 (
 
       // ---- rounds -----------------------------------------------------------------------------------------------------
       const seen = new Set();
-      const did = { watched: false, sold: false, leveled: false, refreshed: false, froze: false, item: false, equipped: false, inspected: false, bond: false, enemies: -1, emote: false };
+      const did = { watched: false, sold: false, leveled: false, refreshed: false, froze: false, item: false, equipped: false, inspected: false, bond: false, enemies: -1, emote: false, textChat: false, roundStats: false };
       let spPicked = 0;
       let lastCombatRound = 0;
       const deadline = Date.now() + 25 * 60 * 1000;
@@ -555,6 +555,27 @@ describe('real server + real browsers', { skip: !ENABLED && 'set SP_REAL_E2E=1 (
               await c.shot(`prep-r${s.round}-${c.label}`);
             }
             await c.takeReward();
+            if (c === host && !did.textChat) {
+              await c.click(".ewheel__btn");
+              await c.page.waitForSelector(".echat__input");
+              await c.page.type(".echat__input", "我守左路，聊天回归");
+              await c.page.keyboard.press("Enter");
+              await guest.page.waitForFunction(() => globalThis.__SP__.store.get().chat.messages.some(m => m.text === "我守左路，聊天回归"));
+              await c.page.keyboard.press("Escape");
+              did.textChat = true;
+            }
+            if (c === host && s.round >= 2 && !did.roundStats) {
+              await c.click("button[aria-controls=round-history-panel]");
+              await c.page.waitForSelector("#round-history-panel .chart-wrap svg");
+              const rows = await c.page.evaluate(() => globalThis.__SP__.store.get().match.public.roundHistory);
+              assert.ok(rows.some(r => r.players.some(p => p.dmg > 0 || p.roundDmg > 0)), "real round damage is present");
+              await c.page.screenshot({ path: path.join(OUT, "real-restored-round-damage.png") });
+              await c.page.click("#round-history-panel button[aria-label=关闭]");
+              await c.click("[data-testid=check-player]");
+              await c.page.waitForSelector(".edrawer [data-banned-bond]");
+              await c.page.click(".edrawer__close");
+              did.roundStats = true;
+            }
             if (c === host && did.enemies < 0) did.enemies = await c.openEnemies();
             if (c === guest && !did.emote) {
               await c.emote();
@@ -657,6 +678,7 @@ describe('real server + real browsers', { skip: !ENABLED && 'set SP_REAL_E2E=1 (
       assert.ok(did.leveled, 'levelled the dispatch center up');
       assert.ok(did.inspected && did.bond, 'detail panel + bond popup');
       assert.ok(did.emote, 'emote bubble reached the teammate');
+      assert.ok(did.textChat && did.roundStats, "live text chat and round damage remain reachable and contain data");
       assert.ok(did.enemies >= 0, 'enemy drawer opened');
       if (srv.assetIndex) {
         host.note(`content-hashed responses: ${JSON.stringify(host.hashed)}`);

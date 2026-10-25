@@ -18,7 +18,7 @@ import { installAudio } from '/js/audio.js';
 import { settingsStore } from '/js/ui/settings.js';
 import { awayStore } from '/js/ui/matchChrome.js';
 import { GAME_FILES } from '/js/ui/gameComponents.js';
-import { PHASE, GEO } from '/shared/constants.js';
+import { PHASE, GEO, PING_KEEP } from '/shared/constants.js';
 import { equippedLineup } from './settle-fixture.js';
 
 const params = new URLSearchParams(location.search);
@@ -722,6 +722,10 @@ async function mockRequest(t, f = {}) {
     }
     case 'g.emote': {
       store.set((s) => ({ emotes: [...s.emotes.slice(-19), { seq: Date.now(), playerId: ME, id: f.id, at: Date.now() }] }));
+      return {};
+    }
+    case 'g.ping': {
+      store.set((s) => ({ pings: [...s.pings.slice(-(PING_KEEP - 1)), { ...f, playerId: ME, name: pub.players.find((p) => p.playerId === ME)?.name, seq: Date.now(), at: Date.now() }] }));
       return {};
     }
     case 'g.watch': {

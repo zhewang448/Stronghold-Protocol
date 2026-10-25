@@ -105,5 +105,5 @@ test('ui/hud.js useCapsuleFx: a phase change while the HUD is held waits and pla
   assert.match(hud, /function useCapsuleFx\(phase, round, held = false\) \{/);
   assert.match(hud, /if \(s\.key !== key && !\(held && s\.key !== null\)\) \{/);
   assert.match(hud, /const fx = useCapsuleFx\(phase, pub\?\.round, held\);/);
-  assert.match(hud, /onRemoveSpectator = null, room = null, held = false, view = null \}\) \{/);
+  assert.match(hud, /onRemoveSpectator = null, onUniteSkipVote = \(\) => \{\}, room = null, held = false, view = null \}\) \{/);
 });

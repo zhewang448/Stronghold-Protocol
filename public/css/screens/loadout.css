@@ -965,3 +965,59 @@
   .lo--deck .lo__bg, .lo--deck .lo-top, .lo--deck .lo-top__center, .lo--deck .lo-top__right, .lo--deck .lo-note, .lo--deck .lo-tgroup,
   .lo--deck .lo-bbar, .lo--deck .own, .lo--deck .diy { animation: none; }
 }
+
+/* ---- 道具: the equipment codex ---- */
+.lo-igrid { display: grid; grid-auto-flow: column; grid-template-rows: repeat(3, minmax(0, 1fr)); grid-auto-columns: var(--itw); gap: .14rem .16rem; min-height: 0; }
+.lo-item { position: relative; display: grid; grid-template-columns: min(1.45rem, 40%) minmax(0, 1fr); align-items: start; gap: .14rem; min-height: 0; padding: .14rem .12rem .1rem .2rem; font: inherit;
+  color: var(--text-hi); text-align: left; cursor: pointer; overflow: hidden;
+  background: linear-gradient(180deg, rgba(48, 54, 52, .9), rgba(28, 32, 31, .94)); border: 1px solid rgba(255, 255, 255, .08); }
+.lo-item::before { content: ''; position: absolute; left: .05rem; top: .1rem; bottom: .1rem; width: 3px; background: rgba(255, 255, 255, .7); }
+.lo-item:hover { border-color: rgba(255, 255, 255, .26); }
+.lo-item__icon { display: grid; place-items: center; width: 100%; aspect-ratio: 1; background: linear-gradient(180deg, #e2e5e3, #c3c8c5); border: 1px solid #f0f2f1; }
+.lo-item__icon img { width: 86%; height: 86%; object-fit: contain; }
+.lo-item__icon .icon { width: 44%; height: 44%; color: #59605d; }
+.lo-item__body { min-width: 0; display: flex; flex-direction: column; gap: .05rem; }
+.lo-item__head { display: flex; align-items: center; gap: .08rem; min-width: 0; }
+.lo-item__head .tier { flex: none; }
+.lo-item__name { font-size: max(calc(.19 * var(--t)), 12px); font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lo-item__desc { font-size: max(calc(.14 * var(--t)), 10px); line-height: 1.45; color: var(--text-md); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.lo-item__desc span, .lo-idetail__eff span { font-size: inherit; }
+.lo-item__zoom { position: absolute; right: .1rem; bottom: .08rem; color: rgba(255, 255, 255, .45); }
+.lo-item__zoom .icon { width: max(.2rem, 13px); height: max(.2rem, 13px); }
+.lo-item__tag { position: absolute; right: .08rem; top: .08rem; padding: 1px 5px; font-size: max(calc(.11 * var(--t)), 8px); color: var(--amber); border: 1px solid rgba(246, 163, 41, .5); background: rgba(0, 0, 0, .4); }
+.lo-idetail .lo-item__tag { position: static; }
+.lo-idetail { position: absolute; inset: 0; z-index: 6; display: flex; align-items: center; justify-content: center; gap: .3rem; padding: .2rem;
+  background: rgba(4, 6, 6, .72); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); animation: lo-in 160ms var(--ease-out) backwards; }
+.lo-idetail__box { position: relative; width: min(8.8rem, calc(100% - 1.4rem)); max-height: 100%; display: flex; flex-direction: column; overflow: auto;
+  padding: .28rem .34rem .2rem; background: radial-gradient(120% 90% at 20% 0%, #2a2f2d, #151918 60%, #101312); border: 2px solid rgba(232, 236, 234, .7);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .6), 0 .2rem .6rem rgba(0, 0, 0, .7); }
+.lo-idetail__close { position: absolute; right: .1rem; top: .1rem; display: grid; place-items: center; width: max(.46rem, 30px); height: max(.46rem, 30px); padding: 0;
+  color: var(--text-hi); background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .4); cursor: pointer; }
+.lo-idetail__close .icon { width: 60%; height: 60%; }
+.lo-idetail__head { display: flex; align-items: center; gap: .12rem; padding-right: .6rem; }
+.lo-idetail__head h3 { margin: 0; font-size: max(calc(.3 * var(--t)), 17px); font-weight: 900; letter-spacing: .06em; }
+.lo-idetail__price { margin-left: auto; font-size: max(calc(.14 * var(--t)), 10px); color: var(--text-lo); }
+.lo-idetail__price b { color: var(--gold-2); font-size: max(calc(.2 * var(--t)), 13px); }
+.lo-idetail__main { display: grid; grid-template-columns: max(2rem, 32px, calc(96px * var(--sp-ui, 1))) minmax(0, 1fr); gap: .3rem; margin-top: .22rem; align-items: start; }
+.lo-idetail__icon { position: relative; display: grid; place-items: center; aspect-ratio: 1; background: linear-gradient(180deg, #e2e5e3, #c3c8c5); border: 3px solid rgba(232, 236, 234, .85); }
+.lo-idetail__icon img { width: 84%; height: 84%; object-fit: contain; }
+.lo-idetail__icon .icon { width: 40%; height: 40%; color: #59605d; }
+.lo-idetail__text { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: .08rem; }
+.lo-idetail__chip { padding: .02rem .1rem; font-size: max(calc(.14 * var(--t)), 10px); font-weight: 800; color: #1a1f1d; background: #a9b0ad; }
+.lo-idetail__chip.is-adv { margin-top: .06rem; background: #e2c041; }
+.lo-idetail__eff { margin: 0; font-size: max(calc(.17 * var(--t)), 12px); line-height: 1.6; color: var(--text-hi); white-space: pre-line; }
+.lo-idetail__flavor { margin: .1rem 0 0; font-size: max(calc(.14 * var(--t)), 10px); line-height: 1.6; font-style: italic; color: var(--text-lo); white-space: pre-line; }
+.lo-idetail__foot { margin-top: .16rem; text-align: right; font-size: max(calc(.12 * var(--t)), 9px); color: var(--text-dim); letter-spacing: .1em; }
+.lo-idetail__nav { flex: none; display: grid; place-items: center; width: max(.6rem, 32px, calc(36px * var(--sp-ui, 1))); height: max(.9rem, 32px, calc(52px * var(--sp-ui, 1))); padding: 0; color: rgba(240, 244, 242, .85);
+  background: none; border: 0; cursor: pointer; }
+.lo-idetail__nav:hover { color: #fff; }
+.lo-idetail__nav .icon { width: 100%; height: 100%; }
+
+
+.lo-bbar__seg { flex: none; display: inline-flex; padding: 3px; background: rgba(0, 0, 0, .5); border: 1px solid var(--line-2); border-radius: 999px; }
+.lo-bbar__seg button { display: inline-flex; align-items: center; gap: .08rem; height: max(.46rem, 30px); padding: 0 max(.26rem, calc(14px * var(--sp-ui, 1))); font: inherit;
+  font-size: max(calc(.18 * var(--t)), 12px); font-weight: 800; color: var(--text-md); background: none; border: 0; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.lo-bbar__seg button .icon { width: max(.22rem, 14px); height: max(.22rem, 14px); padding: 2px; border-radius: 4px; color: #062019; background: var(--mint-500); }
+.lo-bbar__seg button.is-on { color: #111614; background: #eef1ef; }
+
+.lo-deck--items { --itw: max(3.5rem, 32px, calc(220px * var(--sp-ui, 1))); }
