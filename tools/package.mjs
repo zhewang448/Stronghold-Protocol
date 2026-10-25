@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { LLM_RELEASE_EXCLUDE, LLM_RELEASE_MARKER, LLM_RELEASE_MARKER_TEXT, isLlmReleasePath, omitLlmFromRelease } from '../server/match/llmRelease.js';
+export { LLM_RELEASE_EXCLUDE, LLM_RELEASE_MARKER, LLM_RELEASE_MARKER_TEXT, isLlmReleasePath, omitLlmFromRelease };
 // tools/package.mjs — the player release zips (docs/DEPLOY.md §7; README「方式一」says which one to pick).
 //
 //   npm run package        → Stronghold-Protocol-v<version>.zip         full: what runs the game + the game art
@@ -192,7 +194,7 @@ export const REFUSE = ['pv', '3，9，11回合情况', 'review', 'docs/research/
 /** Browser tools exposed by the local console; generated simcheck data and Node-only helpers stay out. */
 export function isDevToolResource(rel) {
   return /^public\/dev\/(?:game-mock|sim-check|render-demo|fx-viewer|battle-perf|uikit)\.(?:html|js)$/.test(rel)
-    || rel === 'public/dev/frame-stats.js'
+    || rel === 'public/dev/frame-stats.js' || rel === 'public/dev/settle-fixture.js'
     || /^public\/dev\/simcheck\/(?:core|ui|stronghold)\.js$/.test(rel)
     || /^public\/dev\/(?:recordings|perf)\/[^/]+\.json$/.test(rel);
 }
@@ -230,6 +232,7 @@ export function isJunk(rel) {
 /** Whether a tracked file belongs in the player package. */
 export function isPlayerFile(rel) {
   const p = posixRel(rel);
+  if (isLlmReleasePath(p) || p === LLM_RELEASE_MARKER) return false;
   if (!p || isRefused(p) || isJunk(p) || p === 'data/local-assets.json' || p === 'data/local-fx.json' || p === GENERATED_PACK_INDEX) return false;
   if (NOT_TRACKED_SHIP.some((d) => p.startsWith(d))) return false;
   if (isPluginResource(p) || AUTHOR_TEST_FILES.includes(p)) return true;
@@ -577,7 +580,7 @@ export function plan(root, opts = {}) {
   const art = artPlan(root, { lite, jpVoice: opts.jpVoice ?? FULL_ZIP_JP_VOICE, optionalVoice: opts.optionalVoice ?? FULL_ZIP_OPTIONAL_VOICE });
   const pkg = readJson(path.join(root, 'package.json')) || {};
   const lock = readJson(path.join(root, 'package-lock.json')) || {};
-  const generated = shipsPacks(keep) ? [GENERATED_PACK_INDEX] : [];
+  const generated = [...(shipsPacks(keep) ? [GENERATED_PACK_INDEX] : []), 'server/release-without-llm'];
   const files = [...keep, ...art.files, ...generated];
   const problems = [];
   if (opts.requireLocalArt) {
@@ -652,7 +655,7 @@ export function formatSummary(p) {
       lines.push('battlefield scenes: none on this machine (the full bundle ships the metal board; fetch_scenes.py then extract.py --only scene before packaging to include the 11 official scenes)');
     }
   }
-  if (p.generated?.length) lines.push(`generated: ${p.generated.join(', ')} (the pack index of the shipped packs, for a static host)`);
+  if (p.generated?.length) lines.push(`generated: ${p.generated.join(', ')} (the pack index of the shipped packs, for a static host; the release marker that keeps external AI off the package)`);
   lines.push(`production node_modules: ${MB(p.bytes.modules)} · public/vendor: ${MB(p.bytes.vendor)} (npm ci --omit=dev and its postinstall)`);
   lines.push(`uncompressed: ${MB(p.bytes.total)}; a 0.1.x whole-tree copy would add ${MB(p.bytes.leftOut)}`);
   const groups = Object.entries(p.dropped).sort((a, b) => b[1].bytes - a[1].bytes);
@@ -680,12 +683,27 @@ export function packageOutIsUnsafe(out, root = REPO) {
  * the names in UTF-8 (flag bit 11) only when told: its default is the system code page, which loses a name it cannot
  * spell (卫戍 becomes ?? on Windows code page 1252) and leaves no UTF-8 copy for a reader.
  */
+const errLine = (text) => String(text || '').trim().split(String.fromCharCode(10)).map(line => line.trim()).find(Boolean) || '';
 export function zipFolder(cwd, zipPath, folder = FOLDER) {
   // deflate everything: storing PNG / MP3 as they are made the full zip 8.5 MB larger and saved no real time
-  const z = spawnSync('zip', ['-q', '-r', '-X', zipPath, folder], { cwd, stdio: 'inherit', windowsHide: true });
-  if (!z.error && z.status === 0) return;
-  const t = spawnSync('tar', ['-c', '--format', 'zip', '--options', 'zip:hdrcharset=UTF-8', '-f', zipPath, folder], { cwd, stdio: 'inherit', windowsHide: true });
-  if (t.error || t.status !== 0 || !isFile(zipPath)) throw new Error('zipping failed: install `zip` (or a bsdtar `tar`)');
+  const attempts = [
+    ['zip', ['-q', '-r', '-X', zipPath, folder]],
+    ['tar', ['-c', '--format', 'zip', '--options', 'zip:hdrcharset=UTF-8', '-f', zipPath, folder]],
+  ];
+  const failed = [];
+  for (const [cmd, args] of attempts) {
+    // a half-written zip from the attempt before must not pass for one this attempt made
+    fs.rmSync(zipPath, { force: true });
+    const r = spawnSync(cmd, args, { cwd, encoding: 'utf8' });
+    if (!r.error && r.status === 0 && isFile(zipPath)) return;
+    const end = r.status === null && r.signal ? `signal ${r.signal}` : `exit ${r.status}`;
+    const why = r.error ? String(r.error.code || r.error.message) : `${end}${errLine(r.stderr) ? ` (${errLine(r.stderr)})` : ''}`;
+    failed.push({ text: `${cmd}: ${why}`, missing: r.error?.code === 'ENOENT' });
+  }
+  fs.rmSync(zipPath, { force: true });
+  // neither tool exists at all: the old hint still says what to do
+  const hint = failed.every((f) => f.missing) ? ' — install `zip` (or a bsdtar `tar`)' : '';
+  throw new Error(`zipping failed: ${failed.map((f) => f.text).join('; ')}${hint}`);
 }
 
 const isLib = (f) => f.startsWith('node_modules/') || f.startsWith('public/vendor/');
@@ -767,6 +785,7 @@ function makeStage(root, p, stage, { install, env, log }) {
   log(`copying ${p.files.length - generated.size} files → ${stage}`);
   for (const rel of p.files) if (!generated.has(rel)) copyInto(root, stage, rel);
   rewritePlayerStage(stage, p);
+  if (generated.has('server/release-without-llm')) { fs.mkdirSync(path.join(stage, 'server'), { recursive: true }); fs.writeFileSync(path.join(stage, 'server/release-without-llm'), 'External AI is disabled in release packages.' + String.fromCharCode(10)); }
   if (generated.has(GENERATED_PACK_INDEX)) {
     const index = writePackIndex(stage, path.join(stage, GENERATED_PACK_INDEX));
     log(`${GENERATED_PACK_INDEX}: ${index.packs.map((x) => `${x.type} ${x.id}`).join(', ') || 'no pack'}`);

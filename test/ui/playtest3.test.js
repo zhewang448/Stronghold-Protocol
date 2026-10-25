@@ -17,15 +17,16 @@ import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PHASE, GEO } from '../../shared/constants.js';
+import { unscaled } from '../helpers/uiSize.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const read = (p) => readFileSync(path.join(ROOT, p), 'utf8');
+const read = (p) => unscaled(readFileSync(path.join(ROOT, p), 'utf8').replace(/\r\n/g, '\n'));
 
 // the browser data store reads the real data files from disk (ChessDetail / ChoiceOverlay renders below)
 globalThis.fetch = async (url) => {
   const name = String(url).split('/').pop();
   try {
-    const body = readFileSync(path.join(ROOT, 'data', name), 'utf8');
+    const body = readFileSync(path.join(ROOT, 'data', name), 'utf8').replace(/\r\n/g, '\n');
     return { ok: true, status: 200, json: async () => JSON.parse(body) };
   } catch {
     return { ok: false, status: 404, json: async () => ({}) };

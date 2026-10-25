@@ -98,14 +98,17 @@ export class StateReceiver {
       return { message: null, resync };
     };
     if (!Number.isSafeInteger(seq) || seq <= 0) return fail();
+    const previous = this.states.get(kind);
+    if (previous?.seq === seq) return { message: null, resync: false }; // duplicate, never emit twice
+    // A full frame is a baseline only when it is NEWER than the one this channel holds. An older or reordered one
+    // would rewind the baseline and make every following delta fail, so it is dropped exactly like a stale delta.
+    if (previous && seq < previous.seq) return fail();
     if (Object.hasOwn(frame, 'full')) {
       if (!record(frame.full) || frame.full.t !== kind) return fail();
       this.states.set(kind, { seq, view: frame.full });
       this.missing.delete(kind);
       return { message: frame.full, resync: false };
     }
-    const previous = this.states.get(kind);
-    if (previous?.seq === seq) return { message: null, resync: false }; // duplicate, never emit twice
     if (!previous || frame.base !== previous.seq || seq <= previous.seq) return fail();
     try {
       const view = applyStatePatch(previous.view, frame.patch);

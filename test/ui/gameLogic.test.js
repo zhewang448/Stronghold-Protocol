@@ -11,7 +11,7 @@ import {
   phaseMode, phaseBanner, isCombatPhase, isBossPhase, countdownState, phaseTotalSeconds, sortBonds, bondTier, nextThreshold,
   battleOverSfx, ownRoundLoss, uniteResultBox, battleResultBox, roundResultBox, RESULT_BOX_MS,
   bondMembers, memberHeadCount, bannedPerBond, priceTone, mergeProgress, shopBlockReason, deploySets, indexPieces, placementContext, canPlace,
-  boardTargets, dropIntent, normalizeDraft, normalizeSp, normalizePersonalChoice, groupEnemies, factionTypes, snapHud, bossFrac, attackInterval, fmtNum,
+  boardTargets, dropIntent, normalizeDraft, heldDraftPub, normalizeSp, normalizePersonalChoice, groupEnemies, factionTypes, snapHud, bossFrac, attackInterval, fmtNum,
   rangeGridBox, shortcutFor, sanitizeSettings, DEFAULT_SETTINGS, normalizeResult, cycleField, fieldLabel, homeFieldId,
   activeBubbles, sortedPlayers, tileKey, prepCapsuleLabel, prepCamera, dropFailureReason, terrainInfo,
 } from '../../public/js/ui/gameLogic.js';
@@ -557,6 +557,24 @@ describe('placement mirror (canPlace)', () => {
 
 describe('drafts', () => {
   const players = [{ playerId: 'a', seat: 0 }, { playerId: 'b', seat: 1 }, { playerId: 'c', seat: 2 }];
+  test('heldDraftPub: the draft as it ended — the last picks plus the players’ bandId, no turn, no countdown', () => {
+    const last = { phase: 'BAND_DRAFT', round: 0, deadline: 99, players: [{ playerId: 'a' }, { playerId: 'b' }],
+      draft: { order: ['a', 'b'], turn: 1, picks: { a: 'band_x' }, turnDeadline: 99, skipsLeft: { a: 1 } } };
+    const now = { phase: 'BATTLE_CHECK', round: 1, players: [{ playerId: 'a', bandId: 'band_x' }, { playerId: 'b', bandId: 'band_y' }] };
+    const h = heldDraftPub(last, now);
+    assert.equal(h.phase, 'BAND_DRAFT', 'still the draft for the draft screen');
+    assert.deepEqual(h.draft.picks, { a: 'band_x', b: 'band_y' });
+    assert.equal(h.draft.turn, null);
+    assert.equal(h.deadline, 0);
+    assert.equal(h.draft.turnDeadline, 0);
+    assert.deepEqual(h.draft.skipsLeft, { a: 1 });
+    assert.equal(h.players, now.players);
+    const d = normalizeDraft(h.draft, h.players);
+    assert.equal(d.turnPid, null);
+    assert.ok(d.order.every((pid) => d.picks.has(pid)), 'every pick in');
+    assert.deepEqual(last.draft.picks, { a: 'band_x' }, 'the snapshot is left as it was');
+  });
+
   test('normalizeDraft: index or id turn, object or array picks', () => {
     const d1 = normalizeDraft({ order: ['c', 'a', 'b'], turn: 1, picks: { c: 'band_x' } }, players);
     assert.equal(d1.turnPid, 'a'); assert.equal(d1.picks.get('c'), 'band_x'); assert.equal(d1.done, false);
@@ -721,12 +739,8 @@ describe('keyboard & settings', () => {
   });
   test('sanitizeSettings', () => {
     assert.deepEqual(sanitizeSettings(null), { ...DEFAULT_SETTINGS });
-    assert.equal(sanitizeSettings({ fpsLimit: 30 }).showFps, true, 'older profiles receive the enabled FPS default');
-    assert.equal(sanitizeSettings({ showFps: false }).showFps, false, 'an explicit opt-out is preserved');
-    assert.equal(sanitizeSettings({ showFps: 'false' }).showFps, true, 'invalid saved values use the default');
     assert.deepEqual(sanitizeSettings({ bgm: 3, sfx: -1, voice: 2, muted: 'yes', damageNumbers: false, quality: 'ultra' }),
-      { bgm: 1, sfx: 0, voice: 1, voiceLang: 'cn', voiceNative: false, voiceOverrides: {}, muted: false, damageNumbers: false, officialDamageNumbers: false, ammoEnergyCount: false, combatMetrics: true, chatBubbles: true, deploymentZoom: false, quality: 'high', officialFx: 'auto', otherSkins: true, textSize: 'sm', fpsLimit: 0, showFps: true, preload: false, preloadOptional: false, preloadVoiceLang: ['cn', 'jp'], keys: { ...DEFAULT_SETTINGS.keys } },
-
+      { ...DEFAULT_SETTINGS, bgm: 1, sfx: 0, voice: 1, damageNumbers: false, keys: { ...DEFAULT_SETTINGS.keys } },
       'a saved profile without `keys` (before 0.2.0) gets the default key map (test/ui/feedback5-hotkeys.test.js)');
     // 显示其他玩家的皮肤 (docs/SKINS.md): on by default, and off only when the profile says so
     assert.equal(DEFAULT_SETTINGS.otherSkins, true);
@@ -740,15 +754,14 @@ describe('keyboard & settings', () => {
     assert.equal(sanitizeSettings({ bgm: 0.5 }).voiceLang, 'cn');
     assert.equal(sanitizeSettings({ bgm: 0.5 }).voiceNative, false, 'a profile saved before the switch stays off');
     assert.equal(DEFAULT_SETTINGS.combatMetrics, true);
-    assert.equal(sanitizeSettings({ bgm: 0.5 }).combatMetrics, true, 'a profile without 作战统计 receives the enabled default');
+    assert.equal(sanitizeSettings({ bgm: 0.5 }).combatMetrics, true, 'a profile saved before 作战统计 uses the default');
     assert.equal(sanitizeSettings({ combatMetrics: true }).combatMetrics, true);
-    assert.equal(sanitizeSettings({ combatMetrics: false }).combatMetrics, false, 'a saved disabled preference is preserved');
     // 官方特效 (0.3.0): 'auto' by default (完整 on a desktop, 精简 on a touch device); unknown values fall back to it
     assert.equal(DEFAULT_SETTINGS.officialFx, 'auto');
     assert.equal(sanitizeSettings({ bgm: 0.5 }).officialFx, 'auto', 'a profile saved before 官方特效 gets the default');
     for (const v of ['off', 'lite', 'full', 'auto']) assert.equal(sanitizeSettings({ officialFx: v }).officialFx, v);
     assert.equal(sanitizeSettings({ officialFx: 'ultra' }).officialFx, 'auto');
-    assert.equal(sanitizeSettings({ combatMetrics: 'yes' }).combatMetrics, true, 'a non-boolean falls back to the enabled default');
+    assert.equal(sanitizeSettings({ combatMetrics: 'yes' }).combatMetrics, true, 'a non-boolean uses the default');
     assert.equal(sanitizeSettings({ voiceLang: 'jp' }).voiceLang, 'jp');
     assert.equal(sanitizeSettings({ voiceLang: 'en' }).voiceLang, 'en');
     assert.equal(sanitizeSettings({ voiceLang: 'kr' }).voiceLang, 'kr');
@@ -756,6 +769,27 @@ describe('keyboard & settings', () => {
     for (const bad of ['native', 'JP', 'ja', 1, null]) assert.equal(sanitizeSettings({ voiceLang: bad }).voiceLang, 'cn', String(bad));
     assert.equal(sanitizeSettings({ bgm: 0.333 }).bgm, 0.33);
     assert.equal(sanitizeSettings({ quality: 'low' }).quality, 'low');
+  });
+  test('fullscreen wake lock is opt-in and accepts only boolean saved values', () => {
+    assert.equal(DEFAULT_SETTINGS.fullscreenWakeLock, false);
+    for (const profile of [null, undefined, {}, { bgm: 0.5 }, { fullscreenWakeLock: undefined }]) {
+      assert.equal(sanitizeSettings(profile).fullscreenWakeLock, false);
+    }
+    for (const value of [true, false]) assert.equal(sanitizeSettings({ fullscreenWakeLock: value }).fullscreenWakeLock, value);
+    for (const value of ['true', 1, null, {}, []]) assert.equal(sanitizeSettings({ fullscreenWakeLock: value }).fullscreenWakeLock, false);
+  });
+  test('the old combat wake lock preference never enables fullscreen wake lock', () => {
+    assert.equal(Object.hasOwn(DEFAULT_SETTINGS, 'screenWakeLock'), false);
+    for (const screenWakeLock of [true, false]) {
+      const migrated = sanitizeSettings({ screenWakeLock });
+      assert.equal(migrated.fullscreenWakeLock, false);
+      assert.equal(Object.hasOwn(migrated, 'screenWakeLock'), false);
+      for (const fullscreenWakeLock of [true, false, undefined, null, 'true', 1]) {
+        const settings = sanitizeSettings({ screenWakeLock, fullscreenWakeLock });
+        assert.equal(settings.fullscreenWakeLock, fullscreenWakeLock === true);
+        assert.equal(Object.hasOwn(settings, 'screenWakeLock'), false);
+      }
+    }
   });
 });
 

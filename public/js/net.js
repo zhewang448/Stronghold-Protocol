@@ -31,13 +31,15 @@
 
 import { PROTOCOL_VERSION, ERR_TEXT } from '../../shared/constants.js';
 import { validateC2S } from '../../shared/protocol.js';
-import { StateReceiver, STATE_DELTA_VERSION } from '../../shared/stateDelta.js';
 import { N_ } from '../../shared/i18n.js';
+import { STATE_DELTA_VERSION, StateReceiver } from '../../shared/stateDelta.js';
 
 export const REQUEST_TIMEOUT_MS = 8000;
 export const HELLO_TIMEOUT_MS = 8000;
 export const PING_INTERVAL_MS = 4000;
 export const DEAD_AFTER_MS = 15000;
+/** Minimum gap between two `state.resync` requests: a gap in one channel is answered by the full frame of the next one. */
+export const RESYNC_GAP_MS = 1000;
 export const BACKOFF = Object.freeze({ base: 500, factor: 2, max: 10000, jitter: 0.2 });
 
 /** Client-side error codes (in addition to shared ERR codes). */
@@ -136,9 +138,7 @@ export class Net {
 
     /** @type {'idle'|'connecting'|'connected'|'handshaking'|'online'|'reconnecting'|'closed'} */
     this.status = 'idle';
-    this.presenceStatus = null;
     this.ws = null;
-    this._states = new StateReceiver();
     this.name = null;          // desired player name (hello is sent when set)
     this.helloName = null;     // name we sent in the hello that got the last welcome
     this.serverName = null;    // name as normalised by the server
@@ -160,13 +160,18 @@ export class Net {
     this._reconnectTimer = null;
     this._pingTimer = null;
     this._helloTimer = null;
-    this._stateResyncTimer = null;
     this._helloRid = null;
     this._helloSentName = null;
     this._helloToken = null;
     this._lastRx = 0;
     this._unansweredSince = null; // time of the oldest ping sent since the last inbound frame
     this._clockSamples = [];   // [{ offset, rtt }]
+    // State-delta decoding (shared/stateDelta.js): only ever fed frames a server chose to send this client after its
+    // hello named STATE_DELTA_VERSION. A missed frame blocks that channel, and one resync request per RESYNC_GAP_MS
+    // asks for a full one — the server answers it like a repeated hello (and throttles it the same way).
+    this._receiver = new StateReceiver();
+    this._stateRoom = null;
+    this._resyncAt = 0;        // epoch ms of the last resync request we sent
   }
 
   // ---- events ----------------------------------------------------------------------------------
@@ -346,8 +351,6 @@ export class Net {
   }
 
   _teardownSocket() {
-    this._states.reset();
-    this._clearTimer('_stateResyncTimer', 'clearTimeout');
     const ws = this.ws;
     if (ws) {
       ws.onopen = ws.onmessage = ws.onerror = ws.onclose = null;
@@ -358,6 +361,11 @@ export class Net {
     this._clearTimer('_helloTimer', 'clearTimeout');
     this._helloRid = null;
     this._helloSentName = null;
+    // A new socket is a new negotiation (server/net.js onHelloMsg re-baselines per connection): the sequences the old
+    // one used mean nothing here, so a stale baseline must never make the first full frame of the new one look old.
+    this._receiver?.reset();
+    this._stateRoom = null;
+    this._resyncAt = 0;
   }
 
   _clearTimer(field, fn) {
@@ -372,6 +380,8 @@ export class Net {
   _sendHello() {
     if (!this.name) return;
     const rid = this._nextRid();
+    // `stateDelta` says this build decodes `m.state` frames (shared/stateDelta.js). A server that does not speak it ignores
+    // the field, and the client then keeps receiving the plain m.public / m.private frames it always got.
     const msg = { t: 'hello', rid, name: this.name, version: PROTOCOL_VERSION, stateDelta: STATE_DELTA_VERSION };
     let token = null;
     try { token = this.getToken(); } catch { token = null; }
@@ -382,7 +392,6 @@ export class Net {
       if (Number.isFinite(claim?.claimAt)) msg.claimAt = claim.claimAt;
     }
     this._helloToken = token;
-    if (this.presenceStatus) msg.presenceStatus = this.presenceStatus;
     this._helloRid = rid;
     this._helloSentName = this.name;
     if (this.status !== 'handshaking') this._setStatus('handshaking');
@@ -534,6 +543,19 @@ export class Net {
 
   // ---- incoming --------------------------------------------------------------------------------
 
+  /**
+   * Ask the server for one full state frame (the answer to a gap in the delta stream). Rate-limited: one request per
+   * RESYNC_GAP_MS covers every channel, because the server re-sends the whole room state at once. Silent while offline —
+   * the next welcome resyncs anyway.
+   */
+  requestResync() {
+    const now = this.now();
+    if (now - this._resyncAt < RESYNC_GAP_MS) return;
+    this._resyncAt = now;
+    try { this.request('state.resync').catch(() => { /* the next full frame fixes it, or the room resyncs */ }); }
+    catch { /* offline: the reconnect resyncs the room from scratch */ }
+  }
+
   _onMessage(data) {
     this._lastRx = this.now();
     this._unansweredSince = null;
@@ -545,15 +567,20 @@ export class Net {
       return;
     }
     if (!msg || typeof msg !== 'object' || Array.isArray(msg) || typeof msg.t !== 'string') return;
+    // State-delta transport (shared/stateDelta.js): a negotiated server may compress the two big views into `m.state`
+    // frames. They are decoded here and continue as the ordinary m.public / m.private messages every listener already
+    // handles, so nothing above this line notices the difference. A frame that cannot be applied (a gap, a lost or
+    // reordered delta, an older full frame) is dropped and one rate-limited `state.resync` asks for a full one.
+    if (msg.t === 'room.closed' || (msg.t === 'room.state' && msg.code !== this._stateRoom)) {
+      this._stateRoom = msg.t === 'room.state' ? msg.code : null;
+      this._receiver.reset();
+      this._resyncAt = 0;
+    }
     if (msg.t === 'm.state') {
-      const decoded = this._states.receive(msg);
-      if (decoded.resync) this._recoverState();
-      if (!this._states.missing.size) this._clearTimer('_stateResyncTimer', 'clearTimeout');
-      if (!decoded.message) return;
-      msg = decoded.message;
-    } else if (msg.t === 'room.closed' || msg.t === 'm.result') {
-      this._states.reset();
-      this._clearTimer('_stateResyncTimer', 'clearTimeout');
+      const { message, resync } = this._receiver.receive(msg);
+      if (resync) this.requestResync();
+      if (message == null) return;
+      msg = message;
     }
     const { t } = msg;
     const rid = msg.rid;
@@ -568,7 +595,7 @@ export class Net {
       this._onPong(msg);
     } else if (isHelloError) {
       this._onHelloError(msg);
-    } else if ((t === 'm.public' || t === 'site.announcement') && Number.isFinite(msg.serverNow) && !this.clockSynced) {
+    } else if (t === 'm.public' && Number.isFinite(msg.serverNow) && !this.clockSynced) {
       this._addClockSample(msg.serverNow + (this.ping ?? 0) / 2 - this.now(), Infinity);
     }
 
@@ -593,12 +620,6 @@ export class Net {
   }
 
   // ---- heartbeat & clock -----------------------------------------------------------------------
-
-  _recoverState() {
-    if (this._stateResyncTimer != null || !this._states.missing.size) return;
-    this._stateResyncTimer = this.timers.setTimeout(() => { this._stateResyncTimer = null; this._recoverState(); }, 1000);
-    this.request('state.resync', {}, { timeout: 1000 }).catch(() => {});
-  }
 
   _startHeartbeat() {
     this._clearTimer('_pingTimer', 'clearInterval');

@@ -3,12 +3,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PHASE } from '../../shared/constants.js';
-import { createRng } from '../../server/sim/rng.js';
+import { createRng, deriveSeed } from '../../server/sim/rng.js';
 import { Battle } from '../../server/sim/Battle.js';
 import { getDefaultSource } from '../../server/sim/simdata.js';
 import { makeCtx } from '../../server/match/effectsMeta.js';
 import { botPickBand, bondPlan, buyScoreOf } from '../../server/match/bot.js';
-import { pairPlayers, bossPoolHp } from '../../server/match/finalAssault.js';
+import { pairPlayers, bossPairSalt, bossPoolHp } from '../../server/match/finalAssault.js';
 import { DATA, makeMatch, give, checkInvariants } from './harness.js';
 
 function prep(t, humans, opts = {}) {
@@ -157,7 +157,7 @@ for (const humans of [7, 20]) {
     assert.equal(partners.size, humans - 1, 'random pairing is not restricted to a seat neighbour or pool group');
   });
 
-  test(`${humans} players: elimination before boss prep and a prep quit preserve surviving partners into hidden prep`, t => {
+  test(`${humans} players: elimination and a prep quit preserve surviving partners before the hidden redraw`, t => {
     const h = prep(t, humans), m = h.m;
     const eliminated = h.ps('p_0');
     eliminated.lp = 0; eliminated.eliminate(0);
@@ -176,9 +176,10 @@ for (const humans of [7, 20]) {
     assert.ok(!afterQuit.flat().includes(leaver));
     m.startRound(m.gd.hiddenRound);
     h.drive(() => m.phase === PHASE.PREP && m.round === m.gd.hiddenRound, { ready: false, maxSteps: 50 });
-    assert.deepEqual(m.bossPairs, afterQuit, 'the updated surviving partnerships persist into the hidden preparation');
+    const hiddenPairs = ids(pairPlayers(m.alivePlayers(), createRng(deriveSeed(m.seed, bossPairSalt(m.gd, m.gd.hiddenRound)))));
+    assert.deepEqual(m.bossPairs, hiddenPairs, 'the hidden preparation draws fresh pairs from its own deterministic stream (#845)');
     for (const p of m.alivePlayers()) {
-      const group = m.bossGroupOf(p), pair = afterQuit.find(g => g.includes(p.playerId));
+      const group = m.bossGroupOf(p), pair = hiddenPairs.find(g => g.includes(p.playerId));
       assert.equal(group.side, pair.indexOf(p.playerId) === 0 ? 'L' : 'R');
     }
     checkInvariants(m);
@@ -189,11 +190,12 @@ for (const humans of [7, 20]) {
     m.startRound(m.gd.bossRound);
     h.drive(() => m.phase === PHASE.PREP && m.round === m.gd.bossRound, { ready: false, maxSteps: 50 });
     assert.equal(m.phase, PHASE.PREP);
-    const previous = structuredClone(m.bossPairs);
+    let previous = structuredClone(m.bossPairs);
     if (hidden) {
       m.startRound(m.gd.hiddenRound);
       h.drive(() => m.phase === PHASE.PREP && m.round === m.gd.hiddenRound, { ready: false, maxSteps: 50 });
-      assert.deepEqual(m.bossPairs, previous, 'hidden prep keeps the original draw');
+      previous = ids(pairPlayers(m.alivePlayers(), createRng(deriveSeed(m.seed, bossPairSalt(m.gd, m.gd.hiddenRound)))));
+      assert.deepEqual(m.bossPairs, previous, 'hidden prep uses its fresh draw (#845)');
       m.teamLp = m.alivePlayers().reduce((sum, p) => sum + p.lp, 0);
       for (const p of m.alivePlayers()) p.lpAtFinal = p.lp;
     }

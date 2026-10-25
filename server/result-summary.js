@@ -18,7 +18,7 @@ function validRecord(rec) {
 /** Cache parsed records by file metadata; vanished records leave the cache immediately. */
 export function createResultSummary(dir) {
   const cache = new Map();
-  return function summary({ from, to, mode, difficulty } = {}) {
+  return function summary({ from, to, mode, difficulty, version } = {}) {
     let files;
     try { files = fs.readdirSync(dir).filter((f) => /^[\w-]+\.json$/.test(f)); } catch { files = []; }
     const present = new Set(files);
@@ -37,9 +37,11 @@ export function createResultSummary(dir) {
       } catch { skipped++; continue; }
       if ((from && rec.savedAt < Number(from)) || (to && rec.savedAt > Number(to)) || (mode && rec.mode !== mode) || (difficulty && rec.difficulty !== difficulty)) continue;
       if (rec.result.test === true) continue;
+      const recordVersion = rec.version || rec.result.version || 'act2autochess';
+      if (version && recordVersion !== version) continue;
       games++; if (rec.result.victory) wins++;
-      const key = JSON.stringify([rec.mode, rec.difficulty]);
-      const group = groups.get(key) || { mode: rec.mode, difficulty: rec.difficulty, games: 0, wins: 0, rounds: 0 };
+      const key = JSON.stringify([rec.mode, rec.difficulty, recordVersion]);
+      const group = groups.get(key) || { mode: rec.mode, difficulty: rec.difficulty, version: recordVersion, games: 0, wins: 0, rounds: 0 };
       group.games++; group.wins += Number(rec.result.victory);
       group.rounds += Math.max(rec.result.roundsPassed, ...(rec.history || []).map((h) => Number.isFinite(h.round) ? h.round : 0));
       groups.set(key, group);

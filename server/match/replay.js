@@ -15,6 +15,7 @@ function recording(m) {
   if (m.replayDisabled) return null;
   return m.replay ||= {
     format: 1, made: { app: APP_VERSION, release: config.release, specVersion: SPEC_VERSION, identity: config.identity },
+    ...(m.version ? { version: m.version, cs: m.cs } : {}),
     seed: m.seed, mode: m.modeId, difficulty: m.difficulty, clientCombat: m.clientCombat,
     players: m.order.map((p) => ({ playerId: p.playerId, name: p.name, isBot: p.isBot })), rounds: [],
   };

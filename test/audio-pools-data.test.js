@@ -52,8 +52,12 @@ test('every generated attack/hit reference resolves to a valid pool and its sele
       }
     }
   }
-  assert.equal(refs, 975); // local-tools: seven collaboration operators add 23 references. // 0.3.1 release fetch-assets: + 琳琅诗怀雅 S3, 刻俄柏, 风丸 attacks and 松果's hit (their official pools)
-  assert.equal(Object.keys(pools).length, 964); // local-tools: 23 additional official collaboration pools. // + the four pools above
+  // 0.3.1 release fetch-assets: 952 (+ 琳琅诗怀雅 S3, 刻俄柏, 风丸 attacks and 松果's hit); 0.3.2 (#848, DESIGN §35.38): + the 26
+  // plain mode-bank slots on 19 operators, and 弑君者 / 莱伊 / 望 / 灰毫's normal attack from their mode-0 banks
+  // The four-version art union adds nine references to installed sounds and 46 official pool records.
+  // The extension keeps seven collaboration operators and their installed sound references.
+  assert.equal(refs, 1043);
+  assert.equal(Object.keys(pools).length, 1039);
   const p = pools[units.char_4064_mlynar.attackPools[2]];
   assert.equal(p.sounds['player/p_imp/p_imp_loyalsword_h.mp3'].delay, 0.1);
 });

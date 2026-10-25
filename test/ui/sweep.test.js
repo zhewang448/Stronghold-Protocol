@@ -13,7 +13,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const read = (p) => readFileSync(path.join(ROOT, p), 'utf8');
+const read = (p) => readFileSync(path.join(ROOT, p), 'utf8').replace(/\r\n/g, '\n');
 const factions = JSON.parse(read('data/factions.json'));
 const enemies = JSON.parse(read('data/enemies.json'));
 
@@ -84,7 +84,7 @@ test('codexEnemies: one per 图鉴 number, no summon-only enemy, by number; boss
 
 test('the report is read-only and a full-screen Modal; the lobby opens it (source contract)', () => {
   const src = read('public/js/screens/sweep.js');
-  assert.ok(src.includes("onClose=${leave} class=${cx('sw', leaving && 'is-leaving')}"));
+  assert.match(src, /onClose=.*onClose.*class="sw"/);
   assert.match(src, /<\$\{Modal\} open=\$\{true\} onClose=\$\{onClose\} class="sw-codex"/);
   assert.doesNotMatch(src, /openLoadout|savePref\((?!TAB_PREF)|net\.|room\./, 'nothing but the remembered tab is written');
   assert.doesNotMatch(src, /name="box"|name="dice"/, 'only icons of the project\'s set');

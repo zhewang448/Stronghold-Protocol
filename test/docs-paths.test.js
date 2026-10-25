@@ -104,7 +104,7 @@ test('DESIGN: every section is a `## N.` heading exactly once in docs/design/ or
   for (const dir of DESIGN_DIRS) {
     for (const f of readdirSync(join(ROOT, dir)).filter((x) => x.endsWith('.md')).sort()) {
       const file = `${dir}/${f}`;
-      const md = readFileSync(join(ROOT, file), 'utf8');
+      const md = readFileSync(join(ROOT, file), 'utf8').replace(/\r\n/g, '\n');
       assert.match(md, /^# DESIGN §\d+(?:, §\d+)* — .+\n\nPart of \[DESIGN\.md\]\(\.\.\/DESIGN\.md\)/, `${file}: its title and the pointer to the index`);
       for (const n of sectionsOf(md)) {
         assert.ok(!where.has(n), `§${n} is in ${where.get(n)} and in ${file}`);

@@ -79,6 +79,8 @@ export function makeMatch(o = {}) {
     // bot layout rehearsal (extra simulated battles per bot prep) is off unless a test asks for it: it multiplies the
     // simulation work of full-match suites; test/match/bot.test.js covers it
     botRehearsal: o.botRehearsal ?? 0,
+    botStrategy: o.botStrategy,
+    externalReplay: o.externalReplay,
     botSliceMs: o.botSliceMs,
     clientCombat: o.clientCombat ?? false,
     verify: o.verify ?? 'off',
@@ -91,6 +93,9 @@ export function makeMatch(o = {}) {
     test: o.test === true,
     botRehearsalDelegate: o.botRehearsalDelegate,
     botRehearsalDelegateMs: o.botRehearsalDelegateMs,
+    // the server's own simulation pool for those rehearsals (server/workers/roomPool.js); absent unless a test passes
+    // one, so a harness match keeps every rehearsal on this thread (test/workers-room.test.js covers the pooled path)
+    ...(o.simPool !== undefined ? { simPool: o.simPool } : {}),
     // a gameplay-plugin room (DESIGN §32.6): host rehearsal stays off there (match/rehearsal.js requireCs)
     cs: o.cs,
     vs: o.vs,
@@ -177,6 +182,7 @@ export function checkInvariants(m) {
 /** The original harness checks (kept alongside collectViolations; they must agree). */
 function legacyInvariants(m) {
   const heldByPool = new Map(m.poolGroups.map((g) => [g.pool, new Map()]));
+  if (m.pool && !heldByPool.has(m.pool)) heldByPool.set(m.pool, new Map());
   const uids = new Set();
   const note = (p) => {
     assert.ok(Number.isInteger(p.uid) && p.uid > 0, `bad uid ${p.uid}`);
@@ -246,7 +252,9 @@ function legacyInvariants(m) {
       assert.equal(e.left + (diyHeld.get(base) || 0), e.cap, `${ps.playerId} 自选 stock ${base}: left ${e.left} + held ${diyHeld.get(base) || 0} != cap ${e.cap}`);
     }
   }
-  for (const { pool } of m.poolGroups) {
+  const checkedPools = new Set(m.poolGroups.map((g) => g.pool));
+  if (m.pool) checkedPools.add(m.pool);
+  for (const pool of checkedPools) {
     const held = heldByPool.get(pool);
     for (const [base, e] of pool.entries) {
       assert.ok(Number.isInteger(e.left) && e.left <= e.cap, `pool ${base} balance ${e.left} cap ${e.cap}`);

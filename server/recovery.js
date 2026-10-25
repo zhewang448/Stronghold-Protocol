@@ -30,6 +30,17 @@ export function recoveryIdentity(root) {
   return RELEASE_TAG + ':' + hash.digest('hex');
 }
 
+export function recoveryPayload(m, snap) {
+  return {
+    seed: m.seed,
+    seats: m.order.map(p => ({ seat: p.seat, playerId: p.playerId, name: p.name, isBot: p.isBot, connected: p.isBot, loadout: p.loadout, ops: p.ops, skins: p.skins, card: p.card, cardSkin: p.cardSkin, notOwned: p.standIns, diy: p.diy })),
+    flags: Object.fromEntries(m.order.map(p => [p.playerId, { autoplay: p.autoplay, left: p.left }])),
+    fixed: Object.fromEntries(FIXED.map(k => [k, m[k]])), schedule: m.factions.schedule,
+    elapsedMs: Math.max(0, snap.at - m.startedAt), snapshot: snap.data,
+    replay: m.replay, replayDisabled: m.replayDisabled,
+  };
+}
+
 export function restoreMatch(m, record) {
   Object.assign(m, record.fixed);
   if (typeof record.room?.uniteLayerGains === 'boolean') m.uniteLayerGains = record.room.uniteLayerGains;
@@ -87,19 +98,17 @@ export function createRecovery({ lobby, root, dir = path.join(root, 'logs', 'rec
     roomClosed(code) { if (!stopping) remove(code); },
     prepareShutdown() { stopping = true; },
     save(room, m, snap) {
-      if (!enabled || stopping || restoring || room.test || m.test) return;
+      if (m.test) return;
+      return manager.savePayload(room, recoveryPayload(m, snap));
+    },
+    savePayload(room, payload) {
+      if (!enabled || stopping || restoring || room.test) return;
       if (!CODE.test(room.code)) throw new Error('恢复房间号无效');
-      const sessions = [...room.seats, ...room.spectators].filter((s) => s && !s.isBot)
-        .map((s) => lobby.registry.byId(s.playerId)).filter(Boolean)
-        .map((s) => Object.fromEntries(['playerId', 'token', 'name', 'loadout', 'ops', 'skins', 'card', 'cardSkin', 'notOwned', 'diy', 'resumeWindowMs', 'presenceStatus'].map((k) => [k, s[k]])));
-      const record = { format: 1, identity, seed: m.seed, matchNo: room.matchCount,
-        room: { code: room.code, mode: room.mode, difficulty: room.difficulty, capacity: room.capacity, hostId: room.hostId, seats: room.seats, spectators: room.spectators, aiPicksLast: room.aiPicksLast, uniteLayerGains: room.uniteLayerGains, createdAt: room.createdAt },
-        seats: m.order.map((p) => ({ seat: p.seat, playerId: p.playerId, name: p.name, isBot: p.isBot, connected: p.isBot,
-          loadout: p.loadout, ops: p.ops, skins: p.skins, card: p.card, cardSkin: p.cardSkin, notOwned: p.standIns, diy: p.diy })),
-        flags: Object.fromEntries(m.order.map((p) => [p.playerId, { autoplay: p.autoplay, left: p.left }])),
-        fixed: Object.fromEntries(FIXED.map((k) => [k, m[k]])), schedule: m.factions.schedule,
-        elapsedMs: Math.max(0, snap.at - m.startedAt), snapshot: snap.data, sessions,
-        replay: m.replay, replayDisabled: m.replayDisabled };
+      const sessions = [...room.seats, ...room.spectators].filter(s => s && !s.isBot)
+        .map(s => lobby.registry.byId(s.playerId)).filter(Boolean)
+        .map(s => Object.fromEntries(['playerId', 'token', 'name', 'loadout', 'ops', 'skins', 'card', 'cardSkin', 'notOwned', 'diy', 'resumeWindowMs', 'presenceStatus'].map(k => [k, s[k]])));
+      const record = { ...payload, format: 1, identity, matchNo: room.matchCount, sessions,
+        room: { code: room.code, mode: room.mode, difficulty: room.difficulty, capacity: room.capacity, version: room.version, soloUnlimited: room.soloUnlimited, hostId: room.hostId, seats: room.seats, spectators: room.spectators, aiPicksLast: room.aiPicksLast, uniteLayerGains: room.uniteLayerGains, createdAt: room.createdAt } };
       fs.mkdirSync(dir, { recursive: true });
       const file = path.join(dir, `room-${room.code}.bin`);
       fs.writeFileSync(file + '.tmp', serialize(record), { mode: 0o600 }); fs.renameSync(file + '.tmp', file);
@@ -127,6 +136,8 @@ export function createRecovery({ lobby, root, dir = path.join(root, 'logs', 'rec
           room = Object.assign(new Room(r.room.code, r.room.mode, r.room.difficulty, lobby.now()), r.room);
           // Old recovery records predate the new-room on-by-default setting; preserve their historical off default.
           if (!Object.hasOwn(r.room, 'aiPicksLast')) room.aiPicksLast = false;
+          if (!lobby.versionEnabled(room.version) || !lobby.versionAvailable(room.version)) throw new Error('该历史版本未启用或不可用');
+          room.content = lobby.baseContent(room.version);
           room.matchCount = r.matchNo - 1;
           for (const s of [...room.seats, ...room.spectators]) if (s) s.connected = !!s.isBot;
           lobby.rooms.set(room.code, room);

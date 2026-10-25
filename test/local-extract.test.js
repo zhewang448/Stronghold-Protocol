@@ -14,21 +14,21 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const TOOL = path.join(ROOT, 'tools/local-extract');
-const PY = ['python3', 'python'].find((bin) => spawnSync(bin, ['--version'], { windowsHide: true }).status === 0);
+const PY = ['python3', 'python'].find((bin) => spawnSync(bin, ['--version']).status === 0);
 const ENV = { ...process.env, PYTHONDONTWRITEBYTECODE: '1' };
 const manifest = (() => { try { return JSON.parse(readFileSync(path.join(ROOT, 'data/local-assets.json'), 'utf8')); } catch { return null; } })();
 
 /** Run python code with `extract` imported as `e`; returns the parsed JSON it prints. */
 function py(code) {
   const src = `import sys, json\nfrom types import SimpleNamespace as NS\nsys.path.insert(0, ${JSON.stringify(TOOL)})\nimport extract as e\n${code}`;
-  const r = spawnSync(PY, ['-c', src], { encoding: 'utf8', env: ENV, windowsHide: true });
+  const r = spawnSync(PY, ['-c', src], { encoding: 'utf8', env: ENV });
   assert.equal(r.status, 0, r.stderr);
   return JSON.parse(r.stdout);
 }
 
 describe('extract.py helpers (no UnityPy needed)', { skip: !PY && 'no python3' }, () => {
   test('job table: map themes export Materials, the board meshes are exported with their prefab', () => {
-    const r = spawnSync(PY, [path.join(TOOL, 'extract.py'), '--print-jobs'], { encoding: 'utf8', env: ENV, windowsHide: true });
+    const r = spawnSync(PY, [path.join(TOOL, 'extract.py'), '--print-jobs'], { encoding: 'utf8', env: ENV });
     assert.equal(r.status, 0, r.stderr);
     const { jobs } = JSON.parse(r.stdout);
     for (const sub of ['map/autochess', 'map/autochesssand']) assert.deepEqual(jobs.find((j) => j.sub === sub).kinds, ['Material', 'Texture2D'], sub);
@@ -44,7 +44,7 @@ describe('extract.py helpers (no UnityPy needed)', { skip: !PY && 'no python3' }
   });
 
   test('job table: the token Spine models (TOKEN_SPINES) come from the battle token packs into spine/token/<id>; no plain job writes under spine/', () => {
-    const r = spawnSync(PY, [path.join(TOOL, 'extract.py'), '--print-jobs'], { encoding: 'utf8', env: ENV, windowsHide: true });
+    const r = spawnSync(PY, [path.join(TOOL, 'extract.py'), '--print-jobs'], { encoding: 'utf8', env: ENV });
     assert.equal(r.status, 0, r.stderr);
     const { jobs, tokenSpines, enemySpines } = JSON.parse(r.stdout);
     assert.equal(tokenSpines.bundles, 'pkgrps/btl_pfb_tokens_*.ab');
@@ -80,12 +80,24 @@ print(json.dumps({
     'dyn/battle/prefabs/skins/character/token_10002_kalts_mon3tr/token_10002_kalts_mon3tr_boc#6.prefab',
     'dyn/battle/prefabs/[uc]tokens/token_10000_silent_healrb.prefab', None]],
   'only': [e.spine_ids(o, 'spine/token', ids) for o in ([], ['spine'], ['spine/token'], ['spine/token/token_b'], ['spine/enemy'], ['map'])],
+  'jobs': {p: [j[1] for j in e.select_jobs([p])] for p in ['enemy', 'token', 'fx', 'common', 'spine/enemy', 'spine/token', 'ui/outer/some_sprite']},
+  'short': [e.spine_ids(o, 'spine/token', ids) for o in (['enemy'], ['token'], ['nope'])],
+  'shortEnemy': [e.spine_ids(o, 'spine/enemy', ['enemy_a']) for o in (['enemy'], ['spine/enemy'])],
   'pick': [e.pick_spine_node(nodes)[0], e.pick_spine_node([('Spine', True, {}), ('X', True, {})])[0],
            e.pick_spine_node([('Front', False, {}), ('Other', True, {})])[0], e.pick_spine_node([('A', False, {})])[0], e.pick_spine_node([])],
   'pages': e.atlas_pages('\\ntoken_x.png\\nsize: 64,64\\nformat: RGBA8888\\nC_Body\\n  rotate: false\\n  xy: 2, 2\\n\\ntoken_x2.png\\nsize: 32,32\\nC_Leg\\n  xy: 0, 0\\n'),
 }))`);
     assert.deepEqual(out.ids, ['token_10009_weedy_cannon', 'token_10002_kalts_mon3tr', null, null, null]);
     assert.deepEqual(out.only, [['token_a', 'token_b'], ['token_a', 'token_b'], ['token_a', 'token_b'], ['token_b'], [], []]);
+    // the short form the usage line documents: `--only enemy` selects the enemy list and `--only token` this one, not
+    // an empty selection (a prefix naming nothing stays empty: neither list nor job)
+    assert.deepEqual(out.short, [[], ['token_a', 'token_b'], []]);
+    assert.deepEqual(out.jobs.enemy, out.jobs['spine/enemy']);
+    assert.deepEqual(out.jobs.token, out.jobs['spine/token']);
+    assert.ok(out.jobs['ui/outer/some_sprite'].includes('ui/outer'));
+    assert.ok(!out.jobs.fx.includes('map/fx'));
+    assert.ok(!out.jobs.common.includes('ui/common') && !out.jobs.common.includes('map/common'));
+    assert.deepEqual(out.shortEnemy, [['enemy_a'], ['enemy_a']]);
     assert.deepEqual(out.pick, ['Front', 'Spine', 'Other', 'A', null]);
     assert.deepEqual(out.pages, ['token_x.png', 'token_x2.png']);
   });
@@ -124,18 +136,17 @@ print(json.dumps({'nodes': [[n, a, r['m_PathID']] for n, a, r in nodes], 'pick':
     assert.equal(out.pick, 41, 'the Front skeleton (the fetched tokens use Front / Spine too)');
   });
 
-  test('merge_alpha: the [alpha] texture as A, else the page\'s own alpha; RGB clamped to A (premultiplied input), multiplied for straight input', { skip: spawnSync(PY, ['-c', 'import PIL'], { windowsHide: true }).status !== 0 && 'no Pillow' }, () => {
+  test('merge_alpha: the [alpha] texture as A, else the page\'s own alpha; the main RGB stays straight (never clamped to A)', { skip: spawnSync(PY, ['-c', 'import PIL']).status !== 0 && 'no Pillow' }, () => {
     const out = py(`
 from PIL import Image
 rgb = Image.new('RGB', (2, 1)); rgb.putdata([(200, 100, 50), (90, 90, 90)])
 alpha = Image.new('RGB', (2, 1)); alpha.putdata([(128, 128, 128), (255, 255, 255)])
 rgba = Image.new('RGBA', (2, 1)); rgba.putdata([(60, 200, 10, 100), (0, 0, 0, 0)])
 print(json.dumps({'split': list(e.merge_alpha(rgb, alpha).getdata()), 'own': list(e.merge_alpha(rgba, None).getdata()),
-  'opaque': list(e.merge_alpha(rgb, None).getdata()), 'straight': list(e.merge_alpha(rgba, None, True).getdata())}))`);
-    assert.deepEqual(out.split, [[128, 100, 50, 128], [90, 90, 90, 255]], 'A from the [alpha] texture, RGB ≤ A');
-    assert.deepEqual(out.own, [[60, 100, 10, 100], [0, 0, 0, 0]], 'an RGBA page keeps its alpha (the newer tokens: _UseAlphaTex 0)');
+  'opaque': list(e.merge_alpha(rgb, None).getdata())}))`);
+    assert.deepEqual(out.split, [[200, 100, 50, 128], [90, 90, 90, 255]], 'A from the [alpha] texture, the main RGB as it is');
+    assert.deepEqual(out.own, [[60, 200, 10, 100], [0, 0, 0, 0]], 'an RGBA page keeps its own alpha and RGB (the newer tokens: _UseAlphaTex 0)');
     assert.deepEqual(out.opaque, [[200, 100, 50, 255], [90, 90, 90, 255]], 'no alpha anywhere: opaque');
-    assert.deepEqual(out.straight, [[23, 78, 3, 100], [0, 0, 0, 0]], '_StraightAlphaInput 1: RGB × A / 255 (Pillow truncates)');
   });
 
   test('material_info: textures by name with tiling, floats, colours, sorted keywords; unresolvable refs → null', () => {
@@ -208,13 +219,13 @@ print(json.dumps(e.prefab_node(go)))`);
       name: 'S_Background_shadow', parent: 'Root', pos: [0, 3.525424, -8], rot: [0, 0, 0, 1], scale: [0.01, 0.01, 0.01],
       mesh: 'S_Background_shadow', materials: ['lambert1', null],
     });
-    const raw = spawnSync(PY, ['-c', `import sys; sys.path.insert(0, ${JSON.stringify(TOOL)}); import extract as e, json; print(json.dumps(e.vec(type('V', (), {'x': -0.0, 'y': float('inf'), 'z': 1e-9})())))`], { encoding: 'utf8', env: ENV, windowsHide: true });
+    const raw = spawnSync(PY, ['-c', `import sys; sys.path.insert(0, ${JSON.stringify(TOOL)}); import extract as e, json; print(json.dumps(e.vec(type('V', (), {'x': -0.0, 'y': float('inf'), 'z': 1e-9})())))`], { encoding: 'utf8', env: ENV });
     assert.equal(raw.stdout.trim(), '[0.0, 0, 0.0]');
   });
 
   test('guide pages (host bandwidth layer 0): --webp writes a WebP copy of every page PNG (lossy q90 by default, lossless on request), the manifest lists it, the PNG stays',
-    { skip: spawnSync(PY, ['-c', "import sys; from PIL import features; sys.exit(0 if features.check('webp') else 1)"], { env: ENV, windowsHide: true }).status !== 0 && 'no Pillow with WebP' }, () => {
-      const jobs = JSON.parse(spawnSync(PY, [path.join(TOOL, 'extract.py'), '--print-jobs'], { encoding: 'utf8', env: ENV, windowsHide: true }).stdout);
+    { skip: spawnSync(PY, ['-c', "import sys; from PIL import features; sys.exit(0 if features.check('webp') else 1)"], { env: ENV }).status !== 0 && 'no Pillow with WebP' }, () => {
+      const jobs = JSON.parse(spawnSync(PY, [path.join(TOOL, 'extract.py'), '--print-jobs'], { encoding: 'utf8', env: ENV }).stdout);
       assert.deepEqual(jobs.guideWebp.sub, 'guide');
       assert.equal(jobs.guideWebp.mode, 'lossy', 'quality 90, the maintainer\'s choice of 2026-10-12');
       assert.ok(!jobs.webp.some((w) => w.sub === 'guide'), 'the board texture table is unchanged');
@@ -312,7 +323,7 @@ describe('enemy_scales.py (official enemy model sizes → build-data MODEL_SCALE
   test('group_table: prefabs off the 0.27 standard, grouped by value, "enemy_" dropped; build-data carries the same values', () => {
     const src = `import sys, json\nsys.path.insert(0, ${JSON.stringify(TOOL)})\nimport enemy_scales as s\n`
       + `print(json.dumps(s.group_table({'enemy_1005_yokai_3': 0.16, 'enemy_1005_yokai': 0.2, 'enemy_1040_bombd': 0.2, 'enemy_10083_hlbird': 0.27, 'enemy_x': None})))`;
-    const r = spawnSync(PY, ['-c', src], { encoding: 'utf8', env: ENV, windowsHide: true });
+    const r = spawnSync(PY, ['-c', src], { encoding: 'utf8', env: ENV });
     assert.equal(r.status, 0, r.stderr);
     const lines = JSON.parse(r.stdout);
     assert.deepEqual(lines, ["  [0.16, ['1005_yokai_3']],", "  [0.2, ['1005_yokai', '1040_bombd']],"]);

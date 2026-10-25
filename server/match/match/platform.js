@@ -200,6 +200,7 @@ export class MatchPlatform {
     this.guard(() => {
       ps.left = true;
       this.cancelSetupVote();
+      this._rerollStartAt.delete(playerId);
       ps.connected = false;
       ps.autoplay = false;
       this.refreshUniteSkipVote();
@@ -298,4 +299,8 @@ export class MatchPlatform {
     if (this._pubTimer) { try { this.sched.clearTimeout(this._pubTimer); } catch { /* ignore */ } this._pubTimer = null; }
     this.sched.dispose();
   }
+  externalReply(id, reply, failed) {
+    this.guard(() => this.externalAI?.receive(id, reply, failed));
+  }
+
 }

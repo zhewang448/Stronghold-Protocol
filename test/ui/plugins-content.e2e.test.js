@@ -42,11 +42,10 @@ describe('a room\'s content set in the browser (P1c)', { skip: !ENABLED && 'set 
     try {
       await host.open();
       await host.enter('凯尔希');
-      await host.createSimulation('同盟模拟');
-      const code = (await host.waitFor((s) => !!s.room?.code, 'room created')).room.code;
+      const { code } = await host.createCoop();
       await guest.open();
       await guest.enter('阿米娅');
-      await guest.openJoin();
+      await guest.click('.mode-card', '同盟模拟');
       await guest.click('.join-row input');
       await guest.page.keyboard.type(code);
       await guest.click('.join-row button', '加入同盟');
@@ -79,9 +78,9 @@ describe('a room\'s content set in the browser (P1c)', { skip: !ENABLED && 'set 
 
       // the guest's page claims another content than the one it checked: its runner must refuse the authority
       await guest.page.evaluate(() => globalThis.__SP_CONTENT__.forgeHeldCs('0'.repeat(64)));
-      await guest.click('.rs-foot__right .proto-start', '准备就绪');
-      await host.page.waitForFunction(() => !document.querySelector('.rs-foot__right .proto-start[disabled]'), { timeout: 15000 });
-      await host.click('.rs-foot__right .proto-start', '开始模拟');
+      await guest.click('.room-bar__right button', '准备就绪');
+      await host.page.waitForFunction(() => !document.querySelector('.room-bar__right button[disabled]'), { timeout: 15000 });
+      await host.click('.room-bar__right button', '开始模拟');
       await host.page.waitForSelector('.brief [data-testid="unofficial-mark"]', { timeout: 30000 });
       await host.shot('briefing');
       const match = srv.lobby.getRoom(code).match;

@@ -39,7 +39,7 @@
 ## 2. 分支与维护状态
 
 - `origin` 为本仓库，`upstream` 为原项目。默认分支 `main` 已整合主机工具、联动扩展、可选皮肤、随机装备和素材预加载；`local-tools` 与 `codex/operator-skins` 保留原功能分支历史。`master` 只跟踪上游。
-- 当前版本为 `v0.3.1-extended.11`，基础版本 `0.3.1`，上一正式版为 `v0.3.1-extended.10`。本版统一资源下载、保留本地导入并修复控制台在线状态，保留多人扩容与完整漏怪结算；完整包、轻量包、签名增量包及启动器附件的公开状态以 Releases 为准，验证记录见 [LOCAL-CHANGELOG.md](LOCAL-CHANGELOG.md)。
+- 当前版本为 `v0.3.3-extended.1`；尚未发布新制品。保留本库多人大厅、签名增量更新、恢复流程与启动器；历史版本入口和外部大模型 AI 暂不启用。验证记录见 [LOCAL-CHANGELOG.md](LOCAL-CHANGELOG.md)。
 - Windows 服主 EXE 通过同版 `launcher-win-x64.zip` 附件提供；先安装或升级同版游戏目录，再将 EXE 放入根目录。使用和构建见 [启动器说明](../launcher/README.md)，验收边界见 [启动器验收](HOST-LAUNCHER-VALIDATION.md)。
 - 九项实现与恢复边界见 LOCAL-DEV §9。聊天位置仅当前浏览器与站点按昵称保存；重启恢复要求同版本及规则指纹，跨版本升级不能续局。完整监控墙尚未重跑 30 分钟持续运行测试。
 - 本版整合上游 v0.3.1（`b3deebda`）。自选池为 79 名（上游 72 名 + 7 名联动），保留 174 套可选皮肤、多语言语音与控制台扩展；完整包包含重新提取的 11 个官方场景（版本 4）及官方 FX。来源与验证见 [LOCAL-CHANGELOG.md](LOCAL-CHANGELOG.md)。

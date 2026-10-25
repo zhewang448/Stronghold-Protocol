@@ -129,7 +129,7 @@ const CS_FILE = /^\/cs\/([0-9a-f]{16})\/([A-Za-z0-9._\/-]{1,200})$/;
  */
 export function createStaticHandler({ publicDir, dataDir, sharedDir, simDir = path.join(ROOT, 'server', 'sim'), packsDir = path.join(ROOT, 'packs'),
   pluginsDir = path.join(path.dirname(path.resolve(packsDir)), 'plugins'), packs = null, content = null, log = noopLog,
-  assetIndex = null, views = null, visual = null, contents = null, cdn = null, cdnBase = '', resourcePackRoutes = [] }) {
+  assetIndex = null, views = null, visual = null, contents = null, versions = null, cdn = null, cdnBase = '', resourcePackRoutes = [] }) {
   cdn ||= deploymentCdn({ assetsCdn: cdnBase, resourcePackRoutes });
   const registry = packs || createPluginRegistry({ publicDir, dataDir, packsDir, pluginsDir }, { log: /** @type {any} */ (log) });
   const sets = visual || (typeof registry.pluginFile === 'function' ? createVisualSets({ registry, log }) : null);
@@ -155,6 +155,18 @@ export function createStaticHandler({ publicDir, dataDir, sharedDir, simDir = pa
   let resourceManifestPromise = null;
   const cdnBody = Buffer.from('export const ASSETS_CDN = ' + JSON.stringify(cdn.assetsCdn) + ';\nexport const DATA_CDN = ' + JSON.stringify(cdn.dataCdn) + ';\n');
 
+  let versionsReal = null;
+  /** @type {string[] | null} the real paths of the served version directories */
+  let servedReal = null;
+  /** Is `abs` another version's data that may not be served (under data/versions/, outside every served directory)? */
+  const isVersionData = async (abs) => {
+    versionsReal ||= await fsp.realpath(path.join(path.resolve(dataDir), 'versions')).catch(() => null);
+    if (!versionsReal) return false;
+    const real = await fsp.realpath(abs).catch(() => null);
+    if (!real || !real.startsWith(versionsReal + path.sep)) return false;
+    servedReal ||= (await Promise.all((versions?.servedDirs() || []).map((d) => fsp.realpath(d).catch(() => null)))).filter((d) => typeof d === 'string');
+    return !servedReal.some((d) => real.startsWith(d + path.sep));
+  };
   return async function serveStatic(req, res, rawPath, query) {
     let decoded;
     try { decoded = decodeURIComponent(rawPath); } catch { sendError(req, res, 400, '请求地址无效 · Bad request'); return; }
@@ -211,7 +223,8 @@ export function createStaticHandler({ publicDir, dataDir, sharedDir, simDir = pa
         // a content set with gameplay plugins (DESIGN §32.6, server/plugins/contentSets.js): its manifest and its patched
         // data files — a URL naming its content, so cached for good; 404 for a set this server does not keep
         const m = CS_FILE.exec(decoded);
-        const f = m && contents && !m[2].split('/').some((s) => s === '' || s === '.' || s === '..' || s.startsWith('.')) ? contents.file(m[1], m[2]) : null;
+        const safe = m && !m[2].split('/').some(s => s === '' || s === '.' || s === '..' || s.startsWith('.'));
+        const f = safe ? (versions?.file(m[1], m[2]) || contents?.file(m[1], m[2]) || null) : null;
         if (!f) { sendError(req, res, 404, '页面不存在 · Not found', decoded.length <= 200 ? decoded : ''); return; }
         await serveBuffer(req, res, { body: f.body, hash: `cs-${m[1]}-${(f.sha256 || 'index').slice(0, 8)}`, type: f.type || MIME['.json'], cacheControl: IMMUTABLE_JSON, key: `cs:${decoded}`, cache: gzipCache });
         return;
@@ -303,6 +316,7 @@ export function createStaticHandler({ publicDir, dataDir, sharedDir, simDir = pa
       return;
     }
     let absPath = path.join(mount.dir, ...segments);
+    if (mount.name === 'data' && segments.length > 1 && await isVersionData(absPath)) { sendError(req, res, 404, 'Not found'); return; }
     if (absPath !== mount.dir && !absPath.startsWith(mount.dir + path.sep)) { sendError(req, res, 403, '禁止访问 · Forbidden'); return; }
 
     let stat;

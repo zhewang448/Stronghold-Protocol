@@ -11,7 +11,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const OUT = path.join(ROOT, 'test/e2e/out/band-draft-skip');
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const ENABLED = process.env.SP_E2E === '1' && existsSync(CHROME);
-const SKIP = '.draft-detail__btns .btn:not(.btn--primary)';
+// 跳过选择 / 无法跳过 sits in the step header's turn line (PR #643), only while it is the player's turn: no button = no skip
+const SKIP = '.dturn .draft-skip';
 
 describe('strategy skip eligibility (real server, normal browser operations)', {
   skip: !ENABLED && 'set SP_E2E=1 and have Chrome to run',
@@ -85,17 +86,18 @@ describe('strategy skip eligibility (real server, normal browser operations)', {
   async function draft(humans, mode = 'coop') {
     const clients = [await player('轮选测试1')];
     const host = clients[0].page;
-    if (mode === 'solo') { await click(host, '.hub-entry[aria-label="SOLO"]'); await click(host, '.proto-start', '开始模拟'); }
-    else { await click(host, '.hub-entry[aria-label="ALLIANCE"]'); await click(host, '[data-testid="create-alliance"]'); await click(host, '.proto-start', '创建同盟'); }
+    await click(host, '.mode-card', mode === 'solo' ? '独立模拟' : '同盟模拟');
+    // 独立模拟 → 选择模拟协议 → 开始独立模拟; 创建同盟 creates the co-op room at once
+    await click(host, ...(mode === 'solo' ? ['.create-box button', '开始独立模拟'] : ['[data-testid="alliance-create"]']));
     await host.waitForFunction(() => !!globalThis.__SP__.store.get().room?.code);
     const code = (await state(host)).code;
     for (let i = 1; i < humans; i++) {
       const c = await player(`轮选测试${i + 1}`, `?room=${code}`);
       clients.push(c);
       await c.page.waitForFunction((code) => globalThis.__SP__.store.get().room?.code === code, {}, code);
-      await click(c.page, '.rs-foot__right button', '准备就绪');
+      await click(c.page, '.room-bar__right button', '准备就绪');
     }
-    if ((await state(host)).phase !== 'INFO_CHECK') await click(host, '.rs-foot__right button', '开始模拟');
+    if ((await state(host)).phase !== 'INFO_CHECK') await click(host, '.room-bar__right button', '开始模拟');
     for (const c of clients) {
       await c.page.waitForSelector('.brief__foot .btn--primary');
       await click(c.page, '.brief__foot .btn--primary', '准备就绪');
@@ -115,9 +117,11 @@ describe('strategy skip eligibility (real server, normal browser operations)', {
     assert.fail('current human not found');
   }
   async function capture(c, name) {
-    await c.page.waitForSelector(SKIP);
+    // the button stands in the status line on the player's own turn only; off-turn it is absent (= disabled)
+    await c.page.waitForSelector('.screen.draft .stephead');
+    if (await c.page.evaluate(() => { const s = globalThis.__SP__.store.get(); return s.match.public?.draft?.turn === s.me.playerId; })) await c.page.waitForSelector(SKIP);
     const s = await state(c.page);
-    const disabled = await c.page.$eval(SKIP, (el) => el.disabled);
+    const disabled = await c.page.evaluate((sel) => { const el = document.querySelector(sel); return !el || el.disabled; }, SKIP);
     const toasts = await c.page.$$eval('.toast', (els) => els.map((el) => el.textContent));
     const file = `${name}.png`;
     await c.page.screenshot({ path: path.join(OUT, file), fullPage: true });

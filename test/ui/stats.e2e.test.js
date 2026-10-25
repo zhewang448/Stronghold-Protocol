@@ -5,6 +5,7 @@
 //    1920×1080 and a phone in landscape 844×390: the four tabs, the counting rule on screen (the match left in the first
 //    round is listed as 中途退出 / 不计入统计 and left out of the totals), the row click that re-views a settlement and
 //    its 返回统计, Esc, the title screen's entry; zero console errors. Screenshots: test/e2e/out/stats-*.png
+//    (In the lobby the page opens from the 成就统计 card's window: 查看完整统计 — the maintainer's decision of 2026-10-21.)
 // 2. The data actions: 导出 hands out a file the page itself imports again (nothing new), a corrupt file and a newer
 //    one are refused with a message and change nothing, 清空 asks first (the confirm dialog sits above the overlay and
 //    Esc closes only it), unreadable storage is set aside with a notice, a newer build's data is never overwritten.
@@ -39,10 +40,6 @@ function seed(n = 24) {
     const win = i % 5 < 2;
     Object.assign(res, { seed: 1000 + i, difficulty: diff, modeId: `mode_${solo ? 'single' : 'multi'}_${diff.toLowerCase()}`, victory: win, reason: win ? 'victory' : 'defeat', roundsPassed: win ? 14 : 4 + (i % 8), durationMs: (8 + (i % 13)) * 60000 });
     const me = res.players.find((p) => p.playerId === 'p_0');
-    res.roundHistory = [1, 15].map((round) => ({ round, players: res.players.map((p) => ({
-      playerId: p.playerId, alive: true, dmg: round * 100, roundDmg: round * 100,
-      units: [{ defId: 'history-op', name: '历史测试干员', dmg: round * 100, kills: round }],
-    })) }));
     Object.assign(me, { bandId: BANDS[i % 7], victory: win, alive: win, roundsPassed: res.roundsPassed, title: i % 3 ? { id: `comment_${1 + (i % 6)}` } : null });
     recs.unshift(buildRecord(res, { myId: 'p_0', roomMode: solo ? 'solo' : 'coop', now: NOW - i * 0.6 * DAY }));
   }
@@ -92,11 +89,14 @@ describe('统计数据 page (real server, headless Chrome)', { skip: !ENABLED &&
   }
   const texts = (c, sel) => c.page.$$eval(sel, (els) => els.map((e) => e.innerText.replace(/\s+/g, ' ').trim()));
   const stored = (c) => c.page.evaluate(() => { const r = localStorage.getItem('sp.pref.stats'); return r ? JSON.parse(r) : null; });
-  const openStats = async (c, from = '.lobby-screen .stats-entry') => {
-    await c.click(from, from.includes('stats-entry') ? null : '统计');
-    if (from.includes('.lobby-screen .stats-entry')) await c.click('.lacct__btns button', '统计数据');
+  /** 统计数据: in the lobby through the 成就统计 card → its window → 查看完整统计; else the given entry (统计). */
+  const openStats = async (c, from = null) => {
+    if (from) await c.click(from, '统计');
+    else {
+      await c.click('.lobby-screen .hub-ach, .lobby-screen .hub-plate--ach'); // the plate on a short phone screen
+      await c.click('.modal__box.achv .achv__more', '查看完整统计');
+    }
     await c.page.waitForSelector('.st .st-tab', { visible: true, timeout: 15000 });
-    await c.page.waitForFunction(() => !document.querySelector('.st-loading'));
   };
   const toast = (c) => c.page.waitForFunction(() => document.querySelector('.toast')?.textContent || false, { timeout: 8000 }).then((h) => h.jsonValue());
   const noProblems = (c) => assert.deepEqual(c.problems, [], 'no console errors / failed requests');
@@ -157,7 +157,9 @@ describe('统计数据 page (real server, headless Chrome)', { skip: !ENABLED &&
     const c = await open({ stored: JSON.stringify(env) });
     await c.page.waitForSelector('.lobby-screen');
     await openStats(c);
-    // 总览: 24 settled + the quit after 6 rounds count, the first-round one does not
+    // 总览: 24 settled + the quit after 6 rounds count, the first-round one does not (the tabs show before the page's data
+    // is loaded: wait for the cards)
+    await c.page.waitForSelector('.st-sec > .st-cards .st-card__num', { timeout: 15000 });
     const cards = await texts(c, '.st-sec > .st-cards .st-card__num');
     assert.equal(cards[0], '25', 'games');
     assert.match(await c.page.$$eval('.st-rule', (els) => els.map((e) => e.textContent).join(' ')), /另有 1 局未计入统计/);
@@ -183,14 +185,6 @@ describe('统计数据 page (real server, headless Chrome)', { skip: !ENABLED &&
     await sleep(900);
     await c.page.screenshot({ path: path.join(OUT, 'stats-replay-desktop.png') });
     assert.ok(await c.page.$('.st--replay .rcard.is-self'), 'the player\'s own card is marked 你 (the record\'s own id)');
-    await c.click('.st--replay .result__foot .btn--secondary', '查看每回合伤害');
-    await c.page.waitForSelector('#round-history-panel select[data-k="round"]');
-    assert.equal(await c.page.$eval('#round-history-panel select[data-k="round"]', (e) => e.value), '15');
-    assert.equal(await c.page.$eval('#round-history-panel tbody tr td:nth-child(4)', (e) => e.textContent), '1,500');
-    await c.page.screenshot({ path: path.join(OUT, 'stats-round-history-desktop.png') });
-    await c.page.keyboard.press('Escape');
-    await c.page.waitForFunction(() => !document.querySelector('#round-history-panel'));
-    assert.ok(await c.exists('.st--replay'), 'Escape closes only the damage panel');
     await c.page.keyboard.press('Escape');
     await c.page.waitForSelector('.st .st-tab', { timeout: 5000 });
     assert.ok(!(await c.exists('.st--replay')), 'Esc in the re-view goes back to the list');
@@ -230,12 +224,6 @@ describe('统计数据 page (real server, headless Chrome)', { skip: !ENABLED &&
     await c.page.waitForSelector('.st--replay .result', { visible: true, timeout: 20000 });
     await sleep(900);
     await c.page.screenshot({ path: path.join(OUT, 'stats-replay-phone.png') });
-    await c.click('.st--replay .result__foot .btn--secondary', '查看每回合伤害');
-    await c.page.waitForSelector('#round-history-panel select[data-k="round"]');
-    assert.equal(await c.page.$eval('#round-history-panel select[data-k="round"]', (e) => e.value), '15');
-    assert.ok(await c.page.$eval('#round-history-panel', (e) => { const r = e.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && r.bottom <= innerHeight; }));
-    await c.page.keyboard.press('Escape');
-    await c.page.waitForFunction(() => !document.querySelector('#round-history-panel'));
     await c.click('.st--replay .btn--primary', '返回统计');
     await c.page.waitForSelector('.st .st-tab', { timeout: 5000 });
     noProblems(c);
@@ -315,7 +303,8 @@ describe('统计数据 page (real server, headless Chrome)', { skip: !ENABLED &&
     const n = await open({ stored: newer });
     await n.page.waitForSelector('.lobby-screen');
     await openStats(n);
-    assert.match(await n.page.$eval('.st-body', (e) => e.textContent), /更新版本的统计数据/);
+    // the page shows 加载中 until its game data is in (the hub's art loads beside it)
+    await n.page.waitForFunction(() => /更新版本的统计数据/.test(document.querySelector('.st-body')?.textContent || ''), { timeout: 15000 });
     assert.ok(await n.page.$eval('[data-testid="stats-clear"]', (b) => b.disabled), 'no 清空 over data this build cannot read');
     assert.equal(await n.page.evaluate(() => localStorage.getItem('sp.pref.stats')), newer);
     noProblems(n);
@@ -330,9 +319,12 @@ describe('统计数据: the real flows (a fast real server, headless Chrome)', {
 
   const stored = (c) => c.page.evaluate(() => { const r = localStorage.getItem('sp.pref.stats'); return r ? JSON.parse(r) : null; });
   async function toSoloMatch(c) {
-    await c.createSimulation('独立模拟', '标准模拟');
+    await c.click('.mode-card', '独立模拟');
+    await sleep(300);
+    await c.click('.diff-card', '标准模拟');
+    await c.click('.create-box button', '开始独立模拟');
     await c.waitFor((s) => !!s.room, 'solo room');
-    if (!(await c.st()).phase) await c.click('.rs-foot__right button', '开始模拟', { timeout: 20000 });
+    if (!(await c.st()).phase) await c.click('.room-bar__right button', '开始模拟', { timeout: 20000 });
     await c.waitFor((s) => s.phase === 'INFO_CHECK', 'briefing', 30000);
   }
   async function toPrep(c) {
@@ -375,8 +367,9 @@ describe('统计数据: the real flows (a fast real server, headless Chrome)', {
       assert.equal(env.records[0].players[0].roundsPassed, 1, 'one round cleared — the server\'s own count for a quit in round 2');
       assert.ok(env.records[0].players[0].bandId, 'its strategy');
       // the page: one game counted, one left out, both in the history
-      await c.click('.lobby-screen .stats-entry');
-      await c.click('.lacct__btns button', '统计数据');
+      // 统计数据 from the lobby: the 成就统计 card → its window → 查看完整统计
+      await c.click('.lobby-screen .hub-ach');
+      await c.click('.modal__box.achv .achv__more', '查看完整统计');
       await c.page.waitForSelector('.st .st-card', { visible: true });
       assert.equal((await c.page.$$eval('.st-sec > .st-cards .st-card__num', (els) => els.map((e) => e.textContent)))[0], '1');
       assert.match(await c.page.$$eval('.st-rule', (els) => els.map((e) => e.textContent).join(' ')), /另有 1 局未计入统计/);
@@ -396,7 +389,6 @@ describe('统计数据: the real flows (a fast real server, headless Chrome)', {
     const c = new Client(puppeteer, srv.base, 'stats', { prefix: 'stats', w: 1600, h: 900 });
     try {
       await c.open();
-      await c.page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
       await c.enter('Doc');
       await toSoloMatch(c);
       await toPrep(c);
@@ -408,14 +400,6 @@ describe('统计数据: the real flows (a fast real server, headless Chrome)', {
       assert.equal(env.records[0].end, 'settled');
       assert.equal(env.records[0].roomMode, 'solo');
       assert.equal(env.records[0].selfId, (await c.st()).me);
-      await c.page.waitForSelector('.settle__history', { visible: true });
-      assert.ok(await c.page.$eval('.settle__history', (e) => { const r = e.getBoundingClientRect();
-        return r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.top < 80 && r.height >= 44;
-      }), 'live settlement entry stays visible in the top corner');
-      await c.click('.settle__history');
-      await c.page.waitForSelector('#round-history-panel select[data-k="round"]');
-      assert.equal(await c.page.$eval('#round-history-panel select[data-k="round"]', (e) => e.value), '1');
-      await c.page.keyboard.press('Escape');
       await c.page.reload({ waitUntil: 'domcontentloaded' });
       await c.page.waitForFunction(() => !!globalThis.__SP__ && !!document.querySelector('.screen'), { timeout: 30000 });
       await c.waitFor((s) => s.result, 'the replayed settlement after a reload', 30000);

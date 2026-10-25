@@ -6,10 +6,11 @@ import { spawnSync } from 'node:child_process';
 import { fxFixture } from './helpers/fxFixtures.js';
 import { skel } from './helpers/pluginFixtures.js';
 
+const PY = ['python3', 'python'].find((bin) => spawnSync(bin, ['--version']).status === 0);
+
 function py(code) {
   const source = `import sys,json\nsys.path.insert(0, ${JSON.stringify(path.resolve('tools/local-extract'))})\nimport operators as op, extract as ex\n${code}`;
-  const executable = process.env.PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
-  const r = spawnSync(executable, ['-B', '-c', source], { encoding: 'utf8', windowsHide: true });
+  const r = spawnSync(PY ?? 'python3', ['-B', '-c', source], { encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
   return JSON.parse(r.stdout);
 }
@@ -36,10 +37,12 @@ test('full extraction needs --plugin-art; explicit --only plugin-art also author
   const got = py(`from pathlib import Path
 import contextlib,io
 root=Path(${JSON.stringify(f.root)})
+(root/'ui'/'autochess').mkdir(parents=True)
 ex.export_bundle=lambda *a: 0
 ex.export_enemy_spines=lambda *a: 0
 ex.export_token_spines=lambda *a: 0
 ex.export_scenes=lambda *a: 0
+ex.versions.export=lambda *a: 0
 ex.fx.export_fx=lambda *a,**k: 0
 calls=[]
 op.references=lambda *a: ['char_9001_test']
@@ -122,8 +125,7 @@ class Obj:
  def read(self): return NS(m_Name=self.name,image=Image())
  def read_typetree(self): return {'synthetic':self.name}
 def load(p):
- p=Path(p).as_posix()
- if 'chararts/' in p: return NS(objects=[Obj('front','MonoBehaviour',1),Obj('back','MonoBehaviour',2)],container={'dyn/char_9001_test/defaultskin.prefab':Obj('prefab')})
+ if 'chararts/' in p.replace('\\\\','/'): return NS(objects=[Obj('front','MonoBehaviour',1),Obj('back','MonoBehaviour',2)],container={'dyn/char_9001_test/defaultskin.prefab':Obj('prefab')})
  suffix='' if 'avatar' in p else '_1'
  return NS(objects=[Obj('char_9001_test'+suffix),Obj('char_9001_test_2'),Obj('char_9001_test_skin#1'),Obj('char_9002_other')])
 sys.modules['UnityPy']=NS(load=load); sys.modules['aklz4']=NS()
@@ -154,7 +156,7 @@ print(json.dumps({'chars':chars,'count':n,'calls':calls,'files':sorted(str(p.rel
 test('Spine metadata bridge parses original synthetic skeletons with existing animation roles', t => {
   const f = fxFixture(t);
   f.put('unit.skel', skel({ animations: { Idle: [], Attack: [['OnAttack', 0.5]] } }));
-  const r = spawnSync(process.execPath, ['tools/local-extract/plugin-art.mjs', '--spine', path.join(f.root, 'unit.skel')], { encoding: 'utf8', windowsHide: true });
+  const r = spawnSync(process.execPath, ['tools/local-extract/plugin-art.mjs', '--spine', path.join(f.root, 'unit.skel')], { encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
   const meta = JSON.parse(r.stdout);
   assert.equal(meta.pma, true);

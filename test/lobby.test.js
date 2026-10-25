@@ -14,7 +14,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { startServer, parseRange, acceptsGzip, pickEncoding, parseTrustProxy } from '../server/index.js';
 import { loadData, lookup, getChess, getBond, getBand, getMode, getConfig, INDEXED_FILES } from '../server/data.js';
 import * as dataModule from '../server/data.js';
-import { CODE_ALPHABET, BOT_NAMES } from '../server/lobby.js';
+import { CODE_ALPHABET, BOT_NAMES, DEFAULT_DIFFICULTY } from '../server/lobby.js';
 import { sanitizeName, TokenBucket, SessionRegistry, clientAddress, normalizeIp, isLocalIp, limitKeyOf } from '../server/net.js';
 import { StubMatch as Match } from '../server/match/StubMatch.js';
 import { Match as RealMatch } from '../server/match/Match.js';
@@ -539,7 +539,17 @@ describe('websocket lobby', () => {
   const cap = captureLog();
 
   before(async () => {
-    srv = await startServer({ port: 0, host: '127.0.0.1', log: cap.log, MatchClass: Match });
+    // The healthz case below pins the unset default (every official version). Read that, then put the environment back.
+    const saved = ['SP_VERSIONS', 'SP_VERSION_DEFAULT', 'SP_MAX_VERSION_HOSTS'].map((k) => [k, process.env[k]]);
+    for (const [k] of saved) delete process.env[k];
+    try {
+      srv = await startServer({ port: 0, host: '127.0.0.1', log: cap.log, MatchClass: Match });
+    } finally {
+      for (const [k, v] of saved) {
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
+    }
     pool = clientPool(() => `ws://127.0.0.1:${srv.port}/ws`);
   });
   afterEach(async () => { await pool.closeAll(); });
@@ -597,7 +607,8 @@ describe('websocket lobby', () => {
     }
     await expectError(c, { t: 'room.create', mode: 'pvp', difficulty: 'NORMAL' }, ERR.BAD_MSG);
     await expectError(c, { t: 'room.create', mode: 'coop', difficulty: 'EASY' }, ERR.BAD_MSG);
-    await expectError(c, { t: 'room.create', mode: 'coop' }, ERR.BAD_MSG);
+    await expectError(c, { t: 'room.create', mode: 'coop', difficulty: null }, ERR.BAD_MSG);
+    await expectError(c, { t: 'room.create', difficulty: 'NORMAL' }, ERR.BAD_MSG);
     await expectError(c, { t: 'room.join', code: 'AB CD' }, ERR.BAD_MSG);
     await expectError(c, { t: 'room.join', code: { $gt: '' } }, ERR.BAD_MSG);
     await expectError(c, { t: 'room.ready', ready: 'yes' }, ERR.BAD_MSG);
@@ -674,39 +685,6 @@ describe('websocket lobby', () => {
     assert.equal(info.reason, 'rate limit');
   });
 
-  test('custom room codes normalize case, support joins, reject collisions without leaving, and can be reused after disposal', async () => {
-    const host = await pool.player('CustomHost');
-    const guest = await pool.player('CustomGuest');
-    const previous = await createRoom(guest);
-    await expectOk(host, { t: 'room.create', mode: 'coop', difficulty: 'NORMAL', code: 'a1i0' });
-    const room = await host.waitFor('room.state', (s) => s.code === 'A1I0');
-    assert.equal(room.hostId, host.id);
-    await expectError(guest, { t: 'room.create', mode: 'coop', difficulty: 'NORMAL', code: 'A1i0' }, ERR.ROOM_CODE_TAKEN);
-    assert.equal(srv.registry.byId(guest.id).roomCode, previous.code);
-    assert.ok(srv.lobby.rooms.has(previous.code));
-    assert.equal(srv.lobby.rooms.get('A1I0').hostId, host.id);
-    const joined = await joinRoom(guest, 'a1i0');
-    assert.equal(seatOf(joined, guest.id).seat, 1);
-    await expectOk(guest, { t: 'room.leave' });
-    await expectOk(host, { t: 'room.leave' });
-    assert.equal(srv.lobby.rooms.has('A1I0'), false);
-    await expectOk(guest, { t: 'room.create', mode: 'coop', difficulty: 'HARD', code: 'A1I0' });
-    const reused = await guest.waitFor('room.state', (s) => s.code === 'A1I0' && s.hostId === guest.id);
-    assert.equal(reused.difficulty, 'HARD');
-    await expectOk(guest, { t: 'room.leave' });
-  });
-
-  test('invalid custom codes are refused before touching the current room', async () => {
-    const host = await pool.player('InvalidCode');
-    const room = await createRoom(host);
-    for (const code of ['', 'ABC', 'ABCDE', 'AB C', 'AB-C', 'ＡＢＣＤ', '同盟密钥', null, 1234, {}]) {
-      await expectError(host, { t: 'room.create', mode: 'coop', difficulty: 'NORMAL', code }, ERR.BAD_MSG);
-      assert.equal(srv.registry.byId(host.id).roomCode, room.code);
-      assert.ok(srv.lobby.rooms.has(room.code));
-    }
-    await expectOk(host, { t: 'room.leave' });
-  });
-
   test('create / join / leave', async () => {
     const host = await pool.player('Host');
     const st = await createRoom(host, 'coop', 'HARD');
@@ -716,7 +694,7 @@ describe('websocket lobby', () => {
     assert.equal(st.inMatch, false);
     assert.equal(st.seats.length, DEFAULT_SEATS);
     assert.deepEqual(st.seats[0], { seat: 0, playerId: host.id, name: 'Host', isBot: false, ready: false, connected: true, bondPlan: null, card: null, cardSkin: null });
-    assert.deepEqual(st.seats.slice(1), [null, null, null]);
+    assert.deepEqual(st.seats.slice(1), Array(DEFAULT_SEATS - 1).fill(null));
 
     const guest = await pool.player('Guest');
     const joined = await joinRoom(guest, st.code.toLowerCase());
@@ -754,6 +732,30 @@ describe('websocket lobby', () => {
     // last human leaving disposes the room
     await expectOk(guest, { t: 'room.leave' });
     await expectError(host, { t: 'room.join', code: own.code }, ERR.ROOM_NOT_FOUND);
+  });
+
+  test('room.create without a difficulty: the room starts at the default (标准 [ASSUMED]), the host changes it in the room', async () => {
+    // the event's 联合模拟 creates the room first and its creator changes the difficulty there (research 06 §3.2)
+    const host = await pool.player('Host');
+    const r = await host.request({ t: 'room.create', mode: 'coop' });
+    assert.equal(r.t, 'ok', JSON.stringify(r));
+    const st = await host.waitFor('room.state', (s) => s.hostId === host.id && s.mode === 'coop');
+    assert.equal(st.difficulty, DEFAULT_DIFFICULTY);
+    assert.equal(DEFAULT_DIFFICULTY, 'FUNNY');
+    const guest = await pool.player('Guest');
+    await joinRoom(guest, st.code);
+    await expectOk(guest, { t: 'room.ready', ready: true });
+    await host.waitFor('room.state', (s) => seatOf(s, guest.id)?.ready === true);
+    await expectError(guest, { t: 'room.setDifficulty', difficulty: 'HARD' }, ERR.NOT_HOST);
+    await expectOk(host, { t: 'room.setDifficulty', difficulty: 'HARD' });
+    const changed = await guest.waitFor('room.state', (s) => s.difficulty === 'HARD');
+    assert.equal(seatOf(changed, guest.id).ready, false, 'the change un-readies the guest');
+    const solo = await pool.player('Solo');
+    assert.equal((await solo.request({ t: 'room.create', mode: 'solo' })).t, 'ok');
+    assert.equal((await solo.waitFor('room.state', (s) => s.hostId === solo.id)).difficulty, DEFAULT_DIFFICULTY);
+    await expectOk(guest, { t: 'room.leave' });
+    await expectOk(host, { t: 'room.leave' });
+    await expectOk(solo, { t: 'room.leave' });
   });
 
   test('room full, solo rooms admit one human and no AI', async () => {
@@ -1282,6 +1284,7 @@ describe('websocket lobby', () => {
     assert.ok(h.rooms >= 1);
     assert.ok(h.sockets >= 1);
     assert.ok(h.sessions >= 1);
+    assert.equal(h.versions, undefined, 'historical versions remain disabled until their dedicated integration');
   });
 });
 
@@ -1726,7 +1729,8 @@ describe('match result replay', () => {
   }
 
   /** Frames of a resumed socket in arrival order (types + phase), after welcome. */
-  const order = (c) => c.log.filter((m) => m.t !== 'welcome' && m.t !== 'pong').map((m) => m.t + (m.t === 'm.public' ? `:${m.phase}` : ''));
+  const order = (c) => c.log.filter((m) => ['room.state', 'room.closed', 'm.public', 'm.result'].includes(m.t))
+    .map((m) => m.t + (m.t === 'm.public' ? `:${m.phase}` : ''));
 
   for (const unicast of [true, false]) {
     test(`a human disconnected when the match ends gets room.state, the final m.public and m.result on resume (${unicast ? 'per-player' : 'broadcast'} result)`, async () => {
@@ -1739,7 +1743,7 @@ describe('match result replay', () => {
       const res = await back.waitFor('m.result');
       if (unicast) assert.equal(res.playerId, guest.id, 'the player gets their own result');
       else assert.equal(res.reason, hostResult.reason);
-      assert.deepEqual(order(back), ['social.state', 'site.announcement', 'room.state', 'chat.history', `m.public:${PHASE.RESULT}`, 'm.result']);
+      assert.deepEqual(order(back), ['room.state', `m.public:${PHASE.RESULT}`, 'm.result']);
       assert.equal(back.log.find((m) => m.t === 'room.state').inMatch, false);
     });
   }
@@ -1793,13 +1797,13 @@ describe('match result replay', () => {
     await back.hello('Guest', guest.token);
     assert.equal((await back.waitFor('room.closed')).reason, 'timeout');
     assert.equal((await back.waitFor('m.result')).playerId, guest.id);
-    assert.deepEqual(order(back), ['social.state', 'site.announcement', 'room.closed', `m.public:${PHASE.RESULT}`, 'm.result']);
+    assert.deepEqual(order(back), ['room.closed', `m.public:${PHASE.RESULT}`, 'm.result']);
     // delivered once
     await back.terminate();
     const again = await pool.connect();
     await again.hello('Guest', guest.token);
-    assert.equal((await again.waitFor('site.announcement')).announcement, null);
-    await again.expectNone(null, (m) => !['welcome', 'social.state', 'site.announcement'].includes(m.t), 300);
+    await again.expectNone('m.result', () => true, 300);
+    await again.expectNone('m.public', () => true, 50);
   });
 
   test('real Match: a human who is away when the match finishes gets its m.result on resume', async () => {

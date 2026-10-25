@@ -56,6 +56,7 @@ export function parseArgs(argv) {
     const val = () => (v !== undefined ? v : argv[++i]);
     if (k === '--port') o.port = Number(val()) || o.port;
     else if (k === '--host') o.host = val() || o.host;
+    else if (k === '--room-code') o.roomCode = val() ?? '';
     else if (a === '--no-open') o.open = false;
     else if (a === '--tunnel') o.tunnel = true;
     else if (a === '--no-tunnel') o.tunnel = false;
@@ -72,6 +73,7 @@ export function parseArgs(argv) {
 /** The server's environment: PORT / HOST, SP_PLUGIN_SCRIPTS from --scripts, SP_TEST_MODE from --test-mode (off removes an inherited one). */
 export function serverEnv(o, base = process.env) {
   const env = { ...base, PORT: String(o.port), HOST: o.host };
+  delete env.SP_ROOM_CODE;
   if (o.scripts === 'off') delete env.SP_PLUGIN_SCRIPTS;
   else if (o.scripts) env.SP_PLUGIN_SCRIPTS = o.scripts;
   if (o.testMode === 'off') delete env.SP_TEST_MODE;
@@ -197,7 +199,7 @@ export async function launch(argv = process.argv.slice(2)) {
 
   const env = serverEnv(o);
   warnTestMode(o, env);
-  const runtime = superviseServer({ root: ROOT, port: o.port, env,
+  const runtime = superviseServer({ root: ROOT, port: o.port, env, serverArgs: o.roomCode ? ['--room-code', o.roomCode] : [],
     onHealthy: ({ first }) => { if (!first) console.log('服务器已恢复，公网隧道保持连接。'); } });
   let tunnel;
   const stop = () => { runtime.stop(); tunnel?.stop(); };

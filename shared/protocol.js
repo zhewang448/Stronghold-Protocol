@@ -32,6 +32,7 @@ const isMap = (v, max, key, val) => {
   for (const k of keys) if (!key(k) || !val(v[k])) return false;
   return true;
 };
+export const isVersionId = (v) => typeof v === 'string' && v.length <= 40 && /^[a-z0-9]{1,32}(?:@[A-Za-z0-9_]{1,16})?$/.test(v);
 const isList = (v, max, item) => Array.isArray(v) && v.length <= max && v.every(item);
 const isScalar = (v) => isStr(v, 64) || isNum(v) || isBool(v);
 
@@ -503,7 +504,9 @@ const target = (v) => {
 export const C2S = {
   // session & lobby
   hello: { name: (v) => isStr(v, NAME_MAX_LEN) && v.trim().length > 0, token: (v) => v == null || isStr(v, 64), version: (v) => v == null || isInt(v, 0, 1e6),
-    noReplace: isBool, claimAt: (v) => isNum(v, 0, Number.MAX_SAFE_INTEGER), stateDelta: (v) => isInt(v, 0, 1e6), presenceStatus: v => PRESENCE_STATUSES.includes(v), $optional: ['token', 'version', 'noReplace', 'claimAt', 'stateDelta', 'presenceStatus'] },
+    noReplace: isBool, claimAt: (v) => isNum(v, 0, Number.MAX_SAFE_INTEGER), stateDelta: (v) => isInt(v, 0, 1e6),
+    delta: (v) => v == null || isInt(v, 0, 1e6), presenceStatus: v => PRESENCE_STATUSES.includes(v),
+    $optional: ['token', 'version', 'noReplace', 'claimAt', 'stateDelta', 'delta', 'presenceStatus'] },
   'state.resync': {},
   'social.list': { offset: v => isInt(v, 0, 20000), $optional: ['offset'] },
   'social.status': { status: v => PRESENCE_STATUSES.includes(v) },
@@ -512,7 +515,11 @@ export const C2S = {
   ping: { c: (v) => typeof v === 'number' && Number.isFinite(v) },
   // test: only the literal true (DESIGN §34.8). Omit it for a normal room — `false` is a bad field, so a
   // string cannot sneak in as "not a test". The server still refuses it unless SP_TEST_MODE is on.
-  'room.create': { mode: (v) => v === 'solo' || v === 'coop', difficulty: (v) => DIFFICULTIES.includes(v), code: (v) => typeof v === 'string' && new RegExp(`^[A-Za-z0-9]{${ROOM_CODE_LEN}}$`).test(v), capacity: (v) => ROOM_CAPACITIES.includes(v), test: (v) => v === true, $optional: ['code', 'capacity', 'test'] },
+  'room.setSoloUnlimited': { on: isBool },
+  'room.proposeVersion': { version: isVersionId },
+  'room.versionVote': { voteId: (v) => isInt(v, 1, 2 ** 31), agree: isBool },
+  'room.cancelVersionVote': { voteId: (v) => isInt(v, 1, 2 ** 31) },
+  'room.create': { mode: (v) => v === 'solo' || v === 'coop', difficulty: (v) => DIFFICULTIES.includes(v), code: (v) => typeof v === 'string' && new RegExp(`^[A-Za-z0-9]{${ROOM_CODE_LEN}}$`).test(v), capacity: (v) => ROOM_CAPACITIES.includes(v), test: (v) => v === true, version: isVersionId, soloUnlimited: (v) => typeof v === 'boolean', $optional: ['difficulty', 'code', 'capacity', 'test', 'version', 'soloUnlimited'] },
   'room.join': { $optional: ['testAck'], testAck: (v) => v === true, code: (v) => isStr(v, ROOM_CODE_LEN + 2) && /^[A-Za-z0-9]+$/.test(v) },
   'room.leave': {},
   'room.ready': { ready: isBool },
@@ -522,6 +529,9 @@ export const C2S = {
   'room.setMaxSeats': { n: (v) => ROOM_CAPACITIES.includes(v) },
   // the co-op room option 「AI 队友最后选择」 (GitHub #338; host, before the match): the strategy and 机变 drafts order every
   // human seat before every AI seat (server/match/match/phases.js humansFirst); room.state.aiPicksLast
+  'room.setAiTakeover': { on: isBool },
+  'room.aiRequest': { botId: isId },
+  'room.aiVote': { voteId: (v) => typeof v === 'string' && v.length <= 16, approve: isBool },
   'room.setAiPicksLast': { on: isBool },
   'room.setUniteLayerGains': { on: isBool },
   'room.addBot': {},

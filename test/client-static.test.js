@@ -49,7 +49,7 @@ function urlPathToFile(urlPath) {
 const fileToUrlPath = (file) => '/' + path.relative(PUBLIC, file).split(path.sep).join('/');
 
 function checkModuleSyntax(source) {
-  const r = spawnSync(process.execPath, ['--input-type=module', '--check'], { input: source, encoding: 'utf8', windowsHide: true });
+  const r = spawnSync(process.execPath, ['--input-type=module', '--check'], { input: source, encoding: 'utf8' });
   return r.status === 0 ? null : (r.stderr || r.stdout || 'syntax error').split('\n').slice(0, 6).join('\n');
 }
 
@@ -436,7 +436,16 @@ describe('net.js', () => {
     assert.ok(ws().last('ping'), 'latency probe before hello');
     net.setName('  凯尔希  ');
     const hello = ws().last('hello');
-    assert.deepEqual({ ...hello, rid: 0 }, { t: 'hello', rid: 0, name: '凯尔希', version: PROTOCOL_VERSION, stateDelta: 1, token: 'tok-1' });
+    // hello names the state-delta version it understands; a server that does not know the field ignores it.
+    const { STATE_DELTA_VERSION } = await import(pathToFileURL(path.join(ROOT, 'shared/stateDelta.js')).href);
+    assert.deepEqual({ ...hello, rid: 0 }, {
+      t: 'hello',
+      rid: 0,
+      name: '凯尔希',
+      version: PROTOCOL_VERSION,
+      stateDelta: STATE_DELTA_VERSION,
+      token: 'tok-1',
+    });
     assert.equal(net.status, 'handshaking');
     ws().recv({ t: 'welcome', rid: hello.rid, playerId: 'p_1', token: 't', name: '凯尔希', serverNow: Date.now() });
     assert.equal(net.status, 'online');
@@ -1213,11 +1222,11 @@ function cssRules(src) {
 describe('multi-device & browser compatibility (static)', () => {
   const index = readFileSync(path.join(PUBLIC, 'index.html'), 'utf8');
 
-  test('index.html: landscape viewport without page zoom, notch-aware, device and reference overrides last, boot diagnostics', () => {
+  test('index.html: landscape viewport without page zoom, notch-aware, devices.css last, boot diagnostics', () => {
     const vp = index.match(/<meta name="viewport" content="([^"]+)"/)?.[1] || '';
     for (const k of ['width=device-width', 'initial-scale=1', 'maximum-scale=1', 'user-scalable=no', 'viewport-fit=cover']) assert.ok(vp.includes(k), `viewport has ${k}`);
     const sheets = [...index.matchAll(/<link rel="stylesheet" href="(\/css\/[^"]+)"/g)].map((x) => x[1]);
-    assert.deepEqual(sheets.slice(-2), ['/css/devices.css', '/css/reference-mobile.css'], 'device support precedes the final reference UI overrides');
+    assert.equal(sheets[sheets.length - 1], '/css/devices.css', 'devices.css is the last stylesheet');
     assert.match(index, /<script nomodule src="\/js\/bootLegacy\.js">/, 'a browser without ES modules gets the external fallback');
     const boot = readFileSync(path.join(PUBLIC, 'js/boot.js'), 'utf8');
     const legacy = readFileSync(path.join(PUBLIC, 'js/bootLegacy.js'), 'utf8');

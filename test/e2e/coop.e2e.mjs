@@ -588,7 +588,7 @@ async function watchTeammatePrep(c) {
 }
 
 async function openSettings(c) {
-  await c.click('[data-testid="settings-btn"]');
+  await c.click('.gm__gear');
   await c.page.waitForSelector('.modal', { timeout: 4000 });
   await sleep(300);
   await c.shot('settings');
@@ -983,9 +983,11 @@ describe('browser E2E against the real server', { skip: !ENABLED && 'needs Chrom
     try {
       await c.open();
       await c.enter('推进之王');
-      await c.createSimulation('独立模拟', '标准模拟');
+      await c.click('.mode-card', '独立模拟');
+      await c.click('.diff-card', '标准模拟');
+      await c.click('.create-box button', '开始独立模拟');
       await c.waitFor((s) => !!s.room, 'solo room');
-      if (!(await c.st()).phase) await c.click('.rs-foot__right button', '开始模拟', { timeout: 20000 });
+      if (!(await c.st()).phase) await c.click('.room-bar__right button', '开始模拟', { timeout: 20000 });
       await c.waitFor((s) => s.phase === 'INFO_CHECK', 'briefing', 30000);
       await c.click('.brief__foot .btn--primary', '准备就绪');
       await c.waitFor((s) => s.phase === 'BAND_DRAFT', 'band draft', 30000);
@@ -1043,18 +1045,18 @@ describe('browser E2E against the real server', { skip: !ENABLED && 'needs Chrom
       await sleep(400);
       await host.shot('lobby');
       await openGuide(host, '.lobby-guide', 'guide-lobby');
-      await host.createSimulation('同盟模拟', '险境模拟');
-      const room = (await host.waitFor((s) => !!s.room?.code, 'room created')).room;
+      // 创建同盟 creates the room at once (标准); the host changes the difficulty in the room (the event's 联合模拟)
+      const room = await host.createCoop('险境模拟');
       await host.click('button', '添加 AI 队友');
       await guest.open(`?room=${room.code}`);
       await guest.shot('title');
       await guest.enter('阿米娅');
       await guest.waitFor((s) => s.room?.code === room.code, 'guest joined via the invite link');
-      await guest.click('.rs-foot__right button', '准备就绪');
+      await guest.click('.room-bar__right button', '准备就绪');
       await sleep(500);
       await host.shot('room');
       await guest.shot('room');
-      await host.click('.rs-foot__right button', '开始模拟', { timeout: 20000 });
+      await host.click('.room-bar__right button', '开始模拟', { timeout: 20000 });
 
       // ---- briefing -----------------------------------------------------------------------------------------------
       for (const c of both) await c.waitFor((s) => s.phase === 'INFO_CHECK', 'briefing', 30000);
@@ -1079,10 +1081,11 @@ describe('browser E2E against the real server', { skip: !ENABLED && 'needs Chrom
             guestSkipped = true;
             // one skip — only while someone is left to pass to: the last player still to pick sees 跳过 disabled
             // (PR #546), which a random draft order gives the guest about one time in three
-            const canSkip = await c.page.evaluate(() => [...document.querySelectorAll('.draft-detail__btns .btn')]
+            // (PR #828: 跳过选择 sits in the step header's turn line, .dturn .draft-skip, on the player's own turn)
+            const canSkip = await c.page.evaluate(() => [...document.querySelectorAll('.dturn .draft-skip')]
               .some((b) => b.textContent.includes('跳过') && !b.disabled));
             if (canSkip) {
-              await c.click('.draft-detail__btns .btn', '跳过');
+              await c.click('.dturn .draft-skip', '跳过');
               c.note('band draft: skipped once');
               continue;
             }
@@ -1282,9 +1285,11 @@ describe('browser E2E against the real server', { skip: !ENABLED && 'needs Chrom
     try {
       await solo.open();
       await solo.enter('杜宾');
-      await solo.createSimulation('独立模拟', '绝境模拟');
+      await solo.click('.mode-card', '独立模拟');
+      await solo.click('.diff-card', '绝境模拟');
+      await solo.click('.create-box button', '开始独立模拟');
       await solo.waitFor((s) => !!s.room, 'solo room');
-      if (!(await solo.st()).phase) await solo.click('.rs-foot__right button', '开始模拟', { timeout: 20000 });
+      if (!(await solo.st()).phase) await solo.click('.room-bar__right button', '开始模拟', { timeout: 20000 });
       await solo.waitFor((s) => s.phase === 'INFO_CHECK', 'briefing', 30000);
       await sleep(900);
       await solo.shot('briefing');
@@ -1342,9 +1347,11 @@ describe('browser E2E against the real server', { skip: !ENABLED && 'needs Chrom
     try {
       await c.open();
       await c.enter('煌');
-      await c.createSimulation('独立模拟', '标准模拟');
+      await c.click('.mode-card', '独立模拟');
+      await c.click('.diff-card', '标准模拟');
+      await c.click('.create-box button', '开始独立模拟');
       await c.waitFor((s) => !!s.room, 'solo room');
-      if (!(await c.st()).phase) await c.click('.rs-foot__right button', '开始模拟', { timeout: 20000 });
+      if (!(await c.st()).phase) await c.click('.room-bar__right button', '开始模拟', { timeout: 20000 });
       await c.waitFor((s) => s.phase === 'INFO_CHECK', 'briefing', 30000);
       await c.click('.brief__foot .btn--primary', '准备就绪');
       await c.waitFor((s) => s.phase === 'BAND_DRAFT', 'band draft', 30000);

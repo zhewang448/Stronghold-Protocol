@@ -5,7 +5,7 @@ import { N_ } from './i18n.js';
 export const PROTOCOL_VERSION = 1;
 /** Release version shown to players (title screen, server banner, /healthz). Kept equal to package.json "version"
  * (test/version.test.js); PROTOCOL_VERSION above is the separate wire-format number. */
-export const APP_VERSION = '0.3.1';
+export const APP_VERSION = '0.3.3';
 /** A development build (the public `dev` branch): the title screen, the boot banner and the README say so, and
  * tools/package.mjs refuses to build a release zip from it without --allow-dev. */
 export const DEV_BUILD = /-dev$/.test(APP_VERSION);
@@ -31,6 +31,8 @@ export const MAX_DRAFT_CARDS = 6;
  * server/match/match/watch.js addSpectator).
  */
 export const MAX_SPECTATORS = 2;
+/** Per-seat cooldown between requests to reroll the setup (server/match/match/setupVote.js). */
+export const SETUP_REROLL_COOLDOWN_MS = 30_000;
 export const ROOM_CODE_LEN = 4;
 export const NAME_MAX_LEN = 12;
 
@@ -139,6 +141,9 @@ export const UF = Object.freeze({
 export const ANIM = Object.freeze({ IDLE: 0, MOVE: 1, ATTACK: 2, SKILL: 3, DIE: 4, STUN: 5, DEPLOY: 6 });
 
 export const ERR = Object.freeze({
+  VERSION_UNKNOWN: 'VERSION_UNKNOWN',
+  VERSION_UNSUPPORTED: 'VERSION_UNSUPPORTED',
+  VERSION_VOTE: 'VERSION_VOTE',
   BAD_MSG: 'BAD_MSG',             // malformed / unknown message
   CHAT_MUTED: 'CHAT_MUTED',
   CHAT_DISABLED: 'CHAT_DISABLED',
@@ -152,6 +157,7 @@ export const ERR = Object.freeze({
   ROOM_NOT_FOUND: 'ROOM_NOT_FOUND',
   ROOM_CODE_TAKEN: 'ROOM_CODE_TAKEN',
   ROOM_FULL: 'ROOM_FULL',
+  SERVER_FULL: 'SERVER_FULL',     // the online cap has no seat for a new player
   ROOM_STARTED: 'ROOM_STARTED',
   NOT_HOST: 'NOT_HOST',
   NOT_READY: 'NOT_READY',
@@ -200,6 +206,9 @@ export const ERR = Object.freeze({
 });
 
 export const ERR_TEXT = {
+  VERSION_UNKNOWN: N_('本服务器没有启用该版本'),
+  VERSION_UNSUPPORTED: N_('该版本不能用于当前房间（例如房间开着改变玩法的插件）'),
+  VERSION_VOTE: N_('切换版本投票进行中，请等投票结束'),
   CHAT_MUTED: N_('你已被主机禁言，请联系主机解除'),
   CHAT_DISABLED: N_('主机已暂时关闭房间文字聊天'),
   UNITE_LAYERS_LOCKED: N_('主机未允许房主修改联防叠层规则'),
@@ -208,7 +217,7 @@ export const ERR_TEXT = {
   INVITE_EXPIRED: N_('邀请已失效，请重新邀请'),
   SESSION_IN_USE: N_('此对局仍在其他窗口中，或当前浏览器无法安全恢复。请关闭原窗口后重试。'),
   BAD_MSG: N_('无效的请求'), RATE: N_('操作过于频繁'), NOT_IN_ROOM: N_('你不在房间中'), ROOM_NOT_FOUND: N_('未找到该同盟密钥对应的房间'),
-  ROOM_FULL: N_('房间已满'), ROOM_STARTED: N_('模拟已开始'), NOT_HOST: N_('只有房主可以操作'), NOT_READY: N_('仍有玩家未就绪'),
+  ROOM_FULL: N_('房间已满'), SERVER_FULL: N_('服务器已满'), ROOM_STARTED: N_('模拟已开始'), NOT_HOST: N_('只有房主可以操作'), NOT_READY: N_('仍有玩家未就绪'),
   ROOM_CODE_TAKEN: N_('该同盟密钥已被使用，请换一个密钥或留空自动生成'),
   WRONG_PHASE: N_('当前阶段无法进行该操作'), NO_FUNDS: N_('资金不足'), HAND_FULL: N_('整备区已满'), BOARD_FULL: N_('已达到部署上限'),
   BAD_TILE: N_('无法部署在该位置'), BAD_TARGET: N_('无效的目标'), SOLD_OUT: N_('已售出'), MAX_LEVEL: N_('调度中心已达最高等级'),

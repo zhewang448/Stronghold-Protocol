@@ -8,17 +8,17 @@
 // (gameLogic disabledBondSets over config.modes[modeId].inactiveBondIds — the drawn set D "部分盟约所含干员阵容不完整",
 // still activatable through other bonds' operators or items, and the mode's static inactive bonds "本局禁用", e.g.
 // 标准模拟's 10), every bond in the briefing order (bondOrder, then identifier) split into 核心 / 附加, the banned
-// operators (m.public bannedChess, known chess only) grouped by bond with tier order within each group, the banned-member count per bond (gameLogic
+// operators (m.public bannedChess, known chess only) sorted by tier, the banned-member count per bond (gameLogic
 // bannedPerBond) and — from the viewer's own m.private — its slotted 自选 pieces left out of the shop because all their
 // bonds are off (gameLogic diyBannedPieces; 0.2.0). The blocks are hookless (unit-tested by calling them): the 核心盟约 /
 // 附加盟约 rows of bond discs —
-// greyed with the ✕, the red banned-member badge, the briefingBondTip tooltip — the legend and the 本局禁用干员 groups.
-// MatchInfoDialog shows the same blocks read-only in a components.js Modal (关闭, a tap outside or Esc close it) with a
-// status line from its caller (the draft's turn and countdown, so the running clock stays in view).
+// greyed with the ✕, the red banned-member badge, the briefingBondTip tooltip — the legend and the 本局禁用干员 grid.
+// MatchInfoDialog shows the same blocks and the caller's enemy information read-only in a components.js Modal
+// (关闭, a tap outside or Esc close it) with a status line (the draft's turn and countdown stays in view).
 // Styles: css/screens/briefing.css (.brief-*), css/screens/draft.css (.minfo-dlg).
 
 import { html, Button, Icon, MicroLabel, BondDisc, Tooltip, Modal } from './components.js';
-import { UnitThumb, BondGlyph } from './gameComponents.js';
+import { UnitThumb } from './gameComponents.js';
 import { bannedPerBond, disabledBondSets, briefingBondTip, diyBannedPieces } from './gameLogic.js';
 import { bondIconUrl } from './assetUrls.js';
 import { data } from '../data.js';
@@ -29,7 +29,6 @@ const cx = (...p) => p.flat().filter(Boolean).join(' ');
 /**
  * @typedef {{ sets: { drawn: Set<string>, off: Set<string> }, stateOf: (bondId: string) => 'off'|'drawn'|null,
  *   bonds: any[], core: any[], addon: any[], banned: string[], perBond: Map<string, number>,
- *   bannedGroups: Array<{ bond: any|null, ids: string[] }>,
  *   diyBanned: Array<{ slotId: string, charId: string, name: string }> }} MatchInfoModel
  */
 
@@ -50,21 +49,11 @@ export function matchInfoModel(pub, { bonds = [], chess = () => null, mode = nul
   const list = (Array.isArray(bonds) ? bonds : []).filter((b) => !!b && typeof b === 'object' && typeof b.bondId === 'string')
     .sort((a, b) => (a.bondOrder ?? 0) - (b.bondOrder ?? 0) || (a.identifier ?? 0) - (b.identifier ?? 0));
   const tierOf = (id) => chess(id)?.tier ?? 0;
-  const banned = [...new Set(Array.isArray(pub?.bannedChess) ? pub.bannedChess : [])].filter((id) => typeof id === 'string' && !!chess(id))
+  const banned = (Array.isArray(pub?.bannedChess) ? pub.bannedChess : []).filter((id) => typeof id === 'string' && !!chess(id))
     .sort((a, b) => tierOf(a) - tierOf(b));
-  // Use the same visible membership as the bond badges. Multi-bond operators belong to every matching group.
-  const grouped = new Set();
-  const bannedGroups = list.flatMap((bond) => {
-    const members = new Set(Array.isArray(bond.visibleMembers) ? bond.visibleMembers : []);
-    const ids = banned.filter((id) => members.has(id));
-    for (const id of ids) grouped.add(id);
-    return ids.length ? [{ bond, ids }] : [];
-  });
-  const ungrouped = banned.filter((id) => !grouped.has(id));
-  if (ungrouped.length) bannedGroups.push({ bond: null, ids: ungrouped });
   return {
     sets, stateOf, bonds: list, core: list.filter((b) => b.isCore), addon: list.filter((b) => !b.isCore),
-    banned, bannedGroups, perBond: bannedPerBond(list, banned),
+    banned, perBond: bannedPerBond(list, banned),
     diyBanned: priv && diyData ? diyBannedPieces(priv, chess, diyData) : [],
   };
 }
@@ -95,7 +84,7 @@ function BondBannedAside(bond, model, banned) {
       const c = data.lookup('chess', id);
       const bonds = (Array.isArray(c?.bonds) ? c.bonds : []).filter((b) => nameOf.has(b));
       return html`<div key=${id} class="brief-bantip__op" data-chess=${id}>
-        <${UnitThumb} kind="chess" id=${id} size="xs" showTier=${false} />
+        <${UnitThumb} kind="chess" ownerId=${null} id=${id} size="xs" showTier=${false} />
         <div class="brief-bantip__txt"><b>${c?.name || id}</b>
           <span>${bonds.map((b, i) => html`${i ? ' · ' : ''}<span class=${cx(b === bond.bondId && 'is-this')}>${nameOf.get(b)}</span>`)}</span></div>
       </div>`;
@@ -141,35 +130,16 @@ export function MatchLegend({ model }) {
 }
 
 /**
- * Banned operators grouped by bond, in briefing bond order and then tier within each group.
- * The compact in-game view keeps its clickable operator details.
- * @param {{ model: MatchInfoModel, onChess?: (id: string) => void }} props
- */
-export function BannedOperatorGroups({ model, onChess }) {
-  const repeated = model.bannedGroups.reduce((n, group) => n + group.ids.length, 0) > model.banned.length;
-  return html`<div class="banned-groups">
-    ${repeated ? html`<p class="banned-groups__note">${t('多盟约干员在各所属盟约下显示，总数不重复计算')}</p>` : null}
-    ${model.bannedGroups.map(({ bond, ids }) => html`<section key=${bond?.bondId || 'ungrouped'} class="banned-group" data-banned-bond=${bond?.bondId || 'ungrouped'}>
-      <h4 class="banned-group__head">${bond ? html`<${BondGlyph} bondId=${bond.bondId} />` : null}
-        <span>${bond?.name || t('其他')}</span><span class="num banned-group__n">${ids.length}</span></h4>
-      <div class=${onChess ? 'ibanned' : 'brief-banned__grid'}>
-        ${ids.map((id) => onChess ? html`<button key=${id} type="button" class="ibanned__one" onClick=${() => onChess(id)}>
-          <${UnitThumb} kind="chess" id=${id} size="sm" dim=${true} /></button>`
-          : html`<${UnitThumb} key=${id} kind="chess" id=${id} size="sm" dim=${true} />`)}
-      </div>
-    </section>`)}
-  </div>`;
-}
-
-/**
- * 本局禁用干员: the unique count and the greyed avatars grouped by bond.
+ * 本局禁用干员: the count and the greyed avatars by tier.
  * @param {{ model: MatchInfoModel }} props
  */
 export function BannedOperators({ model }) {
   const { banned } = model;
   return html`<div class="brief-banned">
     <h3 class="brief-h"><span>${t('本局禁用干员')}</span><${MicroLabel}>BANNED OPERATORS</${MicroLabel}><b class="num brief-banned__n">${banned.length}</b></h3>
-    ${banned.length ? html`<${BannedOperatorGroups} model=${model} />` : html`<p class="t-dim">${t('本局没有禁用干员')}</p>`}
+    ${banned.length ? html`<div class="brief-banned__grid">
+      ${banned.map((id) => html`<${UnitThumb} key=${id} kind="chess" ownerId=${null} id=${id} size="sm" dim=${true} />`)}
+    </div>` : html`<p class="t-dim">${t('本局没有禁用干员')}</p>`}
     <${DiyBannedLine} model=${model} />
   </div>`;
 }
@@ -187,13 +157,16 @@ export function MatchInfo({ model }) {
 
 /**
  * The read-only match-info dialog (the strategy draft's 本局信息): MatchInfo in a Modal that 关闭, a tap outside or Esc
- * closes. `status` (the caller's line, e.g. the draft's turn and countdown) sits left of 关闭.
- * @param {{ open: boolean, onClose: Function, model: MatchInfoModel|null, status?: any }} props
+ * closes. `enemies` is the shared briefing enemy block; `status` (e.g. the draft's turn and countdown) sits left of 关闭.
+ * @param {{ open: boolean, onClose: Function, model: MatchInfoModel|null, enemies?: any, status?: any }} props
  */
-export function MatchInfoDialog({ open, onClose, model, status = null }) {
-  return html`<${Modal} open=${open && !!model} onClose=${onClose} title=${t('本局信息')} micro="MATCH INFO // BONDS & BANNED OPERATORS" class="minfo-dlg"
+export function MatchInfoDialog({ open, onClose, model, enemies = null, status = null }) {
+  return html`<${Modal} open=${open && !!model} onClose=${onClose} title=${t('本局信息')} micro="MATCH INFO" class="minfo-dlg"
     actions=${html`${status ? html`<div class="minfo-dlg__status" data-testid="match-info-status">${status}</div>` : null}
       <${Button} variant="secondary" icon="close" data-autofocus data-testid="match-info-close" onClick=${onClose}>${t('关闭')}<//>`}>
-    ${open && model ? html`<${MatchInfo} model=${model} />` : null}
+    ${open && model ? html`<div class=${cx('minfo-dlg__content', enemies && 'has-enemies')}>
+      ${enemies ? html`<section class="minfo-dlg__enemies">${enemies}</section>` : null}
+      <section class="minfo-dlg__bonds"><${MatchInfo} model=${model} /></section>
+    </div>` : null}
   <//>`;
 }

@@ -76,8 +76,9 @@ import { collectLeaves, downloadLeaves, resolveTemplate, totalBytes, contentHash
 import { fontJobs, buildFonts } from './assets/fonts.mjs';
 import { statsTemplateJobs } from './assets/stats-template.mjs';
 import { skelParserAvailable } from './assets/skel.mjs';
-import { buildSkinPlan, completeSkins } from './assets/skins.mjs';
 import { SourceVerifier } from './assets/source-verifier.mjs';
+import { buildSkinPlan, completeSkins } from './assets/skins.mjs';
+import { versionAssetData, presentationUnion, addManifestEntries } from './assets/versions.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = join(ROOT, 'public', 'assets');
@@ -333,14 +334,12 @@ export function countStats(m, bytes, files) {
   const vals = (o) => Object.values(o || {});
   const spines = new Set();
   for (const c of vals(m.chars)) for (const s of vals(c.spine)) spines.add(s.skel);
-  for (const c of vals(m.chars)) for (const skin of vals(c.skins)) for (const s of vals(skin.spine)) spines.add(s.skel);
   for (const e of vals(m.enemies)) if (e.spine) spines.add(e.spine.skel);
   for (const t of vals(m.tokens)) if (t.spine) spines.add(t.spine.skel);
   return {
     files,
     bytes,
     chars: Object.keys(m.chars || {}).length,
-    skins: vals(m.chars).reduce((n, c) => n + Object.keys(c.skins || {}).length, 0),
     charsWithBack: vals(m.chars).filter((c) => c.spine?.back).length,
     enemies: Object.keys(m.enemies || {}).length,
     enemiesWithSpine: vals(m.enemies).filter((e) => e.spine).length,
@@ -438,11 +437,13 @@ async function main() {
   }
   // The game data built by tools/build-data.mjs (when present) may reference more
   // spawnable enemies/tokens than research lists (e.g. 机变 enemy swaps): cover them too.
-  const [dataEnemies, dataTokens, dataBosses, dataBackups, dataChess] = await Promise.all(
-    ['data/enemies.json', 'data/tokens.json', 'data/bosses.json', 'data/backups.json', 'data/chess.json'].map((f) => readJson(f).catch(() => null)));
-  const extras = dataExtras(dataBackups, dataChess);
+  const versionSets = versionAssetData(ROOT);
+  const all = presentationUnion(versionSets);
+  log(`[versions] planning presentation for ${versionSets.length} official versions`);
   const extraHandbook = {};
-  for (const b of Object.values(dataBosses || {})) if (b?.enemyKey && typeof b.handbookId === 'string') extraHandbook[b.enemyKey] = b.handbookId;
+  for (const d of versionSets) for (const b of Object.values(d.bosses || {})) {
+    if (b?.enemyKey && typeof b.handbookId === 'string') extraHandbook[b.enemyKey] ??= b.handbookId;
+  }
   const localEnemySpines = await syncLocalSpines(opts, 'enemy');
   const localTokenSpines = await syncLocalSpines(opts, 'token');
   const statsTemplate = await statsTemplateJobs(ROOT, { offline: opts.offline || opts.dryRun, log });
@@ -451,18 +452,20 @@ async function main() {
     // default: only the slots a battle can play (plan.mjs VOICE_BATTLE_SLOTS); --voice-all takes the whole official set
     voiceSlots: opts.voiceAll ? null : undefined,
     optionalVoice: opts.optionalVoice,
-    extraEnemyIds: Object.keys(dataEnemies || {}),
-    extraTokenIds: [...Object.keys(dataTokens || {}), ...extras.tokenIds],
+    extraEnemyIds: Object.keys(all.enemies),
+    extraTokenIds: Object.keys(all.tokens),
     extraHandbook,
     localEnemySpines,
     localTokenSpines,
-    extraOperators: extras.extraOperators,
-    moduleTypes: extras.moduleTypes,
+    extraOperators: all.operators,
+    extraBands: all.bands,
+    extraItems: all.items,
+    extraBonds: all.bonds,
+    moduleTypes: all.moduleTypes,
     statsTemplate,
     charModes,
   });
-  const installedManifest = await readJson('data/assets.json').catch(() => null);
-  const installedSkins = Object.values(installedManifest?.chars || {}).flatMap((c) => Object.keys(c.skins || {}));
+  const installedSkins = Object.values((await readJson('data/assets.json').catch(() => null))?.chars || {}).flatMap((c) => Object.keys(c.skins || {}));
   if (installedSkins.length) {
     const research = await readJson('docs/research/operator-skins.json');
     const skinPlan = buildSkinPlan(research, installedSkins, await readJson('data/seat-art.json').catch(() => null));
@@ -524,14 +527,24 @@ async function main() {
     root: ASSETS, spine: spine.entries, sourceOf: (rel) => dl.ledger.files[rel]?.url,
     ...(verifier ? { available: (rel) => dl.accepted.has(rel) } : null),
   });
-  const body = resolved.value;
-  completeSkins(body.chars);
+  let body = resolved.value;
   tidyManifest(body);
+  completeSkins(body.chars);
   tidyVoiceTrees(body);
   const fontFaces = {};
   for (const [name, f] of Object.entries(fonts.files)) fontFaces[name] = f;
   body.fonts = opts.addOnly && current?.fonts ? current.fonts
     : (verifier ? fonts.css : existsSync(join(FONTS, 'fonts.css'))) ? { css: '/fonts/fonts.css', faces: fontFaces } : { faces: fontFaces };
+  if (opts.addOnly && current) {
+    const { version, hash, generator, stats, ...previous } = current;
+    body = addManifestEntries(previous, body);
+    // Retained entries still participate in size accounting and orphan detection.
+    const files = (v) => {
+      if (typeof v === 'string' && v.startsWith('/assets/')) resolved.files.add(v.slice('/assets/'.length));
+      else if (v && typeof v === 'object') for (const x of Object.values(v)) files(x);
+    };
+    files(body);
+  }
   const bytes = totalBytes(ASSETS, resolved.files);
   const manifest = {
     version: MANIFEST_VERSION,
@@ -547,7 +560,7 @@ async function main() {
   const orphans = orphanFiles(await listFiles(ASSETS), new Set([...resolved.files, ...dl.preserved]));
   if (opts.prune) for (const r of orphans) { try { await unlink(join(ASSETS, r)); } catch { /* ignore */ } }
 
-  const charIds = Object.keys(assets07.operators || {});
+  const charIds = Object.keys(plan.template.chars);
   const required = requiredMisses(manifest, charIds);
   // Leaves the plan had resolved and the manifest loses here (no alternative of theirs on disk): reported on their own
   // line below and kept in the report, whether or not they shrink the committed manifest.

@@ -1,3 +1,5 @@
+import { VersionSwitch } from '../ui/versionPicker.js';
+import { lobbyVersion, isDefaultVersion, versionLabel, shownVersion, offeredDifficulties, soloTimedOf } from '../versions.js';
 import { LobbyMusicButton } from '../ui/lobbyMusic.js';
 import { AccountMeChip } from '../ui/accounts.js';
 import { OnlinePlayersButton, PresenceSelector } from '../ui/social.js';
@@ -49,7 +51,7 @@ import { SearchPanel, RadarScene, CreateArt, JoinArt } from '../ui/matchFlow.js'
 import { useLeave } from '../ui/transitions.js';
 import { net, identity } from '../net.js';
 import { store, useStore, shallowEqual, loadPref, savePref } from '../store.js';
-import { getConfig, getMode, getStage, useData } from '../data.js';
+import { data, getConfig, getMode, getStage, useData } from '../data.js';
 import { t, tc, N_ } from '../../../shared/i18n.js';
 import { C2S as SERVER_C2S } from '../../../shared/protocol.js';
 import { NoticesButton } from '../ui/notices.js';
@@ -410,7 +412,7 @@ function SweepPlate({ onClick }) {
 }
 
 /** One of the four big entries at the bottom right. */
-function HubEntry({ group, name, en, icon, badge, tone = 'mint', count = null, onClick, disabled = false }) {
+export function HubEntry({ group, name, en, icon, badge, tone = 'mint', count = null, onClick, disabled = false }) {
   return html`<div class="hub-entry-wrap">
     ${group ? html`<span class="hub-entry__group"><${Icon} name=${group.icon} />${group.label}</span>` : html`<span class="hub-entry__group hub-entry__group--blank"></span>`}
     <button type="button" aria-label=${en} class=${`hub-entry hub-entry--${tone}`} onClick=${onClick} disabled=${disabled}>
@@ -521,8 +523,12 @@ export function ProtoCard({ roomMode, difficulty, selected, onSelect, matchmakin
  * Comes up from black over the hub (`chained`: straight after 选择同盟方式, already black) and fades back out
  * (ui/transitions.js); the picture is redrawn for each difficulty.
  */
-function ProtocolSelect({ card, roomMode, random, variant, difficulty, onDifficulty, onClose, matchmaking, brief, privateRoom, onPrivate,
-  online, maint, busy, isSearching, onCreate, onQueue, purpose = 'create', onSearch, onCancel, mm, onBrowse, chained = false }) {
+export function ProtocolSelect({ card, roomMode, random, variant, difficulty, onDifficulty, onClose, matchmaking, brief, privateRoom, onPrivate,
+  online, maint, busy, isSearching, onCreate, onQueue, purpose = 'create', onSearch, onCancel, mm, onBrowse, chained = false, onUnlimited = null }) {
+  const currentVersion = useStore(shownVersion);
+  const allowedDifficulties = offeredDifficulties(getConfig(), roomMode);
+  const [unlimited, setUnlimited] = useState(false);
+  const timedSolo = roomMode === 'solo' && soloTimedOf(getConfig(), currentVersion) === true;
   const [leaving, leave] = useLeave(onClose);
   const pageRef = useRef(null);
   useLayoutEffect(() => { pageRef.current?.querySelector('.proto-back')?.focus(); }, []);
@@ -582,8 +588,9 @@ function ProtocolSelect({ card, roomMode, random, variant, difficulty, onDifficu
         ${brief ? html`<div class="proto-fp">${brief}</div>` : null}
       </section>
       <section class="proto-side">
-        <div class="proto-list" role="radiogroup" aria-label=${t('模拟难度')}>
-          ${DIFFICULTIES.map((d) => html`<${ProtoCard} key=${d} roomMode=${roomMode} difficulty=${d} selected=${difficulty === d} onSelect=${onDifficulty}
+${timedSolo ? html`<label class="proto-unlimited" data-testid="solo-unlimited"><input type="checkbox" checked=${unlimited} onChange=${e => { setUnlimited(e.currentTarget.checked); onUnlimited?.(e.currentTarget.checked); }} />${t('不限时')}</label>` : null}
+                <div class="proto-list" role="radiogroup" aria-label=${t('模拟难度')}>
+          ${allowedDifficulties.map((d) => html`<${ProtoCard} key=${d} roomMode=${roomMode} difficulty=${d} selected=${difficulty === d} onSelect=${onDifficulty}
             matchmaking=${matchmaking} random=${random} variant=${variant} />`)}
         </div>
         <div class="proto-foot">
@@ -614,7 +621,7 @@ function ProtocolSelect({ card, roomMode, random, variant, difficulty, onDifficu
  * key field, 观战, recent keys) at the right, 模拟邀约 (the public alliances) and 搜寻队友 between them, 入门协议 (玩法说明)
  * at the bottom left. Esc or ‹ returns to the hub.
  */
-function AllianceSelect({ customCode, onCustomCode, customCodeOk, onClose, code, onCode, codeOk, recent, online, maint, busy, onCreate, onJoin, onSpectate, onBrowse, onSearch, recruiting = 0, difficulty }) {
+export function AllianceSelect({ customCode, onCustomCode, customCodeOk, onClose, code, onCode, codeOk, recent, online, maint, busy, onCreate, onJoin, onSpectate, onBrowse, onSearch, recruiting = 0, difficulty }) {
   const [leaving, leave] = useLeave(onClose);
   const pageRef = useRef(null);
   useDialogFocus(true, pageRef, leave);
@@ -814,15 +821,18 @@ const CAN_QUEUE = HAS('match.queue'), CAN_FIREPOWER = HAS('room.setRandom'), CAN
 
 /** Lobby screen component. */
 export function LobbyScreen() {
+  const selectedVersion = useStore(lobbyVersion);
   const matchmakingCounts = useStore(s => s.presence?.matchmaking);
   const me = useStore((s) => s.me, shallowEqual);
   const conn = useStore((s) => s.connection, shallowEqual);
   useData('config');
+  const [soloUnlimited, setSoloUnlimited] = useState(false);
   const [simulation, setSimulation] = useState(lobbySimulationPreference);
   const [difficulty, setDifficulty] = useState(() => preferredDifficulty(lobbySimulationPreference()));
   const [fpVariant, setFpVariant] = useState(firepowerVariantPreference);
   const roomMode = simulation === 'solo' ? 'solo' : 'coop';
   const randomMode = simulation === 'firepower';
+  useEffect(() => { const allowed = offeredDifficulties(getConfig(), roomMode); if (allowed.length && !allowed.includes(difficulty)) setDifficulty(allowed.at(-1)); }, [selectedVersion, data.get('config'), roomMode]);
   const variant = randomMode ? fpVariant : 'blitz';
   const [code, setCode] = useState('');
   const [customCode, setCustomCode] = useState('');
@@ -931,7 +941,7 @@ export function LobbyScreen() {
       return;
     }
     return run('create', () => net.request('room.create', {
-      mode: roomMode, difficulty, ...(testMode && asTest ? { test: true } : {}),
+      mode: roomMode, difficulty, ...(!isDefaultVersion(selectedVersion) ? { version: selectedVersion } : {}), ...(roomMode === 'solo' && soloUnlimited ? { soloUnlimited: true } : {}), ...(testMode && asTest ? { test: true } : {}),
       ...(roomMode === 'coop' && customCode ? { code: customCode } : {}),
       ...(CAN_FIREPOWER ? { random: randomMode, ...(randomMode ? { variant } : {}) } : {}),
       ...(CAN_PRIVATE ? { private: roomMode !== 'solo' && privateRoom } : {}),
@@ -1014,7 +1024,7 @@ export function LobbyScreen() {
   const modeCard = MODE_CARDS.find((c) => c.id === simulation) || MODE_CARDS[0];
 
   if (sheetOpen) return html`<${ProtocolSelect} card=${modeCard} roomMode=${roomMode} random=${randomMode} variant=${variant} difficulty=${difficulty}
-      onDifficulty=${pickDifficulty} onClose=${closeProtocol} matchmaking=${matchmakingCounts}
+      onUnlimited=${setSoloUnlimited} onDifficulty=${pickDifficulty} onClose=${closeProtocol} matchmaking=${matchmakingCounts}
       brief=${randomMode ? html`<${FirepowerBrief} variant=${fpVariant} onVariant=${pickVariant} />` : null}
       privateRoom=${privateRoom} onPrivate=${setPrivateRoom} online=${online} maint=${maint} busy=${busy} isSearching=${isSearching}
       onCreate=${sheetChained && roomMode === 'coop' && sheetPurpose === 'create' ? createCoop : create} onQueue=${async () => { await queueMatch(); setSheetOpen(false); }}
@@ -1027,6 +1037,7 @@ export function LobbyScreen() {
         <${PingPill} ms=${conn.ping} online=${online} />
         <span class="topbar__sep" aria-hidden="true"></span>
         <div class="topbar__tools">
+          <${VersionSwitch} />
           <${NoticesButton} />
           <${SettingsButton} class="lobby-settings" variant="secondary" square=${true} />
           <${AnnouncementButton} class="lobby-notice" />
@@ -1051,6 +1062,7 @@ export function LobbyScreen() {
         <div class="hub-center__mark"><${HubRadar} bg=${bg} /><${Emblem} /></div>
         <div class="hub-center__en">STRONGHOLD PROTOCOL <b>ALLIANCE</b></div>
         <h1 class="hub-center__title">${t('卫戍协议：盟约')}</h1>
+        <div class="hub-center__version" data-testid="hub-version">${versionLabel(selectedVersion)}</div>
       </div>
 
       <aside class="hub-side">

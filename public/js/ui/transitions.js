@@ -54,8 +54,8 @@ export function usePresence(show, ms = 220) {
  * opens does not flash).
  * @param {any} value @param {number} [ms]
  */
-export function useRise(value, ms = 700) {
-  const prev = useRef(!!value);
+export function useRise(value, ms = 700, fresh = false) {
+  const prev = useRef(fresh ? false : !!value);
   const [on, setOn] = useState(false);
   useEffect(() => {
     const was = prev.current;

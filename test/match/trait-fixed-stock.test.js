@@ -85,7 +85,7 @@ test('Damatzi fixed-round gifts survive exhaustion; ordinary strategy gifts cann
   for (const round of [5, 10, 15]) {
     m.round = round;
     const before = m.itemPool.held(ISO);
-    m.dispatch(ps, 'onRoundStart');
+    m.dispatch(ps, 'onPrepStart');
     assert.equal(m.itemPool.held(ISO), before + 1);
     checkInvariants(m);
   }

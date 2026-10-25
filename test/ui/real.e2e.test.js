@@ -184,22 +184,20 @@ class Client {
 
   /** An empty legal tile for a hand piece (mirrors the deploy rules: melee on melee tiles, ranged anywhere). */
   freeTileFor(uid) {
-    return this.page.evaluate((uid) => {
+    return this.page.evaluate(async (uid) => {
       const { store, data } = globalThis.__SP__;
       const s = store.get();
       const priv = s.match.private;
       const st = data.lookup('stages', s.match.public.stageId);
       const piece = [...priv.hand, ...priv.temp].find((p) => p && p.uid === uid);
       if (!piece || !st?.deployTiles?.normal) return null;
-      const rec = piece.kind === 'token' ? data.lookup('tokens', piece.id) : data.lookup('chess', piece.id);
-      const melee = rec?.position === 'MELEE';
-      const dt = st.deployTiles.normal;
-      const tiles = melee ? dt.melee : [...dt.rangedOnly, ...dt.melee];
-      const used = new Set(priv.board.map((p) => `${p.row},${p.col}`));
-      const free = tiles.filter(([r, c]) => !used.has(`${r},${c}`));
-      if (!free.length) return null;
-      free.sort((a, b) => (b[1] - a[1]) || (a[0] - b[0])); // towards the gates first
-      return { row: free[0][0], col: free[0][1] };
+      const { placementContext, boardTargets, deployFieldOf } = await import('/js/ui/gameLogic.js');
+      const ctx = placementContext({ priv, stage: st, editable: true, field: deployFieldOf(s.match.public, s.me.playerId),
+        getChess: id => data.lookup('chess', id), getToken: id => data.lookup('tokens', id), getItem: id => data.lookup('items', id),
+        getEffect: id => data.lookup('effects', id), backups: data.get('backups') });
+      const legal = boardTargets(ctx, uid).legal.filter(([r,c]) => !priv.board.some(p => p.row === r && p.col === c));
+      if (legal.length) { legal.sort((a,b) => (b[1]-a[1]) || (a[0]-b[0])); return { row: legal[0][0], col: legal[0][1] }; }
+      return null;
     }, uid);
   }
 
@@ -479,15 +477,22 @@ describe('real server + real browsers', { skip: !ENABLED && 'set SP_REAL_E2E=1 (
       // ---- lobby & room --------------------------------------------------------------------------------------------
       await host.open();
       await host.enter('凯尔希');
-      await host.createSimulation('同盟模拟', '险境模拟');
+      // 创建同盟 creates the room at once (标准 in a fresh browser); the host changes the difficulty in the room
+      await host.click('.hub-entry', '同盟模拟');
+      await host.click('[data-testid="create-alliance"]');
+      await host.click('.proto .proto-start', '创建同盟');
       const room = (await host.waitFor((s) => !!s.room?.code, 'room created')).room;
+      await host.click('.rs-pill__diff');
+      await host.click('.rs-proto .pcard', '险境模拟');
+      await host.click('.rs-proto .proto-start', '确认');
+      await host.page.waitForFunction(() => globalThis.__SP__.store.get().room?.difficulty === 'NORMAL' && !document.querySelector('.modal__box.proto'), { timeout: 10000 });
       await host.click('button', '添加 AI 队友');
       await guest.open(`?room=${room.code}`);
       await guest.enter('阿米娅');
       await guest.waitFor((s) => s.room?.code === room.code, 'guest joined via invite link');
-      await guest.click('.rs-foot__right button', '准备就绪');
+      await guest.click('.rs-go', '准备就绪');
       await host.shot('room');
-      await host.click('.rs-foot__right button', '开始模拟', { timeout: 20000 });
+      await host.click('.rs-go', '开始模拟', { timeout: 20000 });
 
       // ---- briefing ---------------------------------------------------------------------------------------------------
       for (const c of both) await c.waitFor((s) => s.phase === 'INFO_CHECK', 'briefing', 30000);
@@ -511,10 +516,11 @@ describe('real server + real browsers', { skip: !ENABLED && 'set SP_REAL_E2E=1 (
           if (c === guest && !guestSkipped) {
             guestSkipped = true;
             // one skip — only while someone is left to pass to: the last player still to pick sees 跳过 disabled (PR #546)
-            const canSkip = await c.page.evaluate(() => [...document.querySelectorAll('.draft-detail__btns .btn')]
+            // (PR #828: 跳过选择 sits in the step header's turn line, .dturn .draft-skip, on the player's own turn)
+            const canSkip = await c.page.evaluate(() => [...document.querySelectorAll('.dturn .draft-skip')]
               .some((b) => b.textContent.includes('跳过') && !b.disabled));
             if (canSkip) {
-              await c.click('.draft-detail__btns .btn', '跳过');
+              await c.click('.dturn .draft-skip', '跳过');
               c.note('skipped once');
               continue;
             }
@@ -669,9 +675,11 @@ describe('real server + real browsers', { skip: !ENABLED && 'set SP_REAL_E2E=1 (
     try {
       await solo.open();
       await solo.enter('杜宾');
-      await solo.createSimulation('独立模拟', '标准模拟');
+      await solo.click('.hub-entry', '独立模拟');
+      await solo.click('.pcard', '标准模拟');
+      await solo.click('.proto-start', '开始模拟');
       await solo.waitFor((s) => !!s.room, 'solo room');
-      if (!(await solo.st()).phase) await solo.click('.rs-foot__right button', '开始模拟', { timeout: 20000 });
+      if (!(await solo.st()).phase) await solo.click('.rs-go', '开始模拟', { timeout: 20000 });
       await solo.waitFor((s) => s.phase === 'INFO_CHECK', 'briefing', 30000);
       await solo.click('.brief__foot .btn--primary', '准备就绪');
       await solo.waitFor((s) => s.phase === 'BAND_DRAFT', 'band draft', 30000);

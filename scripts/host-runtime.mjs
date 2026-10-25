@@ -33,7 +33,7 @@ export function acquireLease(root, name, { isAlive = alive } = {}) {
   return { owned: false };
 }
 
-export function superviseServer({ root, port, env, spawnImpl = spawn, probe = probePort,
+export function superviseServer({ root, port, env, serverArgs = [], spawnImpl = spawn, probe = probePort,
   log = console.log, onHealthy = () => {}, maxRestarts = 3, restartDelay = 1000, healthTimeout = 30000,
   requestStop = stopInstance }) {
   let current = null, stopping = false, first = true, resolveReady, rejectReady;
@@ -65,7 +65,7 @@ export function superviseServer({ root, port, env, spawnImpl = spawn, probe = pr
         const vacant = (await probe(port)).state === 'free', build = computeBuildTag(root);
         let intent = null, exited = false, bootReady = false, healthy = false;
         const startedAt = Date.now();
-        const child = spawnImpl(process.execPath, [...process.execArgv, path.join(root, 'server', 'index.js')], {
+        const child = spawnImpl(process.execPath, [...process.execArgv, path.join(root, 'server', 'index.js'), ...serverArgs], {
           cwd: root, env: { ...env, PORT: String(port), SP_UPDATE_RESTART: 'supervisor', SP_SERVICE_SHUTDOWN: 'exit-code' },
           stdio: ['ignore', 'pipe', 'pipe', 'ipc'], windowsHide: true,
         });

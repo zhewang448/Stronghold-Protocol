@@ -91,6 +91,46 @@ export function printBanner(srv) {
  * SIGTERM.
  * @param {(options?: object) => Promise<{ url: string, host: string, port: number, close: () => Promise<void> }>} start index.js startServer
  */
+export function shutdownTimeoutMs(value = process.env.SP_SHUTDOWN_TIMEOUT_MS) {
+  const n = Number(value);
+  return Number.isSafeInteger(n) && n >= 1_000 && n <= 300_000 ? n : 5_000;
+}
+
+/**
+ * The SIGINT / SIGTERM handler: close the server, exit 0 when that finishes and 1 when the shutdown times out first.
+ * A second signal exits at once. Returned as a handler so the caller and the tests drive the same code.
+ * @param {{ close: () => Promise<void> }} srv
+ * @param {object} [opts]
+ * @param {(code: number) => void} [opts.exit] process.exit by default
+ * @param {(ms: number, fn: () => void) => any} [opts.setTimer] setTimeout by default
+ * @param {{ log?: (m: string) => void, error?: (m: string) => void }} [opts.out] console by default
+ * @param {number} [opts.timeoutMs] shutdownTimeoutMs() by default
+ * @returns {(signal: string) => void}
+ */
+export function shutdownHandler(srv, opts = {}) {
+  const exit = opts.exit || ((code) => process.exit(code));
+  const setTimer = opts.setTimer || ((ms, fn) => setTimeout(fn, ms).unref?.());
+  const log = opts.out?.log || ((m) => console.log(m));
+  const error = opts.out?.error || ((m) => console.error(m));
+  const timeoutMs = opts.timeoutMs ?? shutdownTimeoutMs();
+  let stopping = false;
+  let finished = false;
+  /** Exit once: whichever of the close, the timeout or the second signal gets there first. */
+  const finish = (code) => { if (finished) return; finished = true; exit(code); };
+  return (signal) => {
+    if (stopping) { log('forced exit'); finish(1); return; }
+    stopping = true;
+    log(`\n[${signal}] shutting down…`);
+    setTimer(timeoutMs, () => {
+      if (finished) return;
+      error(`[shutdown] timeout after ${timeoutMs} ms; exiting`);
+      finish(1);
+    });
+    srv.close().then(() => finish(0), () => finish(1));
+  };
+}
+
+
 export async function runMain(start) {
   // Installation validation never loads settings, resumes games, runs extensions, or exposes a public listener.
   if (process.env.SP_UPDATE_PROBE) {
@@ -146,9 +186,12 @@ export async function runMain(start) {
     notify(signal === 'UPDATE' ? 'update' : signal === 'RESTART' ? 'restart' : 'shutdown');
     removeInstance();
     console.log(`\n[${signal}] shutting down…`);
-    setTimeout(() => process.exit(code), 5000).unref();
+    let finished = false;
+    const finish = (exitCode) => { if (finished) return; finished = true; process.exit(exitCode); };
+    const timeoutMs = shutdownTimeoutMs();
+    setTimeout(() => { if (!finished) { console.error(`[shutdown] timeout after ${timeoutMs} ms; exiting`); finish(1); } }, timeoutMs).unref();
     if (admin) admin.close();
-    srv.close().then(() => process.exit(code), () => process.exit(code || 1));
+    srv.close().then(() => finish(code), () => finish(code || 1));
   };
   if (!/^(0|false|no|off)$/i.test(process.env.SP_ADMIN || '')) {
     try {

@@ -137,11 +137,13 @@
 // The helpers live in public/js/render/app/*.js and are re-exported below, so existing imports keep
 // working. createFieldView stays here: it is one closure over the view's own state.
 
-import { applyFrameRate, renderFrameBudget } from '../frameRate.js';
+import { attackRateEvents } from './attackRate.js';
 import { GEO, ANIM } from '../../../shared/constants.js';
+import { applyFrameRate, renderFrameBudget } from '../frameRate.js';
 import { fxForm } from '../../../shared/protocol.js';
 import { Camera, presetCamera, lerpCamera, easeInOutCubic, pickTile, normRect } from './projection.js';
 import { SnapshotBuffer, frameTime } from './interp.js';
+import { BattlePresentation } from './battlePresentation.js';
 import { TileField } from './tiles.js';
 import { UnitView, ItemView, DeviceView, FORMS, syncView } from './units.js';
 import { FxSystem, ensureDamageFonts, projSpeed } from './fx.js';
@@ -163,6 +165,7 @@ import { pickOnTile, pickBattle, hitTiles } from './pick.js';
 import { promotionsOf } from './promote.js';
 import { ensurePixi } from './app/pixi.js';
 import { advanceEffectClock } from './app/playback.js';
+import { createWindUpLookahead } from './app/windup.js';
 import { pieceDirOf, pickUnitOf } from './app/pick.js';
 import { CAMERA_MS, BOARD3D_STABLE_MS, BOARD3D_RETRY_MS, PEN_CAMERA_MS, RANGE_GROUPS, LEADER_HIT_STYLE, DRAG_HOLD_TILES, CHAIN_KINDS, DROP_PENDING_MS, DEPLOY_REPLAY_MS } from './app/tune.js';
 import { boardPreference, switchableBox, bandFor, fieldRows, boardArea, viewKind, restView, flightView } from './app/view.js';
@@ -202,7 +205,6 @@ export async function createFieldView(host, options = {}) {
   // 设置「显示其他玩家的皮肤」 (docs/SKINS.md), on unless the caller said off: kept out of the literal above so the shape
   // the other settings the units read every frame are pinned by stays one line (test/ui/ammo-count.test.js)
   settings.otherSkins = settings.otherSkins !== false;
-
   // the 3D board (three.js + the official art) loads in parallel with everything else
   const boardPref = boardPreference(opts.board);
   const want3d = boardPref !== '2d' && webgl2Available(boardPref === '3d');
@@ -227,7 +229,6 @@ export async function createFieldView(host, options = {}) {
   // dispose only the resources acquired by this attempt, never another view's host contents.
   const setupCleanup = [];
   let destroyed = false;
-  let renderPaused = false;
   let view = null;
   let onAbort;
   try {
@@ -333,6 +334,7 @@ export async function createFieldView(host, options = {}) {
   const gone = new Set();
   const woundUp = new WeakSet(); // atk event tuples whose attack wind-up already started
   const interp = new SnapshotBuffer({ delay: 0.1, rate: 2 });
+  const presentation = new BattlePresentation();
   const sample = new Map();
   const meleePending = new Map(); // target id → { src, t }
   const consumedIds = new Set();  // battle ids used up by their own effect (fx `consumed`): no death particles
@@ -378,7 +380,6 @@ export async function createFieldView(host, options = {}) {
       return rec;
     },
     crowded: () => views.size > 90,
-    skinFor: info => info.skin || null,
     renderer: app.renderer,
     frameNo: () => frameNo,
     impostorInterval: () => impInterval,
@@ -1506,6 +1507,7 @@ export async function createFieldView(host, options = {}) {
   function enterBattle(meta) {
     if (destroyed || !meta || typeof meta !== 'object') return false;
     holdScene(true); // before the prep views go: the cache is never "quiet" across the switch
+    presentation.reset();
     drag.reset();
     endDragVisual(false);
     cancelReplay();  // the round start's replay is a prep-board thing: none of it reaches a battle (or a scouted board)
@@ -1522,8 +1524,6 @@ export async function createFieldView(host, options = {}) {
     consumedIds.clear();
     clearHl();
     renderT0Battle = null;
-    beamQ.length = 0;
-    beamSeq = 0;
     mode = 'battle';
     const rect = meta.rect ? normRect(meta.rect) : (meta.kind === 'boss' || meta.kind === 'hidden' ? { ...GEO.BOSS_RECT } : meta.kind === 'unite' ? { ...GEO.UNITE_RECT } : { ...GEO.NORMAL_RECT });
     // prep: true = a read-only scouting board (a teammate's lineup during prep): prep-style pieces, no bars
@@ -1672,33 +1672,13 @@ export async function createFieldView(host, options = {}) {
     }
     // the official effects of units joining the battle load ahead of their first attack (render/vfx/wiring.js more)
     if (fresh) wiring.more(fresh);
-    return interp.pushEvents(list, performance.now() / 1000, t);
+    return interp.pushEvents(attackRateEvents(list), performance.now() / 1000, t);
   }
 
   // attack wind-ups: an 'atk' still queued in the buffer starts its Spine clip early enough for the strike frame to
-  // land when the event is rendered (the look-ahead is the interpolation delay, ~0.2 game s)
-  function windUpAttacks(renderT) {
-    upcomingT = renderT;
-    upSkill.clear();
-    interp.forEachUpcoming(renderT, renderT + 1.5, onUpcoming);
-  }
-  let upcomingT = 0;
-  // the look-ahead's skill state: a ['skill', id, on] queued before an 'atk' of that unit (an instant skill sends 1, its
-  // attack and 0 in one tick) — the official cast effects of the wind-up are the skill's own then
-  const upSkill = new Map();
-  function onUpcoming(e, t) {
-    if (e[0] === 'skill') { upSkill.set(e[1], !!e[2]); return; }
-    if (e[0] !== 'atk' || woundUp.has(e) || CHAIN_KINDS.has(e[3])) return;
-    const v = views.get(e[1]);
-    if (!v || !v.windUp) return;
-    if (v.windUp(t - upcomingT, e[3])) {
-      woundUp.add(e);
-      // the official cast effects that start with the cast play with the clip (render/vfx/wiring.js castStart)
-      const a = v.actor;
-      const skillOn = upSkill.has(e[1]) ? upSkill.get(e[1]) : undefined;
-      wiring.castStart(v, views.get(e[2]), e[3], a ? { skip: a.windSkip || 0, left: a.windCastLeft || 0, skillOn } : { skillOn });
-    }
-  }
+  // land when the event is rendered (app/windup.js; the official cast effects play with the clip — vfx/wiring.js castStart)
+  const lookahead = createWindUpLookahead({ views, woundUp, castStart: (v, tv, kind, o) => wiring.castStart(v, tv, kind, o) });
+  function windUpAttacks(renderT) { lookahead.run(interp, renderT); }
 
   const EVS = [];
   /** State events handed out more than 1.5 game s late (a stall, a hidden tab, a field entered late) → how late. */
@@ -1718,7 +1698,9 @@ export async function createFieldView(host, options = {}) {
         const info = applyInfo(e[1]);
         if (!info) break;
         gone.delete(info.id);
+        const reused = views.get(info.id);   // a 重生 / a second life keeps the view: re-seed its pacing (#729)
         const v = battleView(info.id);
+        if (v && reused) v.respawn?.(info);
         if (v && info.side === 'enemy' && renderT0Battle != null && now - renderT0Battle > 0.2) fx.ring(info.x, info.y, 0, 0.1, 0.7, 0xff5a4a, 0.4);
         // an enemy's or a summon's deploy talents (render/vfx/talentfx.js: auras, birth effects — once per life)
         if (v) wiring.spawned(v);
@@ -1727,7 +1709,7 @@ export async function createFieldView(host, options = {}) {
       case 'deploy': {
         gone.delete(e[1]);
         const v = battleView(e[1]);
-        if (v) { v.onDeploy?.(); if (v.info?.kind !== 'device' && !wiring.deploy(v) && !queueBeam(v, now)) fx.deploy(v); }
+        if (v) { v.onDeploy?.(); if (v.info?.kind !== 'device' && !wiring.deploy(v)) fx.deploy(v); }
         break;
       }
       case 'atk': {
@@ -1765,7 +1747,9 @@ export async function createFieldView(host, options = {}) {
       }
       // the skill slot an enemy ability casts (PR #275): the view swaps to that slot's clip (a multi-skill boss's Skill_01..04)
       // (and its official skill effects: render/vfx/skillfx.js cast — index v2 has the enemies' skills)
-      case 'cast': { const v = views.get(e[1]); if (v) { v.setSkillSlot?.(e[2] | 0); wiring.enemyCast(v, e[2] | 0, Number(e[3]) || 0); } break; }
+      // an attack-class skill cast in the attack's turn ['cast', id, slot, dur, clip] plays its clip in place of the attack
+      // (UnitView.onCast; DESIGN §35.57)
+      case 'cast': { const v = views.get(e[1]); if (v) { v.setSkillSlot?.(e[2] | 0); v.onCast?.(e[2] | 0, now, e.length > 4 ? Number(e[4]) || 0 : null); wiring.enemyCast(v, e[2] | 0, Number(e[3]) || 0); } break; }
       case 'die': {
         const v = views.get(e[1]);
         const used = consumedIds.delete(e[1]);
@@ -1784,6 +1768,12 @@ export async function createFieldView(host, options = {}) {
           v.dying = 0.25; v.dieDur = 0.25;
         }
         fx.leak();
+        break;
+      }
+      case 'rate': {
+        // the sim's own attack interval changed (a skill, an attack-speed buff): pace the clip over it from the next swing
+        const v = views.get(e[1]);
+        if (v && typeof v.setAtkInterval === 'function') v.setAtkInterval(Number(e[2]));
         break;
       }
       case 'status': { const v = views.get(e[1]); if (v) { v.onStatus?.(e[2], !!e[3]); wiring.status(v, e[2], !!e[3]); } break; }
@@ -1877,33 +1867,6 @@ export async function createFieldView(host, options = {}) {
     });
   }
   let renderT0Battle = null;   // game time of the first rendered battle frame (spawn puffs skip the initial wave)
-  // 联防 (the event's, video 8:42): as the 联防 field opens (its first 2 game s), the operators carried onto it beam in
-  // one after another — each hidden until its beam lands (UnitView fadeIn below 0 counts up to it at the same rate), the
-  // opening's own deploy flash skipped. A field watched later, or a redeploy, keeps the plain deploy flash.
-  const beamQ = [];            // [{ v, id }] waiting for their beam (v._beamLeft: real seconds)
-  let beamSeq = 0;             // beams queued on this field (the stagger)
-  function queueBeam(v, renderT) {
-    if (!v) return false;
-    if (v._beamLeft > 0) { v.fadeIn = -v._beamLeft * 4; return true; } // queued already (a deploy event re-showed it)
-    if (v._beamed || battleMeta?.kind !== 'unite' || battleMeta.prep || !(renderT <= 2)) return false;
-    const info = v.info || null;
-    if (!info || info.side !== 'ally' || info.kind === 'device' || info.kind === 'item') return false;
-    v._beamed = true;
-    v._beamLeft = 0.35 + Math.min(beamSeq++, 10) * 0.16;
-    v.fadeIn = -v._beamLeft * 4;
-    beamQ.push({ v, id: info.id });
-    return true;
-  }
-  function pumpBeams(dt) {
-    for (let i = beamQ.length - 1; i >= 0; i--) {
-      const b = beamQ[i];
-      b.v._beamLeft -= dt;
-      if (b.v._beamLeft > 0) continue;
-      b.v._beamLeft = 0;
-      beamQ.splice(i, 1);
-      if (views.get(b.id) === b.v && b.v.alive !== false) fx.deploy(b.v, { beam: true });
-    }
-  }
   let downSeq = 0;             // syncBattle pass counter: a view still marked down after a pass left the `down` list
   function syncBattle(renderT) {
     if (renderT0Battle == null) renderT0Battle = renderT;
@@ -1922,8 +1885,8 @@ export async function createFieldView(host, options = {}) {
       }
       if (!v) v = battleView(id) || createUnknown(id, s);
       if (!v) continue;
-      if (!v._seen) { v._seen = true; v.fadeIn = 0; queueBeam(v, renderT); }
-      syncView(v, s, renderT);
+      if (!v._seen) { v._seen = true; v.fadeIn = 0; }
+      syncView(v, presentation.sample(s), renderT);
     }
     // knocked-out operators waiting to redeploy (b.snap `down`, user playtest #4 item 9): their view stays on the
     // field knocked down under a redeploy ring (UnitView.setDown) — made on the spot for one already down when this
@@ -2056,21 +2019,23 @@ export async function createFieldView(host, options = {}) {
         const renderT = interp.update(now / 1000);
         if (Number.isFinite(renderT)) {
           processEvents(renderT);
+          const justEnded = presentation.update(renderT, interp.newestT, dt);
           syncBattle(renderT);
-          windUpAttacks(renderT);
+          if (!presentation.ended) windUpAttacks(renderT);
           // the official effects run on the battle clock (render time of the snapshots: 1× / 2×, still while paused); the
           // skill effects' per-frame part reads the views' fresh sample (render/vfx/skillfx.js sync)
-          const gdt = ofxPrevT == null ? 0 : Math.min(opts.playbackTime ? Infinity : 0.25, Math.max(0, renderT - ofxPrevT));
+          const gdt = presentation.ended ? dt : ofxPrevT == null ? 0 : Math.min(opts.playbackTime ? Infinity : 0.25, Math.max(0, renderT - ofxPrevT));
           ofxPrevT = renderT;
+          if (justEnded) { wiring.clear(); ofx.finish(); pluginFx.finish(); }
           pluginFx.update(gdt);
-          pluginFx.sync(views.values());
-          wiring.sync(views.values());
+          if (!presentation.ended) { pluginFx.sync(views.values()); wiring.sync(views.values()); }
+          // [ASSUMED] Bound long-lived one-shots to two presentation seconds after completion.
+          if (presentation.ended && presentation.tail >= 2) { ofx.clear(); pluginFx.clear(); fx.clear(); }
           if (ofx.active) {
-            wiring.tick();
+            if (!presentation.ended) wiring.tick();
             if (opts.playbackTime) advanceEffectClock(ofx, gdt); else ofx.update(gdt);
           }
         }
-        if (beamQ.length) pumpBeams(dt);
       } else if (mode === 'prep') {
         for (const [key, pd] of pending) {
           if (now - pd.t > DROP_PENDING_MS) {
@@ -2122,8 +2087,6 @@ export async function createFieldView(host, options = {}) {
     const target = targetCamera(camKind, camOpts);
     if (camTo) camTo = target; else cam = target;
     tiles.project(cam, true);
-    // Resizing clears both canvases even when the replay ticker is stopped.
-    if (renderPaused) { frameBody(lastNow); app.render(); }
   }
   let ro = null;
   if (typeof ResizeObserver === 'function') {
@@ -2174,14 +2137,6 @@ export async function createFieldView(host, options = {}) {
   // ---- public API ---------------------------------------------------------------------------------------------
 
   view = {
-    /** Freeze the standalone replay's render ticker alongside its simulation clock. */
-    setPaused(value) {
-      if (destroyed) return false;
-      renderPaused = !!value;
-      if (value) app.ticker.stop();
-      else { lastNow = performance.now(); app.ticker.start(); }
-      return true;
-    },
     setStage,
     /** 设置「显示其他玩家的皮肤」 (docs/SKINS.md): whose pieces are this page's own — the rest lose their skin when
      * that switch is off. ui/fieldHost.js calls it with `store.get().me.playerId` on mount. */
@@ -2193,6 +2148,7 @@ export async function createFieldView(host, options = {}) {
     /** Enemy preview pen: a list in m.private.nextEnemies shape, or null to empty it (setPrep does this itself). */
     setPen(list) { if (destroyed) return false; setPenList(Array.isArray(list) ? list : null); return true; },
     enterBattle,
+    finishBattle() { if (!destroyed && mode === 'battle') presentation.finish(); },
     pushSnapshot,
     pushEvents,
     /**
@@ -2298,6 +2254,11 @@ export async function createFieldView(host, options = {}) {
       if (!s || typeof s !== 'object') return;
       const q = settings.quality;
       if (typeof s.damageNumbers === 'boolean') settings.damageNumbers = s.damageNumbers;
+      if ('fpsLimit' in s) {
+        const before = settings.fpsLimit;
+        settings.fpsLimit = applyFrameRate(app.ticker, s.fpsLimit);
+        if (before !== settings.fpsLimit) { slowFor = fastFor = 0; frameMs = renderFrameBudget(settings.fpsLimit); lastNow = performance.now(); }
+      }
       if (typeof s.officialDamageNumbers === 'boolean') settings.officialDamageNumbers = s.officialDamageNumbers;
       if (typeof s.ammoEnergyCount === 'boolean') settings.ammoEnergyCount = s.ammoEnergyCount; // the units read it every frame (ctx.settings)
       // 设置「显示其他玩家的皮肤」 (docs/SKINS.md): the views already up keep the appearance they were built on, so the
@@ -2307,15 +2268,6 @@ export async function createFieldView(host, options = {}) {
         refreshSkins();
       }
       if (s.quality === 'high' || s.quality === 'medium' || s.quality === 'low') settings.quality = s.quality;
-      if ('fpsLimit' in s) {
-        const before = settings.fpsLimit;
-        settings.fpsLimit = applyFrameRate(app.ticker, s.fpsLimit);
-        if (before !== settings.fpsLimit) {
-          slowFor = fastFor = 0;
-          frameMs = renderFrameBudget(settings.fpsLimit);
-          lastNow = performance.now();
-        }
-      }
       if (typeof s.officialFx === 'string' && s.officialFx !== settings.officialFx) { settings.officialFx = s.officialFx; syncOfficialFx(); }
       if (q !== settings.quality) { board3d?.setQuality?.(settings.quality); resize(); }
     },

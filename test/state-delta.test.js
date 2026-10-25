@@ -1,29 +1,35 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { StateSender } from '../server/stateDelta.js';
 import { StateReceiver, diffState, applyStatePatch } from '../shared/stateDelta.js';
 import { Net } from '../public/js/net.js';
 import { startServer } from '../server/index.js';
+import { send } from '../server/net.js';
+import { negotiateStateDelta } from '../server/stateTransport.js';
 import { TestClient } from './helpers/wsClient.js';
 import { rewindToPrep } from '../server/match/rewind.js';
 
 test('delta frames equal full JSON through nested changes, deletions and array length changes; writes own their baseline', () => {
-  const sender = new StateSender(), receiver = new StateReceiver();
+  const receiver = new StateReceiver(), frames = [];
+  const socket = { readyState: 1, bufferedAmount: 0, send: (text) => frames.push(text) };
+  negotiateStateDelta(socket, 1);
   let current = { t: 'm.public', players: [{ id:'a', funds:1, items:['a','b'] }], round:1, padding:'unchanged'.repeat(100) };
   let patches = 0;
   for (let i=0; i<250; i++) {
     current.players[0].funds=i;
     if(i%7===0)current.players[0].items.push(String(i));
     if(i%9===0)delete current.extra;else current.extra={value:i,empty:null};
-    sender.send(current, text=>{
-      const frame=JSON.parse(text);if(frame.patch)patches++;
-      const decoded=receiver.receive(frame).message;
-      assert.deepEqual(decoded,JSON.parse(JSON.stringify(current))); return true;
-    });
+    assert.equal(send(socket, current), true);
+    const frame = JSON.parse(frames.at(-1));
+    if (frame.patch) patches++;
+    assert.deepEqual(receiver.receive(frame).message, JSON.parse(JSON.stringify(current)));
   }
   assert.ok(patches>200);
-  const before=JSON.parse(JSON.stringify(current));sender.send({...current,round:2},()=>false);
-  sender.send(before,text=>{assert.deepEqual(receiver.receive(JSON.parse(text)).message,before);return true;});
+  const before = JSON.parse(JSON.stringify(current));
+  socket.readyState = 3;
+  assert.equal(send(socket, { ...current, round: 2 }), false);
+  socket.readyState = 1;
+  assert.equal(send(socket, before), true);
+  assert.deepEqual(receiver.receive(JSON.parse(frames.at(-1))).message, before);
   const baseline={t:'m.public',nested:{a:1}};
   for(const patch of [[[['__proto__','polluted'],true]],[[['nested','constructor'],{}]],[[['t'],'m.private']]])assert.throws(()=>applyStatePatch(baseline,patch));
   assert.deepEqual(baseline,{t:'m.public',nested:{a:1}});assert.equal({}.polluted,undefined);

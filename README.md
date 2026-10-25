@@ -1,7 +1,7 @@
 # 卫戍协议：盟约 · Stronghold Protocol: Alliance
 
-![扩展版本](https://img.shields.io/badge/version-0.3.1--extended.11-blue)
-![上游基础版本](https://img.shields.io/badge/version-0.3.1-2ea44f)
+![扩展版本](https://img.shields.io/badge/version-0.3.3--extended.1-blue)
+![上游基础版本](https://img.shields.io/badge/version-0.3.3-2ea44f)
 ![许可](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
 
 在浏览器里招募干员、布置阵容，与朋友合作迎敌。本库是《明日方舟》「卫戍协议：盟约」的非商业同人扩展分支，支持独立模拟与默认 **1–4 人同盟模拟**，当前源码可选最多二十人，空位可由 AI 队友补齐。
@@ -12,7 +12,7 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 [下载正式版](https://github.com/zhewang448/Stronghold-Protocol/releases/latest) · [开始运行](#开始运行) · [本库特色](#本库特色) · [和朋友一起玩](#和朋友一起玩) · [更新记录](docs/LOCAL-CHANGELOG.md) · [反馈问题](https://github.com/zhewang448/Stronghold-Protocol/issues)
 
-> 当前版本为 **`v0.3.1-extended.11`**（基础版本 `0.3.1`，上一正式版为 `v0.3.1-extended.10`）。本版统一素材与资源管理、合并重复下载，自动适配安全预载与普通 HTTP 下载，并修复控制台在线状态，保留 Windows 启动器、多人扩容和签名增量更新。正式附件见 Releases，使用与验证边界见[发布说明](docs/RELEASE-CANDIDATE.md)。
+> 当前版本为 **`v0.3.3-extended.1`**，基于上游 `0.3.3`。保留本库大厅、等待室、开局界面、发布更新与 Windows 启动器；接入状态增量同步和本次上游功能更新。历史版本入口与外部大模型 AI 暂不启用。验证记录见[扩展更新记录](docs/LOCAL-CHANGELOG.md)；该分支尚未发布新安装包。
 >
 > 非官方、非商业同人项目，与《明日方舟》官方无隶属或授权关系。游戏素材与数据的权利归原权利人；代码、素材及截图的许可边界见 [NOTICE.md](NOTICE.md)。
 

@@ -44,15 +44,17 @@ describe('0.2.0 补位 — a not-owned operator fights as its stand-in (real ser
       const card = await c.page.evaluate((id) => document.querySelector(`.own-card[data-chess="${id}"]`)?.textContent || '', SILVER);
       assert.ok(card.includes('银灰') && card.includes('Sharp') && card.includes('未持有'), card);
       const stored = await c.page.evaluate(() => JSON.parse(localStorage.getItem('sp.pref.ownership') || 'null'));
-      assert.deepEqual(stored, { v: 1, notOwned: [SILVER] });
+      assert.deepEqual(stored, { v: 2, notOwnedChars: ['char_172_svrash'], notOwned: [SILVER] }, 'stored by operator with the older-build copy (DESIGN §35.23)');
       await c.shot('ownership');
       await c.page.keyboard.press('Escape');
       await c.page.waitForFunction(() => !document.querySelector('.lo'), { timeout: 3000 });
 
       // 2) a solo 标准 match: the briefing's m.private carries the list
-      await c.createSimulation('独立模拟', '标准模拟');
+      // 独立模拟 → 选择模拟协议 (标准 preselected in a fresh browser) → 开始独立模拟 (§35.51: the old lobby's difficulty cards)
+      await c.click('.mode-card', '独立模拟');
+      await c.click('.create-box button', '开始独立模拟');
       await c.waitFor((s) => !!s.room, 'solo room');
-      if (!(await c.st()).phase) await c.click('.rs-foot__right button', '开始模拟', { timeout: 20000 });
+      if (!(await c.st()).phase) await c.click('.room-bar__right button', '开始模拟', { timeout: 20000 });
       await c.waitFor((s) => s.phase === 'INFO_CHECK', 'briefing', 30000);
       const standIns = await c.page.evaluate(() => globalThis.__SP__.store.get().match.private?.standIns ?? null);
       assert.deepEqual(standIns, [SILVER], 'the match received the not-owned list');

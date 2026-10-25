@@ -65,9 +65,11 @@ function viewState(c) {
 async function soloToPrep(c, diff) {
   await c.open();
   await c.enter('煌');
-  await c.createSimulation('独立模拟', diff);
+  await c.click('.mode-card', '独立模拟');
+  await c.click('.diff-card', diff);
+  await c.click('.create-box button', '开始独立模拟');
   await c.waitFor((s) => !!s.room, 'solo room');
-  if (!(await c.st()).phase) await c.click('.rs-foot__right button', '开始模拟', { timeout: 20000 });
+  if (!(await c.st()).phase) await c.click('.room-bar__right button', '开始模拟', { timeout: 20000 });
   await c.waitFor((s) => s.phase === 'INFO_CHECK', 'briefing', 30000);
   await c.click('.brief__foot .btn--primary', '准备就绪');
   await c.waitFor((s) => s.phase === 'BAND_DRAFT', 'band draft', 30000);
@@ -255,11 +257,10 @@ describe('user playtest #2 item 6 — 前往查看 → 返回战场 in combat (r
     try {
       await c.open();
       await c.enter('煌');
-      await c.createSimulation('同盟模拟', '标准模拟');
-      await c.waitFor((s) => !!s.room?.code, 'room created');
+      await c.createCoop();
       await c.click('button', '添加 AI 队友');
       await sleep(500);
-      await c.click('.rs-foot__right button', '开始模拟', { timeout: 20000 });
+      await c.click('.room-bar__right button', '开始模拟', { timeout: 20000 });
       await c.waitFor((s) => s.phase === 'INFO_CHECK', 'briefing', 30000);
       await c.click('.brief__foot .btn--primary', '准备就绪');
       await c.waitFor((s) => s.phase === 'BAND_DRAFT' && s.draft?.turn === s.me || s.phase === 'PREP', 'my band pick', 60000);
@@ -385,14 +386,13 @@ describe('user playtest #2 item 10 — boss-round prep on the boss field (real s
     try {
       await host.open();
       await host.enter('凯尔希');
-      await host.createSimulation('同盟模拟', '险境模拟');
-      const room = (await host.waitFor((s) => !!s.room?.code, 'room created')).room;
+      const room = await host.createCoop('险境模拟');
       await guest.open(`?room=${room.code}`);
       await guest.enter('阿米娅');
       await guest.waitFor((s) => s.room?.code === room.code, 'guest joined');
-      await guest.click('.rs-foot__right button', '准备就绪');
+      await guest.click('.room-bar__right button', '准备就绪');
       await sleep(400);
-      await host.click('.rs-foot__right button', '开始模拟', { timeout: 20000 });
+      await host.click('.room-bar__right button', '开始模拟', { timeout: 20000 });
       for (const c of [host, guest]) await c.waitFor((s) => s.phase === 'INFO_CHECK', 'briefing', 30000);
       for (const c of [host, guest]) await c.click('.brief__foot .btn--primary', '准备就绪');
       // the draft first (a client still in the briefing would count as done without picking: its turn then runs out —

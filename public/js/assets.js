@@ -1,5 +1,3 @@
-import { dataUrl } from '../../shared/cdn.js';
-import { DATA_CDN } from './asset-cdn.js';
 // assets.js — asset manifest (/data/assets.json, docs/ASSETS.md) URL helpers, image cache/preload, and the
 // Spine loader (LRU + refcount + memory budget + timeout + concurrency cap) used by the battlefield renderer. A
 // skeleton is never handed out while its unload is in flight (RefLru; user playtest #3 item 1: invisible models).
@@ -57,11 +55,6 @@ import { cosmetics, createCosmeticLayers, EMPTY_MANIFEST } from './cosmetics.js'
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const str = (v) => (typeof v === 'string' && v ? v : null);
 const get = (o, k) => (isObj(o) && Object.hasOwn(o, k) ? o[k] : undefined);
-const skinFallbacks = new WeakMap();
-export function skinEntry(m, id, skin) {
-  const rec = get(get(m, 'chars'), baseCharId(id));
-  return get(get(rec, 'skins'), skin);
-}
 
 // ---- pure URL helpers (manifest first) ---------------------------------------------------------------------
 
@@ -82,8 +75,6 @@ export function baseCharId(id) {
  * renderer must never draw a broken face because a plugin replaced only the model.
  */
 export function avatarUrl(m, id, opts) {
-  const skinAvatar = skinEntry(m, id, opts?.skin)?.avatar;
-  if (typeof skinAvatar === 'string' && skinAvatar.startsWith('/assets/')) return skinAvatar;
   const s = str(id);
   if (!s) return null;
   const direct = get(get(m, 'chars'), s);
@@ -169,8 +160,7 @@ export const EMPTY_SKINS = Object.freeze({});
 /**
  * The appearances of an operator the manifest holds (docs/SKINS.md, the picker's source): `chars[charId].skins`,
  * written by a cosmetic plugin's overlay — `{ [skinId]: { name, group, avatar, …, spine: { front, back? } } }` — or an
- * empty object. A skin whose record carries a usable Spine model is one the renderer can actually wear
- * (`spineEntry(m, charId, { skin })` resolves it); one without is art only.
+ * empty object. A skin may carry a Spine model or pictures only; missing layers use the operator defaults.
  * @returns {Record<string, any>}
  */
 export function skinsOf(m, charId) {
@@ -178,7 +168,7 @@ export function skinsOf(m, charId) {
   return rec && isObj(rec.skins) ? rec.skins : EMPTY_SKINS;
 }
 
-/** Whether a skin record can be worn: it has a Spine model the client resolves (docs/SKINS.md). */
+/** Whether a skin record names a Spine model (picture-only outfits are wearable too) (docs/SKINS.md). */
 export const skinHasModel = (skin) => !!skin && isObj(skin.spine) && typeof skin.spine.front === 'object' && skin.spine.front !== null && typeof skin.spine.front.skel === 'string';
 
 /** Skill icon by iconId, or by skillId via `skillsById`. Falls back to the empty skill icon. */
@@ -225,24 +215,32 @@ export function subProfIconUrl(m, sub) {
  * `chars[<charId>].skins[<skinId>].spine`. A skin the manifest does not hold (or one of another operator) draws the
  * operator's own model instead: the caller is a renderer that must always end up with something to draw.
  */
+const skinFallbacks = new WeakMap();
 export function spineEntry(m, id, opts) {
   const s = str(id);
   if (!s) return null;
   const ch = get(get(m, 'chars'), s) || get(get(m, 'chars'), baseCharId(s));
   if (ch) {
-    const sp = (opts?.back && isObj(ch.spine?.back)) ? ch.spine.back : ch.spine?.front;
-    const outfit = skinEntry(m, id, opts?.skin);
-    const selected = opts?.back ? outfit?.spine?.back || outfit?.spine?.front : outfit?.spine?.front;
-    if (validSpine(selected)) {
-      let entries = skinFallbacks.get(selected);
-      if (!entries) { entries = new Map(); skinFallbacks.set(selected, entries); }
-      if (!entries.has(sp)) {
-        entries.set(sp, { ...selected, fallback: validSpine(sp) ? sp : null });
+    const wanted = opts && str(opts.skin) ? String(opts.skin) : null;
+    if (wanted) {
+      const skin = get(get(ch, 'skins'), wanted);
+      // B6 / §35.4 [ASSUMED]: an unfinished spine map with no Front uses the complete default body.
+      if (skinHasModel(skin)) {
+        const sp = (opts && opts.back && isObj(skin.spine.back)) ? skin.spine.back : skin.spine.front;
+        if (validSpine(sp)) {
+          const fallback = opts?.back && validSpine(ch.spine?.back) ? ch.spine.back : ch.spine?.front;
+          let entries = skinFallbacks.get(sp);
+          if (!entries) { entries = new Map(); skinFallbacks.set(sp, entries); }
+          if (!entries.has(fallback)) entries.set(fallback, { ...sp, fallback: validSpine(fallback) ? fallback : null });
+          return entries.get(fallback);
+        }
       }
-      return entries.get(sp);
     }
-    return validSpine(sp) ? sp : null;
-
+    // no such skin (or no skin asked for): the operator's own model
+    if (isObj(ch.spine)) {
+      const sp = (opts && opts.back && isObj(ch.spine.back)) ? ch.spine.back : ch.spine.front;
+      return validSpine(sp) ? sp : null;
+    }
   }
   const tk = get(get(m, 'tokens'), s);
   if (tk) {
@@ -287,16 +285,16 @@ export function localSpineEntry(sl, local, web) {
   return entry;
 }
 
-/** Whether an operator/token/enemy has a Back model. */
-export function hasBackSpine(m, id, opts) {
-  const skinId = typeof opts === 'string' ? opts : opts?.skin;
-  const outfit = skinEntry(m, id, skinId);
-  if (validSpine(outfit?.spine?.front)) return validSpine(outfit.spine.back);
-
+/**
+ * Whether an operator/token/enemy has a Back model. `skinId` (docs/SKINS.md) asks about one of the operator's
+ * appearances — a skin may ship its own Front/Back pair, or none at all (then the operator's own Back decides).
+ */
+export function hasBackSpine(m, id, skinId) {
+  if (isObj(skinId)) skinId = skinId.skin;
   const ch = get(get(m, 'chars'), str(id) || '') || get(get(m, 'chars'), baseCharId(id) || '');
   if (!ch) return false;
   const skin = str(skinId) ? get(get(ch, 'skins'), String(skinId)) : null;
-  const src = (skin && isObj(skin.spine)) ? skin.spine : ch.spine;
+  const src = skinHasModel(skin) ? skin.spine : ch.spine;
   return !!(isObj(src) && validSpine(src.back));
 }
 
@@ -305,7 +303,6 @@ export function validSpine(sp) {
 }
 
 /** Best 2D picture for a unit asset id (operator avatar, token avatar, enemy icon, item icon); `opts` reaches avatarUrl. */
-
 export function unitPictureUrl(m, id, opts) {
   return avatarUrl(m, id, opts) || tokenAvatarUrl(m, id) || enemyIconUrl(m, id) || itemIconUrl(m, id) || null;
 }
@@ -830,8 +827,8 @@ const transientFetch = (err) => {
 export function createAssets(options) {
   const opts = options && typeof options === 'object' ? options : {};
   const layers = opts.cosmetics && typeof opts.cosmetics.apply === 'function' ? opts.cosmetics : null;
-  const url = opts.url || dataUrl('/data/assets.json', DATA_CDN);
-  const localUrl = opts.localUrl || dataUrl('/data/local-assets.json', DATA_CDN);
+  const url = opts.url || '/data/assets.json';
+  const localUrl = opts.localUrl || '/data/local-assets.json';
   let localPromise = isObj(opts.localManifest) ? Promise.resolve(opts.localManifest) : null;
   let localManifest = isObj(opts.localManifest) ? opts.localManifest : null;
   const doFetch = opts.fetch || ((...a) => globalThis.fetch(...a));
@@ -1028,8 +1025,7 @@ export function createAssets(options) {
     ui: (name) => uiUrl(m(), name),
     picture: (id, o) => unitPictureUrl(m(), id, o),
     spineEntry: (id, o) => spineEntry(m(), id, localManifest ? { ...o, local: localManifest } : o),
-    hasBack: (id, o) => hasBackSpine(m(), id, o),
-
+    hasBack: (id, skinId) => hasBackSpine(m(), id, skinId),
     audio: {
       bgm: (kind) => bgmEntry(m(), kind),
       sfx: (group, key) => sfxUrl(m(), group, key),

@@ -11,6 +11,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 class FastOpeningMatch extends Match {
   constructor(opts) { super({ ...opts, timerScale: 0 }); }
   enterPrep() { super.enterPrep(); this.setDeadline(0); }
+  bandTurnMs() { return 60000; } // Real sockets need a nonzero manual selection window.
 }
 
 test('expanded capacity is optional, bounded and compatible with custom room codes', () => {
@@ -78,7 +79,8 @@ for (const capacity of [8, 20]) test(`${capacity} socket players complete the re
       for (const group of m.draft.groups) {
         const id = group.order[group.idx];
         if (!id || group.done) continue;
-        assert.equal((await byId.get(id).request({ t: 'g.band', bandId: m.defaultBand(id), draftId: m.draft.id, groupId: group.id })).t, 'ok');
+        const response = await byId.get(id).request({ t: 'g.band', bandId: m.defaultBand(id), draftId: m.draft.id, groupId: group.id });
+        assert.equal(response.t, 'ok', JSON.stringify({ response, phase: m.phase, draftId: m.draft?.id, group: group.id, turn: id }));
       }
     } else if (m.phase === 'SP_DRAFT') {
       for (const group of m.sp.groups) {

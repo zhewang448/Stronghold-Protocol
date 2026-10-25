@@ -74,12 +74,13 @@ export function installTestTrace(m, opts) {
     }
   };
   const options = {};
-  for (const key of ['roomCode', 'mode', 'difficulty', 'modeId', 'seats', 'spectators', 'seed', 'matchNo', 'hostId', 'aiPicksLast', 'cs', 'vs', 'requireCs', 'kitted', 'rules', 'offers']) {
+  for (const key of ['roomCode', 'mode', 'difficulty', 'modeId', 'seats', 'spectators', 'seed', 'matchNo', 'hostId', 'aiPicksLast', 'soloUnlimited', 'cs', 'vs', 'requireCs', 'kitted', 'rules', 'offers', 'version']) {
     if (opts[key] !== undefined) options[key] = clone(opts[key]);
   }
   Object.assign(options, {
     test: true, seed: m.seed, timerScale: m.timerScale, combatSpeed: m.gameSpeed,
     clientCombat: m.clientCombat, verify: m.verifyMode, battleContent: m.battleContent,
+    botStrategy: m.bot.id,
     botRehearsal: m.botRehearsal, botRehearsalDelegate: m.botRehearsalDelegate,
     botRehearsalDelegateMs: m.botRehearsalDelegateMs,
   });

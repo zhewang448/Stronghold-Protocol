@@ -2,189 +2,14 @@
 
 Part of [DESIGN.md](../DESIGN.md) (the index; section numbers are global).
 
-下载收敛（2026-10-24）：移除独立「下载完整素材」按钮。资源面板只有一个主下载按钮；支持安全缓存的浏览器使用分级预载，普通 HTTP 或缺少缓存能力时自动使用 HTTP 缓存兼容下载。兼容模式不显示范围选项，下载全部素材、关闭下载窗口暂停；本地导入继续独立，缓存 ZIP 按能力禁用。
-
-资源统一入口（2026-10-24）：首页仅显示「素材与资源」，包含预载范围、完整素材下载、本地素材包 / 文件夹导入和缓存 ZIP 导入 / 导出。普通 HTTP 仍可进入并下载，预载 / 导入说明能力限制；完整素材操作使用独立常驻对话框，不叠加父面板，导入不启动下载。
-
-本机控制台房间概览与玩家详情的 connected 以房间席位的当前连接为准，按玩家 ID 合并对局 LP 等数据；断线、重连及离开不等待对局或独立 match host 的状态同步。AI 显示在线，淘汰不等于离线。
-
-### 本机控制台栏目切换（2026-10-24）
-
-交互反馈：设置保存成功以薄荷色及 120ms 淡入确认，失败保持红色文字与草稿；手动打开房间、玩家详情及折叠区时内容 140ms 淡入，展开箭头旋转，轮询不重播。记录刷新显示忙碌、完成和重试状态，原表格保持可见，仅新增记录 180ms 轻亮；重复请求合并。操作提示复用一条，120ms 淡入、100ms 淡出，新提示取消旧退出动画。减少动态效果时统一缩短为 70ms 并去掉位移与箭头旋转。
-
-栏目实际改变时，新面板从 86% 不透明度、向下 4px 位置在 140ms 内缓出至原位；标签颜色与边框 100ms 过渡。重复点击当前标签不重播，连续切换取消前一动画，页面始终立即可交互。减少动态效果模式取消位移，仅保留 70ms 的轻微透明度与标签颜色反馈。
-
-对局记录也保留已加载页面，切回不自动重建；「刷新」与删除操作重新获取数据时保留筛选及旧内容。列表和汇总并行读取，内容未变化不替换已有节点，过期汇总响应不得覆盖较新的筛选结果。
-
-顶栏选择立即更新目标面板，首次加载显示状态；异步响应不得改变当前选择。设置栏目初始化后保留表单与草稿，保存和撤销操作继续显式重读。独立设置接口并行请求，同一栏目的在途加载复用。该变更不调整战斗、协议或战绩存储。
-
-### 本机个人数据备份与域名迁移（2026-10-19）
-
-2026-10-24 入口调整：首页「找回数据」「导出 / 导入个人数据」集中在开始按钮正下方，
-前者薄荷色强调，后者同组次要操作；从右上角移除重复入口。小横屏放宽登录区，按钮至少 44px 高，
-文字可换行、不被遮挡；桌面、小横屏、大字号及 Esc 返回焦点均需验证。大厅入口不变。
-
-2026-10-24 扩展：本机控制台可维护正式 origin 与最多 12 个旧 origin（名称、启用、顺序、
-normal/notice/smart/redirect 模式），配置持久化于忽略的 `local/personal-data.json`。
-最新体验补充：找回面板自动通过单个顶层辅助窗口依次汇总所有启用旧站摘要，不要求逐站点击或再次授权。
-浏览器拦截时只需一次「查找全部旧站」；每站 10 秒超时继续后续站点，失败与无数据区分。
-双方精确 origin/窗口/nonce 校验；旧站还验证正式站及自身启用配置，完整快照只在选择该存档后读取。
-前端按实际 `location.origin` 决定旧站展示；智能跳转对读取失败保留提示，专用迁移页不跳转。
-首页/大厅新增「找回数据」，正式站首次访问提示且可跳过。旧站通过已配置顶层辅助窗口返回摘要，
-选择一个来源后传完整快照，预览确认后恢复。最近进入时间仅真实进入游戏更新，旧数据缺失显示未记录。
-恢复前先写本机 IndexedDB 完整备份；找回弹窗可撤销最近恢复并精确还原个人键及媒体。
-网络错误不代表无存档。细节与测试见 [域名迁移](../DOMAIN-RECOVERY.md)。
-
-2026-10-24 简化：旧站主动点击「迁移存档并前往新站」即授权传输本机完整快照，
-同步打开正式站窗口，经精确来源、窗口和随机 nonce 握手直接进入确认预览，省去旧站重复检查。
-新站仅接受配置中的启用旧 origin，确认前不写入；原站保留、自动备份和撤销不变。
-弹窗阻断和传输失败显示重试提示；URL 不包含快照，原手动多站选择流程继续保留。
-
-大厅「统计数据」下方的「导出 / 导入个人数据」复用同一 HubTile、根字号和屏幕缩放；
-标题页也保留入口。公共弹窗沿用焦点、Esc、滚动及关闭后返回入口的规则。
-旧站网址可由部署机器的忽略配置 `local/personal-data.json` 中的 `migrationSource` 预填，
-通过只读、no-store 的 `/personal-data-config.json` 提供；仅发送校验后的该字段。配置不存在则留空，
-不自动发起迁移、不覆盖用户已输入的网址，不把具体实例地址写入源码。
-恢复码是带版本和 CRC32 损坏校验的完整快照（支持 gzip，非加密、非登录凭证），可以复制或保存为
-`.spdata` 文件。范围包括本机账号标签/头像、昵称、战绩及由战绩推导的成就/奖杯、全部个人偏好、
-干员调配/持有/自选编队、皮肤、盟约预选、语言/字号/屏幕边距、插件个人配置和 IndexedDB 中的背景/音乐。
-不包含素材缓存、插件授权、服务器管理密钥、重连令牌和旧服务器房间记录；不把本机账号描述为云端账号。
-
-导入先校验格式/版本/损坏/体积并显示摘要，用户确认后将战绩按既有记录 ID 去重合并，
-覆盖备份中的同名配置，保留其他配置。拒绝更新版本战绩，写入失败回滚本次配置与媒体；
-恢复成功须刷新页面，成功后关闭弹窗也刷新，避免旧内存配置覆盖恢复结果。处于同盟中时拒绝恢复。
-
-恢复弹窗另提供本机「定期提醒导出个人数据」设置（每个 origin 单独保存，默认开启），
-首次使用满 7 天或在已识别的 Cloudflare 临时网址上有本地数据时，在 Hub 的个人数据入口附近显示轻提示；
-复制恢复码或点击保存恢复码文件后，7 天内不再提醒；可延后一天或关闭。提醒不在游戏中强打断，
-不读取也不上传数据，仅针对当前 origin 的本地配置；临时网址的恢复码仍须玩家自行妥善保管。
-
-旧域名仍可访问且已部署此功能时，可输入完整旧网址，在同一浏览器打开旧站窗口。
-旧站明确显示目标 origin，用户允许后才发送；新站核对消息窗口、精确 origin 和一次性随机 nonce，
-解码后仍显示摘要并等待确认。数据仅通过 postMessage 定向发送，不写入 URL 或服务器。
-弹出窗口被拦截、取消和 3 分钟超时均有反馈并移除监听；不自动信任第三方消息。
-旧站只做跳转、已停用或没有迁移功能时不能直接读取其 localStorage；须预先备份或让旧站部署支持版本。
-恢复码包含隐私、是静态快照，较大背景/音乐会显著增加长度，提供文件方式保留完整数据。
-
-本库 2026-10-16：生成的素材预载索引 `resource-manifest` 与组队海报目录 `seat-art` 仅用于展示，
-与本机素材清单一样排除在玩法内容指纹 `cs` 之外；增删这些资源不应改变玩法身份。
-
-本库控制台（维护者要求，2026-10-16）：聊天管理恢复本房间主机消息输入和发送，标记「主机消息」，
-不与全站公告混用。轮询保留草稿，失败保留文本并可重试，Enter 发送避开输入法合成，Shift+Enter 换行。
-设置页依次为对局设置（休整时长、联防叠层、局内统计）、交流管理（屏蔽词）、记录与恢复
-（回放、重启恢复）、维护与扩展（版本更新、插件）、数据清理。桌面左侧分类导航，窄屏顶部导航；
-各项独立保存，时长预览默认折叠，危险清理置底。屏蔽词每行一条，可保存和撤销修改。
-交流管理增加房间文字聊天开关（默认开）、单人发言间隔（默认 1 秒，0.5–10 秒）和历史保留条数
-（默认 50，10–50）；主机消息不受玩家发言开关限制。局内统计增加实时伤害开关（默认开），关闭仅隐藏
-进行中回合；结算及历史记录继续保存。排行实时更新保留原回合/玩家选择节点和正在打开的原生选单。
-
-本库 2026-10-16：组队海报提供常显更换按钮，搜索干员后选择服装；独立保存并同步队友，不改战斗外观。
-手机同盟选择右栏安全居中，溢出从顶部排起；高度 ≤500px 隐藏创建插画，密钥框不被顶栏遮挡。
-
-本库标点（2026-10-16）：棋盘上右键点击干员与空地一致，发送当前选中的标点，不打开干员详情；
-左键查看详情与手机长按保留。整备区右键、敌人预览栏和观战席沿用原查看规则。
-
-本库 2026-10-16（维护者要求）：局内左下角「每回合统计」（位于交流按钮后）为所有玩家（含淘汰者）与观战者提供
-非模态统计面板，复用主机控制台图表，支持 LP、剩余金币、累计花费、累计/本回合伤害、商店等级、
-本回合收入/支出及可叠层盟约的层数；可切换表格，第一回合结算前显示等待记录。
-同一面板内切换「每回合曲线 / 干员伤害排行」。排行复用控制台实现，按回合与玩家筛选、
-默认前 10 并可展开全部，显示干员/玩家、伤害、伤害条、击杀和占本人伤害比例；切换分页保留选择。
-曲线与排行在实时刷新时保留筛选控件节点及焦点，指标选项变化在失焦后同步，选择栏不因刷新收起。
-2026-10-19 手机适配：宽度 ≤1000px 或高度 ≤600px 的主触屏采用紧凑 rem 间距、32px 关闭按钮和
-30px 操作按钮，原生选择框保留 16px 字体；标题、标签和关闭入口不随正文滚走。曲线按正文实际宽度
-重画而非整体缩放 SVG，坐标文字至少 12px，横轴刻度随可用宽度减少并保留首末回合；所有数据点仍保留。
-小屏使用完整玩家图例与点按数值提示，省去重复末端姓名，触屏松手后提示仍可阅读。排行/表格保留
-数值，正文纵向滚动、列过多时内部横向滚动。旋转与文字大小变化重排，筛选与焦点继续保留。
-普通桌面及控制台保持原 720×260 SVG 和字号/布局规则；不修改全局 rem、战场和服务器记录。
-主机设置 `roundCharts` 默认开启，保存后全房间立即生效并持久化；关闭时隐藏入口、关闭已打开面板，
-不停止历史记录。两处图表的盟约选项均排除数据标记 `noStack` 的盟约（含旧记录）；控制台的这类
-盟约保留人数/档位信息，省略层数及加层/设层输入。
-
-扩容实验分支 2026-10-22：局内 / 结算统计与控制台统一使用 `ui/playerSeries.js` 的二十席配色，按真实座位固定，
-曲线、图例、表格标识和伤害条一致，排序、淘汰与切组不改变颜色。分组采用公开的固定卡池分组；旧战绩按完整
-座位名单和既有容量分组表补出分组，缺失 / 重复座位使用稳定名单顺序补位，不随当前排行重新配色。
-多组局默认本组，观战者和控制台默认首组，可切换全部；曲线和排行均有组筛选，局内两个页签共用选择。
-图例是可用键盘与触屏操作的按钮：点击加粗并突出该玩家、淡化其他曲线，再点恢复；突出时数值提示只显示该玩家。
-实时刷新保留突出状态和图例按钮焦点，切组清除不适用的突出 / 玩家筛选。触屏图例按钮至少 44px；手机仍沿用横屏。
-全员曲线超过八条时省略末端姓名，完整姓名、组别和座位保留在图例，避免二十个尾标挤在一起。
-同轮复查：`AvatarFrame` 与 `PlayerAvatar` 原先仍按四席循环色相，现调用同一 `playerSeatColor`，
-房间 / 局内头像底色、字形和普通边框与统计玩家色一致；自身、就绪、观战选中和淘汰 / 离线的语义标识继续保留。
-
-回合详情交互修复（2026-10-22，维护者确认）：悬停预览当前筛选下按数值排序的前四名玩家，点击或触屏点按
-固定该回合的完整列表。详情为固定定位浮层，不撑开图表滚动容器；列表限高独立滚动，标题和关闭入口保留。
-点击其他回合更新固定详情，鼠标进入详情 / 操作滚动条不关闭；点击外部、关闭按钮或 Esc 收起。
-Esc 先关闭详情，再次才关闭统计面板；聚焦曲线后 Enter / 空格固定，方向键切回合。
-实时刷新保留所选回合、详情节点、内部滚动位置和关闭按钮焦点；回档移除所选回合时收起详情，面板卸载清理监听。
-局内、结算及控制台共用 `ui/roundChartTip.js`；手机继续横屏。统计正文预留滚动条宽度，避免布局宽度反馈。
-
-监控墙换页修复（2026-10-22）：替换 iframe 时即使外层尺寸不变，也立即重算缩放，加载后再校准；尺寸监听
-继续处理窗口变化与全屏。内部始终保持 1280×720 视口，按宽高较小比例完整容纳并居中，比例不同时留边，
-避免画面被裁切或向左上偏移。每页仍只加载四席，切页卸载旧画面，墙模式保持只读。
-
-Custom alliance keys (§29.15): the co-op lobby's create section has an optional labelled input. Empty means random;
-otherwise require four ASCII letters or digits, uppercase the input, and preserve invalid characters / excess length
-so an unintended key is never silently created. Show the format hint, disable creation for invalid input, and report
-occupied keys through the existing localized error toast. The solo create flow omits this field and the custom code.
-The key field and create card enter together as one animated section, using the existing alliance entrance timing
-and reduced-motion preference.
-The alliance selector and hub dialogs reuse the shared modal focus lifecycle: initial focus, Tab containment,
-nested-dialog priority and opener restoration. IME composition does not trigger Escape or alliance-key submission.
-The S.W.E.E.P. report stays mounted during its 300 ms exit (immediate with reduced motion), then restores focus.
-
-Stage plate layout (local fix, 2026-10-19): `match-popups.css` owns round / joint-defense plate sizing. The pair of
-joint-defense faces uses the entire art frame, with equal face sizes and a centred combined bounding box.
-Legacy drawn boss plates in `game.css` scope their `fa__*` / `core__*` rules to `.bplate`; official sprite plates
-(`.bpl`, `boss-plates.css`) keep their LP node, rings, connecting lines and title aligned, and warning sprites uncut.
-Both motion modes and the joint-defense missing-art fallback preserve this layout.
-
-Local optional cosmetic extension (owner request, 2026-10-10): roster and DIY operator details select outfits
-by charId, persisted separately from gameplay loadouts. A roster toolbar action randomizes all supported operators'
-installed non-default outfits (including DIY); operators without an available outfit use the default.
-Views resolve the owner's `m.public.players[].skins`
-using the upstream cosmetic metadata path (never gameplay state). Effective stand-ins use their operator body; bots and summons keep their original appearance. Missing or
-failed models use the default fallback. The shared picker also accepts cosmetic-plugin outfits and the otherSkins display preference. Deployment zoom remains opt-in in this extension (deploymentZoom); legacy prepDeployFold is migrated only when that field is absent. Settings offers manual static-media preloading, progress, cancellation
-and failure counts. Contracts and sources: [SKINS.md](../SKINS.md).
-Shop / reward cards and detail portraits remain the base half-body art; installed outfits currently include avatars
-and battle Spine models only. This affects presentation only, never purchases or simulation inputs.
-
 ## 9. Client rendering contract (public/js/render)
 
-Local host developer previews (owner request, 2026-10-18): ordinary console tool links reuse one preview per
-`/dev/` pathname for the lifetime of the console document. Reopening the current scene focuses it without resetting
-its state; selecting a different scene navigates the existing Game Mock preview. Different tools remain independent.
-Closed previews can reopen; changing console tabs preserves references, while reloading the console starts a new
-set. Modified clicks and middle clicks keep the browser's explicit new-tab behavior. New previews have no opener
-access; blocked or inaccessible previews fall back to the ordinary isolated link. See [LOCAL-DEV.md](../LOCAL-DEV.md).
-
-Local host service controls (owner request, 2026-10-14): the console toolbar offers restart and shutdown with
-explicit confirmation that all matches and connections end. Only the authenticated localhost console accepts
-these actions. Update and service operations exclude each other; duplicate requests cannot spawn another server.
-Direct starts use a detached helper that waits for process exit and preserves game/admin ports and host. The
-bundled Windows task runner recognizes exit code 75 as an intentional shutdown. External supervisors own restart;
-shutdown is disabled unless configured to honor that exit code. Restart refreshes the console with its new token;
-shutdown leaves a persistent closed status. See [DEPLOY.md](../DEPLOY.md) and [LOCAL-DEV.md](../LOCAL-DEV.md).
-
-Local host live view (owner request, 2026-10-14): `/live` reuses the ordinary game UI with a read-only default
-and explicit control toggle. The console reads the selected player's public/private views, runs display-only battle
-replicas and sends allowlisted ordinary player intents through the existing match handler. It never claims a session,
-changes player watch preferences or submits battle results. Changed player state rejects stale intents. See
-[LOCAL-DEV.md](../LOCAL-DEV.md) §5 and [LOCAL-CHANGELOG.md](../LOCAL-CHANGELOG.md).
-
-Local host replay (owner request, 2026-10-14): completed Final Assault / Hidden Core recordings,
-including existing files, may be attempted after confirmation even across simulator versions. They lack live
-shared-pool and team-LP updates, so only the selected field is simulated, bounded by its recorded game duration.
-Always label these attempts as approximate; synthetic and unfinished results stay view-only. See
-[LOCAL-DEV.md](../LOCAL-DEV.md) §5 and [LOCAL-CHANGELOG.md](../LOCAL-CHANGELOG.md).
 **Operator skins (§34.23, [SKINS.md](../SKINS.md)).** [ASSUMED] Retain received skin IDs separately from displayed
 skins so the other-player switch restores loaded units when re-enabled, including boss prep partners. Any-phase
 `room.skins` refreshes owner/private and existing scout views; public seat choices update current battle rendering
 without restarting playback or changing the sim / BattleSpec. Resolve every surface's skin from the effective
 operator body (official `activity_table` `charShopChessDatas.backupCharId` for stand-ins, the pick for DIY slots).
 Outfits following that body and live refresh timing are cosmetic UI assumptions; gameplay and golden results stay unchanged.
-Installed skins reuse available local `seat-art` posters in the picker and enlarged preview. Asset generation resolves
-those optional files to URL strings; missing posters retain the upstream default-picture fallback.
-Stored skin selections are filtered per entry using the wire's ID validators before synchronization. Malformed pairs
-cannot reject valid choices for other operators; well-formed unavailable plugin choices remain stored.
 
 **Studio test console (0.3.1).**
 
@@ -205,7 +30,6 @@ caller's simulation clock, allowing exact pauses/steps in the console. Ordinary 
 wall-clock/interpolation timing. Official effects still follow the snapshot clock; the console observes only its
 own renderer's loaded instances/procedural calls. These diagnostic counts depend on assets and rendering, never
 participate in simulation results, and are distinct from damage/heal totals. Match test commands are not part of this page.
-
 
 Bond-layer audio (#482): live own preparation gains arrive as `m.layer`; the displayed battle's `layer` tuples
 play the same `bondUp` cue. A gain of several layers plays once, including gains to inactive bonds. The official
@@ -250,13 +74,44 @@ view.setPieceDir(uid, dir)                   // show a prep piece facing UP|RIGH
 view.resize() ; view.destroy()
 ```
 
+`SnapshotBuffer` uses only the `teleport` fx with `kind: 'parasite'` and a unit id as an attachment position cut,
+including moves shorter than the usual 2.5-tile snap threshold (假想敌：淤困). The cut survives cosmetic event
+consumption and prevents the new position from being extrapolated as walking until the next snapshot confirms
+movement. Other teleport effects retain the normal distance-threshold interpolation rule.
+
 `createFieldView(host, { …, signal })` takes an `AbortSignal` (0.2.2, GitHub PR #302 by @siruimei07): an abort during the build — the Pixi load, the manifest, the fonts, the board art and the 3D board waits — destroys what the attempt made (the canvas, the ticker, the listeners, the observers) and rejects, a failure while it is built releases the same partial resources, and `view.destroy()` is idempotent. `ui/fieldHost.js mountFieldView(host, { signal })` aborts that signal when the engine fails, times out (12 s) or the owner unmounts, disposes a view a factory returns after that, and never clears the other children of `host` — the simplified view and a newer mount share it.
 
 Asset URLs (0.2.6, host bandwidth layer 1): the client takes every art, model and audio URL from `data/assets.json` and `data/local-assets.json` and builds none itself, so the content-hash segment the server puts in front (`/assets/~<hash>/…`, docs/ASSETS.md "The committed manifest and the served manifests") needs nothing on this side: `validSpine` still sees `.skel`, pixi-spine finds the atlas and its pages under the same segment (a model shares one hash), audio is fetched as `/media/~<hash>/…`. The two URLs the client derives from another file's — the 3D board's `tiles.json` beside the atlas and the token death sound beside `charDie` — are served `no-cache` (the board) or drop the segment (`shared/assetPaths.js unhashedUrl`, the sound).
 
-Enemy preview pen (`render/pen.js`, `render/app/view.js`; research 09 §2): in prep the next round's enemies (`m.private.nextEnemies`; a scouted teammate's from their `m.field`) idle in the pen, rows 14–18 × cols 7–13, no bars, facing left. The pen shows with the prep camera — the own board, its shop-folded framing (the deploy fold included), a scouted teammate's board (their pen), back from the pen view (返回战场) — and with the pen camera (🔍▶▶, `setCamera('pen')`): the 3D board builds the pen block (`boardArea` → `AREAS.normal`: rows 13–18 × cols 6–14, the pen's two red gates (15, 7) / (18, 7) with it), the 2D board draws its rows (`bandFor` / `fieldRows` 6–18: the same pen in both, only the lit rect moves) and its figures show (`showsPen` / `penShown`; `view.stats().penHidden`). At the official prep framing its front rows stand at the top right of the view, beyond the board behind the upper gate, as in the official 休整期 (research 09 §2.1; the maintainer's recording, decision of 2026-10-15), so 🔍▶▶ pans to what is already in view. The battle, 联防, boss and hidden cameras never show it, nor does the Final Assault / Hidden Core prep (its frame ends far below the pen; the round's leader stands on the boss field instead, `leaderShown`). A camera flight keeps both ends' areas and rows and shows the pen when either end does (`restView` / `flightView`), except a flight from the prep camera into a battle camera: the pen goes with the battle start (`enterBattle` also empties its figures) and comes back as the next prep's flight begins. Superseded: user playtest #2 item 6 (2026-09-29) kept the pen to the pen camera ("the battlefield with the waiting enemies above it looked wrong — after 返回战场 and in every battle"); the maintainer's decision of 2026-10-15 reversed that for the prep camera, battles stay as they were (DESIGN §32.14.30). The DOM fallback (simplified view) still shows its pen only behind 🔍▶▶.
+Enemy preview pen (`render/pen.js`, `render/app/view.js`; research 09 §2): in prep the next round's enemies (`m.private.nextEnemies`; a scouted teammate's from their `m.field`) idle in the pen, rows 14–18 × cols 7–13, no bars, facing left. The pen shows with the prep camera — the own board, its shop-folded framing (the deploy fold included), a scouted teammate's board (their pen), back from the pen view (返回战场) — and with the pen camera (🔍▶▶, `setCamera('pen')`): the 3D board builds the pen block (`boardArea` → `AREAS.normal`: rows 13–18 × cols 6–14, the pen's two red gates (15, 7) / (18, 7) also present), the 2D board draws its rows (`bandFor` / `fieldRows` 6–18: the same pen in both, only the lit rect moves) and its figures show (`showsPen` / `penShown`; `view.stats().penHidden`). At the official prep framing its front rows stand at the top right of the view, beyond the board behind the upper gate, as in the official 休整期 (research 09 §2.1; the maintainer's recording, decision of 2026-10-15), so 🔍▶▶ pans to what is already in view. The battle, 联防, boss and hidden cameras never show it, nor does the Final Assault / Hidden Core prep (its frame ends far below the pen; the round's leader stands on the boss field instead, `leaderShown`). A camera flight keeps both ends' areas and rows and shows the pen when either end does (`restView` / `flightView`), except a flight from the prep camera into a battle camera: the pen goes with the battle start (`enterBattle` also empties its figures) and comes back as the next prep's flight begins. Superseded: user playtest #2 item 6 (2026-09-29) kept the pen to the pen camera ("the battlefield with the waiting enemies above it looked wrong — after 返回战场 and in every battle"); the maintainer's decision of 2026-10-15 reversed that for the prep camera, battles stay as they were (DESIGN §32.14.30). The DOM fallback (simplified view) still shows its pen only behind 🔍▶▶. Gate collection is independent of the pen block and figures: the 3D board keeps S/E gates from the whole grid across ordinary battle cameras (PR #595, §35.69 / §35.110); only `AREAS.boss` limits gates to its own arena. The 2D fallback keeps collecting its wire boxes from drawn rows.
 
-Visuals: oblique perspective board (tilted ~30°, trapezoid tiles), raised highland blocks with side faces, road/floor/forbidden styles per research 07 §7, pulsing red gates, blue objective (3D board: `materials.js gateMaterial` after the client's `Torappu/Particles/Additive` / `AlphaBlend` — 2 · _TintColor · texture on the texture's stored values, alpha clamped; the start box tinted red (1, 0, 0) with alpha 0.134 → 0.229, the objective's additive part blue (0, 0.0897, 1) with 0.16 → 0.097, its alpha-blended part (1, 1, 1, 1), from the client's 2 s clip, `scene.js GATE_TINT` — the clip's keys are cubic segments with flat ends, a smoothstep between the two values (`gatePulse`); before, an untinted texture × a gain tuned by eye left the red box's dashes and glyph white, GitHub PR #571 comments; **[ASSUMED]** which of the clip's two renderers is which box, and white vertex colours), dashed hand pads. Units: Spine (Front/Back rule, feet anchored — flying units hover `FLY_HOVER` 1.3 tiles up, the client's 0.35 in character space, research 12, §25.13.5 — an enemy flyer from the road whatever tile it crosses (GitHub #277) —, shadow sprite on the ground), elite gold outline glow, tier chip, HP bar (green ally / red enemy), SP bar (skill ready glow; while an ammo skill runs it is the magazine instead — a yellow cell per round, emptying from the right, `b.snap ammo`, and the skill draws no standing aura, UnitInfo `ammoSkill`; with 设置「弹药数量」 on, its count `left/magazine` under it, §31.9), 斩业星熊's 我执 pool as a red bar over her drained HP bar (`b.snap neg`), 伺夜's 狼群 count as a row of diamonds under the bars, the lit ones the 狼影 left (`b.snap wolves`; 0.2.2, GitHub PR #303 / #378 / #383), status icons, the element gauge row under the bars — icon + white bar of the remaining 元素值, element-coloured refill during a 爆发冷却 (§18.3, §20.8); enemies drawn × their official prefab factor (enemies.json `modelScale`, §20.4); an enemy's mode — the `form` of a sim fx (`shared/protocol.js fxForm`), or UnitInfo `form` for a view built later through `render/app/info.js renderInfo` — switches clip sets (`render/units.js FORMS`: 掠海漂移体 crawl, 暴鸰 bombed, 转译基底's forms, the 逐火 embers, the leaders' 重生, 守墓石像, the 孤岛风云 prisoners' warning and 解放; closing clips timed from the fx `dur`), a one-off cast (`PROJ[kind].once`) plays once, and a local-only model's web alias is tinted (`ALIAS_TINT`: 灼热 / 炽焰源石虫, §21.14); damage numbers (phys orange-white, arts purple, true white, heal green); projectiles drawn per kind, hit sparks and melee slashes, skill activation bursts and auras (§17.3); death fade for enemies, summons and devices — a knocked-out operator stays on its tile in its held Die pose under a redeploy ring (§18.3); leak flash at the objective. Fallback when Spine missing/failed: avatar in a rarity-coloured diamond with bob/lunge tweens — a failed or timed-out model is loaded again (bounded), and a view re-resolves its model and avatar when the asset manifest arrives late or the tab is shown again (§21.27). 60 fps target with ≤ 120 units (a crowd draws its Spine units through the cached atlas, `render/impostor.js`, each refreshed every k-th frame: the refresh turns follow this frame's update order — `ctx.impostorSlot()`, a counter reset at the start of every frame — so a frame refreshes ⌊n/k⌋ or ⌈n/k⌉ of n units instead of whatever random per-unit phases gave, and a unit not refreshed for 2k frames is refreshed regardless; GitHub PR #334 by @Cloudnyco, issue #327 step 1 — its step 2, a time budget by priority, is not done; a model whose pose cannot change — `SpineActor.poseHeld()`: a knocked-out operator in the held end of its Die clip, a frozen model — is neither re-posed nor redrawn, only its clock runs, until a new clip, a revive, a wind-up, a form's closing clip, a clipping switch or a zoom past the impostor's rescale threshold; an impostor's slot is sized from every clip the unit can play — measured once per skeleton, a few frames after the model loads (`render/spine.js clipBounds`, sampled within a 2.5 ms frame budget; until then the unit is drawn directly); no model shows its setup pose (one frozen before its first update — built while stunned without a stun clip — shows its clip's first frame) —, a clip too large for that box (`render/units.js impostorBox`: mostly a deploy drop from above) is drawn directly while it plays, and the atlas draws every slot clipped to its own rectangle (a scissor rect; every batch flush gets its own vertex buffer, which Apple GPUs need), so no pose is cut and nothing is left in another unit's slot (GitHub #542, §31.6); the redeploy rings draw one shared rasterised label per number, `render/textures.js downLabel`, the same pixels as a Text of their own). Picking (which unit a press / hover / dropped item is on) and the drag target follow one rule, `render/pick.js` — the tile under the pointer (§18.1); the Spine store never hands out a skeleton whose unload is in flight (§17.1).
+Visuals: oblique perspective board (tilted ~30°, trapezoid tiles), raised highland blocks with side faces, road/floor/forbidden styles per research 07 §7, pulsing red gates, blue objective (3D board: `materials.js gateMaterial` after the client's `Torappu/Particles/Additive` / `AlphaBlend` — 2 · _TintColor · texture on the texture's stored values, alpha clamped; the start box tinted red (1, 0, 0) with alpha 0.134 → 0.229, the objective's additive part blue (0, 0.0897, 1) with 0.16 → 0.097, its alpha-blended part (1, 1, 1, 1), from the client's 2 s clip, `scene.js GATE_TINT` — the clip's keys are cubic segments with flat ends, a smoothstep between the two values (`gatePulse`); before, an untinted texture × a gain tuned by eye left the red box's dashes and glyph white, GitHub PR #571 comments; **[ASSUMED]** which of the clip's two renderers is which box, and white vertex colours), dashed hand pads. Units: Spine (Front/Back rule, feet anchored — flying units hover `FLY_HOVER` 1.3 tiles up, the client's 0.35 in character space, research 12, §25.13.5 — an enemy flyer from the road whatever tile it crosses (GitHub #277) —, shadow sprite on the ground), elite gold outline glow, tier chip, HP bar (green ally / red enemy), SP bar (skill ready glow; while an ammo skill runs it is the magazine instead — a yellow cell per round, emptying from the right, `b.snap ammo`, and the skill draws no standing aura, UnitInfo `ammoSkill`; with 设置「弹药数量」 on, its count `left/magazine` under it, §31.9), 斩业星熊's 我执 pool as a red bar over her drained HP bar (`b.snap neg`), 伺夜's 狼群 count as a row of diamonds under the bars, the lit ones the 狼影 left (`b.snap wolves`; 0.2.2, GitHub PR #303 / #378 / #383), 魔王's 「微尘」 as that many sprites of her own `C_Eff_Moire_B` region circling her at 1.15 tiles and 30°/s (the hidden 5★'s own orbit; S2's `outside_radius` widens it to 2 tiles, `b.snap motes`: 3, six while S2 runs, one less for six seconds after a mote touches an operator — a decoration only: the 4★'s collision is a whole-circle check, and the hidden 5★'s ring is not drawn yet), status icons, the element gauge row under the bars — icon + white bar of the remaining 元素值, element-coloured refill during a 爆发冷却 (§18.3, §20.8); enemies drawn × their official prefab factor (enemies.json `modelScale`, §20.4); an enemy's mode — the `form` of a sim fx (`shared/protocol.js fxForm`), or UnitInfo `form` for a view built later through `render/app/info.js renderInfo` — switches clip sets (`render/units.js FORMS`: 掠海漂移体 crawl, 暴鸰 bombed, 转译基底's forms, the 逐火 embers, the leaders' 重生, 守墓石像, the 孤岛风云 prisoners' warning and 解放; closing clips timed from the fx `dur`), a one-off cast (`PROJ[kind].once`) plays once, and a local-only model's web alias is tinted (`ALIAS_TINT`: 灼热 / 炽焰源石虫, §21.14); damage numbers (phys orange-white, arts purple, true white, heal green); projectiles drawn per kind, hit sparks and melee slashes, skill activation bursts and auras (§17.3); death fade for enemies, summons and devices — a knocked-out operator stays on its tile in its held Die pose under a redeploy ring (§18.3); leak flash at the objective. Fallback when Spine missing/failed: avatar in a rarity-coloured diamond with bob/lunge tweens — a failed or timed-out model is loaded again (bounded), and a view re-resolves its model and avatar when the asset manifest arrives late or the tab is shown again (§21.27). 60 fps target with ≤ 120 units (a crowd draws its Spine units through the cached atlas, `render/impostor.js`, each refreshed every k-th frame: the refresh turns follow this frame's update order — `ctx.impostorSlot()`, a counter reset at the start of every frame — so a frame refreshes ⌊n/k⌋ or ⌈n/k⌉ of n units instead of whatever random per-unit phases gave, and a unit not refreshed for 2k frames is refreshed regardless; GitHub PR #334 by @Cloudnyco, issue #327 step 1 — its step 2, a time budget by priority, is not done; a model whose pose cannot change — `SpineActor.poseHeld()`: a knocked-out operator in the held end of its Die clip, a frozen model — is neither re-posed nor redrawn, only its clock runs, until a new clip, a revive, a wind-up, a form's closing clip, a clipping switch or a zoom past the impostor's rescale threshold; an impostor's slot is sized from every clip the unit can play — measured once per skeleton, a few frames after the model loads (`render/spine.js clipBounds`, sampled within a 2.5 ms frame budget; until then the unit is drawn directly); no model shows its setup pose (one frozen before its first update — built while stunned without a stun clip — shows its clip's first frame) —, a clip too large for that box (`render/units.js impostorBox`: mostly a deploy drop from above) is drawn directly while it plays, and the atlas draws every slot clipped to its own rectangle (a scissor rect; every batch flush gets its own vertex buffer, which Apple GPUs need), so no pose is cut and nothing is left in another unit's slot (GitHub #542, §31.6); the redeploy rings draw one shared rasterised label per number, `render/textures.js downLabel`, the same pixels as a Text of their own). Picking (which unit a press / hover / dropped item is on) and the drag target follow one rule, `render/pick.js` — the tile under the pointer (§18.1); the Spine store never hands out a skeleton whose unload is in flight (§17.1).
+
+Enemy skill clips (§35.19, §35.48): a sim ['cast', id, slot] swaps the unit's `skill` role to its slot's clip
+(`anims.skills[slot]`, `UnitView.setSkillSlot`), which the SKILL anim code right after plays. A slot marked `strike` is an
+attack-class skill the sim casts inside one of its attacks (its `before` hook, no skill window: 杰斯顿·威廉姆斯, “碎铳之簧”):
+the 'atk' of that tick plays the slot's clip in place of the attack clip (`UnitView.onCast` within `STRIKE_WINDOW`; the
+wind-up look-ahead `app.js onUpcoming` passes a cast of the attack's tick to `windUp`; `SpineActor.castStrike`), the next
+plain attack its attack clip again. A form's clip set without a `skill` role (锏's second form) keeps the slot clips.
+
+An attack-turn cast (§35.57) instead sends `['cast', id, slot, dur, clip]`, with no accompanying 'atk'. `clip` is the
+official ability's clip length in seconds; `UnitView.onCast` plays `anims.skills[slot]` (else `anims.skill`) once at its
+own speed through `SpineActor.castStrike` / `attack`. When `clip` is 0 the ability names no animation and the model
+plays its attack clip [ASSUMED]. `app/windup.js` / `UnitView.windUpCast` start the clip ahead of the cast so its strike
+frame aligns with the event; rendering consumes that wind-up without restarting it. Subsequent plain attacks keep
+their attack clip.
+
+The pre-game text fit (§35.56): while a strategy status shows, the draft's step name gives way at 大 / 特大 at any
+width, and at heights ≤ 640 px; 小 / 中 retain it in taller windows. The guide button keeps its width. On short screens
+(≤ 520 px tall), the briefing's step name may wrap, its header grows, and the 机变 timing line sits below its title.
+Korean card text wraps between words; Japanese follows strict line breaking. [ASSUMED] font caps and the briefing
+reroll banner's bottom margin follow the measured header / footer geometry (history §35.56).
+
+Picture-only outfits (B6, §35.4): per the maintainer's 2026-10-18 option A, a `skins` record with pictures and no
+Spine is wearable, labelled 「仅更换头像与立绘」. Owner-specific cards / panels / results read that seat's choice;
+missing pictures and the battle model use the effective operator's defaults. #686's visibility switch and
+stand-in / DIY resolution remain in force. [ASSUMED] E2 picture and illustration fields count too; metadata alone
+does not. Official field separation and the exact fallback / live-update contract: [SKINS.md](../SKINS.md).
 
 ### Official battle effects (官方特效; render/vfx, 0.3.0)
 
@@ -437,18 +292,52 @@ history and the open points: DESIGN §32.14.25.
 
 Look & feel: research 06 §11–§12 (near-black green-grey panels, mint `#4ed8af` accents, gold prices, bracket frames, hexagon badges, bond discs, 7-segment countdown). Fonts: Noto Sans SC (Google Fonts with local fallback), Bender/Novecento self-hosted for numerals and Latin micro-labels.
 
-Screens: **Title** (season art backdrop, 开始 → nickname), **Lobby** (独立模拟 / 同盟模拟 → create or join; recent rooms; a 设置 button left of 玩法说明 opens the title screen's settings dialog, GitHub #238; the top bar's S.W.E.E.P. opens the read-only **S.W.E.E.P.报告** — `screens/sweep.js`, a full-screen `Modal`: 盟约报告 / 策略报告 / 敌方资料 after the event's report screen, and the enemy codex whose per-stat letter grades are the official handbook bands, factions.json `handbookLevels` from enemy_handbook_table `levelInfoList`, the enemy's own number beside each), **Room** (4 seats, invite code + copy link, difficulty picker (host), the co-op 「AI 队友最后选择」 switch (host, off by default; read-only for the others), add/remove AI, ready, start; the same 设置 button), **Briefing** (INFO_CHECK: stage, factions, disabled bonds, banned chess, boss silhouette, ready x/4), **Band draft** (the official 请选择策略 band when the pick becomes the player's, co-op, `ui/turnBanner.js`; grid of 40 bands with icon/name/LP/effect; turn order list; skip; 查看禁用盟约与干员 under the order list opens the briefing's bond rows, legend and banned operators again in a read-only dialog — one component, `ui/matchInfo.js`, §21.28), **协议启动！** (BATTLE_CHECK: the official battleReady/* boot screen — the Rhodes Island ship zooming in, a card per doctor with lines into it, 协议启动！ — once its sprites are loaded, else the 协议启动 banner; `ui/protocolBoot.js`), **Game** (Pixi field + DOM HUD: top bar with round/phase capsule (the kill counter reads 已解决 / the round's own enemies: a leak counts, a split child or summon is in neither number, §14; at each phase change the capsule plays a 2–3 s scene of the official hudPanel/trans_* sprites — kettles at 回合开始, the robot meeting the enemy at 作战 / 联防 — none with reduced motion or without the art pack, `ui/hud.js` capsuleFxKind)/LP (live during the own battle, §17.5)/timer/ready, and beside the latency a 观战席 capsule (eye + count, a roster with the host's ✕) while the room has spectators (GitHub #120); bond strip + popups; left team panel with LP/status/emote bubbles, click to watch (a boss round frames the viewer's pair in green, §15); bottom shop bar (level card, 3–5 chess cards — a slot the upgrade just opened is a bare frame until the next refresh, GitHub #332 —, item card, funds, refresh, freeze, collapse; 准备就绪 folds it and cancelling unfolds it, GitHub #138; picking up a piece on the own prep board — 部署干员 / 装备 / reposition, and a legal drop's direction wheel — folds it and zooms to the shop-collapsed prep camera for the interaction's duration, then restores the player's own fold state (the drag never writes it), GitHub #602); detail panel on click/hover (header with bonds, then 特质 — the operator's own effect — right under it, 特性, stats (live: the battle's own numbers / the start-of-battle ones in prep, §18.5), skill, module, equipped items, talents: §17.5); enemy preview drawer (next round enemies with counts, factions; its 本局信息 tab lists the briefing's disabled bonds and banned operators, §21.28); 机变 overlay (the official 悬赏决策 look, the event's video 9:59 – 10:16: the header 「name | description」 over the timing line, the player deciding or 当前轮到你决策 and the countdown at the right — the pick order is no list of its own but a ✓ (picked) / ••• (deciding) on the team panel's portraits, `choiceOverlay.js spMarks`; the official card: a charcoal card in a light frame, framed icon + name, the effect text — data `descRaw` — under it, the taker's round avatar on the top-right corner, a taken card flat grey; two taps — the armed card in a white frame with a ☑ 确认选择 strip, §18.2, §20.7; when a shared draft's pick comes round to the player the official 轮到你选 disc — effectChoose/* sprites, `ui/turnPopup.js` — pops over it for 1.2 s with the 轮到你 sound, none without the art pack or with reduced motion); merge reward overlay (the promotion reward, or a special offer — 凯瑟琳's 定向投放 … — as item / chess cards under its source's label, with the count of offers queued behind it, §21.2); phase banners, and the official round plate at 回合开始 (`ui/matchPopups.js`, the `roundStartDialog` sprites: the robot · 回合 NN · 获得 +N, the income as m.private.funds rose since the phase before; a watcher — eliminated or a spectator seat — gets 观战中 under it and no 获得, GitHub #236; the 剩余 N 回合 strip from three rounds before the final assault; inside 回合开始's 2 s) and, for 联防, the same plate in orange with the official 联防 faces (`hudPanel/trans_coop4` / `trans_coop3`) and the banner's words; and, once their official art is in, 最终攻势 opens with the merged-LP plate and 隐秘核心 with 隐秘核心已解锁, and the run's end (击败了全部领袖！ / 未能击破隐秘核心 / 模拟中断) shows inside the server's pause before RESULT, never delaying it (`ui/bossPlates.js`); the round's result box at SETTLE (the official 「作战结束」 + 「全员无伤！」 / 「生命值减少 −N」 for the viewer's own LP — after a 联防 the server's charge, `m.public.uniteResult.losses` — with the matching BATTLEOVER sound; none in the boss rounds or for a viewer not in the round; GitHub #235, PR #112); ticker (by broadcast priority, highest first; a leader-damage line plays only in its round and a player's newer one replaces the older, §21.10); toasts; the 协议已失效 dialog when the player's own LP runs out while the team plays on (the project's Modal over the official map, an original pixel face — no sprite exists —, 继续观战 / 离开模拟; `ui/downedPlate.js`); emote wheel; settings (volume, quality, show damage numbers, the optional ammo count)), **Result** (the official settlement flow in the official `settle/*` art, each sprite with a text / CSS fallback, `screens/settle.js`: a radar intro; 个人战报 — the viewer's own outcome (模拟完成 / 模拟中断), rounds, leader medals, the ten lineup slots, bonds, trophies and the level settlement against the official 60 cumulative 卫戍认证 levels (`config.rewards.milestones`) with 每日防卫目标 (`config.rewards.daily`), counted from this device's official records [ASSUMED]; 同盟 — a card per seat, the team's rounds, time and date, the 「非官方」 mark and the `result.tab` plugin slot, 数据详情 = the full report `screens/result.js ResultView` (victory/defeat, rounds, per-player lineup, stats, titles), back to room; a spectator opens on 同盟).
+Screens: **Title** (season art backdrop, 开始 → nickname), **Lobby** (laid out like the event's entry, PR #643 split 6: the official entry backdrop `entry/entry_bkg_01` / `entry_bkg_02` and emblem `entry/season_logo` in radar rings — a dark field and the title's dot emblem without the art pack —, or one of the generated 大厅场景 (夜巡 / 霜原 / 烬野 / 静默, `ui/hubScene.js`, original drawings) and the player's own picture / video over it with its 暗度 (大厅背景与音乐, `ui/lobbyMedia.js`, PR #643 split 8 — the same dialog sets the player's own lobby music: `audio.setLobbyTrack`, every screen whose BGM key is `lobby`, decoded from the file's bytes; the files stay in this browser's IndexedDB, and the site CSP's `media-src 'self' blob:` is that video) —, the 成就统计 card — the lobby's statistics entry, the top bar has no 统计数据 chip (the maintainer's decision of 2026-10-21) — (a dusk scene with the emblem, the official trophy medal `medalIcon/*` and count — the same trophy number as 统计数据's 获得奖杯 — and the LV, counted from this browser's records as the settlement counts it; read without writing, again whenever 统计数据 closes; it opens the 成就统计 window — `screens/stats.js` AchievementDialog, a `Modal` under an orange banner with the profile, bond and strategy records of this browser, no gameplay-plugin match in its peak or strategy marks (`ui/stats.js` achievementRecords, also 统计数据's unless 含插件对局), loading chess / items / backups for the lineup, 查看完整统计 → 统计数据; on screens ≤ 520 px tall, where the left column gives way, a 成就统计 plate under the right column's two opens it [ASSUMED: remake layout]), the 密钥加入 tile (a remake shortcut to 选择同盟方式 [ASSUMED]) and 作战提示 at the left, the light S.W.E.E.P.报告 / 干员调配 plates at the right, the 独立模拟 / 同盟模拟 entries at the bottom right (the cards follow 文字大小 as a whole — 2.3 × 1.34 `--t`, the icon .42 `--t`, the names .3 `--t` wrapping between words (Korean between words only, `word-break: keep-all`), the text below the icon (the card's top padding; on a short screen the decorative line beside it, .44rem), both cards one height; Japanese never starting a line with a small kana or ー (`line-break: strict`); on a short screen the entries are at least 128 px wide and their text is its 中 size plus a pixel a step (`--t-step`, theme.css); a plate's label wraps beside its glyph rather than an ellipsis; the title follows 文字大小 while it fits on one line clear of the side columns [ASSUMED: the sizes, §35.18 text-fit review and its review]); 独立模拟 opens 选择模拟协议 — a full-screen `Modal`: the selected difficulty's scene and brief at the left (`ui/protocolScene.js`: the official `modeChoice/*_rhodes_island` picture as an SVG `<image>`; around it original drawings [ASSUMED: no official source] — a survey grid, two squares of defenders (more with the difficulty, decoration only), a cable with a light running down it, a callout; the drawn hull when the picture fails to load; it comes up dark, then in the new colour, on each change), the four difficulty cards down the right (a 5.6rem column, at least 300 px [ASSUMED]; the chosen one slides out with the 已选定 stamp; where they do not fit their column — 大 / 特大, a small window, a long language — they drop their descriptions, then show their names only, the brief adding the chosen difficulty's effects and rounds: `pickCardFit`, `data-fit` [ASSUMED]), the test-room box in test mode, 开始独立模拟 —; 同盟模拟 (or 密钥加入) opens 选择同盟方式 — a full-screen `Modal`: a radar (original drawing, `ui/allyArt.js`; its read-outs hold still with reduced motion) with 玩法说明, the 创建同盟 card, which creates the room at once at the remembered difficulty, changed by the host in the room (the event's 联合模拟, research 06 §3.2; the maintainer's decision of 2026-10-21 — `room.create` without a difficulty also starts at 标准, server/lobby.js `DEFAULT_DIFFICULTY` [ASSUMED]), the test-room box under it in test mode, and the 加入同盟 card: the key field (the project's `TextField`: IME-safe Enter, the normalised key written back, no length cap before `normalizeCode`, so a long pasted invite link keeps its key; its placeholder the field's name 同盟密钥 on a short screen and wherever the whole 输入同盟密钥 / 粘贴邀请链接 does not fit the field — `TextField placeholderShort`) with 观战, the recent keys, which only fill it, 加入同盟; the difficulty is remembered (`sp.pref.lobby.difficulty`: 独立模拟's pick and the host's room pick once the server took it); 转场 (PR #643): the hub and both dialogs come up from black, their panels sliding in one after another, and the 已选定 ring is drawn on each pick — none with reduced motion; a 设置 button left of 玩法说明 opens the title screen's settings dialog, GitHub #238; the S.W.E.E.P. plate opens the read-only **S.W.E.E.P.报告** — `screens/sweep.js`, a full-screen `Modal`: 盟约报告 / 策略报告 / 敌方资料 after the event's report screen, and the enemy codex whose per-stat letter grades are the official handbook bands, factions.json `handbookLevels` from enemy_handbook_table `levelInfoList`, the enemy's own number beside each), **Room** (laid out like the event's room: 4 tall seat cards — P#, 创建者, the ready state at the bottom, the name plate under the card; a doctor's card shows its 名片干员 portrait: the player's pick from 更换立绘 on one's own card (the project's `Modal`: search, rarity tabs, 默认, its tiles in one's own outfits, at least 6.6em of the names' font so the names wrap whole; a pref — `ui/seatArt.js cardStore` — sent as `room.card` by `ui/loadoutSync.js installCardSync`, which retries RATE / TIMEOUT / OFFLINE, and which the room sees as `room.state.seats[].card`) [ASSUMED: a pick kept in this browser stands in for the event's account assistant, 名片形象], else one of the 5★/6★ operators chosen by the player id, the same on every client (`ui/seatArt.js`) [ASSUMED: a remake rule]; the portrait wears the player's outfit (the maintainer's decision 4 of 2026-10-21, docs/SKINS.md: one's own card this browser's choice at once, another doctor's the map that seat published — `room.state.seats[].skins` — unless 「显示其他玩家的皮肤」 is off, the default art when this page lacks the appearance; `ui/seatArt.js seatCardSkin`, also on the draft's name cards); without the art pack the avatar frame; the card's text in flow — the badge, 更换立绘 and the tags at the top, the operator's name and the state at the bottom —, wrapping (Korean between words only, `word-break: keep-all`), capped on a short screen at their 中 size plus half a pixel a step above it (`--t-step`, theme.css), the avatar frame (2rem at 小, less as the text grows) shrinking first; the 连接中断 band in flow, hidden on a short screen where the state says it, as is a modded room's 插件内容就绪 tag and your plate's 你 tag (the corner mark says it, `role="img"` named 你 for screen readers); the state as wide as the card (it takes the art's side padding back); Japanese never starting a line with a small kana or ー (`line-break: strict`), and no last line of a single character where a line above can give it one (`text-wrap: pretty` on the paragraphs — the room's status line, 独立模拟's briefing, the hub's tips, 选择模拟协议's description and hint —, `pretty` on 选择模拟协议's big button label too, which grows with it, while the room's big button wraps plainly, since Safari's `pretty` broke its Japanese 「シミュレー|ション開始」 inside the word; `balance` on the short labels — 添加 AI 队友, 等待博士加入, the picker's names —, since WebKit's `pretty` adds lines to short labels; `balance`: Chrome 114+, Safari 17.5+, Firefox 121+; `pretty`: Chrome 117+, Safari 26+, Firefox wraps as before; Japanese strict in every dialog too, and Japanese phrase breaks — `word-break: auto-phrase`, Chrome 119+ — on 添加 AI 队友 and 选择同盟方式's note); on a phone an AI teammate's plate drops the name's 「AI·」 prefix (the avatar's badge and the AI 队友 tag say it) and English 「Copy」 sits higher in its button above 中 (2 px at 特大); 独立模拟's card 2.7 × `--t`, on a short screen at most 3.4rem as a co-op one, its briefing there up to `min(11rem, 62vw)` and tighter above 中 so it does not scroll, the difficulty's code in its title on one line [ASSUMED: the order and caps, §35.18 text-fit review and its reviews]; an empty seat: 邀请 (copies the key) and the host's 添加 AI 队友 (it wraps); the host's 移出 / 移除 AI 队友 at a card's top right —, the 同盟密钥 with 复制 / the link and 干员调配 at the top right, the bottom: the ready count and status, the difficulty pill and ⚙ 同盟设置 — the room's settings, since a co-op room is created before its difficulty is chosen: the host's pill (or ⚙'s 模拟难度 row) opens 选择模拟协议 with 确认, which sends `room.setDifficulty` and closes only once the server took it, its hint giving the server's rules (the other doctors ready again; a plugin mode is left); ⚙ lists the 模拟难度 and the co-op 「AI 队友最后选择」 switch (host, off by default); the others open both read-only (the cards disabled, 由创建者选择 / 由创建者设置) and get a toast when the host changes the difficulty [ASSUMED: a remake aid] —, the big 开始模拟 / 准备就绪 button (its label wraps onto a second line and the button grows rather than cutting it — its own rules in `css/screens/room.css`, 18–20 px on a short screen at 小 / 中 and a pixel more a step above [ASSUMED] —; never squeezed by the status line beside it, a spectator's 观战中 with its eye in the mark's place; a disabled reason in the project's Tooltip; ⚙ takes the event's 快速搜寻 place — matchmaking is dropped, PR #643 keep / drop list of 2026-10-15; a plugin mode shows as an orange chip beside the mode name); the same 设置 button; 转场 (PR #643, [ASSUMED]: the design and timings are the PR's, not a recording of the event): the room comes up from black, the seats rise one after another, and a seat that turns ready (or an AI teammate added while the room is open) flashes once — `ui/transitions.js` useRise, none with reduced motion), **Briefing** (INFO_CHECK, laid out like the event's, PR #643, video 6:29–7:51: a step header — exit and ping, the difficulty, 1/2 确认本局信息 — over one column of sections that come up one after another: 本局遭遇敌方 (the boss art, name, final-assault round, abilities, the stage and the special enemies with icon, name and description — the shared `ui/matchEnemies.js` block, §35.6; the name under each icon and the description in PR #828's Tooltip — hover, keyboard focus on the icon (focusable, named by the type, `aria-describedby` an `.sr-only` copy of the text) or a long press (≥ 450 ms) on touch, with a 10 px floor on phones —, the maintainer's decision of 2026-10-22 (decision 8 of 2026-10-21, variant (b)); [ASSUMED] the layout, no official screenshot of the screen), 核心盟约, 附加盟约 with the legend, 本局禁用干员; 已就绪 x/4 (no colon, research 06 §4.1) and 准备就绪 at the bottom; the setup reroll strip when it applies), **Band draft** (2/2 选择策略: the step header with 本局信息 beside the difficulty and the turn line at the right — 👆 请选择策略 with 跳过选择 / 无法跳过, X 正在选择策略… with an hourglass, 策略选择完成 · 正在进入模拟…; the order as name cards — the doctor's 名片干员 art from `ui/seatArt.js`, the avatar, the best trophy medal of this browser, the state box, a ✓ that flashes in on a pick; a 4-wide wall of strategy portraits with 已被选择 / SELECTED and the official orange corner badge (`statistics/strategyBadge`) on a strategy with its `bands.victorCount` of clears — `ui/stats.js` strategyBadgeIds, the stats page's rule, via `bandDraft.js` draftRecords, read in an idle callback after the screen is up — and 已通过模拟 N 次 in the detail pane [ASSUMED: local records in place of account data]; a tap opens the detail pane from the right — the order narrows —, 确认选择; after the own pick 已选定策略 replaces the wall; the official 请选择策略 band (`ui/turnBanner.js`) with the 轮到你 sound when the pick becomes the player's, co-op and solo alike (the maintainer's decision of 2026-10-21; [ASSUMED] for solo, the footage shows co-op turns only), once its art is in — the sprites are fetched as a room is entered (`main.js warmGameData`), the match screen opens and the draft mounts; a turn whose art is still loading plays the band as soon as it arrives (it never takes a click), up to 5 s (`TURN_BANNER_LATE_MS`, [ASSUMED]) after the turn began; 本局信息 opens the briefing's leader (name, abilities and final-assault round), battlefield, special enemies (icon, name and description), bond rows, legend and banned operators again in a read-only dialog — shared `ui/matchEnemies.js` and `ui/matchInfo.js` blocks, §21.28, §35.6; when the draft is over the screen stays `DRAFT_HOLD_MS` 0.7 s on 已选定策略 from the last draft snapshot — `gameLogic/draft.js` heldDraftPub —, inert, and goes to black), **协议启动！** (BATTLE_CHECK: the official battleReady/* boot screen as in the event's footage, video 7:43.3–7:46 — the Rhodes Island ship builds up near white out of the screen, shrinks into the ring as it darkens (transform and opacity only, so it stays smooth while the match screen sets up under it), the panel comes with a teal wash, the cards per doctor open out from their avatars with lines into the ship, 协议启动！ settles from large, 正在连接… last (in by 2.1 s); shown from the match screen's first frame and at least `BOOT_MIN_MS` 2.3 s — once its sprites are loaded, else the 协议启动 banner; `ui/protocolBoot.js`. The held draft and this minimum together are the official 3 s BATTLE_CHECK (activity_table enterStepList 协议启动 time 3, `timers.battleCheck`; the maintainer's decision of 2026-10-21), so it starts to leave as 回合开始 begins and the round-1 plate comes in under its 350 ms fade, inside 回合开始's 2 s — [ASSUMED] the 0.7 / 2.3 s split; PR #643 held 1.6 s + at least 3 s off the footage, where the event's client presumably also loads the battle behind 协议启动！), **Game** (Pixi field + DOM HUD: top bar laid out like the event's (PR #643 / #827, §35.18, video 8:01: [🔍] and [🔍▶▶] in bracket frames, + marks, one long band with 回合 N — the number flips on a change — on its left half and the LP tower on its right half — white in a normal round, never over the pending-leak red of GitHub #479 —, the phase capsule as a bevelled plate in the middle with its scenes kept on the pill inside it, and the official deco type above — `hudPanel/frame_deco_txt1` / `txt3` RHODES ISLAND TERMINAL SERVICE over the halves, `frame_deco_txt2` STRONGHOLD PROTOCOL over the plate, aria-hidden, the same words as text without the art pack — a text that gives way under 768 px, where it is wider than the narrowed band — (`ui/hud.js` DecoType); [ASSUMED] the deco placement, the colours, the flip and the second + mark, and the CSS frames, halves, round chip and plate standing in for the unpainted hudPanel `bg_check_btn` / `frame_mid_normal` / `frame_mid_boss` / `bg_round`; under 768 px the halves shrink to their content so a boss round's capsule clears the corners; the HUD waits hidden only while 协议启动！ shows and comes in as soon as it leaves — the plate drops in, the band opens to both sides, the frames slide out, the corners, the team column and the shop follow, ~1.2 s, order and timings [ASSUMED] —, `screens/game.js` hudIn; a capsule scene due meanwhile waits for it, so the round-1 回合开始 kettles and plate play over the visible bar (the maintainer's decision of 2026-10-21); never held behind a plugin window, none with reduced motion) with round/phase capsule (the kill counter reads 已解决 / the round's own enemies: a leak counts, a split child or summon is in neither number, §14; at each phase change the capsule plays a 2–3 s scene of the official hudPanel/trans_* sprites — kettles at 回合开始, the robot meeting the enemy at 作战 / 联防 — none with reduced motion or without the art pack, `ui/hud.js` capsuleFxKind)/LP (live during the own battle, §17.5)/timer/ready, and beside the latency a 观战席 capsule (eye + count, a roster with the host's ✕) while the room has spectators (GitHub #120); bond strip + popups; left team panel with LP/status/emote bubbles, click to watch (a boss round frames the viewer's pair in green, §15); bottom shop bar (level card, 3–5 chess cards — a slot the upgrade just opened is a bare frame until the next refresh, GitHub #332 —, item card, funds, refresh, freeze, collapse; 准备就绪 folds it and cancelling unfolds it, GitHub #138; picking up a piece on the own prep board — 部署干员 / 装备 / reposition, and a legal drop's direction wheel — folds it and zooms to the shop-collapsed prep camera for the interaction's duration, then restores the player's own fold state (the drag never writes it), GitHub #602); detail panel on click/hover (header with bonds, then 特质 — the operator's own effect — right under it, 特性, stats (live: the battle's own numbers / the start-of-battle ones in prep, §18.5), skill, module, equipped items, talents: §17.5); enemy preview drawer (next round enemies with counts, factions; its 本局信息 tab lists the briefing's disabled bonds and banned operators, §21.28); 机变 overlay (the official 悬赏决策 look, the event's video 9:59 – 10:16: the header 「name | description」 over the timing line, the player deciding or 当前轮到你决策 and the countdown at the right — the pick order is no list of its own but a ✓ (picked) / ••• (deciding) on the team panel's portraits, `choiceOverlay.js spMarks`; the official card: a charcoal card in a light frame, framed icon + name, the effect text — data `descRaw` — under it, the taker's round avatar on the top-right corner, a taken card flat grey; two taps — the armed card in a white frame with a ☑ 确认选择 strip, §18.2, §20.7; when a shared draft's pick comes round to the player, and as a solo draft opens (the maintainer's decision of 2026-10-22, decision 7 extended; [ASSUMED] for solo), the official 轮到你选 disc — effectChoose/* sprites, `ui/turnPopup.js` — pops over it for 1.2 s with the 轮到你 sound, after the round plate and the 机变阶段 banner when a draft opens on the player's turn (the wait restarts as each mounts: at most 2 s for the plate, 1.8 s for the banner; [ASSUMED] the order and the bounds), none without the art pack or with reduced motion); merge reward overlay (the promotion reward, or a special offer — 凯瑟琳's 定向投放 … — as item / chess cards under its source's label, with the count of offers queued behind it, §21.2); phase banners, and the official round plate at 回合开始 (`ui/matchPopups.js`, the `roundStartDialog` sprites: the robot · 回合 NN · 获得 +N, the income as m.private.funds rose since the phase before; a watcher — eliminated or a spectator seat — gets 观战中 under it and no 获得, GitHub #236; the 剩余 N 回合 strip from three rounds before the final assault; inside 回合开始's 2 s — in round 1 it comes in as 协议启动！ starts to leave, with the HUD's entry, never over the hidden top bar) and, for 联防, the same plate in orange with the official 联防 faces (`hudPanel/trans_coop4` / `trans_coop3`) and the banner's words; and, once their official art is in, 最终攻势 opens with the merged-LP plate and 隐秘核心 with 隐秘核心已解锁, and the run's end (击败了全部领袖！ / 未能击破隐秘核心 / 模拟中断) shows inside the server's pause before RESULT, never delaying it (`ui/bossPlates.js`); the round's result box at SETTLE (the official 「作战结束」 + 「全员无伤！」 / 「生命值减少 −N」 for the viewer's own LP — after a 联防 the server's charge, `m.public.uniteResult.losses` — with the matching BATTLEOVER sound; none in the boss rounds or for a viewer not in the round; GitHub #235, PR #112); ticker (by broadcast priority, highest first; a leader-damage line plays only in its round and a player's newer one replaces the older, §21.10); toasts; the 协议已失效 dialog when the player's own LP runs out while the team plays on (the project's Modal over the official map, an original pixel face — no sprite exists —, 继续观战 / 离开模拟; `ui/downedPlate.js`); emote wheel; settings (volume, quality, show damage numbers, the optional ammo count)), **Result** (the official settlement flow in the official `settle/*` art, each sprite with a text / CSS fallback, `screens/settle.js`: a radar intro; 个人战报 — the viewer's own outcome (模拟完成 / 模拟中断), rounds, leader medals, the ten lineup slots, bonds, trophies and the level settlement against the official 60 cumulative 卫戍认证 levels (`config.rewards.milestones`) with 每日防卫目标 (`config.rewards.daily`), counted from this device's official records [ASSUMED]; 同盟 — a card per seat, the team's rounds, time and date, the 「非官方」 mark and the `result.tab` plugin slot, 数据详情 = the full report `screens/result.js ResultView` (victory/defeat, rounds, per-player lineup, stats, titles), back to room; a spectator opens on 同盟).
+
+In narrow desktop windows (width ≤ 900 px, height > 520 px), the hub's simulation descriptions wrap in full; both
+reserve at least two lines to keep the cards aligned ([ASSUMED] layout, §35.60). Phones keep the short descriptions
+specified above.
+
+**Data readiness.** `data.js useData` subscribes and starts its loads, then schedules a render to re-read their
+statuses: a warm-up that settles between the initial render and the subscription must not leave a resumed match on
+正在载入模拟数据… (§35.59). Later settlements notify the same subscription.
+S.W.E.E.P. also waits for the selected official version to match the checked set on the page: settled files can still
+belong to the previous version while the new set downloads. During that interval it shows 正在读取报告…; a failed
+version check shows 版本数据校验失败 and 重试 (§35.112).
+
+**S.W.E.E.P. animation independence (§35.113).** The report, enemy codex, their detail panels and their Modal veils
+show content immediately, with no opacity entry animation. Paused or disabled animations must leave the report,
+its loading/error state, all tiles and newly selected details visible. Ready-data notifications keep the mounted
+report and detail nodes; an ordinary update must not restart entry effects. The decorative mist may drift without
+affecting content visibility; reduced motion stops it and the tile hover transitions. Other screens' entry effects
+are inventoried in §35.113; this fix changes only S.W.E.E.P.
+
+The room footer's version and difficulty pills share their height, padding, font size and radius, including the
+short-screen text rules. The version's Tooltip wrapper carries the footer height so the child's percentage height
+resolves correctly. [ASSUMED] The existing book glyph denotes the archived event period, also in the lobby switch
+and room settings; the lobby retains its own top-bar sizing (§35.111).
+
+Strategy-draft match information (§35.6): the read-only modal reuses the briefing's announced leader,
+battlefield and special enemy blocks alongside the existing bonds and banned operators. Its body scrolls within
+the viewport while the close button and turn status stay in view. The selected strategy is preserved, the turn
+countdown keeps running, and a turn change closes the dialog. Background strategy controls become available
+again after closing; the modal interaction is unchanged.
+
+Settlement layout (§35.1, #745): preserve #698's official art and positions. Both translated outcome headings fit
+inside bounded boxes; button backgrounds/inset decoration are missing-or-failed-sprite fallbacks only (keyboard
+focus remains visible). Each of the two equipment slots constrains its icon with `object-fit: contain`.
+The 下一步 button maps the face of its 297×86 art (rows 1–68, columns 1–268) onto its box; label and icon use layout rem, with the label registered as a text-size exception (§35.94).
+[ASSUMED] Browser title budgets and uniform shrinking accommodate translation and text-size expansion; they are
+not measurements of the official client.
 
 盟约栏支持「收起／展开盟约」（GitHub #142）：收起时隐藏完整列表并关闭由列表打开的浮层，让原图标区域的指针事件到达棋盘，只保留至少 44×44 CSS px 的恢复按钮。折叠状态在本局阶段变化、观看队友时保留；展开后仍按当前观看对象显示最新盟约。按钮支持 Enter / Space，聚焦按钮时 Space 不触发准备或暂停。
-
-禁用干员按所属盟约分组显示（GitHub #484 的分组建议）：开局简报、策略选择的本局信息弹窗和局内本局信息共用 `matchInfoModel.bannedGroups` / `BannedOperatorGroups`。组顺序沿用盟约的 `bondOrder`、`identifier`，组内按阶级排列；成员取 `visibleMembers` 与本局 `bannedChess` 的交集，只显示非空组。多盟约干员在每个所属组显示，各组显示人数，总数仍按干员计算；有重复展示时说明总数不重复计算。缺少盟约成员数据的已知禁用干员归入「其他」，不丢失。自选禁用提示独立保留，局内头像仍可点击打开详情。
 
 A bond the mode never activates (标准: official `inactiveBondIdList`) reads 本局禁用 on shop / reward cards (struck through), detail chips and the popup — no 在场 count, no 当前效果 (§21.7); a strategy built around one carries a 本局禁用 tag and note in the strategy draft and stays selectable (bands.json `bondIds`, §21.26).
 
 The strategy draft enables skip only on the viewer's turn, with quota left and another unpicked player to pass to.
 The order list retains finished players for display; they do not keep the last player's skip button enabled.
 
-Interactions (research 09 §1.2 / §5, which supersede the first draft): shop card, upgrade and 机变 card are two-tap (select → confirm, §18.2) — a tap anywhere on the card, its confirm strip included, is the card's tap (shop cards have no ⓘ corner; the armed bar sits above the detail card; a shop card that cannot be bought right now opens its detail on tap, §20.7); a press / drop goes by the tile under the pointer (§18.1); drag bench↔board — over a legal tile the dragged unit stands on it, as in the official deploy drag, held under the pointer elsewhere (§27.62); a legal board drop (also onto the piece's own tile) opens the 4-direction deploy wheel (swipe UP/RIGHT/DOWN/LEFT with the rotated range striped orange; release in the centre, ✕ 点击取消 or Esc cancels); tap a unit's tile ⇒ underframe with **出售 +N** (and **撤退** on the board; items/Arts in the hand / temp: **销毁** — equipped items are locked, §6.2) plus its rotated range — the range follows the open detail card (`screens/game/range.js inspectRange`, GitHub PR #281): an own board piece in prep, and in battle or on a scouted board any ally operator / summon on the field with its current range (the live stats' `range` and `dir`, the snapshot's tile), never an enemy or a bench unit (UnitInfo `area` hand / temp); drag, the wheel and the pen hide it; no drag-to-sell; drag an item onto a unit's tile ⇒ equip that unit (both slots used ⇒ the replace dialog `ui/equipReplace.js` shows the incoming and the two equipped items; the player picks the one to replace — it is destroyed — `g.equip replaceUid`; cancel changes nothing); Arts are dropped on a tile and get the direction step; right-click or long-press ⇒ detail (or a tap on a shop card while the bar is locked); keyboard shortcuts — the defaults, which each player rebinds in 设置 → 快捷键 (`ui/gameLogic/shortcuts.js`, saved with the settings; §25.15) — `W` buy the hovered shop card directly (operators and items, no click; empty/sold slots and reward choices do nothing; existing funds/bench checks apply; §32.14.22), `R` refresh, `F` freeze, `D` level-up, `Q` retreat / `X` sell the selected own operator first; only without a selection do they target the operator under the pointer without clicking (board operators can retreat; board, bench and temporary-bench operators can be sold; a selected item or summon blocks these shortcuts; without a selection, blank tiles, HUD, items and summons do nothing; §32.14.22), `Space` ready (in a solo battle: pause / resume, §14 Solo pause); `Esc` closes (fixed); none acts while a text field has the focus or a dialog is open, nor while spectating, eliminated, watching another board, or on AI autopilot (暂离 or the server's autoplay). While a promotion reward or a special refresh replaces the shop row, W buys only a visible shop card and never a hidden slot or a reward card (§32.14.22). All actions optimistic-free: UI waits for server state (latency is small).
+Interactions (research 09 §1.2 / §5, which supersede the first draft): shop card, upgrade and 机变 card are two-tap (select → confirm, §18.2) — a tap anywhere on the card, its confirm strip included, is the card's tap (shop cards have no ⓘ corner; the armed bar sits above the detail card; a shop card that cannot be bought right now opens its detail on tap, §20.7); a press / drop goes by the tile under the pointer (§18.1); drag bench↔board — over a legal tile the dragged unit stands on it, as in the official deploy drag, held under the pointer elsewhere (§27.62); a legal board drop (also onto the piece's own tile) opens the 4-direction deploy wheel (swipe UP/RIGHT/DOWN/LEFT with the rotated range striped orange; release in the centre, ✕ 点击取消 or Esc cancels); tap a unit's tile ⇒ underframe with **出售 +N** (and **撤退** on the board; items/Arts in the hand / temp: **销毁** — equipped items are locked, §6.2) plus its rotated range — the range follows the open detail card (`screens/game/range.js inspectRange`, GitHub PR #281): an own board piece in prep, and in battle or on a scouted board any ally operator / summon on the field with its current range (the live stats' `range` and `dir`, the snapshot's tile), never an enemy or a bench unit (UnitInfo `area` hand / temp); drag, the wheel and the pen hide it; no drag-to-sell; drag an item onto a unit's tile ⇒ equip that unit (both slots used ⇒ the replace dialog `ui/equipReplace.js` shows the incoming and the two equipped items; the player picks the one to replace — it is destroyed — `g.equip replaceUid`; cancel changes nothing); Arts are dropped on a tile and get the direction step; right-click or long-press ⇒ detail (or a tap on a shop card while the bar is locked); keyboard shortcuts — the defaults, which each player rebinds in 设置 → 快捷键 (`ui/gameLogic/shortcuts.js`, saved with the settings; §25.15) — `W` buy the hovered shop card directly (operators and items, no click; empty/sold slots and reward choices do nothing; existing funds/bench checks apply; §32.14.22), `R` refresh, `F` freeze, `D` level-up, `Q` retreat / `X` sell the selected own operator, or the operator under the pointer when nothing is selected (selection takes priority even over a different hovered piece; no selection or valid hovered operator means no action; board operators can retreat; board, bench and temporary-bench operators can be sold; selected items and summons do nothing without falling back to hover; a right-click / long-press on another own piece clears the selection (the field press) and opens that piece's detail, so Q / X then follow the hover; §35.49 supersedes §32.14.22), `Space` ready (in a solo battle: pause / resume, §14 Solo pause); `Esc` closes (fixed); none acts while a text field has the focus or a dialog is open, nor while spectating, eliminated, watching another board, or on AI autopilot (暂离 or the server's autoplay). While a promotion reward or a special refresh replaces the shop row, W buys only a visible shop card and never a hidden slot or a reward card (§32.14.22). All actions optimistic-free: UI waits for server state (latency is small).
 
 The owner's `prepMapChars` (外勤医疗's 预备干员-医疗, or another displayed map-character variant) are read-only
 preparation views: tapping one opens its existing operator-style detail card and highlights its attack range from
@@ -466,7 +355,7 @@ Title-screen asset download (downstream request, 2026-10-14, PR #628): **下载�
 manifest-listed models, textures, audio and optional local art into the browser's HTTP cache. Show file progress,
 bytes read, pause/resume and failed-file retry. Do not mark completion until every listed response is fully read;
 missing server files remain visible failures. Closing the dialog pauses the queue. Cache eviction and refreshes
-do not retain a permanent completion flag. A separate dialog, reached from the resource manager, imports a local folder or zip. Only bytes whose
+do not retain a permanent completion flag. The same dialog can import a local folder or zip. Only bytes whose
 SHA-256 matches the served manifest are kept (a Spine model only as a whole group). They are stored in Cache
 Storage and served by `public/sw.js` for hashed `/assets/`, `/fonts/` and `/media/` URLs alone. Import requires
 HTTPS or localhost. Files already imported are not requested again. See [ASSETS.md](../ASSETS.md#player-initiated-predownload).
@@ -561,14 +450,10 @@ are verified, and cleans up / restores focus on both success and failure. Failur
 Push/pull slides preserve the target's pre-hit facing through the waiting and moving phases (`keepFacing`, §28.9).
 Explicit false and unmarked raw displacements face the travel direction. Normal snapshot facing resumes on landing.
 [ASSUMED] unrecorded push sources and reverse-facing hook pulls use the same display rule as the cited examples.
+心虚设计师 publishes `b.snap` `face` (±1) while it stands (#869, §35.108). The model uses that sign when it is not
+sliding, so a block — which freezes velocity — still turns it with the front cut. The nine-field tuple is unchanged.
 
 ### Local preferences and recovery (§28.14, §28.18–20)
-
-Settings「部署时镜头缩放」 (`deploymentZoom`, default false, stored in `sp.pref.settings`) explicitly enables the
-temporary shop fold and camera zoom of deploy / reposition / equip interactions (§32.14.30). When enabled, pickup, the
-direction wheel, cancellation and equipping use the folded-shop camera, on normal and boss boards. Manual shop folding /
-unfolding and 准备就绪 still adjust the camera. This is a local UI preference requested by the maintainer (2026-10-17),
-with no simulation or match-rule change.
 
 Settings persist `textSize` (sm/md/lg/xl; default sm), `voiceLang` (cn/jp/en/kr; default cn), `voiceNative` (the
 本土语言 switch; default false), `voiceOverrides` (charId → cn/jp/en/kr/native; default empty), `prepDeployFold`
@@ -587,7 +472,60 @@ non-zero, `<html data-fit>` with `--fit-l/r/t/b` makes `.app-root` and the full-
 the inset box and computes the layout rem from it (css/devices.css §5); dialogs and toasts keep the whole screen. The
 board is sized from its host, and `fieldHost.js hudBands` measures the HUD from the host's top. All zero leaves no
 attribute: the page is exactly the unmoved one.
+The same preference holds 界面大小 (`ui`, 0.3.2, §35.43; reworked from PR #838): a percentage 75–100 in 5 % steps, 100
+by default, set by hand only (no automatic factor, nothing reads visualViewport). Under 100 % `<html>` gets
+`--sp-ui` (the fraction); theme.css and devices.css multiply both layout roots by it, so every rem and the HUD bands the
+prep cameras keep clear follow. Every `max(<rem>, <N>px)` floor in public/css carries it: a size floor (width, height,
+min-*, flex, grid tracks, custom properties) above 32 px as `max(<rem>, 32px, calc(Npx * var(--sp-ui, 1)))`, so a touch
+target ≥ 32 px stays ≥ 32 px, one of 32 px or less stays `max(<rem>, Npx)` (it never shrinks); the others as
+`calc(Npx * var(--sp-ui, 1))`, except a value that mirrors a size floor (the narrow-touch detail card's bottom above the
+⚙ row, sweep's header band), which copies that floor exactly. The readability floors are the exemptions: font-size,
+line-height and letter-spacing floors stay px. The size applies at 文字大小 小 only (`effectiveUi`): 中 / 大 / 特大 keep
+their 64 / 76 / 88 px `--t` floors and the interface at 100 % (the row is disabled with a note; the stored size returns at
+小), since those floors outgrew boxes that shrank; 小's `--t` (1rem, no floor) follows the layout. A drag moves only the
+reading; the size applies on release (`pointerup` or `change`). The reading is dropped on `pointercancel` / blur and by
+−, + and 重置, and ignored once the stored size changes (Chrome fires no `change` when a drag ends on its start value;
+§35.45). A disabled row stores nothing, even on the `pointerup` Chrome still sends it (§35.47). On short screens
+(≤ 520 px) the lobby's 选择同盟方式 / 选择模拟协议 column and the protocol brief divide their rem width by --sp-ui and keep
+their unscaled size, since the text floors and px paddings inside do not shrink (§35.47). `test/ui/ui-size.test.js`
+guards every floor. At 100 % no property is set: the page is the design itself.
 Overrides are local listening preferences, absent from room loadouts and their exports.
+
+干员调配's 卡片视图 (`screens/loadout.js` DeckView / DeckCard / TierMark / DeckBar, optional; PR #811, §35.18) persists
+`sp.pref.loadout.view` — `'list'` (the default, the aligned rows) or `'deck'` — in this browser only. The deck lays the
+干员调配 tab out after the event's 物资调配处: a group per tier scrolling sideways (two rows behind a tall tier marker),
+the 甄选干员 cards of the 自选编队 slots closing tiers 5 and 6 (they open that tab), a bottom bar jumping to a tier, and
+快速配置 — a column of the skills, the elite's modules or the 潜能 / 练度 selects beside every card, with the list rows'
+own handlers. A card's picture is an `OperatorImage` portrait (the owner's picture-only outfit, B6). A card opens the
+list's Detail in a drawer over the deck's left; on that tab Esc closes a popover, 快速配置, the drawer, then the
+overlay, and leaving the tab (干员持有, the 甄选干员 card, `openLoadout(…, tab)`) closes all three, so one Esc there
+closes the overlay. The tier marker is the official `shopLevelSprite/shop_level_tag_N` (data/assets.json) at its
+design size, a CSS marker (NO. and the numeral, no slogan of our own) its fallback; [ASSUMED] that the event screen
+draws this sprite (its name and look; activity_table `shopLevelDisplayDataDict` confirms one group per shop level).
+While the match's loadout is locked the bottom bar carries a 「本局已锁定 · 下一局生效」 chip — the top bar's note is cut
+short or hidden on narrow screens and gives way to the hints in 快速配置. The bar holds the tier at the deck's left edge
+as its own state (DeckBarLive), so a scroll across tiers redraws the bar, not the 112 cards. ⓘ opens 「卡片视图说明」,
+the remake's own tips (the official tutorial chapter keeps the name 调度手册). The opening 转场 is the card view's only
+(maintainer's decision, 2026-10-21): the list keeps its 200 ms `lo-in`, and its ≤1000 px roster / detail toggle replays
+nothing. [ASSUMED], with no screenshot or video of the event screen offline: the card frame and colours, the two-row
+flow, the bottom bar, the 快速配置 columns, the 转场 timings, and ONE combined 甄选干员 card per tier where the official
+data lists two DIY slots (`charChessDiySlotIdList`). Both views read and write the same loadout store, so the room and
+the server see nothing new. Normal / elite level indicators read each form's `status.phase` and `status.level`:
+`PromotionIcon` uses the official `elite/elite_0..2` sprites (missing art: `E0` / `E1` / `E2`), never a fixed two-bar
+glyph or a phase inferred from shop tier. The tier badge reserves the full square image height above these indicators,
+including at every text size and UI scale. Settlement uses the same icon and the resolved chess / stand-in / DIY
+record's status; absent records have no phase icon and show `—` for level (§35.18 card-icon review).
+
+Automatic combat screen wake lock restores the official mobile client's screen-awake experience. App requests it
+for players and spectators when `isCombatPhase(phase)` holds for a valid ongoing match; an ended/absent room or an
+existing result does not qualify. 设置 →「全屏时保持屏幕常亮」 (`fullscreenWakeLock`, default false) is an additional
+opt-in for fullscreen on any app screen, persisted in `sp.pref.settings`. One App-level hook owns both reasons, so
+overlapping combat and fullscreen keep the same lock. When neither reason holds, on hiding the page or unmounting,
+release the lock and cancel a pending gesture retry; returning visible while active requests again. A failed normal
+request retries once on the next pointer/touch gesture, and a failed retry stays silent. Late results are released.
+The short fullscreen hint links to a tooltip describing HTTPS or a trustworthy local address, Screen Wake Lock API
+support, foreground visibility, and possible system restrictions. Hover, keyboard focus, or a tap opens it; outside
+input or Escape closes it. Only iOS/iPadOS shows the Low Power Mode caveat; device detection affects this text only.
 
 The title and lobby offer explicit recovery of a previously saved local match seat. `sp.matches` stores bounded name /
 room-code metadata indexed by token hash; the existing four-entry `sp.tokens` ring remains the authority. Recovery
@@ -614,22 +552,17 @@ logos, icons or fonts.
 only the mark to 87.5%, keeping every foreground pixel inside the central circle of radius 40% of the canvas.
 The same master supplies 16/32/48 px PNG / ICO favicons and the 180 px Apple touch icon linked from `index.html`.
 These project-owned assets live in `public/icons/` and ship in full and lite packages; ASSETS.md records their provenance.
-The install entry stays visible on the title screen and lobby before installation, including when the browser has
-not issued an install offer, unless the host disables `showPwaInstall` in the local console. The host switch defaults
-to true and hides the title, lobby and rotation-hint entries together; it does not uninstall apps or disable the
-browser's own install menu. A live offer opens the browser prompt directly; otherwise the existing dialog host shows
-manual desktop/mobile browser instructions and explains that installation still connects to the current server.
-Insecure contexts explain that public HTTPS needs a browser-trusted certificate matching the hostname, while
-localhost/127.0.0.1 work locally. The fallback also calls out certificate warnings and the fact that encrypted FRP
-tunnels alone do not establish browser trust; the page does not claim to inspect the TLS certificate itself.
-Standalone/fullscreen windows and the
-`appinstalled` event hide the entry, even without a prior offer. While a prompt or guide is open, its button is disabled.
-Every offer is consumed before awaiting the prompt, including cancellation or failure; dismissal keeps the manual
-entry available. The rotation overlay retains its native-offer-only button so manual guidance cannot open beneath it.
-The install button does not register a service worker and does not make the server available
+The install button appears only for a live browser install offer and hides
+in standalone/fullscreen windows or after installation. Every offer is consumed before awaiting the prompt, including
+cancellation or failure. The install button does not register a service worker and does not make the server available
 offline. A separate asset-only worker (`public/sw.js`) may be registered on HTTPS or localhost to serve imported
 hashed art from Cache Storage; it does not intercept the page, scripts, `/data/`, `/sim/` or `/ws`. HTTPS or
 localhost and browser support still govern installation.
+
+Imported-art index additions and old-version pruning serialize their full read/modify/write operations with the same
+origin-wide Web Lock (`sp-imported-assets-v1:index`); the cache name and index JSON format stay unchanged. This prevents
+cooperating tabs from losing index updates. It does not lock an import's file writes or cache clearing. A browser
+without Web Locks keeps the previous sequential behaviour, without cross-tab serialization (ASSETS.md).
 
 ### Skill-mode sound and delayed models (§28.17, §28.22)
 
@@ -685,11 +618,14 @@ Display 未知 while no current or usable imported name is available.
 The trophies icon uses the existing asset manifest. Compaction and export/import retain trophy awards; older already-compacted rows whose awards were discarded cannot be restored by this display. This is local recorded data, not an official account trophy balance.
 
 A strategy earns its corner badge after 3 successful defenses (`bands.victorCount`; [research 01](../research/01-core-rules.md)).
+The stats page, the lobby's achievement dialog and the strategy draft's wall (`screens/bandDraft.js` draftRecords) all read
+`strategyBadgeIds`, so the three never disagree.
 
 [ASSUMED] Alliance usage means active in the local player's final settlement: once per match, independent of layers;
 inactive bonds retaining layers, teammates and partial quit snapshots do not count. The 0.3.0 storage version (v2, the
 same step as the content set of §32.6) keeps `usedBondIds` when discarding full replay details; v1 full rows still work,
-but discarded old bond data is not reconstructed. Records whose room mode is unknown (`roomMode` null) count in the
+but discarded old bond data is not reconstructed. v3 (0.3.2, DESIGN §35.23) adds a record's official `version` (see
+"Official versions" below). Records whose room mode is unknown (`roomMode` null) count in the
 total but in neither mode row: a line under the rows gives their number (DESIGN §32.14.16).
 
 Title-count display uses the following 20-award boundary, confirmed in the official statistics template:
@@ -701,6 +637,16 @@ Title-count display uses the following 20-award boundary, confirmed in the offic
 | Above 20 | Full fill and count highlight; the number continues to show the actual count. |
 
 Community UI and recovery (§29.6): DIY reuses roster stats and skill previews; Swire's coins and, with 设置「显示弹药与能量数量」 on, a 秘术师's stored attack energies (GitHub #633, PR #636) show current/cap. The lobby player chip opens statistics and the responsive header keeps optional controls from overlapping its title. Settlement's summary scrolls separately from Return. Failed board art can retry, and failed three.js imports use two bounded fresh URLs. Failed engine initialization can remount on online/visibility, at most twice consecutively, cleaning up each previous view; explicit fallback/2D stays selected.
+
+0.3.2 (§35.17, PR #664): a page reopened directly into a match can exceed the 12 s engine-import
+deadline while its module graph is still downloading. Only a timeout fallback schedules automatic retries after 2 s and then
+8 s [ASSUMED], with a two-attempt automatic budget separate from the existing two online/visibility retries. A long
+outage must not consume those event retries before connectivity or the player returns. Hidden/offline pages do not
+spend an attempt; their normal events resume recovery. Successful initialization resets both budgets. Each attempt
+cleans up the previous view, and leaving the screen cancels its timer. Explicit `?render=fallback` never retries;
+`?board=2d` still selects the 2D board inside the normal renderer. No simulation or match is restarted.
+Non-timeout failures (including missing WebGL) do not schedule automatic retries. The fallback notice is shown once
+per mounted match, not again after a loading/retry cycle. The event retry limit is independent of the delay list.
 
 Replacing a field renderer also resets the game screen's entered-view identity. Frames are buffered while the replacement loads; after subscribing, the local runner re-shows full current metadata/snapshot, or the server resends the watched field. Real local and server-streamed battles preserve the same simulation object and clock through recovery, including enemies spawned before the new renderer existed.
 
@@ -719,9 +665,18 @@ the actor returns to base/skill idle. Late operator events still start at the st
 while `Skill_2` remains the cast; S3 retains `Skill_3`. Read only the effects index the field already loaded.
 The same verified S2 mapping applies without it: the manifest's cast has OnAttack, so absence of that event alone
 cannot identify this cast. The legacy index omits per-mode animation remaps and skin key-to-clip tables; until
-those are exported, every other skill retains its existing roles with or without the index [ASSUMED], rather than
+those are exported, unverified skills retain their existing roles with or without the index [ASSUMED], rather than
 treating every raw `Attack` key as the normal skeleton clip. Held loops (§34.4/§34.4.1) and distinct skill idles
-(§23.13) keep their rules. History §34.31 lists the further cross-checked candidates, unchanged in 0.3.1.
+(§23.13) keep their rules.
+§35.20 additionally verifies the normal attack role for 德克萨斯 S1/S2 (`Attack_Loop`), 伺夜 S1/S2 (`Attack`,
+Front DOWN `Attack_Down`), 归溟幽灵鲨 S1 (`Attack`, Front DOWN `Attack_Down`), 焰影苇草 S2 (`Attack`) and
+耀骑士临光 S2 (`Attack_Loop`). Both Front and Back use the same verified rule, including the cast clips that
+contain OnAttack. Index arrival/absence does not change this selection; Specter's initial Empty mode is a cast
+transition, not her subsequent attack mode. The model's normal role preserves its Begin/End and downward variant.
+[ASSUMED] Cosmetic models use their declared normal role; absent clips retain the old fallback. An explicitly
+different plugin skill in the same slot does not inherit the mapping. No form, held loop, own idle, skill-start/end
+animation or simulation timing changes. 郁金香's alleged S2 remains unimplemented (§35.21): the official tables
+give her only S1; the `Skill_2` animation belongs to that skill's empty-target branch.
 
 Connection recovery sits above the AI-away overlay and below global modals (§30.8), so a replaced session can
 be reclaimed by pointer while away. This does not change the stacking behavior of modals nested inside a screen.
@@ -731,6 +686,188 @@ while 「显示伤害数字」 is also on, the field draws a red integer for a `
 for a dodge fx whose payload is `num: 'm'` (PRTS 作战机制 「伤害红字（暴击）」). Ordinary hits and heals draw no
 digits in that mode. The mark is computed in the sim; the random offset above the model is client-side. The
 simplified board uses the same mark with a fixed slot. The title footer links the project repository in a new tab.
+
+### Official versions (DESIGN §35.23, M1)
+
+Presentation assets cover the union of the installed official builds by operator/enemy/icon identity, including
+backups and summons; chess ids reused by another season never replace an operator's art. The shared manifest
+contains each version's base/E2 pictures, skill and strategy icons and models; optional local models/effects use
+the same local manifests and package pipeline. Adding earlier-version art preserves existing default-version
+entries. Full illustrations/outfits remain cosmetic-plugin layers for all versions (§35.109, ASSETS.md "Id scope").
+
+Version-dependent caches must follow the active data objects or resolved asset URLs (§36.3). Item plates in the
+preparation area and scouted hands cache by icon URL, image readiness and frame colour, never by reused item id.
+A removed icon returns to its placeholder; obsolete asynchronous loads cannot replace the current icon.
+The renderer's composed stand-in / DIY lookups validate their chess and backups sources on reuse.
+
+The page shows one official version's data at a time (`public/js/versions.js`): in the lobby this browser's choice
+(`sp.pref.lobby.version`, a registry id of `shared/versions.js`) when welcome lists it, else the server's default
+(welcome.versions' `default`), else 第二期下半 (`DEFAULT_VERSION`, a code constant); in a room the room's version
+(`room.state.version`, absent = 第二期下半); a result shown after its room is gone (a kick, a grace timeout, a settlement
+left open — also on a reloaded page that never saw the room) keeps the version its frames name (`m.result` / `m.public`
+`version`, non-default only: `versions.js matchFrameVersion`; absent = 第二期下半, never the lobby's), and main.js records
+it under that version; 统计数据's replay of a stored match shows its version while it is open (the store's
+`replayVersion`, set when the row opens — in a room it equals the room's — and cleared when the replay or 统计数据 closes;
+the lobby preference is never changed). Without
+welcome.versions (a server that offers only 第二期下半) the switch does not exist and nothing below runs. A default server lists every version (G4, §35.23.11).
+
+The lobby switch keeps the full season and part visible as 文字大小 grows: its width follows its label rather than a
+fixed rem cap, and the top bar reserves that width beside its tools ([ASSUMED] presentation policy, §35.23.12). The hub
+checks include all five languages, all four text sizes, and 界面大小 75 % at 小, with the switch inside the bar and its
+hit target clear of the other controls.
+
+**Data.** `content.js installContentSet` follows the version shown: 第二期下半 → the server's own files
+(`data.setContent(null)`); another version → `loadVersionSet(cs, id)`: the version's `/cs/<cs16>/index.json` (it must
+be `vanilla: true`, name the version expected, carry no plugins and no settings, and its composition must hash to the
+cs — the room's `room.state.content.cs` in a room, welcome's entry in the lobby), every data file it lists — only under
+`/data/versions/<slug>/`, no `..` — and its official-bounds snapshot under `/cs/<cs16>/`, each checked by size and
+SHA-256 of its bytes before it is decoded. `data.js` then shows the files (`setContent({ id: cs, values })`; a
+version's files take only the Chinese texts — `versionFiles`, the language folder is keyed by 第二期下半's ids — until
+M3), and `contentSet` says `{ cs, kind: 'version', version, status, loaded, total }`. The set on screen stays until the
+next one is checked (lobby 第一期 → a room of 第二期上半 never shows 第二期下半 in between); a gameplay plugin room still
+starts from the server's files (its own path, `kind: 'plugins'`, unchanged). The last two checked version sets are kept
+(`VERSION_CACHE`): a lobby ⇄ room round trip downloads and checks nothing twice. `room.contentReady { cs }` is sent only
+for the room's own content (never from the lobby), again whenever this page's seat or spectator entry shows another
+state (a reconnect, a page returning to a kept set). A set that fails is said once per set (「版本数据未能通过校验…」),
+told `{ ok: false }`, and the page falls back to the server's files; the lobby chip offers 重试 (`retryContentSet`).
+`pageVersion()` is the version of the data on screen. The battle runner simulates a version set on the page's own
+Battle (`simContent` carries `version` and the bounds; no Worker: the set runs no script, so 作战统计 works) and warms up
+on `room.content.cs` for a version room. `main.js warmGameData` fetches only the art list in a version room (the set
+brings the game files). GameScreen waits for the version set (a spectator joining a running match, a reload or a
+resume would otherwise draw frames with the lobby's data, whose chess ids name other operators). `diag.js contentLine`
+adds ` version=<id>`.
+
+**Lobby.** `ui/versionPicker.js`: VersionSwitch (the chip before 恢复本机对局; a single non-default entry is a plain tag;
+载入中 n% / 校验失败 + 重试) and VersionPicker (the project's Modal: one row per enabled version — its name, the official
+period line, 当前 / 服务器默认 / 预览 with 「核心规则已按该版本。悬赏抽取、部分数值和六名敌人的攻击前摇仍是推算」 [ASSUMED], and in a language other than
+Simplified Chinese that its game texts are Chinese for now). The title shows a non-default version under 盟约.
+选择模拟协议 lists `offeredDifficulties(config, roomMode)` of the version shown (its config's modes) and selects
+`fallbackDifficulty` (the server's rule: the highest offered below, else the lowest) when the remembered difficulty is
+not offered — `sp.pref.lobby.difficulty` changes only on a pick; the cards wait (spinner, disabled) while the version
+loads, and when its set failed it says 版本数据校验失败 with 重试 (`retryContentSet`; the chip's 重试 is under the modal). `room.create` carries `version` only when welcome.versions exists, and `soloUnlimited: true` only when the
+version's solo is timed and this browser's 「不限时」 pref (`sp.pref.lobby.soloUnlimited`, default off) is on. For that
+version the dialog shows the switch, and the 独立模拟 card states the 300 s / 150 s rule or 不限时 (while the version's
+data is not on screen the card states no time rule). A version whose solo is already untimed keeps 「休整期与机变阶段不限时」
+on the long line and 「1 名博士」 on a phone. The 成就统计 card counts the season of the
+version shown.
+
+**Room.** `roomFacts.needsContent` (gameplay plugins or another version) gates ready, start, the seat tags and the
+status line; `modded` stays the 非官方 mark. A version room's words: 版本数据载入中 / 就绪 / 校验失败, 「等待所有博士载入
+「{version}」的数据」, the two GoButton tooltips, the invite 「…盟约·{version}【…】」. `ui/pluginTag.js VersionTag` (nothing for
+第二期下半) sits beside the mode in the top bar and beside UnofficialMark in the briefing, the settlement and the result
+[ASSUMED placement]. A timed solo (第一期) shows ⚙ 模拟设置 with the 「不限时」 switch (the host toggles `room.setSoloUnlimited`; everybody else reads
+it). The solo briefing states the 300 s / 150 s rule, or the untimed line when the switch is on or the version's solo is
+not timed; while that version's data is not on screen the briefing omits the time line and the gear stays hidden. The
+version pill beside the difficulty and ⚙'s 版本 row open the picker in room mode. The compact pill may abbreviate its
+visible name with an ellipsis (the existing `versions-fit` policy, now covered on default servers too, §35.23.12);
+its accessible name and the picker's version names stay complete, and its control stays inside the footer and reachable.
+The host's pick
+sends `room.proposeVersion` (a RATE right after a switch — every page resends its settings, which share the server's
+heavy-message budget — is tried once more after 1.2 s [ASSUMED]); off during a vote, with gameplay plugins (「请先关闭改变
+玩法的插件」) and offline; read-only for everybody else. `ui/versionVote.js` (modelled on `ui/setupReroll.js`): the
+strip between the 观战席 and the footer — title with agreed / voters, a countdown anchored at receipt from
+`remainingMs`, the voters' chips, 同意切换 / 拒绝切换 for a voter who has not agreed, 取消投票 for the host, one request at a
+time; on a short screen it floats over the seats. The settlement screen shows the same strip (`vervote--float`), so a
+doctor still reading the result can vote. While 干员调配 or 统计数据 covers the room (fixed overlays at z 55), a voter or the
+host sees the strip floating above it (`CoveredVersionVote`, `vervote--covered` z 56, mounted by main.js after the
+overlays), so a vote never runs out unseen; it is its own `role="alertdialog"` (the overlays are aria-modal) and the
+strip it covers is `aria-hidden` + `inert` meanwhile. The floating dialog takes focus on its section when it appears and
+returns it when dismissed; the countdown is `aria-hidden`, so the live region never announces its ticks. A floating
+strip never grows past the screen: on a short screen its text scrolls above the buttons, as does the room's own fixed
+strip. Version tags wrap their whole name on short screens, keeping the part visible. Screens that memoise rows or
+lookups of the data (干员调配, 干员持有, `useGameData`,
+统计数据) key them by `data.contentId()` as well as the language, so an open one follows a version switch. A change of `room.version` toasts 「同盟已切换到「{version}」」 (never on entering
+a room) and closes a result of the old version still on screen (`main.js onRoomState`). When the room's version is not
+the lobby's, a banner says leaving restores it (a short screen gives the line up: the pill's tooltip says it). The plugin
+panel disables the gameplay switches in a version room (「改变玩法的插件只能在第二期下半使用」) and shows only a
+`kind: 'plugins'` set's download state.
+
+**Settings by operator.** Chess ids are reused for other operators across versions (第一期下半's `chess_char_1_02_a` is
+讯使, 第二期下半's 角峰), so `sp.pref.loadout` = `{ v: 2, byChar, ops }` and `sp.pref.ownership` = `{ v: 2, notOwnedChars }`
+are keyed by charId and shared by every version. `loadoutStore.entries` / `notOwned` stay views by the chess ids of the
+data on screen (`loadoutModel.charKeyMap` — a chess id → its operator, an operator → its loadout slot first —,
+`entriesView`, `ownershipModel.notOwnedView`), rebuilt whenever that data changes (`installSettingsViews`, main.js) and
+before a send; an edit is written back through the map of the view it was made on (`setEntries` / `setNotOwned` `base`;
+`rebaseByChar` / `rebaseChars`), so an edit of a stale view is re-based, never filed under another version's operator;
+operators the view does not show are kept. A v1 store (by 第二期下半's chess ids) migrates through 第二期下半's
+`/data/chess.json`, fetched directly (`loadDefaultCharMap`, never through data.js, which may show another version);
+nothing is sent before it settles, and a store that could not migrate is not sent against another version's data. 自选
+picks are per version (`diyModel.diyPrefKey`: `sp.pref.diy` for 第二期下半, `sp.pref.diy.<slug>` else; `diyVersion` =
+`pageVersion()`). 导出 writes v2 (`byChar`, `notOwnedChars`; 自选 names a non-default `version`); 导入 reads v1 (mapped
+through 第二期下半's chess, `importedEntries` / `importedNotOwned`) and v2. A v1 id that is not its operator's own chess in
+第二期下半 (two operators have a hidden droppable chess there, chess_char_5_18_a / chess_char_6_10_a — the visible ones of
+第二期上半) is dropped by the migration and a v1 import, so a mark on it never marks the visible chess. The v2 stores also
+carry the v1 fields (`entries`, `notOwned`) by 第二期下半's chess ids whenever the page has that map (loaded for the
+migration or a v1 import, or the server's own files on screen; else the copy stored before), which this build ignores
+and an older build on the same origin reads (a rollback, builds side by side); older builds refuse a v2 export
+(来自更新的版本). Every sync (loadout, 干员持有, 自选, skins, card)
+waits for the data the server checks against (`canSendSettings`): never while the page's content loads; in a room once
+the room's content is on the page; outside a room only while the page shows the server's default version (the server
+checks outside-room settings against that version's data, `server/lobby.js dataFor` / `csOf`: 第二期下半's own files, or
+on a server whose `SP_VERSION_DEFAULT` names another version that version's checked set) — and a room entered after the
+lobby could not send them sends them then (not at every room entry: the server keeps the session's copy, and five sends
+at once would spend the server's heavy-message budget an edit needs). A content change (a version switch, a room's set)
+sends the seat-bound settings again (loadout, 干员持有, 自选: the server checks them against the room's data and drops them
+on a switch); skins and the card go out then only when their payload changed (`installPrefSync` `seatBound: false`),
+and their payload follows the data on screen: the skins map is filtered to its operators (`operatorCharIds`, the set
+the server keeps, on the session too — a 第一期-only operator's skin goes out once a 第一期 room's data is on the page),
+the card is '' when that data lacks the operator. The wire keys of `room.loadout` / `room.ownership`
+stay the chess ids of the room's data.
+
+**Statistics.** Records of another version carry `version` (a registry id, never 第二期下半; not part of the record id;
+`STATS_VERSION` 3, `MIGRATIONS[2]` rewrites nothing — a record without one played 第二期下半). 统计数据 has a version filter
+(the version shown by default, every version with records, 全部版本: `recordsOfVersion`) narrowing every tab; history rows
+carry the VersionTag. Re-viewing another version's settlement needs that version's data: outside a room the row offers
+「切换到「X」查看」 (the page shows that version while the replay is open, `replayVersion`; the settlement opens once its data
+is checked), in a room it is disabled with a hint, and a version this server does not offer (not in welcome.versions —
+a server narrowed to 第二期下半 offers none) is not clickable (「这台服务器没有提供「X」，不能回看该局结算」). The replay's wait always keeps
+返回统计: with 版本数据校验失败 + 重试 when the set failed, with the room's line when the room now plays another version.
+Opening a row sets `replayVersion` in a room too (the room's version comes first, so nothing changes while seated): a
+room left while the replay is open (a kick, the room closed) never moves the page to the lobby's version, so the
+settlement stays mounted.
+The peak alliance in 总览 and 成就统计 keeps its alliance and layers across version filters, but draws its lineup and
+gear only when the loaded config names the record's version, including while a newly requested version downloads.
+Otherwise it shows 「切换到「X」查看」: reused chess and item ids refer
+to different operators and equipment. A record trimmed of its lineup needs no version switch. Alliance and strategy
+ids keep their meaning; names absent from the shown version's data fall back to their ids.
+The levels (`settle.js levelProgress` `season`), the lobby card and 成就统计 count one season (`recordsOfSeason`:
+第一期 = both act1autochess versions, 第二期 = both act2autochess).
+
+The guide shows 「玩法说明的图片来自第二期下半，「{version}」中部分规则不同」 for another version [ASSUMED: until the version
+notes page of M3]. Tests: `test/ui/versions.test.js`, `version-content.test.js`, `loadout-charid.test.js`,
+`version-vote.test.js`, `stats.test.js` / `lobby-hub.test.js` (versions), and in the browser `versions.e2e.test.js` and
+the text-fit matrix `versions-fit.e2e.test.js` (four phones and two desktops, five languages, four 文字大小).
+
+### Lobby backdrop and music (PR #643 split 8)
+
+`ui/lobbyMedia.js`, a remake feature the event does not have (the Screens line above has its place in the lobby). The
+files live in IndexedDB `sp-lobby-media` (one record per slot), the switches, scene and 暗度 in the pref `lobby.media`.
+The database is opened at start only when the own backdrop or music is on, else when the dialog opens, so a visitor
+who never opens it never creates it; every open and write has a timeout [ASSUMED: 8 s / 30 s], and a failed save says
+「浏览器存储空间不足」 only for a `QuotaExceededError` (else 「浏览器存储不可用」). Checks when a file is chosen (the
+limits [ASSUMED]; the pixel caps are #643's): 20 / 60 / 20 MB for picture / video / music; a still picture past 2560 px
+on its longest side is re-encoded to 2560 on a canvas (a JPEG stays JPEG, anything else WebP — PNG where the browser
+cannot write WebP — so transparency survives), while one that may move (any GIF, an APNG's `acTL`, the WebP VP8X
+animation flag, an AVIF `avis` brand: `isAnimatedImage`, sniffed from the first 64 KiB) is never re-encoded and is
+refused past 2560 px; a video is read up to `loadedmetadata` (iOS loads no more before playback) and refused above
+1920×1080 pixels or 1920 on a side; music is refused past 6 minutes [ASSUMED] — first by its `<audio>` metadata when that
+says it is more than 30 s longer, so a long file is never decoded, then by its decoded length. The music is decoded
+once, in the audio manager's context (`audio.decodeBytes`), and that buffer is handed to `setLobbyTrack` as `decoded`
+(no second decode); before any gesture it is checked in an OfflineAudioContext instead. A timeout and a file that does
+not decode have their own messages. With reduced motion the video is started and paused at once (iOS paints no frame
+before playback) and a moving picture is drawn once on a canvas (its first frame); the generated scene renders nothing
+while the own backdrop covers it.
+
+The own track sits in the audio manager's buffer cache like any track. `_buffer` records a decoded size only while its
+entry is still cached, and `_trimBuffers` drops a size without its entry, so a track switched off, deleted or replaced
+while it was read or decoding can no longer leave its PCM in the budget (a 4-minute song is ~90 MB, past the whole
+budget: every sound was then evicted right after it was added, until a reload; #814 review). The loop that plays or is
+being started (`bgmStarting`) is never evicted; it counts toward the 64 MB budget, but the other sounds always keep at
+least half of it [ASSUMED], and when the budget is over, idle buffers above 16 MB (music) leave before the LRU walk [ASSUMED: the 16 MB line, a quarter of the budget]. Before, a track past the budget — the official 190.9 s
+m_bat_kazimierz2_2_loop, or a long own song — flushed every sound and then itself on each start, because `bgm` is still
+null while a track loads. The own music replaces every `lobby`-key screen and, in this browser, a cosmetic plugin's
+`audio.bgm.lobby`; leaving the lobby screens, it is re-read from the stored file and decoded again on return when the
+battle's sounds have pushed it out.
 
 ### Deploy animation replays (§31.8)
 
@@ -758,83 +895,25 @@ lands in a hidden tab. Battle deploys keep the silent `onDeploy`; audio.handleBa
 
 ### Optional ammo and stored-energy counts (§31.9, §32.14.28, §34.3)
 
+Selected-unit bond timers (#746, [§35.3](../history/0.3.2.md#353-optional-selected-unit-bond-timers-746)) are a separate
+设置「盟约效果剩余时间」switch, default off (`sp.pref.settings.bondTimers`, only boolean true enables it).
+The maintainer approved it on 2026-10-18. [ASSUMED] A convenience readout absent from the official HUD, like the
+ammo count: labels, next-stack-expiry summary and upward rounding to 0.1 seconds are presentation choices.
+Official `activity_table` → `activity.AUTOCHESS_SEASON.act2autochess.bondInfoDict` says Sargon stacks expire
+independently, and Siracusa has deployment ASPD, equal-duration stealth and a separate ten-second post-stealth proc
+window. Show Sargon's stack count + next expiry, and separate Siracusa rows; never a bond-wide Sargon countdown.
+The card samples optional `b.snap.bondTimers` every 250 ms, holding the latest simulation values without wall-clock
+extrapolation. Pause/speed, early removal, death, reconnect, spectators and watched fields follow the same snapshots
+for in-page, Worker and server combat. No rows in prep, for expired effects or for dead/hidden/undeployed units.
+The field's latest snapshot replaces the list (omission clears it); field re-entry discards stale metadata.
+`shared/bondTimers.js` declares each exposed effect; currently only Siracusa/Sargon. No gameplay or golden change.
+
 设置 →「显示弹药与能量数量」 (`ammoEnergyCount`) is one switch, off by default. It replaces 「弹药数量」
 (`ammoCount`, PR #552 by @IceCodeNew) and 「秘术师能量」 (`mysticEnergy`, PR #636 by @zasx77771, GitHub #633).
 The official HUD has neither number (the maintainer's decisions of 2026-10-13 and 2026-10-15). A saved profile is
 read once: the merged switch is on when either old key was the boolean `true`; a stored boolean `ammoEnergyCount`
 wins, and the old keys are not written back. [ASSUMED] that precedence, so turning the merged switch off stays off.
 
-Room text chat is an owner-requested remake extension: the global `public/js/ui/chat.js` panel is available in the
-room and every match phase, independent of the official emote wheel. Its transport store (`public/js/ui/chatStore.js`)
-follows room membership across route changes. The in-match entry sits below the ready controls and timer.
-Limits and frames: network §8, Room text chat.
-
-2026-10-17 修订：棋盘阶段文字聊天融合到表情「交流」，依据参考站公开源码保留左侧图标栏、共用表情 / 历史
-正文和底部单行输入，桌面宽 260px，触屏手机 220px。数据仍来自本库房间聊天，观战只读，保留 200 字上限、
-屏蔽词、输入法保护与失败草稿；等待室、开局说明、轮选、结算保留原聊天窗口。
-新玩家文字在对应头像旁复用表情气泡的圆角、颜色与默认 3 秒 pop/fade；长文截三行，历史中保留全文。
-不补播历史同步，主机消息只在历史中显示；消息提示关闭后重开不补播旧气泡。
-下面的可拖动入口预览规则继续用于原聊天窗口；棋盘阶段由头像气泡替代。
-
-Collapsed chat also previews newly received peer and host messages (owner request, 2026-10-17). The floating preview
-follows the draggable entry, stays inside the viewport, shows the latest two messages (three text lines each) and a
-count of further new messages. It fades after 6 seconds since the latest incoming message; hovering or keyboard focus
-pauses the countdown. Clicking opens chat and clears unread/preview state. Expiry preserves unread counts. Own echoes,
-history/reconnect backfills and messages received while chat is expanded do not create previews; moderator clearing
-also removes pending previews. No chat notification sound is added. Player settings →「显示消息提示气泡」
-(`chatBubbles`) defaults on, including older saved profiles, and persists locally. Switching off immediately hides
-and discards pending previews while preserving unread counts; switching back on only previews subsequent messages.
-Previews enter with a 220 ms fade and 6 px upward movement, and leave with a 180 ms fade and 4 px upward movement.
-Reduced-motion preferences disable both animations and transitions.
-
-Field pings are another owner-requested remake extension [ASSUMED] (2026-10-14; heart added at the owner's request on
-2026-10-17). A six-button HUD group selects attention, attack, danger, retreat, question or heart; choosing one arms the next tap/click on a board tile (occupied tiles
-included), then exits placement. Each marker displays its server-authored sender name as escaped text, with long names ellipsized. Click the same button again or press Esc to cancel. Right-clicking empty ground
-sends the selected kind directly. Both the engine and DOM fallback use BOARD coordinates and `view.tileScreen`
-viewport geometry. Matching-field markers last 2.5 s and follow the camera: a 56–80 px SVG badge drops above the target,
-with two expanding ground rings and a pointer stem. Short screens use a shorter drop; reduced motion keeps the badge
-and a static ground ring. Six distinct synthesized cues use the existing AudioManager SFX/mute buses, require an
-unlocked visible page, and suppress bursts within 180 ms. Only newly received pings on the currently shown field sound;
-switching fields never replays old cues. No audio assets or downloads are required.
-The palette starts expanded on both desktop and mobile. Its explicit collapse/expand choice is kept in this browser
-(`sp.pref.pingsCollapsed`, default false); sending never changes it. Collapsing cancels pending placement and removes
-the palette's hit area. Temporary hiding during other HUD tasks never writes the preference. Hidden while the
-communication, detail, bond, information, settings or statistics panels are open, during choices, in the enemy pen,
-during dragging/facing, and for spectator seats (they still see/hear markers).
-Desktop keeps the bottom-left dock and six-button row with an added collapse control. Constrained HUDs intersect
-the actual safe/inset HUD with the visual viewport, measure existing controls, and prefer an unobstructed slot outside
-the board, bench and temporary row. A limited slot narrows the horizontally scrollable palette rather than its 44 px
-controls; compact visual buttons use `max(.44rem, 30px)` while separated 44px pointer areas preserve touch input.
-The desktop 44px visuals stay unchanged. A localized swipe hint exposes the remaining choices. It reserves no full-width camera band. Temporary
-communication panels dock above the complete wrapped corner; narrow detail cards also clear its measured top.
-Below 768px on primary-touch screens, local utility extensions share a horizontal 44px scroll row instead of
-overlapping invisible hit areas in three wrapped rows. The corner width also respects the shop's actual left edge
-after screen-fit; when too tight for its art, communication uses a compact text entry. Desktop uses display:contents
-for the utility group and preserves its original flex geometry.
-Statistics and floating chat use the same visible bounds, including screen-fit and browser/keyboard viewport changes.
-Only panel bodies scroll; their close controls remain available. Text uses all language packs. Changes of
-phase/round/room clear recent markers. This owner-requested presentation behavior is [ASSUMED]; gameplay is unchanged.
-The collapse arrow also uses the existing chat pointer-drag lifecycle: drag moves the whole palette without toggling
-or sending, normalized browser-local `sp.pref.pingPosition` restores its position across mounts/refreshes.
-Orientation/safe-area changes clamp the saved position to the visible HUD. Arrow keys move it; reset returns to the
-automatic dock. Manual folding and position remain independent. Pointer cancellation restores the previous position.
-
-Compact room presentation (owner request, 2026-10-19) reuses the reference site's `utility-mobile.css` and
-`screens/room.css` in `reference-mobile.css`: retained 1:2 artwork with contain, a scrollable card grid and wrapping
-chrome, mapped from the site's `.seats/.topbar/.room-bar` to this fork's `.rs-seats/.rs-top/.rs-foot`.
-Only width <=1000px or height <=600px activates these rules; ordinary desktop presentation stays unchanged.
-Do not import repository-only management-unit changes as if they were deployed-site code. Source details and hashes:
-[reference review](../REFERENCE-UI-REVIEW.md#手机适配以参考站为基础2026-10-19).
-
-### Optional stored-energy count (§32.14.28)
-
-设置 →「秘术师能量」 (`mysticEnergy`, PR #636 by @zasx77771, GitHub #633) defaults off — the official HUD has no such
-number; the client shows a 秘术师's stored attack energies as an effect on the operator (the maintainer's decision of
-2026-10-15). On, the count `stored/cap` sits in the row stack under the purse (`UnitView._updateEnergy`, b.snap `energy`
-from `snapshot.js mysticView`: `trait.stored` against `profile.storeMax`, zero included), in a violet orb of its own;
-the element gauge moves down by its height. Allies only; kits with a store of their own (维伊, 黑键) have no row. The
-official effect is the default display: with 设置「官方特效」 on, the same readout lights 深靛's stored energies on the
-operator (§9 "Official battle effects", Skills) whatever this setting says.
 On, an operator's ammo bar carries `left/magazine` under it (`UnitView._updateAmmoCount`, the exact b.snap `ammo`
 counts, extra rounds and refills included), centred in the bar's yellow; the rows under the bars move down by its
 height. It hides with the magazine, in the prep view and after death. The simplified board has no ammo bar and so no
@@ -843,7 +922,6 @@ b.snap `energy` from `snapshot.js mysticView`: `trait.stored` against `profile.s
 orb of its own; the element gauge moves down by its height. Allies only; kits with a store of their own (维伊, 黑键)
 have no row. The official effect is the default display: with 设置「官方特效」 on, the same readout lights 深靛's
 stored energies on the operator (§9 "Official battle effects", Skills) whatever this setting says.
-
 
 ### Plugin studio gameplay previews (§32.9.1)
 
@@ -856,10 +934,6 @@ normalized values from the room, read-only for non-hosts and during a match. Van
 
 Authoring checks (DESIGN §32.9.1): numeric fields display the shared official bounds and positive step floor; invalid saves are refused. DSL validation network failures are explicit, and saving revalidates the current spec before writing. Unkeyed studio state reads omit script source. Trial replay remains a data-only renderer feed; sandbox simulation runs in the same SES executor as a formal match. Forge and catalogue entry points remain available beside the authoring templates.
 
-### Combat metrics (作战统计) — ported from the xinhai-ai fork
-
-设置 →「作战统计」 (`combatMetrics`, PR #618 by @robll-v1) defaults on in this extension (owner request, 2026-10-16);
-an explicitly saved false preference is preserved. Off, the corner button is not rendered and `trackCombat` is not called (no `damaged`
 0.3.1 (§34.29) adds bond/item/trait/offers/rules templates with actual fields and official-name pickers. Full-draft
 validation uses the existing keyed validate-dsl endpoint, ordinary folder checks and data-only composition; no new
 plugin grammar or route. Reopen reads current document fields; save merges only form-owned changes, retaining
@@ -897,7 +971,6 @@ No new route or gameplay rule is introduced.
 
 设置 →「作战统计」 (`combatMetrics`, PR #618 by @robll-v1) defaults off, the same kind of decision as 显示弹药与能量数量: the
 official HUD has no such panel. Off, the corner button is not rendered and `trackCombat` is not called (no `damaged`
-
 hook, `battle.heal` is not wrapped). On, the corner's 作战统计 button (`gm__metrics`, `ui/combatMetrics.js`) opens a
 modeless panel over the running battle: the fight keeps playing behind it, ✕ / Esc closes it, and the next frame's
 prep keeps it usable.
@@ -906,51 +979,35 @@ prep keeps it usable.
 `screens/game.js` pushes the switch with `setCombatMetrics` (the runner does not import the settings store). A
 gameplay-plugin room (`room.content.vanilla === false`) simulates in a Worker: the page holds wire state only (time
 and ids, no `damaged` hook and no `heal`), so the meter is not attached and the button stays hidden. A cosmetic plugin
-keeps the vanilla content set and the in-page host, so the meter still runs. A `hud.right` ui-slot is a separate node
+keeps the vanilla content set and the in-page host, so the meter still runs, and so does a room of another official
+version (DESIGN §35.23: its set is data only and runs on the in-page host). A `hud.right` ui-slot is a separate node
 and is not gated by this setting. Turning the setting off mid-battle detaches the hook and restores `heal`. Turning it
 on does not backfill a battle already prepared ([ASSUMED]: the hooks would have missed damage already dealt); the next
 battle prepared after the switch is the first one counted.
 
-`combatMetrics({ scope: 'battle' | 'match', ownerId })` sits beside `currentBattle()` on the runner. A row is one
+`combatMetrics({ scope: 'battle' | 'match' | 'last', ownerId })` sits beside `currentBattle()` on the runner. A row is one
 operator: the effective HP the sim's own counters lost (mitigation, silent damage and DoTs included; overkill, element
 gauge fill and friendly damage excluded), the HP a heal actually restored (overheal and shields excluded), the local
 battle seconds, and dps / hps; the bar under the name is segmented by damage type (物理 / 法术 / 真实 / 元素) and rows
 sort by damage. Same-name operators merge per player (`combineCombat`), summons count toward their owner, and the panel
 passes `myId` — it shows the own player only. 本局累计 keeps the last snapshot of every locally simulated battle
 (evicted replicas included; a replayed battle replaces its snapshot, never adds a second) until the match really
-restarts (a new match / a rewound round); a new round's prep clears only 当前战斗. Nothing here is sent to the server or
+restarts (a new match / a rewound round); a new round's prep clears only 当前战斗. 上一场战斗 reads the most recent battle
+that ended: the finished battle still on screen at RESULT ranks above the snapshots 本局累计 remembered for earlier
+rounds, a running battle is never 上一场 (it is 当前战斗), and a snapshot replaced by a later replay with more seconds
+takes the latest slot again. With `ownerId`, snapshots whose `owners` do not list the player (a watched or evicted
+replica of someone else's field) are skipped instead of winning the order. Its snapshots share 本局累计's reset. Nothing here is sent to the server or
 enters b.progress / b.result, and a tracked battle's result and rendered events are byte-identical to an untracked one
 (test/match/combat-metrics.test.js, test/match/runner.test.js). Ported from [xinhai-ai/Stronghold-Protocol](https://github.com/xinhai-ai/Stronghold-Protocol)
 (其公开部署分支，作者 @临夏俨然) with thanks.
 
-本库兼容补充（v0.3.0）：上游素材导入与扩展预载共用 classic `/sw.js`、各自保留缓存。停止预载不注销共享 worker；资源哈希、同源隔离与音频 Range 校验继续生效。作战统计默认开启（保留已保存的关闭偏好），快捷键随上游扩为含购买的七项。
+The card's own scale is the desktop one (12–16 px text, 340 px wide), which on a phone in landscape is out of the HUD's
+scale: `theme.css` clamps `1rem` at 40 px there, so in-match text is 6–7 px, while the ported card kept its desktop
+pixels and took 40 % of an 844 × 390 screen at twice that text size (GitHub #817). Short touch screens
+(≤ 600 px tall, coarse pointer — phones, not tablets) therefore get the HUD's proportion instead: 9–12 px text, 24 px
+thumbs, 36 px touch rows, 300 px wide (`screens/game.css`); 设置 → 文字大小 still lifts every size through `--t`.
+Desktop, tablet and mouse-driven windows keep the original sizes.
 
-帧率上限（本库回归核对，2026-10-16）：不限 / 30 / 60 / 120 通过玩家设置即时应用于 Pixi ticker，
-影响同一 ticker 驱动的单位、特效与棋盘绘制；持久化并在重载后重新应用，不改变战斗 runner 的独立时钟。
-设置「显示帧率」(`showFps`) 位于帧率上限之后，默认开启；旧配置自动开启，显式关闭与刷新恢复保留。
-对局左上角延迟旁展示实际渲染器 `stats().fps`，每秒更新一次，窄屏在延迟下方排列；关闭后停止采样。
-渲染器加载中、简化棋盘及后台页面显示 `-- FPS`，不使用独立 RAF 频率冒充棋盘帧率。
-浏览器回归同时检查选中状态、实际 ticker 上限与回调频率，实际 FPS 可因设备性能低于上限。
-选中项沿用设置按钮的高亮样式；手机端帧率按钮独占一行，触控目标至少 44×44px，互不覆盖。
-触摸设备（包括带触屏的桌面）上，设置中的选项按钮至少高 44px，隐形点击范围限制在按钮自身，
-语音语言等分行选项不能覆盖相邻行。
-窄屏语音选项排成两列，保留特大字号可读性；屏幕边距调节行沿用标签、减号、滑杆、加号、数值的五列，
-不受普通设置行的响应式列数覆盖。大厅背景卡片按可用宽度与字号自动换行，主题名称允许换行，不能溢出卡片。
-
-每回合统计补充（2026-10-16）：干员排行可在单回合与累计至指定回合之间切换；作战进行时，现有 `b.progress` 以有界字段广播各战场的当前干员伤害，面板以「进行中」回合显示实时数据（只读，不参与结算）。结算页的按钮复用同一面板，使用 `m.result.roundHistory`；首页「统计 → 对局记录」保存并恢复该字段，因此包含第 15 回合的完整结算数据。
-
-## 本库参考站工具界面适配（2026-10-17）
-
-2026-10-18 跟进：自定义表情与预载清单共用 CDN URL 规则，保留本库无哈希 CDN 磁盘路径；
-公告弹窗设计宽度为 10.8rem，最大宽度为视口减 32px，沿用安全区域和正文滚动。
-大厅右栏「干员调配」下方提供「统计数据」入口，复用现有 HubTile 和 openStats，读取本库已有统计数据。
-结算自选立绘读取的 `seat-art` 目录随 `GAME_FILES` 在等待室预热，避免结算时才开始请求；缺失时继续走原回退。
-设置的快捷键表使用独立子弹窗；编辑时 Esc 仅取消捕获，普通 Esc 只关闭最上层弹窗并恢复入口焦点。
-移动设备保留实体键盘提示，使用本库既有界面比例和可滚动弹窗。键位、保存与冲突交换规则不变。
-资源分包管理依次显示 download（字节与采样速度）、verify（无百分比）、import（已处理 / 总文件数）。
-公告仅显式 `format: 'markdown'` 启用长文排版和 20000 字上限，缺省 / plain 保留 500 字与纯文本。
-Markdown 分词后生成固定 Preact 元素，不注入 HTML；只允许无凭据 HTTP(S) 与站内根路径链接，
-图片仅显示替代文字，嵌套 / 节点超限回退纯文本。代码与表格在自身区域横向滚动，正文不撑破弹窗。
 ### Forge compact metadata (0.3.1)
 
 Forge import (CLI and the studio's explicit preview/import) and setup's startup/update gap preparation fetch missing
@@ -971,46 +1028,31 @@ room content and simulation. Pure geometry SDK helpers return frozen values and 
 Forge UI mounts without an equivalent slot require an explicit manual-adaptation report, separate from script copying.
 Art/audio templates ship original CC0 sample media; the studio fills the target's first editable slot [ASSUMED].
 
-### Room-local 联防 stack option
+### Finished battle presentation
 
-Waiting-room 同盟设置 (the bottom protocol pill's gear) shows 允许联防叠层 with its room-only, match-locked
-behavior and boss/hidden exclusion. It uses `room.state.uniteLayerGains` and sends `room.setUniteLayerGains {on}`;
-only the room host may edit before starting when `room.state.canSetUniteLayerGains` is true. Otherwise the disabled
-control explains that the server has not allowed edits; guests and spectators always read it. Inputs are disabled
-while offline or busy. Console permission saves update existing rooms immediately. An older server without the
-rule boolean hides the option; absent permission fails closed. Compact layouts keep the options panel inside
-the viewport. The four shipped language packs translate the control and help text.
+The field view receives an explicit completion signal (`finishBattle`): the local runner's `done`, or the server's public field `live: false`. Missing snapshots and solo pause never imply completion. After rendering the final buffered snapshot/events, surviving units return to idle with temporary crowd-control and skill pose flags cleared for presentation only, retaining flight, stealth-driven forms and other persistent flags; knocked-out/dead poses remain. Official and plugin persistent effects stop, while one-shot effects advance on the presentation clock and are removed after at most two presentation seconds [ASSUMED]. Studio playback continues to use its external clock, including zero-time paused frames. This does not tick the simulation, delay results, or change golden outcomes.
 
-### Local announcement authoring
+The four-star Theresa mote ring follows the game clock (including pause and speed), converts its y-up offsets to
+Spine display coordinates, and is recreated on model swaps. Its S2 radius of 2 tiles is [ASSUMED] from outside_radius;
+the hidden five-star orbit is unchanged (PR #576).
 
-The local host console's announcement editor separately persists up to 30 named drafts, with create/update/copy,
-load/delete and refresh. Four editable Markdown templates cover maintenance, releases, room rules and incidents.
-Live preview shares the player announcement renderer (escaped HTML, no remote images, safe links). Desktop uses
-two columns and compact screens stack them. Replacing unsaved text asks for confirmation; leaving a dirty editor
-warns. Draft storage and template/preview actions never publish or withdraw a notice; publication is explicit.
-Draft details and authenticated endpoints: [LOCAL-DEV](../LOCAL-DEV.md#公告草稿模板与正文预览).
+The active-bond strip shows every entry in a horizontal scroller, with keyboard focus, touch panning and translated
+arrow controls. Watched owners, harmony counts, morph members and disabled bonds retain their existing behavior (PR #678).
+The strip's .08rem clip padding has matching negative margins to preserve the discs' and names' original height.
+Prep and Final Assault prep reserve the arrows' 44 px floor and any taller measured bounds (including native scrollbars),
+relative to the field host and safe-area insets. The minimum band remains while collapsed; desktop keeps the official
+camera and original 2.16rem band when the strip already fits (§35.110).
 
-### Local online players and room invitations
+Outside presses dismiss match detail cards, bond popups and the selected-piece underframe (PR #792, §35.93).
+The detail card and bond popup retain selection while used, so pointerdown cannot move a card before its click.
+Other HUD controls, including Settings, still dismiss them; after closing Settings the player selects a unit again.
+Field presses retain the existing origin rule: field-unit cards close, while shop/reward/bond-member cards stay (§35.110).
 
-The lobby's 名博士在线 is a directory button with an expansion chevron. It lists this server's visible connected
-human sessions (no account service), with search, room/match activity and 100-player pagination. Visible counts
-exclude invisible users. The top-right selector offers online, away, busy and invisible. The browser persists it
-and sends it in hello before discovery. Saved invisible logins stay hidden even if the administrator later disables
-invisible selection. Invisibility governs discovery/invitations, not room membership visible during shared play.
+Attack pacing (PR #729): UnitInfo carries the actual attack interval in game seconds. A `rate` event after the ally
+phase and before projectiles carries changes; its baseline is seeded by birth info. The renderer looks ahead through
+the attack tick, including a rate later in that tick, without borrowing a later tick’s value. Its 0.2–6 second display
+window is [ASSUMED]; damage, attack timing and targeting are unchanged.
 
-Waiting-room 邀请玩家 opens the directory. Available players outside rooms may be invited; acceptance is explicit
-and runs normal join checks. Busy, invisible, disconnected and room-bound players cannot be invited; invisible
-players cannot send invitations. Invites expire after 60 seconds, with a 10-second sender cooldown and at most five
-pending per recipient. Full/started/disbanded rooms, disconnects and invisibility invalidate pending invites.
-
-Console 设置 → 交流管理 → 在线玩家与邀请 controls directory, invitations, status selection, invisible selection,
-visible counts and host-only invitations. All except host-only default on. Settings persist and apply immediately.
-Disabling invitations cancels pending invites; disabling selection preserves existing privacy.
-
-### 公告重启保留
-
-本机控制台「服务器 → 全站公告」提供「重启后保留有效公告」复选框及独立保存按钮，默认开启，
-已有关闭选择保持关闭。开启会保存当前及以后发布的公告；只恢复未过期内容，沿用原起止时间，
-定时公告和直到撤下公告均保留原语义。关闭不撤下当前公告。读取/保存错误可重试，不影响编辑中的草稿。
-持久化设置与正文位于控制台设置同目录的 announcement-state.json；普通玩家协议保持不变。
-扩展联机实验（2026-10-22）：组队列表标记固定卡池组 A–E，多组机变可以查看其他组但不能代选；手机沿用现有横屏流程，竖屏由既有旋转提示引导横屏，不另造竖屏选卡布局。短横屏触屏的分组页签及返回本组按钮至少 44px 高，分组页签可横向滚动。开局画面显示全部二十名玩家，扩展名单使用紧凑排列；消除旧样式定位叠加导致的偏移。规则和隔离端口见 [EXPANDED-COOP.md](../EXPANDED-COOP.md)。
+Skill model fallback (#786, §35.90): when facing up, a skill with an authored Front clip and only an attack fallback
+on Back uses Front through the skill clip and ending. Back-authored skills keep Back. [ASSUMED] This model choice
+is presentation inferred from the available animation roles; simulation facing and targeting do not change.

@@ -1,7 +1,7 @@
 // 本局信息 dialog under the top bar (opened by the left 🔍, official btn_check_player / autochess_hud_player_info_dialog,
 // research 09 §2.1) with two tabs:
 //   本局信息 — own strategy, stage, disabled bonds with banned-member counts and the banned operator list (default) —
-//              the same bonds, states and banned operators (grouped by bond) as the briefing and the strategy draft's 本局信息
+//              the same bonds, states and banned operators (by tier) as the briefing and the strategy draft's 本局信息
 //              dialog: ui/matchInfo.js matchInfoModel, drawn here as compact chips and avatars;
 //   敌方情报 — the secondary enemy list: m.private.nextEnemies (icons, names, counts, tags, 特训 faction tags) + this
 //              match's factions and the enemy leader on boss rounds. The primary enemy preview is the pen on the board
@@ -10,7 +10,7 @@
 import { html, Icon, Tabs, MicroLabel } from './components.js';
 import { Img, UnitThumb, BondGlyph, BandIcon, RichText, GIcon } from './gameComponents.js';
 import { groupEnemies, factionTypes, briefingBondTip } from './gameLogic.js';
-import { matchInfoModel, DiyBannedLine, BannedOperatorGroups } from './matchInfo.js';
+import { matchInfoModel, DiyBannedLine } from './matchInfo.js';
 import { factionIconUrl } from './assetUrls.js';
 import { data } from '../data.js';
 import { t, tParts, N_ } from '../../../shared/i18n.js';
@@ -87,7 +87,8 @@ function InfoTab({ pub, priv, onChess, bandId = null, bandOwner = null }) {
         ${perBond.get(b.bondId) ? html`<span class="ibond__ban num" title=${t('该盟约中被禁用的干员数')}><${Icon} name="user" />${perBond.get(b.bondId)}</span>` : null}
       </span>`) : html`<span class="t-dim">${t('本局没有禁用盟约')}</span>`}
     </div>
-    ${banned.length ? html`<${BannedOperatorGroups} model=${model} onChess=${onChess} />` : null}
+    ${banned.length ? html`<div class="ibanned">${banned.map((id) => html`<button key=${id} type="button" class="ibanned__one" onClick=${() => onChess(id)}>
+      <${UnitThumb} kind="chess" ownerId=${null} id=${id} size="sm" dim=${true} /></button>`)}</div>` : null}
     <${DiyBannedLine} model=${model} class="idiybanned" />
   </div>`;
 }

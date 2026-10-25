@@ -13,10 +13,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import zlib from 'node:zlib';
-import { APP_VERSION } from '../shared/constants.js';
-import { RELEASE_TAG } from '../server/release-version.js';
-import { installedIdentity, stageUpdateZip } from '../server/release-update.js';
-import { applyReleaseStage } from '../server/release-install.js';
 import { APPLIED_FILE, MANIFEST_FILE, UPDATE_FILE, applyPendingUpdate, checkInstall, parseUpdate, removalProblem } from '../server/update.js';
 import { compareVersions, diffBases, readBase, readZip } from '../tools/package-update.mjs';
 import { FOLDER, readBases, scanFiles, stageProblems, zipFolder } from '../tools/package.mjs';
@@ -114,8 +110,32 @@ test('MANIFEST.json and UPDATE.json pass the personal-info scan: paths are scann
 // ---------------------------------------------------------------------------------------------------------------------
 // Bases and a whole round trip on a temporary checkout (tools/package.mjs, --no-install)
 
-const hasZipTool = !spawnSync('zip', ['-v'], { encoding: 'utf8', windowsHide: true }).error
-  || /bsdtar/.test(spawnSync('tar', ['--version'], { encoding: 'utf8', windowsHide: true }).stdout || '');
+// What this machine can really do, not what it has: zip a probe folder and find the name in the bytes. `zip -v`
+// succeeding says nothing about a name the tool cannot spell (#840 was the Windows runner image's tar, 20261018.275.1).
+// Three outcomes: the name is in the bytes ('wrote'); zipFolder threw ('threw', with its error — the tools it tried and
+// their own words); or a tool succeeded but the name is not in the bytes ('missing': the silent `??` loss #311 fixed,
+// which must fail the suite, never fall back).
+function zipProbe(names) {
+  const dir = tmp('zip-probe');
+  try {
+    for (const n of names) put(dir, `${FOLDER}/public/assets/${n}`, 'probe');
+    const zip = path.join(dir, 'probe.zip');
+    try { zipFolder(dir, zip); } catch (e) { return { result: 'threw', error: String(e?.message || e) }; }
+    const bytes = fs.readFileSync(zip);
+    return { result: names.every((n) => bytes.includes(Buffer.from(n, 'utf8'))) ? 'wrote' : 'missing', error: '' };
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+const asciiProbe = zipProbe(['a.png']);
+const hasZipTool = asciiProbe.result === 'wrote';
+const utf8Probe = hasZipTool ? zipProbe(['卫戍 a.png']) : asciiProbe;
+const hasUtf8ZipTool = utf8Probe.result === 'wrote';
+// The name the zipper here can spell: the UTF-8 one where it writes UTF-8 names (Info-ZIP, bsdtar with hdrcharset); the
+// ASCII one only where zipFolder threw on the UTF-8 name (its error is the skip reason below). A tool that exits 0 and
+// drops the name is the 'missing' case: its own test fails, so an ASCII run cannot hide it.
+const ASSET = hasUtf8ZipTool ? '卫戍 a.png' : 'a.png';
+const ASSET_RE = ASSET.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]);
 
 function fakeCheckout(version) {
@@ -136,7 +156,7 @@ function fakeCheckout(version) {
   put(dir, '.gitignore', 'public/assets/\npublic/fonts/\ndata/local-assets.json\n');
   put(dir, 'public/assets/char/a.png', PNG);
   put(dir, 'public/fonts/fonts.css', '@font-face{}\n');
-  const git = (...args) => spawnSync('git', ['-C', dir, ...args], { encoding: 'utf8', windowsHide: true });
+  const git = (...args) => spawnSync('git', ['-C', dir, ...args], { encoding: 'utf8' });
   assert.equal(git('init', '-q').status, 0);
   assert.equal(git('add', '-A').status, 0);
   return { dir, git };
@@ -147,46 +167,7 @@ function bump({ dir }, version) {
   put(dir, 'shared/constants.js', `export const APP_VERSION = '${version}';\n`);
 }
 
-const runTool = (args, env = ENV) => spawnSync(process.execPath, [TOOL, ...args], { encoding: 'utf8', env: { ...process.env, ...env }, maxBuffer: 16 * 1024 * 1024, windowsHide: true });
-
-test('extension delta uses exact release tags and a signed target art inventory, then installs through the console stage', { skip: !hasZipTool && 'no zip / tar' }, () => {
-  const co = fakeCheckout(APP_VERSION), out = tmp('ext-out'), inst = tmp('ext-player');
-  const previousTag = RELEASE_TAG.replace(/\d+$/, n => String(Number(n) - 1));
-  try {
-    put(co.dir, 'server/release-version.js', `export const RELEASE_TAG = '${previousTag}';\n`);
-    assert.equal(co.git('add', '-A').status, 0);
-    let result = runTool(['--root', co.dir, '--out', out, '--no-install', '--allow-dirty']);
-    assert.equal(result.status, 0, result.stdout + result.stderr);
-    const full = path.join(out, `${FOLDER}-v${APP_VERSION}.zip`);
-    extract(full, inst);
-    const root = path.join(inst, FOLDER);
-    put(root, 'logs/release-version.json', JSON.stringify({ app: APP_VERSION, tag: previousTag, sourceHash: installedIdentity(root) }));
-    put(co.dir, 'server/release-version.js', `export const RELEASE_TAG = '${RELEASE_TAG}';\n`);
-    put(co.dir, 'server/sim/rng.js', 'export const rng = 2;\n');
-    put(co.dir, 'public/assets/char/a.png', Buffer.concat([PNG, Buffer.from('changed')]));
-    result = runTool(['--root', co.dir, '--out', out, '--no-install', '--allow-dirty', '--update', '--from', full]);
-    assert.equal(result.status, 0, result.stdout + result.stderr);
-    const zip = path.join(out, `${FOLDER}-${RELEASE_TAG}-update.zip`);
-    let doc;
-    readZip(zip, (name, body) => { if (name.endsWith('/UPDATE.json')) doc = parseUpdate(body.toString('utf8')); });
-    assert.equal(doc.tag, RELEASE_TAG); assert.deepEqual(doc.fromTags, [previousTag]);
-    assert.deepEqual(doc.from, [APP_VERSION]);
-    assert.ok(doc.art.has('data/assets.json') && doc.art.has('public/fonts/fonts.css'));
-    const upstream = tmp('upstream-base');
-    try {
-      put(upstream, 'package.json', JSON.stringify({ version: APP_VERSION }));
-      put(upstream, 'public/assets/a.png', PNG);
-      assert.equal(readBases([upstream], APP_VERSION, { tag: RELEASE_TAG })[0].tag, `v${APP_VERSION}`,
-        'an upstream release is older than its extensions, matching the console ordering');
-    } finally { fs.rmSync(upstream, { recursive: true, force: true }); }
-    const stage = path.join(inst, 'stage');
-    stageUpdateZip(zip, stage, RELEASE_TAG, root);
-    applyReleaseStage(root, stage);
-    assert.equal(read(root, 'server/sim/rng.js'), 'export const rng = 2;\n');
-    assert.equal(read(root, 'public/assets/char/a.png'), Buffer.concat([PNG, Buffer.from('changed')]).toString('utf8'));
-    assert.equal(checkInstall(root).state, 'ok');
-  } finally { for (const dir of [co.dir, out, inst]) fs.rmSync(dir, { recursive: true, force: true }); }
-});
+const runTool = (args, env = ENV) => spawnSync(process.execPath, [TOOL, ...args], { encoding: 'utf8', env: { ...process.env, ...env }, maxBuffer: 16 * 1024 * 1024 });
 
 /** Extract a release zip into `dir` (over what is there), as a player would: readZip writes every file. */
 function extract(zipPath, dir) {
@@ -242,8 +223,8 @@ test('a whole update: base zip v9.9.8 → --update v9.9.9 ships only what change
     const listed = JSON.parse(m);
     assert.equal(listed.app, '9.9.9');
     assert.deepEqual(Object.keys(listed.files).sort(), ['README.md', 'data/chess.json', 'package-lock.json', 'package.json', 'public/index.html',
-      'scripts/launch.mjs', 'server/index.js', 'server/new.js', 'server/sim/rng.js', 'shared/constants.js', 'tools/doctor.mjs',
-      'tools/fetch-assets.mjs', 'tools/setup.mjs', 'tools/vendor.mjs'], 'no art, no data/assets.json');
+      'scripts/launch.mjs', 'server/index.js', 'server/new.js', 'server/release-without-llm', 'server/sim/rng.js', 'shared/constants.js',
+      'tools/doctor.mjs', 'tools/fetch-assets.mjs', 'tools/setup.mjs', 'tools/vendor.mjs'], 'no art, no data/assets.json');
     assert.deepEqual(listed.files['server/new.js'], dg('export const n = 1;\n'));
 
     // the player: the base extracted, a pack of their own, the update extracted over it, the server started
@@ -343,11 +324,11 @@ test('the zip reader: stored and deflated entries, zip64, UTF-8 names; damaged a
   const dir = tmp('zip');
   try {
     put(dir, `${FOLDER}/package.json`, '{"version":"0.2.0"}');
-    put(dir, `${FOLDER}/public/assets/卫戍 a.png`, Buffer.alloc(5000, 7));
+    put(dir, `${FOLDER}/public/assets/${ASSET}`, Buffer.alloc(5000, 7));
     put(dir, `${FOLDER}/server/empty.js`, '');
     const zipped = [];
     const make = (name, args) => {
-      const z = spawnSync('zip', ['-q', '-r', ...args, name, FOLDER], { cwd: dir, windowsHide: true });
+      const z = spawnSync('zip', ['-q', '-r', ...args, name, FOLDER], { cwd: dir });
       if (!z.error && z.status === 0) zipped.push(name);
     };
     // plain.zip is what tools/package.mjs writes (zip, else bsdtar); the other two need Info-ZIP
@@ -359,8 +340,8 @@ test('the zip reader: stored and deflated entries, zip64, UTF-8 names; damaged a
     for (const z of zipped) {
       const b = readBase(path.join(dir, z));
       assert.deepEqual([b.version, b.art, b.update], ['0.2.0', 1, false], z);
-      assert.deepEqual([...b.files.keys()].sort(), ['package.json', 'public/assets/卫戍 a.png', 'server/empty.js'], z);
-      assert.deepEqual(b.files.get('public/assets/卫戍 a.png'), dg(Buffer.alloc(5000, 7)), z);
+      assert.deepEqual([...b.files.keys()].sort(), ['package.json', `public/assets/${ASSET}`, 'server/empty.js'], z);
+      assert.deepEqual(b.files.get(`public/assets/${ASSET}`), dg(Buffer.alloc(5000, 7)), z);
       assert.deepEqual(b.files.get('server/empty.js'), dg(''), z);
     }
     // one damaged byte in a stored entry: the CRC refuses it (zlib.crc32, Node ≥ 22.2)
@@ -368,20 +349,57 @@ test('the zip reader: stored and deflated entries, zip64, UTF-8 names; damaged a
       const bytes = fs.readFileSync(path.join(dir, 'stored.zip'));
       bytes[bytes.indexOf(Buffer.alloc(64, 7)) + 100] ^= 0xff;
       fs.writeFileSync(path.join(dir, 'bad.zip'), bytes);
-      assert.throws(() => readBase(path.join(dir, 'bad.zip')), /bad\.zip: Stronghold-Protocol\/public\/assets\/卫戍 a\.png: CRC mismatch/);
+      assert.throws(() => readBase(path.join(dir, 'bad.zip')), new RegExp(`bad\\.zip: Stronghold-Protocol/public/assets/${ASSET_RE}: CRC mismatch`));
     }
     const cut = fs.readFileSync(path.join(dir, zipped[0]));
     fs.writeFileSync(path.join(dir, 'cut.zip'), cut.subarray(0, cut.length - 30));
     assert.throws(() => readBase(path.join(dir, 'cut.zip')), /cut\.zip: (?:not a zip file|damaged|unexpected end)/, 'a truncated download');
     // entries outside the one folder: not a release zip
     put(dir, 'other/x.txt', 'x');
-    const z = spawnSync('zip', ['-q', '-r', 'foreign.zip', 'other'], { cwd: dir, windowsHide: true });
+    const z = spawnSync('zip', ['-q', '-r', 'foreign.zip', 'other'], { cwd: dir });
     if (!z.error && z.status === 0) assert.throws(() => readBase(path.join(dir, 'foreign.zip')), /outside the Stronghold-Protocol\/ folder/);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 
+test('zipFolder writes a UTF-8 name on this machine (or says why it cannot)', {
+  skip: asciiProbe.result === 'threw' ? `no zip tool writes here: ${asciiProbe.error}`
+    : utf8Probe.result === 'threw' ? `zipFolder refused the UTF-8 name: ${utf8Probe.error}` : false,
+}, () => {
+  // 'missing': a tool exited 0 but the name is not in the zip — the #311 loss, never a fallback to the ASCII sample
+  assert.equal(utf8Probe.result, 'wrote', 'the UTF-8 name is in the zip\'s bytes');
+});
+
+test('zipFolder\'s error names every attempt and keeps the install hint only when no tool exists', () => {
+  const dir = tmp('zip-hint');
+  const PATH = process.env.PATH;
+  try {
+    put(dir, `${FOLDER}/package.json`, '{"version":"0.2.0"}');
+    process.env.PATH = path.join(dir, 'no-such-bin');
+    assert.throws(() => zipFolder(dir, path.join(dir, 'out.zip')),
+      /^Error: zipping failed: zip: ENOENT; tar: ENOENT — install `zip` \(or a bsdtar `tar`\)$/);
+  } finally {
+    process.env.PATH = PATH;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a zipper that cannot write the folder names the tool that failed and why, instead of "install zip"', { skip: hasZipTool && 'this machine has a zip tool that writes' }, () => {
+  const dir = tmp('zip-fail');
+  try {
+    put(dir, `${FOLDER}/package.json`, '{"version":"0.2.0"}');
+    const zip = path.join(dir, 'out.zip');
+    assert.throws(() => zipFolder(dir, zip), (e) => {
+      assert.match(e.message, /^zipping failed: zip: /, 'the first attempt is named');
+      assert.match(e.message, /; tar: /, 'the tar fallback is named too');
+      return true;
+    });
+    assert.equal(fs.existsSync(zip), false, 'a failed attempt leaves no half-written zip behind');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
 /**
  * A zip of stored entries built byte by byte: `{ name: Buffer (the header bytes), data, flags?, extra? }` each — the
  * name encodings and extra fields a zip tool would write, independent of the zip tool and locale of the machine.

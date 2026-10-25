@@ -21,6 +21,11 @@ export function replayIdentity(root) {
   };
   walk('server/sim'); walk('shared');
   files.push('public/js/battle/runner.js', ...DATA.map((f) => `data/${f}.json`));
+  const versionsDir = path.join(root, 'data', 'versions');
+  if (fs.existsSync(versionsDir)) for (const entry of fs.readdirSync(versionsDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    for (const name of fs.readdirSync(path.join(versionsDir, entry.name))) if (name.endsWith('.json')) files.push('data/versions/' + entry.name + '/' + name);
+  }
   const hash = createHash('sha256');
   for (const f of files.sort()) hash.update(f).update('\0').update(fs.readFileSync(path.join(root, f))).update('\0');
   return hash.update(DATA_SHIM_JS).digest('hex');

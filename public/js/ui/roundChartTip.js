@@ -5,7 +5,7 @@ import { Icon } from './components.js';
 
 export function createRoundChartTip(host, state) {
   const element = document.createElement('div');
-  element.className = 'tip round-chart-tip'; element.style.display = 'none';
+  element.className = 'tip round-chart-tip'; element.style.position = 'fixed'; element.style.display = 'none';
   const head = document.createElement('header'), title = document.createElement('b'), close = document.createElement('button');
   head.className = 'tip-head'; close.type = 'button'; close.className = 'tip-close'; close.setAttribute('aria-label', t('关闭回合详情'));
   render(h(Icon, { name: 'close' }), close);

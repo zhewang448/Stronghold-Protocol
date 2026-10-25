@@ -73,10 +73,8 @@ describe('multi-device (Chrome device emulation)', { skip: !ENABLED && 'set SP_E
       page.on('request', (r) => (intercept(r.url()) ? r.respond({ status: 404, body: 'gone' }) : r.continue()));
     }
     const full = url.startsWith('/') ? `${base}${url}` : `${base}/dev/game-mock.html?shot=1&render=${render}&${url}`;
-    // Game art/audio may keep fetching after the HUD is usable. Wait for the surface and field instead of network idle.
-    await page.goto(full, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.goto(full, { waitUntil: 'networkidle0' });
     await page.waitForFunction(() => !!document.querySelector('.screen:not(.gload)'), { timeout: 20000 });
-    if (await page.$('.gm')) await page.waitForFunction(() => !!globalThis.__SP_VIEW__, { timeout: 30000 });
     await sleep(url.startsWith('/') ? 600 : 1600);
     return { page, problems };
   }
@@ -298,15 +296,9 @@ describe('multi-device (Chrome device emulation)', { skip: !ENABLED && 'set SP_E
       await sleep(400);
       await page.screenshot({ path: path.join(OUT, `device-${dev}-lobby.png`) });
       assert.deepEqual(await layoutProblems(page), [], `${dev} lobby`);
-      await tapText('.hub-entry[aria-label="ALLIANCE"]');
-      await tapText('[data-testid="create-alliance"]');
-      await page.waitForSelector('.proto-start');
-      assert.ok(await page.$('.proto[data-difficulty]'), `${dev}: difficulty comes before the team room`);
-      await tapText('.proto-start', '创建同盟');
-      await page.waitForSelector('.rs-foot__right', { timeout: 15000 });
-      await tapText('.rs-pill__gear');
-      await page.waitForSelector('.rs-opts .ailast__opt[aria-checked="true"]');
-      assert.equal(await page.$eval('.ailast__opt', e => e.getAttribute('aria-checked')), 'true', `${dev}: AI picks last is checked by default`);
+      await tapText('.mode-card', '同盟模拟');
+      await tapText('[data-testid="alliance-create"]');
+      await page.waitForSelector('.room-bar__right', { timeout: 15000 });
       await sleep(500);
       await page.screenshot({ path: path.join(OUT, `device-${dev}-room.png`) });
       assert.deepEqual(await layoutProblems(page), [], `${dev} room`);

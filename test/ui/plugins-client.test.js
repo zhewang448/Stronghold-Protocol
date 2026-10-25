@@ -435,26 +435,26 @@ describe('the 插件 panel (ui/pluginPanel.js) and the room screen', () => {
       if (seen.has(rel)) return;
       seen.add(rel);
       let src;
-      try { src = readFileSync(path.join(ROOT, rel), 'utf8'); } catch { return; }
+      try { src = readFileSync(path.join(ROOT, rel), 'utf8').replace(/\r\n/g, '\n'); } catch { return; }
       for (const m of src.matchAll(/^\s*(?:import|export)\s+(?:[^'"`;]*?\s+from\s+)?['"]([^'"]+)['"]/gm)) {
         if (m[1].startsWith('.')) walk(path.posix.normalize(path.posix.join(path.posix.dirname(rel), m[1])));
       }
     };
     walk('public/js/main.js');
     assert.ok(seen.has('public/js/content.js') && seen.has('public/js/cosmetics.js') && seen.has('public/js/ui/pluginTag.js'), 'the small parts are there');
-    assert.ok(seen.has('public/js/assets.js'), 'the Hub previews use the asset store');
+    assert.ok(seen.has('public/js/ui/assetUrls.js'), 'the local Hub uses lightweight asset URL helpers');
     for (const lazy of [ 'public/js/ui/pluginPanel.js', 'shared/plugins/visual.js', 'shared/plugins/order.js']) {
       assert.equal(seen.has(lazy), false, `${lazy} loads only when it is needed`);
     }
   });
 
   test('the room screen shows the tag under its title; the settings show 外观插件; the texts are in every pack', () => {
-    const roomSrc = readFileSync(path.join(ROOT, 'public/js/screens/room.js'), 'utf8');
+    const roomSrc = readFileSync(path.join(ROOT, 'public/js/screens/room.js'), 'utf8').replace(/\r\n/g, '\n');
     assert.match(roomSrc, /<\$\{PluginTag\} room=\$\{room\} myId=\$\{me\.playerId\} \/>/);
-    const settingsSrc = readFileSync(path.join(ROOT, 'public/js/ui/settings.js'), 'utf8');
+    const settingsSrc = readFileSync(path.join(ROOT, 'public/js/ui/settings.js'), 'utf8').replace(/\r\n/g, '\n');
     assert.match(settingsSrc, /<\$\{CosmeticSection\} \/>/);
     for (const lang of ['en', 'ja', 'ko', 'zh-TW']) {
-      const pack = JSON.parse(readFileSync(path.join(ROOT, `public/i18n/${lang}.json`), 'utf8'));
+      const pack = JSON.parse(readFileSync(path.join(ROOT, `public/i18n/${lang}.json`), 'utf8').replace(/\r\n/g, '\n'));
       for (const k of ['原版', '插件 ×{n}', '外观插件', '本服务器安装了 {n} 个插件', '非官方', '本服务器没有安装该插件']) assert.ok(pack[k], `${lang}: ${k}`);
     }
   });

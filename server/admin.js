@@ -547,6 +547,7 @@ export function resultRecord(room, m, summary, now = new Date()) {
   });
   return {
     savedAt: now.getTime(), room: room.code, mode: room.mode, difficulty: room.difficulty,
+    ...(m.version ? { version: m.version } : {}),
     result: { ...summary, players },
     history: m.history || [],
   };

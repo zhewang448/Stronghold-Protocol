@@ -48,14 +48,13 @@ async function coopAtBoss(P, base, prefix) {
   const guest = new Client(P, base, 'guest', { prefix: `${prefix}-guest`, w: 1280, h: 720 });
   await host.open();
   await host.enter('凯尔希');
-  await host.createSimulation('同盟模拟', '标准模拟');
-  const room = (await host.waitFor((s) => !!s.room?.code, 'room created')).room;
+  const room = await host.createCoop();
   for (let i = 0; i < 2; i++) { await host.click('button', '添加 AI 队友'); await sleep(600); }
   await guest.open(`?room=${room.code}`);
   await guest.enter('阿米娅');
   await guest.waitFor((s) => s.room?.code === room.code, 'guest joined');
-  for (let i = 0; i < 6; i++) { await guest.click('.rs-foot__right button', '准备就绪', { optional: true, timeout: 3000 }); await sleep(500); }
-  await host.click('.rs-foot__right button', '开始模拟', { timeout: 20000 });
+  for (let i = 0; i < 6; i++) { await guest.click('.room-bar__right button', '准备就绪', { optional: true, timeout: 3000 }); await sleep(500); }
+  await host.click('.room-bar__right button', '开始模拟', { timeout: 20000 });
   for (const c of [host, guest]) await c.waitFor((s) => s.phase === 'INFO_CHECK', 'briefing', 30000);
   for (const c of [host, guest]) await c.click('.brief__foot .btn--primary', '准备就绪');
   for (const c of [host, guest]) await c.waitFor((s) => s.phase !== 'INFO_CHECK', 'band draft', 40000);

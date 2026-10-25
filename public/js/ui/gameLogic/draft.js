@@ -32,12 +32,8 @@ function draftPage(draft, players, grouped = false) {
   if (isObj(sk)) for (const [k, v] of Object.entries(sk)) if (Number.isFinite(v)) skipsLeft.set(k, v);
   const done = typeof draft?.done === 'boolean' ? draft.done
     : (grouped || order.length > 0) && order.every((pid) => picks.has(pid));
-  return {
-    order, turnPid: turnPlayer(draft?.turn, order), picks, skipsLeft, done,
-    untimed: !!draft?.untimed,
-    turnDeadline: clockNumber(draft?.turnDeadline),
-    turnSeconds: clockNumber(draft?.turnSeconds),
-  };
+  return { order, turnPid: turnPlayer(draft?.turn, order), picks, skipsLeft, done,
+    untimed: !!draft?.untimed, turnDeadline: clockNumber(draft?.turnDeadline), turnSeconds: clockNumber(draft?.turnSeconds) };
 }
 
 function groupedPages(stage, fixedGroups, normalize) {
@@ -59,21 +55,9 @@ function ownGroupId(groups, fixedGroups, myId) {
   return source.find((group) => group.playerIds.includes(myId))?.id ?? null;
 }
 
-function stageId(stage) {
-  return typeof stage?.id === 'string' ? stage.id : null;
-}
+function stageId(stage) { return typeof stage?.id === 'string' ? stage.id : null; }
 
-// ---- 机变 / band draft normalisation ----------------------------------------------------------------------
-
-/**
- * Normalise m.public.draft ({order, turn, picks, skips?}) — tolerant of index/playerId turns and
- * object/array picks.
- * @param {any} draft
- * Grouped frames select my fixed pool group; legacy frames retain their original order fallback.
- * @param {any[]} [players]
- * @param {string|null} [myId]
- * @param {any[]} [fixedGroups]
- */
+/** Normalise the grouped or legacy strategy draft and select the viewer's fixed pool group. */
 export function normalizeDraft(draft, players = [], myId = null, fixedGroups = []) {
   const groups = groupedPages(draft, fixedGroups, (raw) => draftPage(raw, players, true));
   const mine = ownGroupId(groups, fixedGroups, myId);
@@ -81,10 +65,17 @@ export function normalizeDraft(draft, players = [], myId = null, fixedGroups = [
   const page = selected || draftPage(draft, players);
   const allPicks = draftPage(draft, players).picks;
   for (const group of groups) for (const [pid, bandId] of group.picks) allPicks.set(pid, bandId);
-  return {
-    ...page, id: stageId(draft), groupId: selected?.id ?? mine, ownGroupId: mine,
-    groups, allPicks, allDone: groups.length ? groups.every((group) => group.done) : page.done,
-  };
+  return { ...page, id: stageId(draft), groupId: selected?.id ?? mine, ownGroupId: mine,
+    groups, allPicks, allDone: groups.length ? groups.every((group) => group.done) : page.done };
+}
+
+/** Preserve the last band draft while the next phase's first public frame arrives. */
+export function heldDraftPub(last, pub) {
+  if (!last || typeof last !== 'object') return last;
+  const players = Array.isArray(pub?.players) ? pub.players : last.players;
+  const picks = { ...(last.draft?.picks || {}) };
+  for (const p of Array.isArray(players) ? players : []) if (p && p.bandId && !picks[p.playerId]) picks[p.playerId] = p.bandId;
+  return { ...last, players, deadline: 0, draft: { ...last.draft, picks, turn: null, turnDeadline: 0 } };
 }
 
 function spPage(sp, players, grouped = false, inherited = null) {
@@ -94,63 +85,37 @@ function spPage(sp, players, grouped = false, inherited = null) {
     const card = typeof c === 'string' ? { id: c } : isObj(c) ? { ...c } : {};
     return { ...card, idx, takenBy: typeof card.takenBy === 'string' ? card.takenBy : null };
   });
-  const takenBy = new Map(); // idx → playerId, scoped to this page only
-  const pickOf = new Map(); // playerId → idx
-  const src = sp.picks;
+  const takenBy = new Map(); const pickOf = new Map(); const src = sp.picks;
   const add = (pid, idx) => {
     if (typeof pid !== 'string' || !Number.isInteger(idx) || idx < 0 || idx >= cards.length) return;
-    takenBy.set(idx, pid);
-    pickOf.set(pid, idx);
+    takenBy.set(idx, pid); pickOf.set(pid, idx);
   };
   if (Array.isArray(src)) src.forEach((v, i) => { if (isObj(v)) add(v.playerId, v.idx); else if (Number.isInteger(v) && order[i]) add(order[i], v); });
   else if (isObj(src)) for (const [k, v] of Object.entries(src)) add(k, v);
   if (isObj(sp.taken)) for (const [k, v] of Object.entries(sp.taken)) add(v, Number(k));
   for (const c of cards) if (c.takenBy) add(c.takenBy, c.idx);
   for (const c of cards) c.takenBy = takenBy.get(c.idx) ?? null;
-  const meta = (key) => {
-    const value = sp[key] ?? inherited?.[key];
-    return typeof value === 'string' && value ? value : null;
-  };
-  const done = typeof sp.done === 'boolean' ? sp.done
-    : (grouped || order.length > 0) && order.every((pid) => pickOf.has(pid));
-  return {
-    family: meta('family'), name: meta('name'), desc: meta('desc'), eventId: meta('eventId'),
-    untimed: !!(sp.untimed ?? inherited?.untimed),
-    turnDeadline: clockNumber(sp.turnDeadline), turnSeconds: clockNumber(sp.turnSeconds),
-    cards, order, turnPid: turnPlayer(sp.turn, order), pickOf, takenBy, pickedCount: pickOf.size, done,
-  };
+  const meta = (key) => { const value = sp[key] ?? inherited?.[key]; return typeof value === 'string' && value ? value : null; };
+  const done = typeof sp.done === 'boolean' ? sp.done : (grouped || order.length > 0) && order.every((pid) => pickOf.has(pid));
+  return { family: meta('family'), name: meta('name'), desc: meta('desc'), eventId: meta('eventId'),
+    untimed: !!(sp.untimed ?? inherited?.untimed), turnDeadline: clockNumber(sp.turnDeadline), turnSeconds: clockNumber(sp.turnSeconds),
+    cards, order, turnPid: turnPlayer(sp.turn, order), pickOf, takenBy, pickedCount: pickOf.size, done };
 }
 
-/**
- * Normalise m.public.sp ({family, cards, turn, picks, order?}).
- * Cards: string ids or objects; picks: {playerId: cardIdx} | [{playerId, idx}] | card.takenBy.
- * @param {any} sp
- * @param {any[]} [players]
- * @param {string|null} [myId]
- * @param {any[]} [fixedGroups]
- * @param {number|null} [viewGroupId]
- */
+/** Normalise the grouped or legacy machine-event selection. */
 export function normalizeSp(sp, players = [], myId = null, fixedGroups = [], viewGroupId = null) {
   if (!isObj(sp)) return null;
   const groups = groupedPages(sp, fixedGroups, (raw) => spPage(raw, players, true, sp));
   const mine = ownGroupId(groups, fixedGroups, myId);
-  const selected = groups.find((group) => group.id === viewGroupId)
-    || groups.find((group) => group.id === mine) || groups[0];
+  const selected = groups.find((group) => group.id === viewGroupId) || groups.find((group) => group.id === mine) || groups[0];
   const page = selected || spPage(sp, players);
-  return {
-    ...page, id: stageId(sp), groupId: selected?.id ?? mine, ownGroupId: mine, groups,
-    allDone: groups.length ? groups.every((group) => group.done) : page.done,
-  };
+  return { ...page, id: stageId(sp), groupId: selected?.id ?? mine, ownGroupId: mine, groups,
+    allDone: groups.length ? groups.every((group) => group.done) : page.done };
 }
 
 /** Adapt only the recipient's current PREP choice; never write it into the public draft. */
 export function normalizePersonalChoice(pub, priv, myId) {
   const choice = priv?.personalChoice;
-  if (pub?.phase !== PHASE.PREP || !priv || priv.playerId !== myId || priv.alive === false
-    || !choice || choice.round !== pub.round) return null;
-  return {
-    ...normalizeSp({ family: 'bounty', name: t('教鞭 · 战术特训'), desc: t('请选择一项战术特训'),
-      cards: choice.cards, turn: myId, order: [myId], picks: {} }),
-    id: choice.id,
-  };
+  if (pub?.phase !== PHASE.PREP || !priv || priv.playerId !== myId || priv.alive === false || !choice || choice.round !== pub.round) return null;
+  return { ...normalizeSp({ family: 'bounty', name: t('教鞭 · 战术特训'), desc: t('请选择一项战术特训'), cards: choice.cards, turn: myId, order: [myId], picks: {} }), id: choice.id };
 }

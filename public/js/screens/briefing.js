@@ -1,3 +1,4 @@
+import { MatchEnemies } from '../ui/matchEnemies.js';
 // Briefing — INFO_CHECK "1/2 确认本局信息" (research 06 §4.1, D1): enemy leader (silhouette, name,
 // abilities), stage (+ its pool: 战场固定 / 战场随机（共N张）), 特训敌人 factions (icon, name, description), the difficulty
 // tag, the ready count x/N with person pips, the 准备就绪 button (g.infoReady) and the countdown. The right column — 核心盟约
@@ -84,13 +85,7 @@ export function BriefingScreen() {
           <span class="brief-stage__k"><${MicroLabel}>BATTLEFIELD</${MicroLabel}>${pool ? html`<span class="brief-stage__pool">${pool}</span>` : null}</span>
           <span class="brief-stage__name"><${Icon} name="rook" />${stage?.name || pub.stageId || '—'}</span>
         </div>
-        <div class="brief-factions">
-          <h3 class="brief-h"><span>${t('特训敌人')}</span><${MicroLabel}>SPECIAL ENEMIES</${MicroLabel}></h3>
-          ${types.length ? types.map((t) => html`<div key=${t} class="brief-faction">
-            <span class="brief-faction__icon"><${Img} src=${factionIconUrl(m, factions[t]?.icon)} /></span>
-            <span class="brief-faction__text"><b>${factions[t]?.name || t}</b><span>${factions[t]?.desc || ''}</span></span>
-          </div>`) : html`<p class="t-dim">${t('本局没有特训敌人')}</p>`}
-        </div>
+        <${MatchEnemies} pub=${pub} gd=${gd} />
       </section>
       <section class="brief__right">
         <${MatchInfo} model=${info} />

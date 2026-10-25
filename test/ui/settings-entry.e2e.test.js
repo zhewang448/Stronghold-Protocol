@@ -32,11 +32,11 @@ describe('the settings entry of the lobby and the room', { skip: !ENABLED && 'se
     await srv?.close();
   });
 
-  /** Is the 设置 button the sibling before the 玩法说明 button of `screen`'s top bar? */
+  /** Is the 设置 button the sibling right before the 玩法说明 button of `screen`'s top bar? */
   const settingsBeforeGuide = (page, screen, guideClass) => page.evaluate((s, g) => {
     const btn = document.querySelector(`${s} [data-testid="settings-btn"]`);
     const guide = document.querySelector(`${s} .${g}`);
-    return !!btn && !!guide && btn.parentElement === guide.parentElement && !!(btn.compareDocumentPosition(guide) & Node.DOCUMENT_POSITION_FOLLOWING) && /设置/.test(btn.getAttribute('aria-label') || btn.textContent) && btn.querySelector('svg.btn__icon') != null;
+    return !!btn && !!guide && btn.nextElementSibling === guide && /设置/.test(btn.getAttribute('aria-label') || btn.textContent) && btn.querySelector('svg.btn__icon') != null;
   }, screen, guideClass);
   const modalText = (page) => page.evaluate(() => document.querySelector('.modal')?.textContent.replace(/\s+/g, ' ').trim() ?? null);
 
@@ -53,7 +53,7 @@ describe('the settings entry of the lobby and the room', { skip: !ENABLED && 'se
     await page.waitForSelector('.lobby-screen', { timeout: 15000 });
     await sleep(500);
 
-    assert.ok(await settingsBeforeGuide(page, '.lobby-screen .topbar__tools', 'lobby-guide'), '设置 sits before 玩法说明 in the lobby\'s top bar');
+    assert.ok(await settingsBeforeGuide(page, '.lobby-screen .topbar__tools', 'lobby-guide'), '设置 sits right before 玩法说明 in the lobby\'s top bar');
     assert.equal(await modalText(page), null, 'closed until asked');
     await page.click('.lobby-screen [data-testid="settings-btn"]');
     await page.waitForSelector('.modal', { timeout: 5000 });
@@ -70,15 +70,14 @@ describe('the settings entry of the lobby and the room', { skip: !ENABLED && 'se
     assert.equal(await modalText(page), null, 'Esc closes it');
     assert.ok(await page.$('.lobby-screen'), 'the lobby is still there');
 
-    // The hub now opens the alliance method picker before creating the room.
-    await page.click('.hub-entry[aria-label="ALLIANCE"]');
-    await page.waitForSelector('[data-testid="create-alliance"]');
-    await page.click('[data-testid="create-alliance"]');
-    await page.waitForSelector('.proto-start');
-    await page.click('.proto-start');
+    // the room: 同盟模拟 → 创建同盟 (the room at once) → the same button, closed with 完成
+    await page.click('.mode-card[data-mode="coop"]');
+    await page.waitForSelector('[data-testid="alliance-create"]', { visible: true, timeout: 5000 });
+    await page.waitForFunction(() => !document.querySelector('[data-testid="alliance-create"]')?.disabled, { timeout: 15000 });
+    await page.click('[data-testid="alliance-create"]');
     await page.waitForSelector('.room-screen', { timeout: 15000 });
     await sleep(500);
-    assert.ok(await settingsBeforeGuide(page, '.room-screen .rs-tools', 'room-guide'), '设置 sits before 玩法说明 in the room\'s top bar');
+    assert.ok(await settingsBeforeGuide(page, '.room-screen .topbar__left', 'room-guide'), '设置 sits right before 玩法说明 in the room\'s top bar');
     await page.click('.room-screen [data-testid="settings-btn"]');
     await page.waitForSelector('.modal', { timeout: 5000 });
     assert.match(await modalText(page), /背景音乐/);

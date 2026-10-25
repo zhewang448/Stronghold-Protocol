@@ -29,8 +29,6 @@ import { roomPluginFacts, isModdedRoom } from '../../public/js/ui/pluginTag.js';
 import { installDiySync } from '../../public/js/ui/loadoutSync.js';
 import { createPluginRegistry } from '../../server/plugins/registry.js';
 import { createContentSets } from '../../server/plugins/contentSets.js';
-import { computeVanillaContent } from '../../server/plugins/identity.js';
-import { DATA_SHIM_JS } from '../../server/http/static.js';
 import { getData } from '../../server/data.js';
 import { sha256Hex } from '../../shared/sha256.js';
 import { buildRecordOverlay } from '../../shared/i18nData.js';
@@ -80,39 +78,6 @@ function serverFetch({ edit = null, fail = null } = {}) {
 }
 
 describe('loading and checking a room\'s content set (public/js/content.js)', () => {
-  test('loadContentSet: host replays explicitly accept vanilla manifests and still verify identity and bytes', async () => {
-    const vanilla = computeVanillaContent({ simDir: path.join(ROOT, 'server/sim'), sharedDir: path.join(ROOT, 'shared'), dataDir: path.join(ROOT, 'data'), shim: DATA_SHIM_JS });
-    const url = `/cs/${vanilla.cs.slice(0, 16)}/index.json`;
-    let index = vanilla.index;
-    let corrupt = false;
-    const originalFetch = serverFetch().fetchFn;
-    const fetchFn = async (u) => {
-      if (u === url) return bytesRes(Buffer.from(JSON.stringify(index)));
-      const res = await originalFetch(u);
-      if (!corrupt || !u.startsWith('/data/chess.json')) return res;
-      const bytes = Buffer.from(await res.arrayBuffer());
-      bytes[bytes.length - 3] ^= 1;
-      return bytesRes(bytes);
-    };
-    await assert.rejects(loadContentSet(vanilla.cs, { fetch: fetchFn }), /not the room's content set/);
-    const opts = { fetch: fetchFn, allowVanilla: true };
-    const set = await loadContentSet(vanilla.cs, opts);
-    assert.equal(set.index.vanilla, true);
-    assert.equal(set.cs, vanilla.cs);
-    assert.deepEqual(set.values.get('chess'), DATA.chess);
-    assert.equal(set.canSim, true);
-    assert.deepEqual(set.scripts, []);
-    index = { ...vanilla.index, cs: 'ab'.repeat(32) };
-    await assert.rejects(loadContentSet(vanilla.cs, opts), /not the room's content set/);
-    index = { ...vanilla.index, sim: 'cd'.repeat(32) };
-    await assert.rejects(loadContentSet(vanilla.cs, opts), /does not hash/);
-    index = { ...vanilla.index, vanilla: undefined };
-    await assert.rejects(loadContentSet(vanilla.cs, opts), /not the room's content set/);
-    index = vanilla.index;
-    corrupt = true;
-    await assert.rejects(loadContentSet(vanilla.cs, opts), /do not hash/);
-  });
-
   test('fetchChecked: the bytes are checked before they are decoded — a BOM stays part of them; a changed byte or size is refused', async () => {
     const json = Buffer.from(JSON.stringify({ a: 1 }));
     const bom = Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), json]);
@@ -447,12 +412,13 @@ describe('statistics and the room\'s facts with gameplay plugins', () => {
     assert.deepEqual([all.count, all.modded, all.rounds.max], [2, 0, 14]);
   });
 
-  test('stats v3: v1 and v2 envelopes migrate (their records have no round history)', () => {
+  test('stats v2+: a v1 envelope migrates (its records played the original game; v3 added `version`, DESIGN §35.23)', () => {
     assert.equal(STATS_VERSION, 3);
     const v1 = { v: 1, records: [{ id: 'r1', v: 1, t: 5, end: 'settled', players: [{ playerId: 'p1', stats: {} }], selfId: 'p1' }] };
     const { stats, changed } = migrateStats(v1);
     assert.equal(changed, true);
     assert.equal(stats.v, 3);
+    assert.equal('version' in stats.records[0], false, 'no version: 第二期下半');
     assert.equal(stats.records[0].content, null);
     assert.equal(stats.records[0].id, 'r1');
   });

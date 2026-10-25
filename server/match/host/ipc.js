@@ -39,11 +39,12 @@ export function validHostMessage(m) {
   if (m.type === 'boot-error') return str(m.error, HOST_IPC_LIMITS.error) && boundedJson(m, HOST_IPC_LIMITS.error + 128);
   if (!str(m.matchId, 160) || !m.matchId) return false;
   switch (m.type) {
+    case 'recovery': return str(m.bytes, HOST_IPC_LIMITS.message - 1024) && boundedJson(m, HOST_IPC_LIMITS.message);
     case 'send':
       if (!str(m.playerId, 128) || !m.playerId) return false;
       // falls through to the shared match-frame validation below
-      return object(m.msg) && matchFrames.has(m.msg.t) && boundedJson(m, HOST_IPC_LIMITS.message);
-    case 'broadcast': return object(m.msg) && matchFrames.has(m.msg.t) && boundedJson(m, HOST_IPC_LIMITS.message);
+      return object(m.msg) && matchFrames.has(m.msg.t) && (m.encoded === undefined || str(m.encoded, HOST_IPC_LIMITS.message)) && boundedJson(m, HOST_IPC_LIMITS.message);
+    case 'broadcast': return object(m.msg) && matchFrames.has(m.msg.t) && (m.encoded === undefined || str(m.encoded, HOST_IPC_LIMITS.message)) && boundedJson(m, HOST_IPC_LIMITS.message);
     case 'reply': return Number.isSafeInteger(m.id) && m.id > 0 && object(m.result)
       && (m.result.error === undefined || str(m.result.error, 80))
       && (m.result.ok === undefined || typeof m.result.ok === 'boolean') && boundedJson(m, HOST_IPC_LIMITS.reply);

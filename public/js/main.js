@@ -58,17 +58,17 @@ import { settingsStore, updateSettings } from './ui/settings.js';
 import { ResourceHost } from './ui/resourcePanel.js';
 import { syncResources, unsupportedReason } from './resources/index.js';
 import { GuideHost } from './ui/guide.js';
-import { installDeviceSupport } from './ui/device.js';
+import { installDeviceSupport, useFullscreen, useScreenWakeLock } from './ui/device.js';
 import { pwaInstall } from './pwa.js';
 import { registerImportedAssetWorker } from './assetCache.js';
 import { LoadoutHost } from './screens/loadout.js';
-import { StatsHost } from './screens/stats.js';
+import { StatsHost, useStatsOpen } from './screens/stats.js';
 import { PersonalDataHost, hasPersonalDataMigration } from './ui/personalDataPanel.js';
 import { RecoveryHost, bootDomainGate } from './ui/domainRecovery.js';
 import { markGameEntry } from './ui/domainRecoveryModel.js';
 import { installRehearsal } from './battle/rehearsal.js';
 import { recordResult, installStatsRecorder } from './ui/stats.js';
-import { installLoadoutSync, installOwnershipSync, installDiySync, installSkinsSync } from './ui/loadoutSync.js';
+import { installSettingsViews, loadoutStore, installLoadoutSync, installOwnershipSync, installDiySync, installSkinsSync, installCardSync } from './ui/loadoutSync.js';
 import { installBondPlanSync } from './ui/bondPlan.js';
 
 import { startBuildGuard, fetchBuild } from './ui/buildGuard.js';
@@ -79,6 +79,11 @@ import { recordError, installTrafficMeter } from './diag.js';
 import { validPing } from './ui/fieldPings.js';
 import { installContent, installContentSet } from './content.js';
 import { cosmetics } from './cosmetics.js';
+
+import { sanitizeVersions, roomVersion, isDefaultVersion, matchFrameVersion } from './versions.js';
+import { CoveredVersionVote } from './ui/versionVote.js';
+import { isCombatPhase } from './ui/gameLogic/phases.js';
+import { preloadBootArt } from './ui/protocolBoot.js';
 
 const RESTORE_GRACE_MS = 1500;
 const JOIN_DELAY_MS = 350;
@@ -188,6 +193,7 @@ function onWelcome(msg) {
     installedPlugins: pluginCount(msg.content),
     installedNotices: msg.content?.notices === true,
     testMode: msg.testMode === true,
+    versions: sanitizeVersions(msg.versions),
   });
   welcomeAt = Date.now();
 
@@ -227,6 +233,7 @@ function onRoomState(msg) {
   const prevRoom = store.get().room;
   // A (new) match starts: forget the previous match's state so stale results never show.
   if (room.inMatch && !(prevRoom && prevRoom.inMatch && prevRoom.code === room.code)) store.set({ match: emptyMatch(), pings: [] });
+  if (prevRoom && prevRoom.code === room.code && !room.inMatch && roomVersion(prevRoom) !== roomVersion(room) && store.get().match.public) store.set({ match: emptyMatch(), pings: [] });
   store.set({ room });
   identity.rememberMatch(room.inMatch && seats.some((seat) => seat?.playerId === myId)
     ? { name: store.get().me.name, code: room.code || '' } : null);
@@ -286,7 +293,9 @@ function wireNet() {
     // replays dedupe by content id inside recordResult (spectator seats' copies build no record at all)
     // (`vs`: the room's cosmetic plugins, recorded — such a match still counts as the original game: ui/stats.js)
     // (`content`: the room's content set when it played gameplay plugins — such a match is unofficial: ui/stats.js)
-    if (store.get().room?.test !== true && store.get().match.public?.test !== true) recordResult(res, { myId: store.get().me.playerId, roomMode: store.get().room?.mode ?? null, vs: store.get().room?.content?.vs ?? null, content: store.get().room?.content ?? null, now: Date.now() });
+    const s = store.get();
+    const version = s.room ? roomVersion(s.room) : matchFrameVersion({ result: res, public: s.match.public });
+    if (s.room?.test !== true && s.match.public?.test !== true) recordResult(res, { myId: s.me.playerId, roomMode: s.room?.mode ?? null, vs: s.room?.content?.vs ?? null, content: s.room?.content ?? null, version: isDefaultVersion(version) ? null : version, now: Date.now() });
   });
   net.on('m.toast', (msg) => {
     const kind = ['info', 'success', 'warn', 'error'].includes(msg.kind) ? msg.kind : 'info';
@@ -332,7 +341,7 @@ function wireNet() {
  */
 function warmGameData() {
   // a room with gameplay plugins: content.js downloads its content set's files instead (DESIGN §32.6)
-  const go = () => { if (store.get().room?.content?.vanilla === false) return; data.loadAll(GAME_FILES).catch(() => {}); };
+  const go = () => { const room = store.get().room; if (room?.content?.vanilla === false) return; if (room?.version) { data.load('assets').then(() => preloadBootArt(), () => {}); return; } data.loadAll(GAME_FILES).then(() => preloadBootArt(), () => {}); };
   if (typeof globalThis.requestIdleCallback === 'function') globalThis.requestIdleCallback(go, { timeout: 2500 });
   else setTimeout(go, 600);
 }
@@ -352,6 +361,10 @@ function ScreenCrashed({ error, reset }) {
 
 function App() {
   const route = useStore(selectRoute);
+  const combatActive = useStore(s => selectRoute(s) === 'game' && s.room?.inMatch === true && !s.match?.result && isCombatPhase(s.match?.public?.phase));
+  const fullscreenWakeLock = useStore(s => s.fullscreenWakeLock, Object.is, settingsStore);
+  const fullscreenActive = useFullscreen();
+  useScreenWakeLock(combatActive || (fullscreenWakeLock && fullscreenActive));
   useLang(); // a language switch re-renders the whole tree in place
   const [error, resetError] = useErrorBoundary((err) => console.error('[ui] screen crashed', err));
   const Screen = SCREENS[route] || LobbyScreen;
@@ -369,6 +382,7 @@ function App() {
     <${GuideHost} />
     <${LoadoutHost} />
     <${StatsHost} />
+    <${VoteOverOverlays} />
     <${PersonalDataHost} />
     <${RecoveryHost} />
     <${ResourceHost} enabled=${resources.preload} optional=${resources.preloadOptional} voiceLang=${resources.preloadVoiceLang}
@@ -376,6 +390,8 @@ function App() {
       onVoiceLang=${(preloadVoiceLang) => updateSettings({ preloadVoiceLang })} />
   </div>`;
 }
+
+function VoteOverOverlays() { const lo = useStore(s => !!s.open, Object.is, loadoutStore); const st = useStatsOpen(); return html`<${CoveredVersionVote} covered=${lo || st} />`; }
 
 // ---- boot -----------------------------------------------------------------------------------------
 
@@ -441,14 +457,15 @@ async function boot() {
   const syncPreload = (s) => { if (!unsupportedReason()) void syncResources(s.preload, s.preloadOptional, s.preloadVoiceLang); };
   settingsStore.subscribe(syncPreload); syncPreload(settingsStore.get());
   installStatsRecorder(store); // follows the match on screen, so a 放弃模拟 can be recorded (ui/stats.js)
+  installSettingsViews();
   installLoadoutSync({ net });
   installSkinsSync({ net });
   installBondPlanSync({ net });
   installOwnershipSync({ net });
   installDiySync({ net });
+  installCardSync({ net });
   // 干员皮肤 (docs/SKINS.md): keeps the server's copy of this browser's chosen appearances current (room.skins), from
   // ui/skins.js' own store — its 皮肤 section is rendered by screens/loadout.js.
-  installSkinsSync({ net });
   // the room's cosmetic plugins and the player's own over the art manifest (content.js; nothing is fetched without them)
   installContent({ toast });
   // a room with gameplay plugins: its content set downloaded, checked and shown (content.js — DESIGN §32.6)

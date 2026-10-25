@@ -1,3 +1,7 @@
+import { cardOperators, seatOperator, seatCardSkin, seatArtSrc } from '../ui/seatArt.js';
+import { chessPortraitUrl } from '../ui/assetUrls.js';
+import { skinsStore } from '../ui/skins.js';
+import { settingsStore } from '../ui/settingsStore.js';
 // Band draft — BAND_DRAFT "2/2 选择策略" (research 06 §4.2, D1): left = draft order (avatar, name, state:
 // … waiting / ⌛ 决策中 / chosen band ✓), each group's current picker highlighted; centre = grid of every band allowed
 // for the mode type (icon, name, LP); a band a teammate already picked carries the picker's avatar and is marked
@@ -31,13 +35,37 @@ import { useStore, shallowEqual } from '../store.js';
 import { BondPlanDialog, BondPlanBadge, bondPlanStore, loadBondPlanData } from '../ui/bondPlan.js';
 import { data } from '../data.js';
 import { audio } from '../audio.js';
-import { TurnBanner } from '../ui/turnBanner.js';
-import { bootArtReady } from '../ui/protocolBoot.js';
+import { TURN_BANNER_LATE_MS, TurnBanner } from '../ui/turnBanner.js';
+import { bootArtReady, preloadBootArt, onBootArt } from '../ui/protocolBoot.js';
 import { reducedMotion } from '../ui/device.js';
 import { modeOffBonds, bandOffBonds, bandOffLine } from '../ui/gameLogic.js';
 import { t, tParts, tName } from '../../../shared/i18n.js';
+import { peekStatsRecords, strategyBadgeIds, selfRowOf, aggregateStats } from '../ui/stats.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
+function DraftPortrait({ player, players, myId }) {
+  const localSkins = useStore(s => s.skins || s, Object.is, skinsStore);
+  const otherSkins = useStore(s => s.otherSkins !== false, Object.is, settingsStore);
+  const [failed, setFailed] = useState([]);
+  const list = cardOperators(data.list('chess'), data.get('seat-art'));
+  const context = { pool: list, byChar: new Map(list.map(op => [op.charId, op])) };
+  const op = seatOperator(player, context, { myId, myCard: player.card });
+  if (!op) return null;
+  const skin = seatCardSkin(player, op.chess.charId, { myId, localSkins, players, otherSkins });
+  const arts = [chessPortraitUrl(data.get('assets'), op.chess, { skin }), skin ? chessPortraitUrl(data.get('assets'), op.chess) : null];
+  const art = seatArtSrc(arts, failed);
+  return art ? html`<img class="dorder__art" src=${art} alt="" onError=${() => setFailed(old => [...old, art])} />` : null;
+}
+
+const NO_RECORDS = Object.freeze({ won: {}, badges: new Set(), trophies: 0 });
+
+/** Local strategy progress; test matches, training and inherited AI seats never earn personal badges. */
+export function draftRecords(records, bands) {
+  const valid = (Array.isArray(records) ? records : []).filter(rec => rec && rec.end !== 'quit' && rec.test !== true && rec.difficulty !== 'TRAINING' && rec.modeId !== 'mode_training_1' && !Number.isInteger(selfRowOf(rec)?.aiTakeoverRound));
+  const won = {};
+  for (const rec of valid) { const self = selfRowOf(rec); if (self?.bandId && self.victory) won[self.bandId] = (won[self.bandId] || 0) + 1; }
+  return { won, badges: new Set(strategyBadgeIds(valid, bands)), trophies: aggregateStats(valid).trophies };
+}
 
 /** 本局禁用 on a strategy card whose bonds `names` the mode switches off (bandOffBonds); nothing otherwise. */
 export function BandOffTag({ names = [] }) {
@@ -189,8 +217,9 @@ export function draftInfoStatus({ myPick = null, pickName = null, myTurn, turnNa
 }
 
 /** BAND_DRAFT screen. */
-export function BandDraftScreen() {
-  const pub = useStore((s) => s.match.public);
+export function BandDraftScreen({ held = null } = {}) {
+  const livePub = useStore((s) => s.match.public);
+  const pub = held || livePub;
   const priv = useStore((s) => s.match.private);
   const myId = useStore((s) => s.me.playerId);
   // 预选盟约 BOND PLAN: this browser's own choice (the server echoes it back on every player, so the list below
@@ -204,6 +233,11 @@ export function BandDraftScreen() {
   const [skipped, setSkipped] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
+  const [local, setLocal] = useState(NO_RECORDS);
+  useEffect(() => {
+    const id = setTimeout(() => setLocal(draftRecords(peekStatsRecords(), data.get('bands'))), 0);
+    return () => clearTimeout(id);
+  }, []);
   const orderRef = useRef(null);
 
   const mode = gd.config?.modes?.[pub?.modeId];
@@ -235,11 +269,15 @@ export function BandDraftScreen() {
     if (next !== sel) setSel(next);
   }, [bands.length, myPick, myTurn, takenKey]);
   // "your turn" cue: the sound, and the event's 请选择策略 band (ui/turnBanner.js) once its art is in
+  useEffect(() => { preloadBootArt(); }, []);
   const [turnBanner, setTurnBanner] = useState(0);
   useEffect(() => {
-    if (!myTurn || solo) return;
+    if (!myTurn) return undefined;
+    setInfoOpen(false);
     audio.sfx('yourTurn');
-    if (bootArtReady() && !reducedMotion()) setTurnBanner((n) => n + 1);
+    if (reducedMotion()) return undefined;
+    const since = Date.now();
+    return onBootArt(() => { if (Date.now() - since <= TURN_BANNER_LATE_MS) setTurnBanner(n => n + 1); });
   }, [myTurn]);
   // The extension's core-bond preference is independent of the draft.
   useEffect(() => { loadBondPlanData(); }, []);
@@ -295,7 +333,7 @@ export function BandDraftScreen() {
     waiting: !solo && !draft.allDone }) : null;
   const orderGroups = grouped ? draft.groups : [{ ...draft, id: null, order: solo ? [myId] : draft.order }];
 
-  return html`<div class="screen draft">
+  return html`<div class=${cx('screen draft', held && 'is-held')} inert=${held ? true : undefined}>
     <div class="brief__bg" aria-hidden="true"></div>
     <${StepHeader} step=${2} of=${2} title=${t('选择策略')} micro="STRATEGY // BAND CHECK" pub=${clock ? { ...pub, deadline: clock.deadline } : { ...pub, deadline: 0 }}
       total=${clock ? clock.total : null} onExit=${() => setExit(true)} />
@@ -313,6 +351,7 @@ export function BandDraftScreen() {
           const pband = picked ? gd.band(picked) : null;
           return html`<div key=${p.playerId} class=${cx('dorder', cur && 'is-cur', picked && 'is-done', p.playerId === myId && 'is-self')}>
             ${!solo ? html`<span class="dorder__idx num">${i + 1}</span>` : null}
+            <${DraftPortrait} player=${p} players=${players} myId=${myId} />
             <span class="dorder__avatar"><${PlayerAvatar} player=${p} self=${p.playerId === myId} />
               ${grouped ? html`<span class="dorder__group-badge" title=${t('{group}组 · 同组共享卡池', { group: group.label })}>${group.label}</span>` : null}
             </span>
@@ -345,12 +384,14 @@ export function BandDraftScreen() {
           const who = pickers.get(b.bandId) || [];
           const isTaken = taken.has(b.bandId);
           const otherGroups = otherBandGroups(draft, b.bandId);
+          const badged = local.badges.has(b.bandId);
           const offNames = bandOffBonds(b, offBonds).map((id) => gd.bond(id)?.name || id); // 本局禁用 (still selectable)
           return html`<button key=${b.bandId} type="button" role="option" aria-selected=${sel === b.bandId ? 'true' : 'false'} data-band=${b.bandId}
               aria-disabled=${isTaken ? 'true' : 'false'} title=${isTaken ? t('队友已选') : offNames.length ? bandOffLine(offNames) : undefined}
               class=${cx('dband', sel === b.bandId && 'is-sel', myPick === b.bandId && 'is-mine', isTaken && 'is-taken', offNames.length && 'is-off')} onClick=${() => { setSel(b.bandId); audio.sfx('tab', { volume: 0.5 }); }}>
             <${BandIcon} bandId=${b.bandId} size="lg" />
             <span class="dband__name">${b.name}</span>
+            ${badged ? html`<span class="dband__badge" data-testid="band-badge"><${Sprite} k="statistics/strategyBadge" class="dband__badge-art" /></span>` : null}
             <span class="dband__lp num"><i></i>${b.totalHp}</span>
             <${BandOffTag} names=${offNames} />
             ${who.length ? html`<span class="dband__who">${who.slice(0, 4).map((p) => html`<${PlayerAvatar} key=${p.playerId} player=${p} size="sm" />`)}</span>` : null}
@@ -369,6 +410,7 @@ export function BandDraftScreen() {
           </div>
           <div class="draft-detail__hp"><span>${t('初始生命值')}</span><${LpTower} value=${band.totalHp} size="lg" /></div>
           <h2 class="draft-detail__name">${band.name}</h2>
+          ${local.won[band.bandId] ? html`<span class="draft-detail__medal">${t('已通过模拟{n}次', { n: local.won[band.bandId] })}</span>` : null}
           <${BandOffNote} names=${bandOffBonds(band, offBonds).map((id) => gd.bond(id)?.name || id)} />
           <div class="draft-detail__eff">
             <${MicroLabel} tone="mint">EFFECT</${MicroLabel}>

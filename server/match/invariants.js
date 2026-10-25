@@ -41,6 +41,9 @@ export function collectViolations(m, { limit = 25 } = {}) {
   const fail = (msg) => { if (out.length < limit) out.push(msg); };
   const gd = m.gd;
   const heldByPool = new Map(m.poolGroups.map((g) => [g.pool, new Map()]));
+  // Older diagnostics replace `match.pool` with a single test pool. Keep that compatibility pool assignable
+  // without weakening the normal fixed group accounting below.
+  if (m.pool && !heldByPool.has(m.pool)) heldByPool.set(m.pool, new Map());
   const uids = new Set();
   const banned = new Set(m.bannedChess || []);
   const note = (ps, p) => {
@@ -204,7 +207,9 @@ export function collectViolations(m, { limit = 25 } = {}) {
   }
 
   // Each group conserves its own copies; a balanced global total alone would hide a cross-group return bug.
-  for (const { id, pool } of m.poolGroups) {
+  const checkedPools = new Map(m.poolGroups.map(({ id, pool }) => [pool, id]));
+  if (m.pool && !checkedPools.has(m.pool)) checkedPools.set(m.pool, 'compat');
+  for (const [pool, id] of checkedPools) {
     const held = heldByPool.get(pool);
     for (const [base, e] of pool.entries) {
       if (!(Number.isInteger(e.left) && e.left <= e.cap)) fail(`pool ${id}/${base}: balance ${e.left} cap ${e.cap}`);

@@ -46,7 +46,7 @@ describe('cosmetic plugins in the browser (P1a)', { skip: !ENABLED && 'set SP_E2
     const [[roomChess, roomId], [, personalId]] = twoOperators();
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-plugins-e2e-'));
     writePlugin(path.join(tmp, 'room-skin'), cosmetic({ name: { zh: '红色头像', en: 'Red avatar' }, authors: ['e2e'],
-      assets: { chars: { [roomId]: { avatar: 'art/red.png', portrait: 'art/red.png' } } } }), { 'art/red.png': png(8, 8, [255, 0, 0, 255]) });
+      assets: { chars: { [roomId]: { avatar: 'art/red.png' } } } }), { 'art/red.png': png(8, 8, [255, 0, 0, 255]) });
     writePlugin(path.join(tmp, 'my-skin'), cosmetic({ name: { zh: '绿色头像', en: 'Green avatar' }, scope: ['personal'],
       assets: { chars: { [personalId]: { avatar: 'art/green.png' } } } }), { 'art/green.png': png(8, 8, [0, 255, 0, 255]) });
     const { startServer } = await import('../../server/index.js');
@@ -67,11 +67,10 @@ describe('cosmetic plugins in the browser (P1a)', { skip: !ENABLED && 'set SP_E2
       assert.match(await host.page.$eval('[data-testid="title-plugins"]', (e) => e.textContent), /本服务器安装了 2 个插件/);
       await host.shot('title');
       await host.enter('凯尔希');
-      await host.createSimulation('同盟模拟');
-      const code = (await host.waitFor((s) => !!s.room?.code, 'room created')).room.code;
+      const { code } = await host.createCoop();
       await guest.open();
       await guest.enter('阿米娅');
-      await guest.openJoin();
+      await guest.click('.mode-card', '同盟模拟');
       await guest.click('.join-row input');
       await guest.page.keyboard.type(code);
       await guest.click('.join-row button', '加入同盟');
@@ -99,8 +98,8 @@ describe('cosmetic plugins in the browser (P1a)', { skip: !ENABLED && 'set SP_E2
       const content = await guest.page.evaluate(() => globalThis.__SP__.store.get().room.content);
       assert.equal(content.cs, vanillaCs, 'art never changes a battle: the vanilla cs');
       assert.deepEqual(content.plugins.map((p) => p.id), ['room-skin']);
-      await guest.click('.rs-loadout');
-      const card = `[data-chess="${roomChess.chessId}"] .lo-op__art img`;
+      await guest.click('.room-loadout');
+      const card = `[data-chess="${roomChess.chessId}"] .lo-card__art img`;
       await guest.page.waitForSelector(`[data-chess="${roomChess.chessId}"]`, { timeout: 20000 });
       await guest.page.$eval(`[data-chess="${roomChess.chessId}"]`, (e) => e.scrollIntoView({ block: 'center' }));
       await guest.page.waitForFunction((sel) => { const img = document.querySelector(sel); return !!img && /\/p\/room-skin\//.test(img.src) && img.complete && img.naturalWidth === 8; }, { timeout: 20000 }, card);
@@ -160,14 +159,12 @@ describe('cosmetic plugins in the browser (P1a)', { skip: !ENABLED && 'set SP_E2
       await sleep(300);
       assert.equal(await c.page.evaluate(() => globalThis.__SP__.store.get().installedPlugins), 0, '/healthz sent no count');
       assert.equal(await c.page.$('[data-testid="title-plugins"]'), null, 'no count on the title');
-      // Hub loadout previews use the asset store before a match; plugin composition remains lazy.
-      const lazy = ['/js/ui/pluginPanel.js', '/shared/plugins/visual.js'];
+      const lazy = ['/js/assets.js', '/js/ui/pluginPanel.js', '/shared/plugins/visual.js'];
       const loaded = (u) => seen.some((x) => x.split('?')[0] === u);
       assert.ok(loaded('/js/content.js') && loaded('/js/cosmetics.js'), 'the small parts load with the page');
       for (const u of lazy) assert.equal(loaded(u), false, `the title page does not load ${u}`);
       await c.enter('凯尔希');
-      await c.createSimulation('同盟模拟');
-      await c.waitFor((st) => !!st.room?.code, 'room created');
+      await c.createCoop();
       await c.click('[data-testid="plugin-tag"]');
       await c.page.waitForSelector('[data-testid="plugin-panel"]', { timeout: 10000 });
       assert.match(await c.page.$eval('[data-testid="plugin-panel"]', (e) => e.textContent), /本服务器没有可在房间中使用的插件/);
@@ -179,7 +176,7 @@ describe('cosmetic plugins in the browser (P1a)', { skip: !ENABLED && 'set SP_E2
       assert.deepEqual(seen.filter((u) => /^\/(plugins|vs|p)\//.test(u)), [], 'no catalogue, no visual set, no plugin file');
       assert.equal(loaded('/js/ui/pluginPanel.js'), true, 'the panel\'s code once it opened');
       assert.equal(loaded('/shared/plugins/visual.js'), false, 'never what composes a set');
-      assert.equal(loaded('/js/assets.js'), true, 'the Hub previews use the asset store');
+      assert.equal(loaded('/js/assets.js'), false, 'nor the asset store before a match');
       const art = fs.existsSync(path.join(ROOT, 'public/assets'));
       assert.deepEqual(problemsOf([c]).filter((p) => art || !/\/assets\//.test(p)), []);
     } finally {
@@ -201,9 +198,11 @@ describe('cosmetic plugins in the browser (P1a)', { skip: !ENABLED && 'set SP_E2
     try {
       await c.open();
       await c.enter('凯尔希');
-      await c.createSimulation('独立模拟');
+      await c.click('.mode-card', '独立模拟');
+      await c.click('.diff-card', '标准模拟');
+      await c.click('.create-box button', '开始独立模拟');
       await c.waitFor((s) => !!s.room, 'solo room');
-      if (!(await c.st()).phase) await c.click('.rs-foot__right .proto-start', '开始模拟', { timeout: 20000 });
+      if (!(await c.st()).phase) await c.click('.room-bar__right button', '开始模拟', { timeout: 20000 });
       await c.waitFor((s) => s.phase === 'INFO_CHECK', 'briefing', 30000);
       await c.click('.brief__foot .btn--primary', '准备就绪');
       await c.waitFor((s) => s.phase === 'BAND_DRAFT', 'band draft', 30000);

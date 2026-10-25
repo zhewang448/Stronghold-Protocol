@@ -3,9 +3,9 @@
 import { VOICE_LANGS, sanitizeVoiceOverrides } from '../../voicePrefs.js';
 export { VOICE_LANGS } from '../../voicePrefs.js';
 
+import { clamp, isObj } from './shared.js';
 import { normalizeFrameRate } from '../../frameRate.js';
 import { normalizePreloadVoiceLang } from '../../resources/common.js';
-import { clamp, isObj } from './shared.js';
 import { DEFAULT_HOTKEYS, sanitizeHotkeys } from './shortcuts.js';
 
 
@@ -33,16 +33,18 @@ export const TEXT_SIZES = Object.freeze(['sm', 'md', 'lg', 'xl']);
  *  (`ammoCount`, PR #552) and 「秘术师能量」 (`mysticEnergy`, PR #636); off by default: the official HUD has neither
  *  number. A profile that still has either old key `true` migrates to on; those keys are not written back.
  *  [ASSUMED] a stored boolean `ammoEnergyCount` wins over the old keys, so turning the merged switch off stays off.
+ *  bondTimers: selected-unit timed bond readouts (#746), off by default. [ASSUMED] Convenience HUD absent from
+ *  the official game; maintainer approved 2026-10-18. Stored with the other preferences in sp.pref.settings.
  *  combatMetrics: 设置「作战统计」 (PR #618), on by default in this extension; saved false is retained.
- *  deploymentZoom: 设置「部署时镜头缩放」 — opt-in deploy folding and zoom, off by default in this extension.
- *  An explicit stored deploymentZoom wins; legacy prepDeployFold migrates only when deploymentZoom is absent.
+ *  prepDeployFold: 设置「部署时收起商店」 — picking up a piece on the own prep board folds the shop and zooms
+ *  (GitHub #602, PR #646). Default on (the 0.3.0 behaviour). Off: the pickup changes neither the shop's fold nor the
+ *  camera. [ASSUMED] the label; only an explicit false turns it off (a missing or junk value stays on).
  *  officialFx: 设置「官方特效」 (0.3.0, render/vfx): 'auto' (完整 on a desktop, 精简 on a touch device — render/vfx/tier.js),
  *  'off', 'lite' (精简), 'full' (完整); only shown when effects were extracted from the local client.
  *  otherSkins: 设置「显示其他玩家的皮肤」 (docs/SKINS.md), ON by default — draw the appearance another player chose instead
  *  of the operator's own model. A pure client preference (never sent): off, only this player's own pieces wear a skin.
  */
-export const DEFAULT_SETTINGS = Object.freeze({ bgm: 0.6, sfx: 0.8, voice: 0.8, voiceLang: 'cn', voiceNative: false, voiceOverrides: Object.freeze({}), muted: false, damageNumbers: true, officialDamageNumbers: false, ammoEnergyCount: false, combatMetrics: true, chatBubbles: true, deploymentZoom: false, quality: 'high', officialFx: 'auto', otherSkins: true, textSize: 'sm', fpsLimit: 0, showFps: true, preload: false, preloadOptional: false, preloadVoiceLang: Object.freeze(['cn', 'jp']), keys: DEFAULT_HOTKEYS });
-
+export const DEFAULT_SETTINGS = Object.freeze({ bgm: 0.6, sfx: 0.8, voice: 0.8, voiceLang: 'cn', voiceNative: false, voiceOverrides: Object.freeze({}), muted: false, damageNumbers: true, officialDamageNumbers: false, ammoEnergyCount: false, fullscreenWakeLock: false, bondTimers: false, combatMetrics: true, chatBubbles: true, deploymentZoom: false, prepDeployFold: false, fpsLimit: 0, showFps: true, preload: false, preloadOptional: false, preloadVoiceLang: Object.freeze(['cn', 'jp']), quality: 'high', officialFx: 'auto', otherSkins: true, textSize: 'sm', keys: DEFAULT_HOTKEYS });
 const QUALITIES = ['high', 'medium', 'low'];
 /** The values of 设置「官方特效」 (render/vfx/tier.js OFFICIAL_FX). Display order in the dialog is low / medium / high. */
 export const OFFICIAL_FX_MODES = Object.freeze(['auto', 'off', 'lite', 'full']);
@@ -61,9 +63,8 @@ function ammoEnergyCountOf(r) {
 /**
  * Sanitize persisted settings. Retired keys `ammoCount` and `mysticEnergy` are read here and never returned.
  * @param {any} raw
- * @returns {{ bgm: number, sfx: number, voice: number, voiceLang: 'cn'|'jp'|'en'|'kr', voiceNative: boolean, voiceOverrides: Record<string, string>, muted: boolean, damageNumbers: boolean, officialDamageNumbers: boolean, ammoEnergyCount: boolean, combatMetrics: boolean, chatBubbles: boolean, deploymentZoom: boolean, quality: 'high'|'medium'|'low', officialFx: 'auto'|'off'|'lite'|'full', otherSkins: boolean,
- *   textSize: 'sm'|'md'|'lg'|'xl', fpsLimit: number, showFps: boolean, preload: boolean, preloadOptional: boolean, preloadVoiceLang: string[], keys: Record<'buy'|'refresh'|'freeze'|'levelUp'|'retreat'|'sell'|'ready', string> }}
-
+ * @returns {{ bgm: number, sfx: number, voice: number, voiceLang: 'cn'|'jp'|'en'|'kr', voiceNative: boolean, voiceOverrides: Record<string, string>, muted: boolean, damageNumbers: boolean, officialDamageNumbers: boolean, ammoEnergyCount: boolean, fullscreenWakeLock: boolean, bondTimers: boolean, combatMetrics: boolean, prepDeployFold: boolean, quality: 'high'|'medium'|'low', officialFx: 'auto'|'off'|'lite'|'full', otherSkins: boolean,
+ *   textSize: 'sm'|'md'|'lg'|'xl', keys: Record<'buy'|'refresh'|'freeze'|'levelUp'|'retreat'|'sell'|'ready', string> }}
  */
 export function sanitizeSettings(raw) {
   const r = isObj(raw) ? raw : {};
@@ -79,19 +80,21 @@ export function sanitizeSettings(raw) {
     damageNumbers: typeof r.damageNumbers === 'boolean' ? r.damageNumbers : DEFAULT_SETTINGS.damageNumbers,
     officialDamageNumbers: typeof r.officialDamageNumbers === 'boolean' ? r.officialDamageNumbers : false,
     ammoEnergyCount: ammoEnergyCountOf(r),
+    bondTimers: r.bondTimers === true,
     combatMetrics: typeof r.combatMetrics === 'boolean' ? r.combatMetrics : DEFAULT_SETTINGS.combatMetrics,
-    chatBubbles: typeof r.chatBubbles === 'boolean' ? r.chatBubbles : DEFAULT_SETTINGS.chatBubbles,
+    chatBubbles: typeof r.chatBubbles === 'boolean' ? r.chatBubbles : true,
     deploymentZoom: typeof r.deploymentZoom === 'boolean' ? r.deploymentZoom : r.prepDeployFold === true,
-
+    prepDeployFold: typeof r.deploymentZoom === 'boolean' ? r.deploymentZoom : r.prepDeployFold === true,
+    fpsLimit: normalizeFrameRate(r.fpsLimit),
+    showFps: typeof r.showFps === 'boolean' ? r.showFps : true,
+    preload: r.preload === true,
+    preloadOptional: r.preloadOptional === true,
+    preloadVoiceLang: normalizePreloadVoiceLang(r.preloadVoiceLang ?? 'all'),
+    fullscreenWakeLock: typeof r.fullscreenWakeLock === 'boolean' ? r.fullscreenWakeLock : DEFAULT_SETTINGS.fullscreenWakeLock,
     quality: QUALITIES.includes(r.quality) ? r.quality : DEFAULT_SETTINGS.quality,
     officialFx: OFFICIAL_FX_MODES.includes(r.officialFx) ? r.officialFx : DEFAULT_SETTINGS.officialFx,
     otherSkins: r.otherSkins !== false,
     textSize: TEXT_SIZES.includes(r.textSize) ? r.textSize : DEFAULT_SETTINGS.textSize,
-    fpsLimit: normalizeFrameRate(r.fpsLimit),
-    showFps: typeof r.showFps === 'boolean' ? r.showFps : DEFAULT_SETTINGS.showFps,
-    preload: r.preload === true,
-    preloadOptional: r.preloadOptional === true,
-    preloadVoiceLang: normalizePreloadVoiceLang(r.preloadVoiceLang ?? 'all'),
     keys: sanitizeHotkeys(r.keys),
   };
 }

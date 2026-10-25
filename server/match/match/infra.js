@@ -105,13 +105,23 @@ export class MatchInfra {
    * with a single human (loneHuman: a 同盟 room started alone or with AI teammates only — user playtest #4 item 3):
    * the timers only ever made humans wait on each other; AI seats act at once.
    */
-  get soloUntimed() { return this.isSolo || this.loneHuman; }
+  get soloUntimed() {
+    // Maintainer decision: historical solo uses its timer unless 「不限时」 is opted into;
+    // the single-human convenience rule still applies to co-op.
+    return this.isSolo ? this.gd.config.version?.rules?.soloTimed !== true || this.opts.soloUnlimited === true : this.loneHuman;
+  }
 
   nextUid() { return ++this.uidSeq; }
 
   alivePlayers() { return this.order.filter((p) => p.alive); }
 
-  poolFor(player) { return this.playerPools.get(typeof player === 'string' ? player : player?.playerId) || this.pool; }
+  poolFor(player) {
+    // Keep the single-pool diagnostic hook compatible with older tests and local tools that replace `match.pool`.
+    // Normal matches retain their fixed per-group pool mapping; an explicitly replaced first pool is intentional.
+    const first = this.poolGroups?.[0]?.pool;
+    if (this.pool && first && this.pool !== first) return this.pool;
+    return this.playerPools.get(typeof player === 'string' ? player : player?.playerId) || this.pool;
+  }
 
   /** Whether any chess of a bond is in this match's pool (a 驰援 card of a fully banned bond is never offered). */
   bondInPool(bondId, player = null) {
@@ -167,6 +177,7 @@ export class MatchInfra {
   }
 
   dispatch(ps, hook, ev = {}, opts = {}) {
+    this.externalAI?.observe(ps, hook, ev);
     try { return this.dispatcher.dispatch(ps, hook, ev, opts); } catch (e) { this.reportError(`dispatch ${hook}`, e); return ev; }
   }
 

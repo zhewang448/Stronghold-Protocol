@@ -2,7 +2,7 @@
 // strategy draft there was no way to see the disabled bonds and the banned operators again, though players choose a
 // strategy partly by them. ui/matchInfo.js is now the one implementation of the briefing's bond rows (greyed: the drawn
 // set D and the mode's static inactive bonds; the banned-member badge; briefingBondTip), the legend and the 本局禁用干员
-// groups (by bond, then tier): the briefing renders it (MatchInfo), the draft's 本局信息 dialog renders the same blocks
+// grid (by tier): the briefing renders it (MatchInfo), the draft's 本局信息 dialog renders the same blocks
 // (MatchInfoDialog), and the in-game 本局信息 tab reads the same model (matchInfoModel). The dialog's status line repeats
 // the turn and its countdown (bandDraft.js draftInfoStatus) and a turn change closes it. Browser: test/ui/match-info.e2e.test.js.
 import { test } from 'node:test';
@@ -12,27 +12,30 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const read = (p) => readFileSync(path.join(ROOT, p), 'utf8');
+const read = (p) => readFileSync(path.join(ROOT, p), 'utf8').replace(/\r\n/g, '\n');
 
 globalThis.fetch = async (url) => {
   const name = String(url).split('/').pop();
   try {
-    const body = readFileSync(path.join(ROOT, 'data', name), 'utf8');
+    const body = readFileSync(path.join(ROOT, 'data', name), 'utf8').replace(/\r\n/g, '\n');
     return { ok: true, status: 200, json: async () => JSON.parse(body) };
   } catch {
     return { ok: false, status: 404, json: async () => ({}) };
   }
 };
 
-const { matchInfoModel, MatchBondRow, MatchLegend, BannedOperatorGroups, BannedOperators, MatchInfo, MatchInfoDialog } = await import('../../public/js/ui/matchInfo.js');
+const { matchInfoModel, MatchBondRow, MatchLegend, BannedOperators, MatchInfo, MatchInfoDialog } = await import('../../public/js/ui/matchInfo.js');
+const { MatchEnemies, factionDescId, leaderBlockOf } = await import('../../public/js/ui/matchEnemies.js');
 const { briefingBondTip } = await import('../../public/js/ui/gameLogic.js');
-const { BondDisc, Tooltip, Modal, Button } = await import('../../public/js/ui/components.js');
-const { UnitThumb } = await import('../../public/js/ui/gameComponents.js');
+const { BondDisc, Tooltip, Modal, Button, placeTooltip } = await import('../../public/js/ui/components.js');
+const { UnitThumb, Img, RichText, makeLookups } = await import('../../public/js/ui/gameComponents.js');
+const { enemyIconUrl, factionIconUrl } = await import('../../public/js/ui/assetUrls.js');
+const { setLang, setMessages } = await import('../../shared/i18n.js');
 const { draftInfoStatus } = await import('../../public/js/screens/bandDraft.js');
 const { data, getMode } = await import('../../public/js/data.js');
 const { DATA, makeMatch } = await import('../match/harness.js');
 
-await data.loadAll('chess', 'bonds', 'assets', 'config');
+await data.loadAll('chess', 'bonds', 'assets', 'config', 'bosses', 'enemies', 'stages', 'factions');
 const SRC = (modeId) => ({ bonds: data.list('bonds'), chess: (id) => data.lookup('chess', id), mode: getMode(modeId) });
 
 function* walk(v) {
@@ -43,7 +46,8 @@ function* walk(v) {
   yield* walk(v.props?.children);
 }
 const hasClass = (v, c) => typeof v?.props?.class === 'string' && v.props.class.split(/\s+/).includes(c);
-const textOf = (v) => [...walk(v)].flatMap((n) => (Array.isArray(n.props?.children) ? n.props.children : [n.props?.children])).filter((x) => typeof x === 'string' || typeof x === 'number').join('');
+const textOf = (v) => Array.isArray(v) ? v.map(textOf).join('')
+  : typeof v === 'string' || typeof v === 'number' ? String(v) : v && typeof v === 'object' ? textOf(v.props?.children) : '';
 const OFF_FUNNY = ['lateranoShip', 'egirShip', 'kazimierzShip', 'skillfulShip', 'arcaneShip', 'miraShip', 'investShip', 'raidShip', 'soloShip', 'suntShip'];
 
 // a synthetic match: 萨尔贡 + 坚守 drawn (D), 奥术 switched off by the mode, banned operators out of tier order + an unknown id
@@ -128,59 +132,27 @@ test('MatchLegend: the grey and the badge; "或本模式禁用" only when the mo
   assert.doesNotMatch(textOf(MatchLegend({ model: hard })), /本模式禁用/);
 });
 
-test('BannedOperators: the unique count and grouped dimmed avatars; none ⇒ 本局没有禁用干员', () => {
+test('BannedOperators: the count and dimmed avatars in tier order; none ⇒ 本局没有禁用干员', () => {
   const m = model();
   const block = BannedOperators({ model: m });
   assert.match(textOf(block), /本局禁用干员BANNED OPERATORS4/);
-  const groups = [...walk(block)].find((v) => v.type === BannedOperatorGroups);
-  assert.equal(groups.props.model, m);
-  const thumbs = [...walk(BannedOperatorGroups(groups.props))].filter((v) => v.type === UnitThumb);
-  assert.deepEqual(thumbs.map((v) => v.props.id), m.bannedGroups.flatMap((g) => g.ids));
-  assert.deepEqual([...new Set(thumbs.map((v) => v.props.id))].sort(), [...m.banned].sort());
+  const thumbs = [...walk(block)].filter((v) => v.type === UnitThumb);
+  assert.deepEqual(thumbs.map((v) => v.props.id), m.banned);
   assert.ok(thumbs.every((v) => v.props.kind === 'chess' && v.props.dim === true && v.props.size === 'sm'));
   const none = BannedOperators({ model: matchInfoModel({}, SRC('mode_single_normal')) });
   assert.match(textOf(none), /本局没有禁用干员/);
   assert.equal([...walk(none)].filter((v) => v.type === UnitThumb).length, 0);
 });
 
-test('banned groups preserve every affiliation, bond order and tier order without hiding ungrouped operators', () => {
-  const records = { low: { tier: 1 }, high: { tier: 6 }, orphan: { tier: 3 } };
-  const bonds = [
-    { bondId: 'second', name: '第二组', bondOrder: 2, visibleMembers: ['high', 'low'] },
-    { bondId: 'empty', name: '空组', bondOrder: 0, visibleMembers: ['notBanned'] },
-    { bondId: 'first', name: '第一组', bondOrder: 1, visibleMembers: ['high'] },
-  ];
-  const pub = { bannedChess: ['high', 'orphan', 'unknown', 'low', 'high'] };
-  const before = JSON.stringify({ pub, bonds });
-  const m = matchInfoModel(pub, { bonds, chess: (id) => records[id] });
-  assert.deepEqual(m.bannedGroups.map((g) => [g.bond?.bondId ?? null, g.ids]), [
-    ['first', ['high']], ['second', ['low', 'high']], [null, ['orphan']],
-  ]);
-  assert.equal(m.banned.length, 3, 'multi-bond operators count once in the total');
-  assert.equal(m.perBond.get('second'), 2, 'the group count matches the bond badge');
-  assert.equal(JSON.stringify({ pub, bonds }), before, 'no source data is mutated');
-  const block = BannedOperatorGroups({ model: m });
-  assert.match(textOf(block), /总数不重复计算/);
-  assert.match(textOf(block), /其他1/);
-  const opened = [];
-  const compact = BannedOperatorGroups({ model: m, onChess: (id) => opened.push(id) });
-  const buttons = [...walk(compact)].filter((v) => v.type === 'button');
-  assert.equal(buttons.length, 4);
-  buttons[0].props.onClick();
-  assert.deepEqual(opened, ['high'], 'in-game operator details remain clickable');
-  const fallback = matchInfoModel(pub, { chess: (id) => records[id] });
-  assert.deepEqual(fallback.bannedGroups.map((g) => g.ids), [['low', 'orphan', 'high']]);
-  assert.doesNotMatch(textOf(BannedOperatorGroups({ model: fallback })), /总数不重复计算/);
-});
-
-test('MatchInfo = 核心盟约, 附加盟约, the legend, 本局禁用干员 (one model); MatchInfoDialog = the same in a Modal with 关闭 and the status line', () => {
+test('MatchInfoDialog retains the briefing bonds, enemy information, 关闭 and the status line', () => {
   const m = model();
   const parts = MatchInfo({ model: m }).filter((v) => v && typeof v === 'object');
   assert.deepEqual(parts.map((v) => v.type), [MatchBondRow, MatchBondRow, MatchLegend, BannedOperators]);
   assert.deepEqual(parts.slice(0, 2).map((v) => [v.props.title, v.props.bonds]), [['核心盟约', m.core], ['附加盟约', m.addon]]);
   assert.ok(parts.every((v) => v.props.model === m));
   const onClose = () => {};
-  const dlg = MatchInfoDialog({ open: true, onClose, model: m, status: '轮到你决策' });
+  const enemies = MatchEnemies({ pub: PUB, gd: makeLookups() });
+  const dlg = MatchInfoDialog({ open: true, onClose, model: m, enemies, status: '轮到你决策' });
   assert.equal(dlg.type, Modal);
   assert.equal(dlg.props.open, true);
   assert.equal(dlg.props.onClose, onClose, 'Esc and a tap outside close it (components.js Modal)');
@@ -188,14 +160,161 @@ test('MatchInfo = 核心盟约, 附加盟约, the legend, 本局禁用干员 (on
   assert.equal(dlg.props.class, 'minfo-dlg');
   const inner = [...walk(dlg.props.children)].find((v) => v.type === MatchInfo);
   assert.equal(inner?.props.model, m, 'the very blocks of the briefing');
+  assert.match(textOf(dlg.props.children), /本局没有特训敌人/);
   const close = [...walk(dlg.props.actions)].find((v) => v.type === Button);
   assert.equal(close.props.onClick, onClose);
   assert.match(textOf(close), /关闭/);
   assert.match(textOf(dlg.props.actions), /轮到你决策/);
-  const shut = MatchInfoDialog({ open: false, onClose, model: m });
+  const shut = MatchInfoDialog({ open: false, onClose, model: m, enemies });
   assert.equal(shut.props.open, false);
   assert.equal([...walk(shut.props.children)].find((v) => v.type === MatchInfo), undefined, 'nothing built while closed');
+  assert.equal([...walk(shut.props.children)].find((v) => hasClass(v, 'brief-factions')), undefined, 'enemy information unmounts too');
   assert.equal(MatchInfoDialog({ open: true, onClose, model: null }).props.open, false, 'no model: stays closed');
+});
+
+test('#484: enemy information uses this match\'s announced leader, abilities, battlefield and special enemy types', () => {
+  const h = makeMatch({ mode: 'coop', difficulty: 'HARD', humans: 1, seed: 4 }).start();
+  try {
+    const pub = h.m.publicView();
+    const gd = makeLookups();
+    const boss = gd.boss(pub.bossId);
+    const nodes = [...walk(MatchEnemies({ pub, gd }))];
+    assert.ok(boss, 'the real match has an announced leader');
+    assert.equal(textOf(nodes.find(v => hasClass(v, 'brief-boss__name'))), boss.name);
+    assert.match(textOf(nodes.find(v => hasClass(v, 'brief-boss__when'))), /第 14 回合 · 最终攻势/);
+    assert.equal(nodes.find(v => v.type === Img && v.props.class === 'brief-boss__img').props.src, enemyIconUrl(gd.m, boss.enemyKey));
+    assert.deepEqual(nodes.filter(v => v.type === RichText).map(v => v.props.text), boss.abilities.slice(0, 3));
+    assert.equal(textOf(nodes.find(v => hasClass(v, 'brief-stage__name'))), gd.stage(pub.stageId).name);
+    const factions = nodes.filter(v => hasClass(v, 'brief-faction'));
+    assert.deepEqual(factions.map(v => v.props['data-faction']), pub.factions, 'only the announced types, in briefing order');
+    // (the maintainer's decision of 2026-10-22: the name under the icon, the description in the tooltip around the cell)
+    const tips = nodes.filter(v => v.type === Tooltip);
+    assert.equal(tips.length, factions.length, 'one tooltip per special enemy type');
+    for (const [i, faction] of factions.entries()) {
+      const type = gd.factions.types[faction.props['data-faction']];
+      assert.ok(type.desc, `${type.name}: the data has a description`);
+      assert.equal(tips[i].props.text, type.desc, `${type.name}: its tooltip says the description`);
+      assert.ok([...walk(tips[i].props.children)].includes(faction), 'the tooltip wraps the cell');
+      assert.equal(textOf([...walk(faction)].find(v => hasClass(v, 'brief-faction__text'))), type.name, 'the name under the icon');
+      assert.equal([...walk(faction)].find(v => v.type === Img).props.src, factionIconUrl(gd.m, type.icon));
+    }
+  } finally { h.m.dispose(); }
+});
+
+test('特训敌人 description in a tooltip only (the maintainer, 2026-10-22): hover / keyboard focus / long press, described for screen readers', () => {
+  const pub = { bossId: null, stageId: null, lastRound: 14, factions: ['FLY', 'TIMES'] };
+  const gd = makeLookups();
+  const nodes = [...walk(MatchEnemies({ pub, gd }))];
+  const tips = nodes.filter((v) => v.type === Tooltip);
+  assert.deepEqual(tips.map((v) => v.props.text), pub.factions.map((ty) => gd.factions.types[ty].desc), 'the description in the tooltip');
+  assert.ok(tips.every((v) => v.props.block === true && v.props.class === 'brief-faction__tt' && v.props.tipClass === 'brief-faction__tip'));
+  // the only place the text is shown: readable on a phone (1rem = 40 px there) — the dialog's former 10 px floor
+  assert.match(read('public/css/screens/briefing.css'), /\n\.tooltip\.brief-faction__tip \{[^}]*font-size: max\(calc\(\.15 \* var\(--t\)\), 10px\);/);
+  const cells = nodes.filter((v) => hasClass(v, 'brief-faction'));
+  assert.deepEqual(cells.map((v) => v.props['data-faction']), pub.factions);
+  for (const cell of cells) {
+    const ty = cell.props['data-faction'];
+    const type = gd.factions.types[ty];
+    assert.equal(cell.props.title, undefined, 'no native title beside the tooltip');
+    assert.equal(cell.props.tabindex, undefined, 'the icon takes the focus, not the cell');
+    // the icon: focusable (keyboard focus shows the tooltip), named by the type, described by the text
+    const icon = [...walk(cell)].find((v) => hasClass(v, 'brief-faction__icon'));
+    assert.deepEqual([icon.props.tabindex, icon.props.role, icon.props['aria-label']], ['0', 'img', type.name]);
+    assert.equal(icon.props['aria-describedby'], factionDescId('brief', ty));
+    const desc = [...walk(cell)].find((v) => v.props?.id === icon.props['aria-describedby']);
+    assert.ok(desc && hasClass(desc, 'sr-only') && hasClass(desc, 'brief-faction__desc'), 'an .sr-only copy for screen readers');
+    assert.equal(textOf(desc), type.desc);
+    assert.equal(textOf([...walk(cell)].find((v) => hasClass(v, 'brief-faction__text'))), type.name, 'only the name is shown');
+  }
+  // the draft dialog's copy keeps its own ids
+  const dlg = [...walk(MatchEnemies({ pub, gd, idScope: 'minfo' }))].filter((v) => hasClass(v, 'brief-faction__icon'));
+  assert.deepEqual(dlg.map((v) => v.props['aria-describedby']), pub.factions.map((ty) => factionDescId('minfo', ty)));
+  assert.notEqual(factionDescId('minfo', 'FLY'), factionDescId('brief', 'FLY'));
+  // a type without a description: no tooltip text, nothing to point at
+  const bare = [...walk(MatchEnemies({ pub: { ...pub, factions: ['NOPE'] }, gd }))];
+  assert.equal(bare.find((v) => v.type === Tooltip).props.text, null);
+  assert.equal(bare.find((v) => hasClass(v, 'brief-faction__icon')).props['aria-describedby'], undefined);
+  assert.equal(bare.filter((v) => hasClass(v, 'brief-faction__desc')).length, 0);
+  // the temporary switch and the inline variant are gone (code and CSS)
+  const js = read('public/js/ui/matchEnemies.js');
+  assert.doesNotMatch(js, /enemyDescMode|ENEMY_DESC_MODES|__SP_ENEMY_DESC__|enemyDesc=|'inline'/);
+  for (const f of ['public/css/screens/briefing.css', 'public/css/screens/draft.css']) {
+    const css = read(f);
+    assert.doesNotMatch(css, /brief-faction__desc|brief-factions--|\.is-tip/, `${f}: no inline description, no variant rules`);
+    assert.match(css, /\.brief-faction__icon:focus-visible \{/, `${f}: the focused icon is marked`);
+  }
+});
+
+test('特训敌人 tooltip at its icon (§35.18 leftover): the cell keeps the triggers, the box points at the icon, inside the dialog, clear of the leader block', () => {
+  const pub = { bossId: null, stageId: null, lastRound: 14, factions: ['FLY', 'TIMES', 'SPECIAL'] };
+  const tips = [...walk(MatchEnemies({ pub, gd: makeLookups() }))].filter((v) => v.type === Tooltip);
+  assert.equal(tips.length, 3);
+  for (const tip of tips) {
+    assert.equal(tip.props.anchor, '.brief-faction__icon', 'the box points at the icon (in the dialog the cell is a whole row)');
+    assert.equal(tip.props.within, '.modal__box', 'inside the 本局信息 dialog (the briefing has none: the screen)');
+    assert.equal(tip.props.avoid, leaderBlockOf);
+    assert.ok([...walk(tip.props.children)].some((v) => hasClass(v, 'brief-faction')), 'hover / long press anywhere on the cell');
+  }
+  // the leader block: the portrait with its tag and every line of its text, in the same 本局遭遇敌方 block
+  const asked = [];
+  const scope = { querySelectorAll: (q) => { asked.push(q); return ['a', 'b']; } };
+  assert.deepEqual(leaderBlockOf({ closest: (q) => (q === '.brief-enemy' ? scope : null) }), ['a', 'b']);
+  assert.deepEqual(asked, ['.brief-boss, .brief-boss__text > *']);
+  assert.deepEqual([...leaderBlockOf({ closest: () => null })], []);
+
+  const R = (left, top, w, h) => ({ left, top, right: left + w, bottom: top + h, width: w, height: h });
+  const box = { width: 160, height: 30 };
+  // every other tooltip: the rule as it was — above and centred, flipped at the top edge, clamped into the viewport
+  assert.deepEqual(placeTooltip(R(300, 200, 40, 20), box, { vw: 800, vh: 600 }), { top: 162, left: 240, place: 'top' });
+  assert.deepEqual(placeTooltip(R(300, 10, 40, 20), box, { vw: 800, vh: 600 }), { top: 38, left: 240, place: 'bottom' });
+  assert.deepEqual(placeTooltip(R(2, 200, 40, 20), box, { vw: 800, vh: 600 }), { top: 162, left: 8, place: 'top' });
+  // the dialog's first row (667×375): above the icon is the 战场 line (the leader text spans the column) — below the
+  // icon, 8 px off it, and inside the dialog's box rather than at the screen's edge
+  const dlg = R(30, 10, 600, 350);
+  const icon = R(60, 180, 30, 30);
+  const leader = [R(40, 40, 70, 90), R(130, 40, 490, 30), R(130, 75, 490, 50), R(130, 140, 490, 20)];
+  assert.deepEqual(placeTooltip(icon, box, { vw: 667, vh: 375, bounds: dlg, avoid: leader }), { top: 218, left: 38, place: 'bottom' });
+  // the next row: above the icon covers only the row above — above it is
+  assert.deepEqual(placeTooltip(R(60, 225, 30, 30), box, { vw: 667, vh: 375, bounds: dlg, avoid: leader }), { top: 187, left: 38, place: 'top' });
+  // the briefing (desktop): the leader's name line ends left of the icon but under the centred box — the box slides right
+  // past it, still over the icon
+  const icon2 = R(400, 120, 50, 50);
+  assert.deepEqual(placeTooltip(icon2, box, { vw: 1440, vh: 900, avoid: [R(150, 95, 270, 30)] }), { top: 82, left: 428, place: 'top' });
+  // kept inside the dialog: an icon at its right edge
+  assert.deepEqual(placeTooltip(R(590, 200, 30, 30), box, { vw: 1440, vh: 900, bounds: dlg, avoid: leader }), { top: 162, left: 462, place: 'top' });
+  // no side clean inside the dialog (it ends under the row): out of the dialog, on the screen, rather than over the leader
+  const short = R(30, 10, 600, 240);
+  assert.deepEqual(placeTooltip(icon, box, { vw: 667, vh: 375, bounds: short, avoid: leader }), { top: 218, left: 8, place: 'bottom' });
+  // nor on the screen: the side that fits, covering what it must (the least of the leader block)
+  assert.deepEqual(placeTooltip(icon, box, { vw: 667, vh: 240, bounds: short, avoid: leader }), { top: 142, left: 38, place: 'top' });
+  // a dialog narrower than the box: the viewport bounds it instead
+  assert.equal(placeTooltip(R(100, 200, 30, 30), box, { vw: 800, vh: 600, bounds: R(90, 100, 120, 300) }).left, 35);
+  // the components.js wiring: the anchor, the dialog's box and the leader rects are read when the tip opens
+  const c = read('public/js/ui/components.js');
+  assert.match(c, /const at = \(anchor && el\.querySelector\(anchor\)\) \|\| el;/);
+  assert.match(c, /rect: at\.getBoundingClientRect\(\)/);
+  assert.match(c, /bounds: box \? box\.getBoundingClientRect\(\) : null, avoid: keepOff,/);
+  assert.match(c, /placeTooltip\(tipState\.rect, b, \{ placement: tipState\.placement, vw: window\.innerWidth, vh: window\.innerHeight,\n\s+bounds: tipState\.bounds, avoid: tipState\.avoid \|\| \[\] \}\)/);
+});
+
+test('#484: missing enemy data stays readable and UI labels follow the language', () => {
+  const pub = { bossId: 'unknown', stageId: 'unknown-stage', lastRound: 9, factions: [] };
+  const gd = makeLookups();
+  assert.equal(MatchEnemies({ pub: null, gd }), null);
+  const empty = MatchEnemies({ pub, gd });
+  assert.match(textOf(empty), /未知领袖/);
+  assert.match(textOf(empty), /第 9 回合 · 最终攻势/);
+  assert.match(textOf(empty), /unknown-stage/);
+  assert.match(textOf(empty), /本局没有特训敌人/);
+  assert.equal([...walk(empty)].filter(v => hasClass(v, 'brief-faction')).length, 0);
+  setMessages('en', JSON.parse(read('public/i18n/en.json')));
+  setLang('en');
+  try {
+    const translated = textOf(MatchEnemies({ pub, gd }));
+    assert.match(translated, /Unknown Leader/);
+    assert.match(translated, /No Tactical Training Enemies this match/);
+    assert.doesNotMatch(translated, /未知领袖|本局没有特训敌人/);
+  } finally { setLang('zh'); setMessages('en', {}); }
 });
 
 test('a real 标准 match (solo and co-op): the mode\'s 10 inactive bonds are "off", banned operators are exactly the server\'s, by tier', () => {
@@ -234,22 +353,9 @@ test('draftInfoStatus: the dialog repeats the turn and its seconds (warning at �
   assert.equal(draftInfoStatus({ myPick: 'band_bldsk', pickName: '华法琳', myTurn: false }).text, '已选择「华法琳」');
 });
 
-test('the briefing, the strategy draft and the in-game 本局信息 tab all read ui/matchInfo.js (no second copy to drift)', () => {
-  const brief = read('public/js/screens/briefing.js');
-  assert.match(brief, /import \{ MatchInfo, matchInfoModel \} from '\.\.\/ui\/matchInfo\.js';/);
-  assert.match(brief, /<section class="brief__right">\s*<\$\{MatchInfo\} model=\$\{info\} \/>\s*<\/section>/);
-  // (+ the viewer's 自选 pieces out of the shop: priv / diyData, 0.2.0 WE2)
-  assert.match(brief, /const info = matchInfoModel\(pub, \{ bonds: gd\.list\('bonds'\), chess: gd\.chess, mode, priv, diyData: \{ chess: data\.get\('chess'\), backups: data\.get\('backups'\) \} \}\);/);
-  assert.doesNotMatch(brief, /brief-legend|brief-banned|function BondRow|bannedPerBond|disabledBondSets/, 'no own copy of the blocks');
-  const draft = read('public/js/screens/bandDraft.js');
-  assert.match(draft, /import \{ MatchInfoDialog, matchInfoModel \} from '\.\.\/ui\/matchInfo\.js';/);
-  assert.match(draft, /const info = infoOpen \? matchInfoModel\(pub, \{ bonds: gd\.list\('bonds'\), chess: gd\.chess, mode, priv, diyData: \{ chess: data\.get\('chess'\), backups: data\.get\('backups'\) \} \}\) : null;/);
-  assert.match(draft, /data-testid="match-info-open"[\s\S]*?onClick=\$\{\(\) => setInfoOpen\(true\)\}>\$\{t\('查看禁用盟约与干员'\)\}</);
-  assert.match(draft, /<\$\{MatchInfoDialog\} open=\$\{infoOpen\} onClose=\$\{\(\) => setInfoOpen\(false\)\} model=\$\{info\}/);
-  // a turn change or my pick closes it; the draft's end unmounts the screen
-  assert.match(draft, /const turnKey = `\$\{draft\.id \|\| ''\}\|\$\{draft\.turnPid \|\| ''\}\|\$\{myPick \|\| ''\}`;\n\s*useEffect\(\(\) => \{ setInfoOpen\(false\); \}, \[turnKey\]\);/);
-  const drawer = read('public/js/ui/enemyDrawer.js');
-  assert.match(drawer, /import \{ matchInfoModel, DiyBannedLine, BannedOperatorGroups \} from '\.\/matchInfo\.js';/);
-  assert.match(drawer, /matchInfoModel\(pub, \{\s*bonds: data\.list\('bonds'\), chess: \(id\) => data\.lookup\('chess', id\), mode: data\.get\('config'\)\?\.modes\?\.\[pub\?\.modeId\],/);
-  assert.doesNotMatch(drawer, /bannedPerBond|disabledBondSets/, 'the drawer derives nothing on its own');
+test('briefing, draft and info drawer reuse one match model and the draft keeps its local information entry',()=>{
+ const brief=read('public/js/screens/briefing.js'),draft=read('public/js/screens/bandDraft.js'),game=read('public/js/screens/game.js');
+ assert.match(brief,/MatchInfo, matchInfoModel/);assert.match(brief,/MatchInfo.*model=/);assert.match(brief,/MatchEnemies.*pub=.*gd=/);
+ assert.match(draft,/MatchInfoDialog, matchInfoModel/);assert.match(draft,/data-testid="match-info-open"/);assert.match(draft,/setInfoOpen\(true\)/);assert.match(draft,/infoStatus/);
+ assert.match(game,/EnemyDrawer/);assert.match(read('public/js/ui/enemyDrawer.js'),/matchInfoModel/);assert.doesNotMatch(brief,/function BondRow|bannedPerBond/);
 });

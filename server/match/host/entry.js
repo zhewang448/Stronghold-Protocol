@@ -1,3 +1,4 @@
+import { serialize, deserialize } from 'node:v8';
 // server/match/host/entry.js — a match host (DESIGN §32.6, P1c; the design study's §6.4 方案 B): one child process — or,
 // with the `worker` transport (SP_MATCH_HOST=worker), one worker thread (server/match/host/index.js) — per content set
 // with gameplay plugins, running every match of that set. Either has its own module table ("worker" below means either),
@@ -22,7 +23,9 @@
 // Messages (from index.js / proxy.js; queued until booted, then handled in order):
 //   { type: 'create', matchId, opts }       new Match({ ...options.matchOptions, ...opts, data, log, now, send, broadcast,
 //                                           onEnd }) and start() — send / broadcast / onEnd post 'send' / 'broadcast' /
-//                                           'end' back; a match that cannot be created posts 'failed'
+//                                           'end' back; a match that cannot be created posts 'failed', and so does one whose
+//                                           opts.version (absent: act2autochess) is not the installed data's version
+//                                           (shared/versions.js versionOfData; DESIGN §35.23 — an official version's host)
 //   { type: 'call', matchId, method, args, id? }   one MATCH INTERFACE call; with `id` its answer is posted as 'reply'
 //   { type: 'dispose', matchId }            the match is disposed and forgotten
 // Logs go to the main process ('log': its logger prefixes them with the set's `[cs:<8 hex>]`).
@@ -36,6 +39,7 @@ import { getData, setData } from '../../data.js';
 import { installOfficialBounds } from '../../../shared/plugins/officialBounds.js';
 import { boundedJson, HOST_IPC_LIMITS } from './ipc.js';
 import { contentHashOf } from '../../../shared/plugins/identity.js';
+import { DEFAULT_VERSION, versionOfData } from '../../../shared/versions.js';
 
 /** A worker thread (parentPort), else a child process (its IPC channel). */
 const viaWorker = !!parentPort;
@@ -71,6 +75,7 @@ const queue = [];
 let booted = false;
 let MatchClass = null;
 let extensions = null;
+let recoveryTools = null;
 let VirtualScheduler = null;
 /** Prep EffectRefs this content set grants to every player. Empty when the set has no data.dsl. */
 let dslGrants = [];
@@ -203,6 +208,7 @@ function plain(r) {
 function diag(match) {
   return {
     phase: match.phase ?? null, round: match.round ?? null, ended: !!match.ended, cs: match.cs ?? null, modeId: match.modeId ?? null,
+    version: versionOfData(installed),
     errorCount: match.errorCount ?? 0, errors: (match.errors || []).slice(0, 3).map((e) => String(e?.label || e?.message || e).slice(0, 200)),
     verifyStats: match.verifyStats ? { ...match.verifyStats } : null, simErrors: match.simErrors ?? 0,
     fields: Array.isArray(match.fields) ? match.fields.map((f) => ({ fieldId: f.fieldId, kind: f.kind, players: Array.isArray(f.players) ? [...f.players] : [], mode: f.mode ?? null,
@@ -211,6 +217,13 @@ function diag(match) {
 }
 
 function create(matchId, opts) {
+  // an official version's match runs on that version's data only (DESIGN §35.23): never another version's data set
+  const want = typeof opts.version === 'string' ? opts.version : DEFAULT_VERSION;
+  if (want !== versionOfData(installed)) {
+    log.error(`[host] match ${matchId} asks for version ${want}, this host runs ${versionOfData(installed)}`);
+    post({ type: 'failed', matchId, error: `version ${want} is not this host's (${versionOfData(installed)})` });
+    return;
+  }
   const sched = options.virtualTime && VirtualScheduler ? new VirtualScheduler({ start: Date.now() }) : null;
   let match;
   extensions.syncExtensionSettings(opts.extensionSettings);
@@ -220,11 +233,12 @@ function create(matchId, opts) {
       ...opts,
       // the content set installed at boot (server/data.js getData)
       data: installed,
+      ...(opts.captureRecovery ? { onPrepSnapshot: (m, snap) => { const bytes = serialize(recoveryTools.recoveryPayload(m, snap)).toString('base64'); const message = { type: 'recovery', matchId, bytes }; if (boundedJson(message, HOST_IPC_LIMITS.message)) post(message); else log.error('[recovery] snapshot exceeds IPC limit'); } } : {}),
       // the match names itself in its lines ([match <code>] …), as in the server process (the host adds [cs:<8 hex>])
       log,
       now: Date.now,
-      send: (playerId, msg) => { post({ type: 'send', matchId, playerId, msg }); return true; },
-      broadcast: (msg) => post({ type: 'broadcast', matchId, msg }),
+      send: (playerId, msg, encoded = null) => { post({ type: 'send', matchId, playerId, msg, ...(typeof encoded === 'string' ? { encoded } : {}) }); return true; },
+      broadcast: (msg, encoded = null) => post({ type: 'broadcast', matchId, msg, ...(typeof encoded === 'string' ? { encoded } : {}) }),
       onEnd: (summary) => {
         let snapshot = null;
         try { snapshot = extensions.extensionEnd(match, summary); } catch (e) { log.error('[host] console record failed', e); }
@@ -243,7 +257,7 @@ function create(matchId, opts) {
     return;
   }
   matches.set(matchId, match);
-  try { match.start(); } catch (e) {
+  try { if (opts.restoreBytes) recoveryTools.restoreMatch(match, deserialize(Buffer.from(opts.restoreBytes, 'base64'))); else match.start(); } catch (e) {
     log.error(`[host] match ${matchId} failed to start`, e);
     matches.delete(matchId);
     try { match.dispose?.(); } catch { /* ignore */ }
@@ -306,6 +320,7 @@ function run() {
   boot().then(async () => {
     installed = getData();
     extensions = await import('./extensions.js');
+    recoveryTools = await import('../../recovery.js');
     booted = true;
     post({ type: 'ready' });
     for (const m of queue.splice(0)) handle(m);

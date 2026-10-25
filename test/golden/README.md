@@ -30,13 +30,15 @@ renumbered by first appearance, units are named by board uid or def id), board p
 within a tick (they are counted, not hashed) and wall-clock time. Damage / healing sums are rounded to integers and HP
 to 2 decimals.
 
-`npm test` runs the fast subset (the scenarios marked `"fast": true`: every chess record with its default loadout,
-every stage and every non-leader enemy kind, every bond at its top tier, six fields, seven matches, the five stand-in
-battles of the normal records, the first 自选 battle of the operator kits and of the prototypes — 62 of the 151). `GOLDEN_FULL=1` checks everything.
+`npm test` runs the fast subset: the scenarios marked `"fast": true` in the golden files, selected by `isFast` in
+`tools/golden.mjs`. `GOLDEN_FULL=1` checks everything. Use the listing commands below to inspect the current corpus
+and fast subset.
 
 ## Workflow
 
 ```sh
+node tools/golden.mjs --list                     # list the current corpus without running it
+node tools/golden.mjs --fast --list              # list only the fast subset
 GOLDEN_FULL=1 node --test test/golden.test.js   # the whole corpus (≈ 20 s with 4 worker threads)
 node --test test/golden.test.js                 # the fast subset
 npm run golden                                  # the same comparison from the tool (all families, a short report)
@@ -48,7 +50,10 @@ node tools/golden.mjs --twice                   # determinism: the corpus twice 
   committing it. If a digest moves, the refactor changed behaviour: find out why (the first differing value of `snaps`
   says when two runs parted, in 10-game-second steps) instead of updating the files.
 - **An intended gameplay change** (a fix, new content, a data rebuild): run `npm run golden:update` and commit the
-  changed files together with the change, saying in the commit message which scenarios moved and why.
+  changed files together with the change, saying in the commit message which scenarios moved and why. Until the
+  official versions' M1 started, `test/versions-default-guard.test.js` (G1) also pinned the sha256 of these files and
+  of the default `data/*.json` as the M0 merge check (DESIGN §35.22.2); M1 deleted it (§35.23), so these files and
+  `test/golden.test.js` are the only pin again.
 - **Reviewing the diff:** every scenario is a block of its own and every unit / enemy / round is one line, so a diff
   shows which scenarios moved and which values changed. A change confined to the scenarios that contain the touched
   operator, enemy or rule is expected; a change everywhere (every `rngDraws`, every `snaps`) means something global
@@ -63,4 +68,7 @@ The original stand-in / DIY seeds remain as outcome regressions even when they f
 `coop2-NORMAL-1-unowned-roster` scenario supplies no owned NORMAL operators, so stand-in coverage does not depend on
 the bot choosing one of a small set of missing operators. `coop2-NORMAL-5-coverage-diy` covers the DIY path.
 
-This fork keeps 7 additional collaboration operators. After the v0.3.0 integration, DIY scenarios diy-136 through diy-151 are regenerated because those operators change the final batches; the other five families match upstream v0.3.0 exactly (49 + 46 + 22 + 21 + 10). DIY has 151 scenarios; the full corpus has 299.
+Historical versions (0.3.2 M2): pass `--version <official-id>` to use the snapshot in an isolated process/worker.
+The six corpora live under `<versionSlug>/`; root JSON files remain the default. Generate a historical corpus with
+`node tools/golden.mjs --version act1autochess --update --twice`; the second pass reverses scenario order.
+`test/versions-golden.test.js` checks corpus identity, engine errors and representative worker execution.
