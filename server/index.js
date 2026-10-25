@@ -294,4 +294,4 @@ export function roomCodeFromArgv(argv = process.argv.slice(2)) {
 
 
 // `node server/index.js` / npm start: listen, print the banner, stop on SIGINT / SIGTERM (http/boot.js).
-if (isProcessEntry(import.meta.url)) runMain(() => startServer({ roomCode: roomCodeFromArgv() }));
+if (isProcessEntry(import.meta.url)) runMain((options = {}) => startServer({ ...options, roomCode: roomCodeFromArgv() }));

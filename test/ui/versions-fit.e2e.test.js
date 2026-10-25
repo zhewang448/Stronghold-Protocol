@@ -159,7 +159,7 @@ describe('official versions: text fit (real server, SP_VERSIONS=all)', { skip: !
       await guest.enter('阿米娅');
       await guest.waitFor((s) => s.room?.code === room.code, 'guest joined');
       await guest.page.waitForFunction(() => globalThis.__SP_CONTENT__?.state().status === 'ready', { timeout: 30000 });
-      await guest.page.waitForSelector('[data-testid="version-banner"]');
+      await guest.page.waitForSelector('[data-testid="room-version"]', { visible: true });
       // the vote's look: a room.state with an open vote laid over the guest's store (no server push comes while idle)
       await guest.page.evaluate(() => {
         const { store } = globalThis.__SP__;
@@ -182,8 +182,7 @@ describe('official versions: text fit (real server, SP_VERSIONS=all)', { skip: !
               { sel: '.vervote__text strong', wrap: true },
               { sel: '.vervote__hint', wrap: true },
               { sel: '.vervote__actions .btn', within: '[data-testid="version-vote"]', inView: true },
-              // (a short screen gives the banner's line to the seats: then it is not shown at all)
-              { sel: '[data-testid="version-banner"]', wrap: true, optional: h <= 520 },
+              { sel: '[data-testid="room-version"] span', wrap: true },
               // §35.18's phone layout hides the redundant ready tag (02eebe5b); loading / failed tags remain visible.
               { sel: '.seat__content.is-ready', within: '.rseat', optional: h <= 520 },
               { sel: '.seat__content:not(.is-ready)', within: '.rseat', optional: true },

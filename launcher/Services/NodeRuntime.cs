@@ -9,7 +9,7 @@ public sealed record NodeRuntime(string Executable, string Version, int Major)
 
     public static NodeRuntime? Find()
     {
-        var candidates = new List<string>();
+        var candidates = new List<string> { Path.Combine(BootstrapInstaller.RuntimeDirectory, "node.exe") };
         var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
         candidates.Add(Path.Combine(programFiles, "nodejs", "node.exe"));
         var programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);

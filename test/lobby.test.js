@@ -1284,7 +1284,8 @@ describe('websocket lobby', () => {
     assert.ok(h.rooms >= 1);
     assert.ok(h.sockets >= 1);
     assert.ok(h.sessions >= 1);
-    assert.equal(h.versions, undefined, 'historical versions remain disabled until their dedicated integration');
+    assert.deepEqual(h.versions.enabled, ['act2autochess', 'act2autochess@V2_1', 'act1autochess', 'act1autochess@V1_1']);
+    assert.equal(h.versions.default, 'act2autochess');
   });
 });
 

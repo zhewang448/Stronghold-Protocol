@@ -63,3 +63,28 @@ test('console presence keeps lobby-only and missing-seat harness views readable'
   assert.equal(view[1].match.players[0].connected, true);
   assert.deepEqual(view[2].match, { error: 'stopped' });
 });
+
+for (const hosted of [false, true]) {
+  test('console joins latest domains by player ID without mutating match: ' + hosted, async t => {
+    const h = makeMatch({ humans: 2, bots: 1, fake: true }).start().toPrep();
+    t.after(() => h.m.dispose());
+    const snapshot = matchView(h.m);
+    const sessions = new Map([['p_0', { accessDomain: 'old.example.com' }], ['viewer', { accessDomain: 'view.example.com' }]]);
+    const room = { code: 'TEST', seats: h.m.order.map(p => ({ playerId: p.playerId, connected: p.connected, isBot: p.isBot })),
+      spectators: [{ playerId: 'viewer', connected: true }], match: hosted ? { hosted: true, admin: async () => snapshot } : h.m };
+    const lobby = { rooms: new Map([['TEST', room]]), registry: { byId: id => sessions.get(id) } };
+    let view = (await roomsView(lobby))[0];
+    assert.equal(view.seats.find(p => p.id === 'p_0').accessDomain, 'old.example.com');
+    assert.equal(view.match.players.find(p => p.id === 'p_0').accessDomain, 'old.example.com');
+    assert.equal(view.match.players.find(p => p.id === 'p_1').accessDomain, null);
+    assert.equal(view.match.players.find(p => p.id === 'ai_0').accessDomain, null);
+    assert.equal(view.spectators[0].accessDomain, 'view.example.com');
+    sessions.get('p_0').accessDomain = 'new.example.com';
+    room.seats[0].connected = false;
+    view = (await roomsView(lobby))[0];
+    assert.equal(view.match.players.find(p => p.id === 'p_0').accessDomain, 'new.example.com');
+    assert.equal(view.match.players.find(p => p.id === 'p_0').connected, false);
+    assert.equal(Object.hasOwn(h.ps('p_0'), 'accessDomain'), false);
+    assert.equal(Object.hasOwn(snapshot.players[0], 'accessDomain'), false);
+  });
+}

@@ -16,6 +16,7 @@ import { useState } from '../../vendor/hooks.module.js';
 import { html, Icon } from './components.js';
 import { t } from '../../../shared/i18n.js';
 import { rulePhrases } from '../../../shared/plugins/rules.js';
+import { effectiveRoomRules } from '../../../shared/roomConvenience.js';
 import { DEFAULT_VERSION, versionById } from '../../../shared/versions.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
@@ -48,7 +49,7 @@ export function roomPluginFacts(room, myId) {
     modes: Array.isArray(c?.modes) ? c.modes.filter((m) => m && typeof m.id === 'string') : [],
     modeId: typeof c?.modeId === 'string' ? c.modeId : null,
     dataBytes: Number.isFinite(c?.dataBytes) ? c.dataBytes : 0,
-    rules: c?.rules && typeof c.rules === 'object' && !Array.isArray(c.rules) ? c.rules : null,
+    rules: effectiveRoomRules(room),
   };
 }
 

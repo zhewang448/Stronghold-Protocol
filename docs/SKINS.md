@@ -22,7 +22,9 @@ node tools/install-skins.mjs --all --offline
 支持基础下载器的 `--asset-source=direct|mirror` 和 `SP_ASSET_SOURCE`。
 完成后重启服务、刷新客户端，使冻结的数据副本和素材清单重新加载。
 目录来自 `docs/research/operator-skins.json`（原始映射版本见文件的 source），由
-`tools/build-data.mjs` 生成 `data/skins.json`，限定当前棋子和自选干员。当前目录 115 名干员、174 套皮肤。
+`tools/build-data.mjs` 生成共享的 `data/skins.json`，覆盖四版本棋子和自选干员。当前目录 146 名干员、224 套皮肤，包含本次补齐的一期 31 名干员／50 套外观；各版本按同一 charId 共用外观偏好。
+
+只重建外观目录可执行 `node tools/build-data.mjs --skins-only --offline`，不重建玩法数据；完整默认版构建同样保留全部已研究的外观，不手改生成 JSON。新增映射基于缓存官方 skin_table 的皮肤 ID／名称与公开资源的实际 Front／Spine、Back 目录；模型、纹理和动画由安装器解析验证。
 资源在忽略的 `public/assets/` 中；选择器仅开放素材清单中已有头像和有效正面模型的皮肤。
 失败项会报告，成功项保留，重新执行会利用下载缓存补齐。
 

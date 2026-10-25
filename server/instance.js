@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { registerInstallation } from './instance-index.js';
 
 export function instanceFile(root, port) {
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid game port');
@@ -18,6 +19,7 @@ export function recordInstance(root, { port, adminPort, token, pid = process.pid
   const tmp = `${file}.${boot}.tmp`;
   fs.writeFileSync(tmp, JSON.stringify({ port, adminPort, token, pid, boot }), { mode: 0o600 });
   fs.renameSync(tmp, file);
+  registerInstallation(root, port);
   return () => {
     try { if (JSON.parse(fs.readFileSync(file, 'utf8')).boot === boot) fs.unlinkSync(file); }
     catch (error) { if (error.code !== 'ENOENT') console.warn('[instance] cleanup failed', error.message); }

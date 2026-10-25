@@ -25,6 +25,8 @@ describe('loadout export includes DIY-only cultivation (real server, headless Ch
       await c.open();
       await c.enter('调配回归');
       await c.click('.lobby-screen [data-testid="loadout-open"]');
+      await c.click('[data-testid="loadout-filter"]');
+      await c.click('[data-testid="loadout-view-list"]');
       await c.page.waitForSelector('.lo-card');
       return c;
     } catch (e) { await c.close(); throw e; }
@@ -100,7 +102,7 @@ describe('loadout export includes DIY-only cultivation (real server, headless Ch
         if (!normal) {
           assert.deepEqual(expected.byChar, {});
           assert.match(await c.page.$eval('.lo-top__right', e => e.textContent), /已调整\s*0/);
-          assert.equal(await c.page.$eval('.lo-top__right button:last-child', e => e.disabled), true,
+          assert.equal(await c.page.$$eval('.lo-top__right button', es => es.find(e => e.textContent.includes('全部恢复默认')).disabled), true,
             'normal reset still covers only its roster');
         }
         console.log(JSON.stringify({ scenario: name, saved: expected, exportDisabled: await disabled(c, 'loadout-export') }));
@@ -109,6 +111,7 @@ describe('loadout export includes DIY-only cultivation (real server, headless Ch
         const payload = JSON.parse(text);
         assert.equal(payload.kind, 'stronghold.loadout');
         assert.equal(payload.v, 2);
+        assert.deepEqual(payload.extension.sections, { skills: true, modules: true, potential: true, cultivate: true, skins: true, skinRandom: false, skinLocks: false }, 'native default includes the five selected sections');
         assert.equal(payload.count, normal ? 1 : 0, 'count retains its existing entry semantics');
         assert.deepEqual({ byChar: payload.byChar, ops: payload.ops }, expected);
         await c.shot(`${name.replaceAll(' ', '-')}-exported`);
@@ -142,10 +145,15 @@ describe('loadout export includes DIY-only cultivation (real server, headless Ch
     let c;
     try {
       c = await open('reset');
-      assert.equal(await disabled(c, 'loadout-export'), true);
+      assert.equal(await disabled(c, 'loadout-export'), false, 'native export can represent explicit defaults');
+      await c.click('[data-testid="loadout-export"]');
+      await c.page.select('[aria-label="导出格式"]', 'upstream');
+      assert.equal(await disabled(c, 'loadout-io-copy'), true, 'upstream refuses empty gameplay settings');
+      await c.page.keyboard.press('Escape');
+      await c.page.waitForSelector(io, { hidden: true });
       await chooseKalts(c);
       await tab(c, 'loadout');
-      assert.equal(await disabled(c, 'loadout-export'), true, 'a roster choice alone is not loadout settings');
+      assert.equal(await disabled(c, 'loadout-export'), false, 'native defaults remain exportable after a roster choice');
       await setKalts(c, { potential: 1, cultivate: 0 });
       await changeNormal(c);
       await c.click('.lo-top__right button', '全部恢复默认');
@@ -161,7 +169,7 @@ describe('loadout export includes DIY-only cultivation (real server, headless Ch
       await setKalts(c, { potential: 6, cultivate: 3 });
       await tab(c, 'loadout');
       assert.deepEqual(await saved(c), { byChar: {}, ops: {} });
-      assert.equal(await disabled(c, 'loadout-export'), true, 'back to defaults: nothing to export');
+      assert.equal(await disabled(c, 'loadout-export'), false, 'native export preserves explicit default sections');
       assert.deepEqual(c.problems.filter(p => p.startsWith('pageerror:')), []);
     } finally { await c?.close(); }
   });

@@ -464,3 +464,18 @@ and clear timers. No shrinking-electorate auto-approval. `aiTakeoverRound` is op
 player rows; local history retains it. [ASSUMED] inherited seat totals do not grant personal awards or aggregates.
 
 The internal welcome preserves the socket’s negotiated delta version and clears its public baseline for a full resync. The inherited seat’s pending pool/delegated rehearsal is cancelled; other seats continue.
+
+
+### Room convenience protocol (2026-10-25)
+
+room.state.convenience contains five booleans: benchEquip, soloUnlimited, prepLoadout, unequip, morphPairing. room.setConvenience {key,on} is host-only before start, clears other human readiness, and broadcasts to players and spectators. Choices remain across version changes and subsequent matches and are copied through version/gameplay hosts, PREP recovery, test journals, public state and results. Plugin-declared switches cannot be overridden by the room.
+
+### Host AI takeover permission (2026-10-26)
+
+The authenticated local console settings API persists boolean allowAiTakeover in logs/admin-settings.json. The host permission defaults on. A saved boolean takes precedence over an explicit SP_AI_TAKEOVER environment override (0/false/no/off disables it, 1 enables it); with no saved choice or override the checkbox is checked. The per-room opt-in remains off. Validation and atomic disk replacement complete before runtime state changes. The console switch lives under 主机设置 → 对局设置 → 观战接替 AI.
+
+room.state always carries aiTakeoverAllowed (host policy) and canSetAiTakeover (policy plus default-version, original co-op content, before match). The room UI disables unsupported choices and explains host denial, historical/plugin restrictions or an already-started match. room.setAiTakeover still requires the room host and never bypasses these conditions. Saving the host policy broadcasts updated room states immediately. Switching it off clears every room opt-in and pending vote and prevents new requests/seat transfers; completed transfers are retained. Re-enabling only grants permission, so rooms must opt in again. No match-rehearsal or simulation rules change.
+
+### Console access domain (2026-10-26)
+
+The WebSocket handshake records only a bounded, valid HTTP(S) Origin host (including a non-default port) in Connection.accessDomain and copies it to Session.accessDomain after successful hello/resume. Missing, opaque or malformed origins clear it to null. Host and forwarding headers are not fallback page identities. This client-reported field is display-only metadata, never authority. Only the authenticated local console projection joins it by player ID, including hosted match views and spectators; normal player frames, results and recovery do not gain the field. Offline sessions retain the last host until expiry; a restart has no persisted domain.

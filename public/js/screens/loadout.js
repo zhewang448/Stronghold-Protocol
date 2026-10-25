@@ -46,6 +46,7 @@ import { data, useData, localAsset, DATA_FILES } from '../data.js';
 import { useStore, loadPref, savePref } from '../store.js';
 import { PHASE } from '../../../shared/constants.js';
 import { ruleOption } from '../../../shared/plugins/rules.js';
+import { effectiveRoomRules } from '../../../shared/roomConvenience.js';
 import {
   MODULE_NONE, PROF_NAME, rosterOf, filterRoster, recordsOf, chessOptions, effectiveChoice, setChoice, resetChoice,
   changedCount, skillLabel, moduleBadge, quickSkillTags, serializeExport, parseImport, LOADOUT_IMPORT_MAX_BYTES,
@@ -704,7 +705,7 @@ function LoadoutScreen({ st }) {
   const selId = st.sel && roster.some((c) => c.chessId === st.sel) ? st.sel : list[0]?.chessId || roster[0]?.chessId || null;
   const { base, golden } = selId ? recordsOf(selId, getChess) : { base: null, golden: null };
   const nChanged = changedCount(st.entries, getChess, st.ops, roster, potentialEditable);
-  const rules = useStore((s) => s.room?.content?.rules ?? null);
+  const rules = useStore((s) => effectiveRoomRules(s.room));
   const seatReady = useStore((s) => !!s.match?.private?.ready);
   // prepLoadout 'prep': the panel stays editable in 休整期 until this seat presses 准备
   const prepOpen = phase === PHASE.PREP && ruleOption(rules, 'prepLoadout') === 'prep' && !seatReady;
@@ -815,8 +816,8 @@ function LoadoutScreen({ st }) {
     // (by operator, every version's — DESIGN §35.23; a v1 store still migrating exports what it has)
     ? { mode: 'export', kind: 'ownership', text: serializeOwnership(loadoutStore.get().notOwnedChars || []) }
     : tab === 'diy' ? { mode: 'export', kind: 'diy', text: serializeDiy(loadoutStore.get().diy, { version: loadoutStore.get().diyVersion }) }
-      : { mode: 'export', kind: 'loadout', format: 'upstream', now: Date.now(),
-        parts: { skills: true, modules: true, potential: true, cultivate: true, skins: false, skinRandom: false, skinLocks: false },
+      : { mode: 'export', kind: 'loadout', format: 'native', now: Date.now(),
+        parts: { skills: true, modules: true, potential: true, cultivate: true, skins: true, skinRandom: false, skinLocks: false },
         snapshot: { byChar: loadoutStore.get().byChar || {}, ops: loadoutStore.get().ops || {}, skins: skinsStore.get().skins,
           random: { scope: skinRandomStore.get().scope, auto: skinRandomStore.get().auto }, locks: skinRandomStore.get().locked } });
   const openImport = () => setIo({ mode: 'import', kind: tab, text: '' });

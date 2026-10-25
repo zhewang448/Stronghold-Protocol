@@ -57,6 +57,7 @@ export function wireOptions(opts) {
     if (opts[k] !== undefined) out[k] = opts[k];
   }
   if (typeof opts.uniteLayerGains === 'boolean') out.uniteLayerGains = opts.uniteLayerGains;
+  if (opts.convenience) out.convenience = { ...opts.convenience };
   // A test room must arrive as a test match. Forwarding these only when the flag is set keeps every other
   // worker payload identical. Dropping the flag fails closed: the worker match refuses g.test.
   if (opts.test === true) {

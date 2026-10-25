@@ -24,6 +24,9 @@
   [data-room-prep] [hidden] { display: none; }
   [data-room-prep-rounds] label { display: inline-flex; align-items: center; gap: 6px; }
   .meta { color: var(--dim); }
+  .player-access { display: block; max-width: 28ch; font-size: 12px; white-space: normal; overflow-wrap: anywhere; }
+  .player-label { display: block; }
+  .player-label + .player-label { margin-top: 4px; }
   [data-feedback-state="success"] { color: var(--mint); }
   [data-feedback-state="error"] { color: var(--red); }
   [data-records-reload] { min-width: 5.8em; }
@@ -456,10 +459,14 @@ const diyDraft = new Map(); // player id → { label, skill, mod }: the 发放�
 const open = new Set(); // players whose 详情 row is expanded
 let selectedRoom = null, latestRooms = [];
 const roomTabs = new Map();
+function playerAccessLabel(p) {
+  if (p.bot) return '';
+  return `<small class="meta player-access">${p.connected ? '接入' : '上次接入'}：${esc(p.accessDomain || '未知')}</small>`;
+}
 function roomOverview(rooms) {
   return `<section class="room"><h2>房间概览 · ${rooms.length}</h2><p class="meta">选择房间查看操作或数据。</p><div class="xscroll"><table class="room-summary"><thead><tr><th>房间</th><th>模式 / 难度</th><th>阶段 / 回合</th><th>剩余时间</th><th>玩家 · LP · 在线状态</th></tr></thead><tbody>${rooms.map(r => {
     const m = r.match;
-    return `<tr class="${selectedRoom === r.code ? 'is-selected' : ''}"><td><button data-open-room="${esc(r.code)}" aria-expanded="${selectedRoom === r.code}">${disclosureArrow}${esc(r.code)}</button></td><td>${r.mode === 'solo' ? '独立模拟' : '同盟'} · ${esc(r.difficulty)}</td><td>${m ? `${esc(m.phaseName)} · 第 ${m.round} 回合` : '等待开局'}</td><td>${m ? m.left != null ? `${m.left} 秒` : m.paused ? '已暂停' : '不限时' : '—'}</td><td>${(m?.players || r.seats).map(p => `${esc(p.name)}${p.bot ? ' (AI)' : ''} · ${p.lp != null ? `LP ${p.lp} · ` : ''}${p.connected || p.bot ? '在线' : '离线'}`).join('<br>')}</td></tr>`;
+    return `<tr class="${selectedRoom === r.code ? 'is-selected' : ''}"><td><button data-open-room="${esc(r.code)}" aria-expanded="${selectedRoom === r.code}">${disclosureArrow}${esc(r.code)}</button></td><td>${r.mode === 'solo' ? '独立模拟' : '同盟'} · ${esc(r.difficulty)}</td><td>${m ? `${esc(m.phaseName)} · 第 ${m.round} 回合` : '等待开局'}</td><td>${m ? m.left != null ? `${m.left} 秒` : m.paused ? '已暂停' : '不限时' : '—'}</td><td>${(m?.players || r.seats).map(p => `<span class="player-label">${esc(p.name)}${p.bot ? ' (AI)' : ''} · ${p.lp != null ? `LP ${p.lp} · ` : ''}${p.connected || p.bot ? '在线' : '离线'}${playerAccessLabel(p)}</span>`).join('')}</td></tr>`;
   }).join('')}</tbody></table></div></section>`;
 }
 function renderRooms() {
@@ -686,7 +693,7 @@ function playerActions(code, p) {
 }
 function playerRow(code, p) {
   const who = `${esc(p.name)}${p.bot ? ' <span class="tag">AI</span>' : ''}${p.connected ? '' : ' <span class="tag off">离线</span>'}${p.alive ? '' : ' <span class="tag off">淘汰</span>'}`;
-  return `<tr class="player-summary"><td>${who}</td><td>${p.lp}</td><td>${p.funds}</td><td>${p.level}</td><td>${p.freeRefreshes}</td><td>${p.board} / ${p.hand}</td><td>${p.ready ? '已就绪' : '未就绪'}${p.autoplay ? ' · 托管中' : ''}<br><span class="meta">预选盟约：${esc(p.bondPlan || '未预选')}</span></td><td><button data-toggle="${esc(p.id)}" aria-expanded="${open.has(p.id)}">${disclosureArrow}${open.has(p.id) ? '收起' : '操作 / 详情'}</button></td></tr>${open.has(p.id) ? detailRow(code,p,8) : ''}`;
+  return `<tr class="player-summary"><td>${who}${playerAccessLabel(p)}</td><td>${p.lp}</td><td>${p.funds}</td><td>${p.level}</td><td>${p.freeRefreshes}</td><td>${p.board} / ${p.hand}</td><td>${p.ready ? '已就绪' : '未就绪'}${p.autoplay ? ' · 托管中' : ''}<br><span class="meta">预选盟约：${esc(p.bondPlan || '未预选')}</span></td><td><button data-toggle="${esc(p.id)}" aria-expanded="${open.has(p.id)}">${disclosureArrow}${open.has(p.id) ? '收起' : '操作 / 详情'}</button></td></tr>${open.has(p.id) ? detailRow(code,p,8) : ''}`;
 }
 
 const chatPanels = new Map();
@@ -732,7 +739,7 @@ function roomPrep(r) {
 }
 function roomCard(r) {
   const m = r.match;
-  const seats = r.seats.map((s) => `${esc(s.name)}${s.bot ? '(AI)' : ''}${s.connected ? '' : '(离线)'}`).join('、');
+  const seats = r.seats.map((s) => `<span class="player-label">${esc(s.name)}${s.bot ? '(AI)' : ''}${s.connected ? '' : '(离线)'}${playerAccessLabel(s)}</span>`).join('');
   let body = `<p class="meta">${seats || '空房间'} · 未开局</p>`;
   if (m) {
     const rounds = m.rewindRounds;
@@ -1336,6 +1343,11 @@ async function showSettings() {
         <p id="domain-feedback" class="meta" role="status" aria-live="polite"></p>
       </form>
     </section>
+    <section class="room" id="ai-takeover-settings"><h2>观战接替 AI</h2>
+      <p class="meta" id="ai-takeover-help">默认允许房主在开局前启用观战接替 AI。仅第二期下半的原版合作房支持，观战者仍需在休整期获得真人过半同意。关闭会停止已有房间的新申请并取消未完成投票，不撤销已完成的接替。保存后立即生效并在重启后保留；未保存配置时默认开启，兼容 SP_AI_TAKEOVER=0 关闭。</p>
+      <form id="ai-takeover-form" onsubmit="return false"><label><input id="ai-takeover-allowed" type="checkbox" aria-describedby="ai-takeover-help" ${d.allowAiTakeover === true ? 'checked' : ''}> 允许房主开启观战接替 AI</label>
+      <div class="row"><button type="button" class="primary" data-ai-takeover-save>保存</button><button type="button" data-ai-takeover-reset>撤销修改</button><span id="ai-takeover-saved" class="meta" role="status"></span></div></form>
+    </section>
     <section class="room" id="pwa-install-settings"><h2>桌面安装入口</h2>
       <p class="meta" id="pwa-install-help">默认显示首页、大厅和横屏提示中的「添加到桌面」按钮。关闭只隐藏游戏内入口，不会卸载已安装的应用，也不影响浏览器自带的安装菜单。原生安装仍需浏览器支持及有效的 HTTPS 证书或本机地址。</p>
       <form id="pwa-install-form" onsubmit="return false"><label><input id="pwa-install-visible" type="checkbox" aria-describedby="pwa-install-help" ${d.showPwaInstall !== false ? 'checked' : ''}> 显示「添加到桌面」按钮</label>
@@ -1448,7 +1460,7 @@ function arrangeSettings(domains) {
   sections.set(blocked.id, blocked);
   sections.set(chat.id, chat);
   const groups = [
-    ['game', '对局设置', ['prep-settings', 'unite-settings', 'round-charts-settings']],
+    ['game', '对局设置', ['prep-settings', 'unite-settings', 'ai-takeover-settings', 'round-charts-settings']],
     ['chat', '交流管理', ['social-settings', 'chat-policy-settings', 'chat-settings']],
     ['history', '记录与恢复', ['replay-settings', 'recovery-settings']],
     ['system', '维护与扩展', ['release-update', 'update-backups-settings', 'domain-recovery-settings', 'pwa-install-settings', 'plugin-settings', 'issue-feedback']],
@@ -1755,6 +1767,23 @@ async function refresh(force = false) {
 }
 
 document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-ai-takeover-reset]')) {
+    $('#ai-takeover-allowed').checked = settingsData.allowAiTakeover === true;
+    $('#ai-takeover-saved').textContent = ''; return;
+  }
+  if (e.target.closest('[data-ai-takeover-save]')) {
+    const controls = [...$('#ai-takeover-form').querySelectorAll('input,button')];
+    const status = $('#ai-takeover-saved'), allowAiTakeover = $('#ai-takeover-allowed').checked;
+    controls.forEach(control => { control.disabled = true; }); status.textContent = '保存中…';
+    api('/api/settings', { allowAiTakeover }).then(result => {
+      if (!result.ok) throw new Error(result.error || '保存失败');
+      settingsData.allowAiTakeover = result.allowAiTakeover;
+      $('#ai-takeover-allowed').checked = result.allowAiTakeover;
+      status.textContent = '已保存，房间权限立即生效；重启后保留';
+    }).catch(error => { status.textContent = '保存失败：' + error.message; })
+      .finally(() => { controls.forEach(control => { control.disabled = false; }); });
+    return;
+  }
   if (e.target.closest('[data-pwa-install-reset]')) {
     $('#pwa-install-visible').checked = settingsData.showPwaInstall !== false;
     $('#pwa-install-saved').textContent = ''; return;

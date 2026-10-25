@@ -365,3 +365,8 @@ layout search inside the five-hook contract; `ioleta-adaptive` composes Russell-
 variants and contact repairs extend the list up to eight. Extension stops after a clean completed zero-leak result,
 or at a strict six-times-per-candidate total tick cap. Server and host Worker share RehearsalRun, limits and counters.
 Default legacy rules remain the baseline. See [BOT_STRATEGIES](../BOT_STRATEGIES.md).
+
+
+### Room convenience settings (2026-10-25)
+
+Maintainer-approved deviations: new rooms default benchEquip, soloUnlimited and prepLoadout on; unequip and morphPairing off. Bench equipment overrides only the first-period restriction. SoloUnlimited applies only to timed solo phases, never co-op or battle clocks. Prep loadout remains locked after ready. Unequip and morphPairing reuse the existing optional plugin mechanics. A declared plugin rule wins over the corresponding room setting. Direct Match callers without convenience retain historical behavior; no generated data or golden changes are required.

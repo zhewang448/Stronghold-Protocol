@@ -44,6 +44,7 @@ import { cultivationCharIds, charPotentialChanges, loadoutOptions, operatorCharI
 import { PHASE } from '../../../shared/constants.js';
 import { POTENTIAL_DEFAULT, CULTIVATE_DEFAULT } from '../../../shared/potential.js';
 import { ruleOption } from '../../../shared/plugins/rules.js';
+import { effectiveRoomRules } from '../../../shared/roomConvenience.js';
 import { OWNERSHIP_PREF, parseStoredOwnership, parseStoredOwnershipChars, toStoredOwnership, toStoredOwnershipV1, cleanIds, sanitizeNotOwned,
   notOwnedView, rebaseChars } from './ownershipModel.js';
 import { parseStoredDiy, toStoredDiy, cleanPicks, sanitizeDiyPicks, diyPrefKey } from './diyModel.js';
@@ -617,7 +618,7 @@ export function installLoadoutSync({ net, getChessReady, getBackupsReady, lookup
       const current = unmapped ? {} : target.get().entries;
       const ops = target.get().ops;
       const state = matchState();
-      const prep = state.match?.public?.phase === PHASE.PREP && ruleOption(state.room?.content?.rules, 'prepLoadout') === 'prep';
+      const prep = state.match?.public?.phase === PHASE.PREP && ruleOption(effectiveRoomRules(state.room), 'prepLoadout') === 'prep';
       const live = prep ? state.match?.private : null;
       const hasOps = (!!ops && Object.keys(ops).length > 0) || !!Object.keys(live?.ops || {}).length;
       // an empty loadout needs no data (nothing to sanitise): a player who never opened 干员调配 does not download

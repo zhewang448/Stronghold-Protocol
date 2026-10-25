@@ -36,9 +36,9 @@ export const TEXT_SIZES = Object.freeze(['sm', 'md', 'lg', 'xl']);
  *  bondTimers: selected-unit timed bond readouts (#746), off by default. [ASSUMED] Convenience HUD absent from
  *  the official game; maintainer approved 2026-10-18. Stored with the other preferences in sp.pref.settings.
  *  combatMetrics: 设置「作战统计」 (PR #618), on by default in this extension; saved false is retained.
- *  prepDeployFold: 设置「部署时收起商店」 — picking up a piece on the own prep board folds the shop and zooms
- *  (GitHub #602, PR #646). Default on (the 0.3.0 behaviour). Off: the pickup changes neither the shop's fold nor the
- *  camera. [ASSUMED] the label; only an explicit false turns it off (a missing or junk value stays on).
+ *  deploymentZoom: 设置「部署时镜头缩放」 — picking up a piece on the own prep board folds the shop and zooms
+ *  (GitHub #602, PR #646). Default off in this extension. An explicit saved deploymentZoom boolean wins; otherwise
+ *  prepDeployFold === true migrates to on. prepDeployFold stays a synchronized alias for old preferences.
  *  officialFx: 设置「官方特效」 (0.3.0, render/vfx): 'auto' (完整 on a desktop, 精简 on a touch device — render/vfx/tier.js),
  *  'off', 'lite' (精简), 'full' (完整); only shown when effects were extracted from the local client.
  *  upstreamReleaseNotes / extensionReleaseNotes: independent update dialogs, both on by default; stored false is retained.

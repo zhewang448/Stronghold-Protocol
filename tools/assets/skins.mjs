@@ -1,6 +1,7 @@
 import { RAW, safeName, urlDir } from './sources.mjs';
 
-export function skinCatalogue(research, operatorIds) {
+// Cosmetics are shared by every official version. Explicit subsets remain available to callers.
+export function skinCatalogue(research, operatorIds = new Set(Object.keys(research?.chars || {}))) {
   const chars = {};
   for (const id of [...operatorIds].sort()) {
     if (research?.chars?.[id]?.length) chars[id] = research.chars[id].map(({ id: skinId, name, group }) => ({ id: skinId, name, group }));

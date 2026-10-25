@@ -1,22 +1,24 @@
 # Windows 服主启动器
 
 `StrongholdProtocolLauncher.exe` 是 Windows x64 的 WPF 单文件启动器，随带 .NET 运行时，
-无需另外安装 .NET。游戏服务器仍需 **Node.js 22 或更高版本**和同版项目文件。默认中文，
+无需另外安装 .NET。首次安装可自动下载游戏与便携 Node.js；已有安装也可导入管理。默认中文，
 通过 `SP_LAUNCHER_LANG=en|ja|ko|zh-TW` 可显式选用项目中的对应语言包；缺少文案时回退中文。
 
 ## 快速开服
 
-将 EXE 放在当前版本的项目根目录，与 `package.json` 同级，双击打开。
-放在其他位置时，使用「选择服务器目录」选择当前源码 / 整合包目录。
-启动器所选目录必须包含 `scripts/host-launcher.mjs`，不能只把 EXE 放进未升级的旧安装。
-启动器文案已接入四语言包；日、韩、繁中包中的新增启动器文案目前以英文提供，默认中文不受影响。
-本分支的启动器源码随 `v0.3.2-extended.1` 保留；该版尚未发布对应 EXE 附件。已发布版本请从对应 Release 下载启动器，并与同版游戏目录配套使用。
+只需下载并解压 Windows 启动器附件，双击 EXE，在「新建实例」里选择空的安装目录，点击「下载并安装」。
+启动器使用 .NET 自行下载正式 Release 的完整游戏包、核对 SHA-256 与 MANIFEST 文件清单后解压；不需要预先下载游戏包。
+缺少受支持的 Node.js 时，会从 Node.js 官网下载并校验便携 Node 22 LTS，保存在当前用户目录，不需要系统安装或管理员权限。
+首次安装需要能访问 GitHub 和 nodejs.org。下载失败、校验失败或取消时不会注册半成品实例，清理临时目录后可重试。
 
-1. 双击 EXE，确认窗口中的服务器目录正确。
-2. 选择开服方式和游戏端口，查看右侧检查结果。
-3. 点击「启动服务器」，等待环境准备完成和服务状态变为在线；具体错误见下方日志。
-4. 点击「复制地址」邀请玩家，或点击「打开游戏」进入本机游戏；管理操作从「管理控制台」进入。
-5. 要关服时点击「停止服务器」并确认。**关闭启动器窗口会保留后台服务，不等于停服。**
+已有游戏目录使用「导入已有实例」；目录必须包含配套的 scripts/host-launcher.mjs。已有版本不受支持时请另建空目录安装。
+
+1. 新建并安装实例，或导入已有实例。
+2. 在顶部实例列表切换服务器；每个实例分别保存目录、游戏端口和开服方式。
+3. 选择开服方式后点击「启动服务器」。新实例自动选择未占用且不与已登记实例冲突的游戏 / 管理端口组合。
+4. 点击「复制地址」「打开游戏」或「管理控制台」。在另一实例运行或准备时可以切换管理；切换不会停止后台服务。
+5. 「停止服务器」「重启服务」只操作当前选择且凭据校验通过的实例。「移出列表」仅取消登记，不删除文件、不停服。
+6. **关闭窗口会保留全部后台服务。** 需要停服时分别切到对应实例并停止。
 
 ## 功能与边界
 
@@ -34,13 +36,11 @@
 `SP_ADMIN_PORT` 覆盖。已有服务的控制台入口则从实际实例记录读取。
 若需要自定义管理端口、计划任务或无桌面的 Linux 服务，请使用 [原启动脚本和部署方式](../docs/DEPLOY.md)。
 
-## 玩法版本
-
-当前游戏默认开放四个玩法版本，默认选中第二期下半；玩家从大厅切换，已有同盟仍需房主提案与真人一致投票。桌面启动器沿用所选项目的服务器默认，并保留继承的 `SP_VERSIONS`、`SP_VERSION_DEFAULT` 和 `SP_MAX_VERSION_HOSTS` 配置。需要命令行指定时，`scripts/host-launcher.mjs` 与 `scripts/launch.mjs` 均支持 `--versions all`、`--versions act2autochess` 或逗号分隔列表，以及 `--version-default <id>`。已有服务须正常重启后应用新配置。
-
 ## 数据与日志
 
-服主偏好保存在 `%LOCALAPPDATA%/StrongholdProtocol/launcher.json`。
+实例列表和当前选择保存在 %LOCALAPPDATA%/StrongholdProtocol/instances.json；旧服主偏好迁移自 `%LOCALAPPDATA%/StrongholdProtocol/launcher.json`。
+便携 Node.js 保存在 %LOCALAPPDATA%/StrongholdProtocol/runtime/，默认安装位置为同级 servers/。
+EXE 嵌入语言包，尚未安装游戏时也能显示所选语言。
 日志保存在所选项目 `logs/host-launcher-<端口>.log`，每次重新启动前超过 2 MiB 时轮换一份。
 控制台 token 不通过桌面状态接口暴露，插件工作台 URL 的 key/token 参数在日志写入前脱敏。
 复制诊断前仍应检查日志中是否含有个人目录、网络地址或插件自行打印的信息。
@@ -60,10 +60,11 @@
 
 ## 构建与验证
 
-在 Windows 上安装 .NET 9 SDK，然后在项目根目录使用 PowerShell 7：
+开发构建需 .NET 9 SDK；使用已构建的 EXE 无需安装 SDK。在项目根目录使用 PowerShell 7：
 
 ```powershell
 ./launcher/build.ps1
+dotnet run --project test/launcher-native/Launcher.Native.Tests.csproj
 node --test test/host-launcher.test.js test/host-runtime.test.js test/host-lifecycle-integration.test.js test/package.test.js
 ```
 
@@ -75,7 +76,7 @@ Copy-Item ./dist/launcher-win-x64/StrongholdProtocolLauncher.exe ./StrongholdPro
 Get-FileHash ./StrongholdProtocolLauncher.exe -Algorithm SHA256
 ```
 
-默认不签名，不会修改系统安全策略或防火墙规则。EXE 是启动工具，不内嵌整个游戏、Node.js 或游戏美术。
+默认不签名，不会修改系统安全策略或防火墙规则。EXE 内嵌 .NET 与语言包；游戏及便携 Node.js 在首次安装时按需下载。
 源文件和构建脚本保留在本目录，生成的 bin/obj、EXE 不入 Git。
 打包时应将 EXE 与同版游戏包配套发布；原 `tools/package.mjs` 仍只从 Git 跟踪的允许列表选取源码，
 新增桌面助手已列入允许列表，但生成的 EXE 需构建后另附。
@@ -92,3 +93,14 @@ Get-FileHash ./StrongholdProtocolLauncher.exe -Algorithm SHA256
 使用 Windows 原生窗口缩放、键盘焦点与可滚动工作区，不改变浏览器游戏界面。
 
 本轮构建标识、专项 / 全量测试结果及未验证项见 [验收记录](../docs/HOST-LAUNCHER-VALIDATION.md)。
+
+
+## 实例发现与删除
+
+安装/导入保存索引；运行服务可通过本机监听端口、Node 入口和健康接口识别，不要求旧服务修改或重启。不会遍历磁盘，不提供文件搜索。停服未登记实例请「导入已有实例」选择包含 package.json、server、scripts 的根目录。
+
+「移出列表」只取消登记；「删除实例」明确确认后将停服目录送入回收站，再取消登记。运行中、身份不可核验、含其他登记实例或启动器所在目录拒绝删除。请先备份；回收站恢复后可重新导入。
+
+## 命名与本版
+
+启动器版本 1.1.0；EXE 固定 StrongholdProtocolLauncher.exe，附件 StrongholdProtocolLauncher-v1.1.0-win-x64.zip。新目录 server-01、server-02；显示名按游戏/扩展版本生成，旧自动 MODIFIED_FILE 显示名迁移，自定义名称保留，原目录和端口不移动。

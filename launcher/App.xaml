@@ -100,6 +100,43 @@
       </Setter>
     </Style>
 
+    <Style TargetType="ComboBoxItem">
+      <Setter Property="Foreground" Value="{StaticResource TextHi}"/>
+      <Setter Property="Background" Value="{StaticResource Bg2}"/>
+      <Setter Property="Padding" Value="10,8"/>
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBoxItem">
+        <Border x:Name="ItemFrame" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"><ContentPresenter/></Border>
+        <ControlTemplate.Triggers>
+          <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="ItemFrame" Property="Background" Value="#285344"/></Trigger>
+          <Trigger Property="IsSelected" Value="True"><Setter Property="Foreground" Value="{StaticResource MintHi}"/></Trigger>
+        </ControlTemplate.Triggers>
+      </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <Style TargetType="ComboBox">
+      <Setter Property="Foreground" Value="{StaticResource TextHi}"/>
+      <Setter Property="Background" Value="{StaticResource Bg2}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBox">
+        <Grid>
+          <ToggleButton x:Name="Toggle" Focusable="False" IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+            <ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border Background="{Binding Background, RelativeSource={RelativeSource AncestorType=ComboBox}}" BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ComboBox}}" BorderThickness="1"/></ControlTemplate></ToggleButton.Template>
+          </ToggleButton>
+          <ContentPresenter Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" Margin="10,6,30,6" VerticalAlignment="Center" IsHitTestVisible="False"/>
+          <Path Data="M 0 0 L 5 5 L 10 0" Stroke="{StaticResource TextMd}" StrokeThickness="1.5" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" IsHitTestVisible="False"/>
+          <Popup x:Name="PART_Popup" IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" AllowsTransparency="True" Focusable="False">
+            <Border Background="{StaticResource Bg2}" BorderBrush="{StaticResource Line}" BorderThickness="1" MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}">
+              <ScrollViewer MaxHeight="260"><ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/></ScrollViewer>
+            </Border>
+          </Popup>
+        </Grid>
+        <ControlTemplate.Triggers>
+          <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter Property="BorderBrush" Value="{StaticResource MintHi}"/></Trigger>
+          <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value=".5"/></Trigger>
+        </ControlTemplate.Triggers>
+      </ControlTemplate></Setter.Value></Setter>
+    </Style>
+
     <Style x:Key="InputBox" TargetType="TextBox">
       <Setter Property="Foreground" Value="{StaticResource TextHi}" />
       <Setter Property="Background" Value="{StaticResource Bg0}" />

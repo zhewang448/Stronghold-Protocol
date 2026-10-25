@@ -84,6 +84,7 @@ import { AiTakeoverPanel } from '../ui/aiTakeover.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from '../../vendor/hooks.module.js';
 import { PHASE, GEO, PING_TTL_MS } from '../../../shared/constants.js';
 import { ruleOption } from '../../../shared/plugins/rules.js';
+import { effectiveRoomRules } from '../../../shared/roomConvenience.js';
 
 import { html, Spinner, PhaseBanner, ResultDialog, Icon, Button, confirmDialog, closeAllDialogs, useTicker } from '../ui/components.js';
 import { useGameData, GIcon } from '../ui/gameComponents.js';
@@ -408,7 +409,7 @@ function MatchScreen() {
   const scoutBandOwner = scoutPid ? (players.find((p) => p.playerId === scoutPid)?.name || null) : null;
   const personalChoice = !spectator && alive ? normalizePersonalChoice(pub, priv, myId) : null;
   const hasPersonalChoice = !!personalChoice;
-  const roomRules = useStore((s) => s.room?.content?.rules ?? null);
+  const roomRules = useStore((s) => effectiveRoomRules(s.room));
   const morphMode = ruleOption(roomRules, 'morphPairing');
   const unequipAllow = ruleOption(roomRules, 'unequip') === 'allow';
   const prepLoadoutOpen = ruleOption(roomRules, 'prepLoadout') === 'prep';

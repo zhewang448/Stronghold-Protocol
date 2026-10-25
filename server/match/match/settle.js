@@ -175,6 +175,7 @@ export class MatchSettle {
       result.testActions = this.testActions;
       if (this.testReplayable === false) result.testReplayable = false;
     }
+    if (this.convenience) result.convenience = this.convenience;
     this.lastResultMsg = result;
     this.markPublic();
     try { this.flush(true); } catch (e) { this.reportError('flush', e); }

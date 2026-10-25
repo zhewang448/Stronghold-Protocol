@@ -1,5 +1,5 @@
 // Player settings (BGM/SFX/voice volume, the voice dub 语音语言, mute, damage numbers, the optional 弹药数量 under an ammo
-// skill's bar — not in the official HUD, off by default, PR #552 —, the optional 作战统计 panel — off by default,
+// skill's bar — not in the official HUD, off by default, PR #552 —, the 作战统计 panel — on by default in this extension,
 // PR #618 —, render quality, 文字大小, the
 // shortcut keys): a tiny observable store persisted in localStorage (`sp.pref.settings`), applied to the audio manager
 // and to the document on every change, plus the settings modal — which also holds the language switch (ui/lang.js; kept
@@ -52,6 +52,7 @@ import { hasAnySkinChoices } from './skins.js';
 import { fxAvailable } from '../render/vfx/available.js';
 import { resolveOfficialFx } from '../render/vfx/tier.js';
 import { ScreenFitSection } from './screenFit.js';
+import { ReleaseHistoryButton } from './releaseHistory.js';
 import { askPersistStorage, importSupport, storagePersisted } from '../assetCache.js';
 import { assetImport, pruneImportedAssets } from '../assetPack.js';
 import { cosmetics } from '../cosmetics.js';
@@ -298,7 +299,7 @@ function CosmeticSection() {
   if (!list.length) {
     if (!hasAnySkinChoices()) return null;
     return html`<section class="set-plugins" aria-labelledby="set-skins-title" data-testid="personal-plugins">
-      <div class="set-keys__head"><span class="set-row__label" id="set-skins-title">${t('外观插件')}<${MicroLabel}>COSMETIC PLUGINS<//></span></div>
+      <div class="set-keys__head"><span class="set-row__label" id="set-skins-title">${t('外观')}<${MicroLabel}>APPEARANCE<//></span></div>
       <${OtherSkinsRow} value=${s.otherSkins !== false} onSet=${(v) => updateSettings({ otherSkins: v })} />
     </section>`;
   }
@@ -312,7 +313,7 @@ function CosmeticSection() {
   const flip = (id, on) => { const r = setPersonalPlugin(id, on); if ('error' in r) toast(describeError(r.error), 'warn'); };
   return html`<section class="set-plugins" aria-labelledby="set-plugins-title" data-testid="personal-plugins">
     <div class="set-keys__head">
-      <span class="set-row__label" id="set-plugins-title">${t('外观插件')}<${MicroLabel}>COSMETIC PLUGINS<//></span>
+      <span class="set-row__label" id="set-plugins-title">${t('外观')}<${MicroLabel}>APPEARANCE<//></span>
     </div>
     <p class="set-hint">${t('只改变你自己看到的画面和声音，不影响其他博士，也不影响战斗；插件为非官方制作。')}</p>
     <${OtherSkinsRow} value=${s.otherSkins !== false} onSet=${(v) => updateSettings({ otherSkins: v })} />
@@ -474,10 +475,11 @@ export function SettingsModal({ open, onClose }) {
     return () => { live = false; off(); };
   }, [open]);
   const fxTier = resolveOfficialFx(s.officialFx, true);
-  return html`<${Modal} open=${open} onClose=${onClose} title=${t('设置')} micro="SETTINGS" width="7.4rem"
+  return html`<${Modal} open=${open} onClose=${onClose} title=${t('设置')} micro="SETTINGS" width="7.4rem" class="settings-modal"
                         actions=${html`<${Button} variant="secondary" icon="book" class="set-guide" onClick=${() => openGuide(0)}>${t('玩法说明')}<//>
                         <${Button} variant="primary" icon="check" onClick=${onClose}>${t('完成')}<//>`}>
     <div class="set-list">
+      <section class="set-group" aria-labelledby="settings-general"><h3 id="settings-general">${t('常规与声音')}</h3>
       <div class="set-row">
         <span class="set-row__label">${t('语言')}<${MicroLabel}>LANGUAGE<//></span>
         <${LangToggle} class="set-lang" />
@@ -499,12 +501,17 @@ export function SettingsModal({ open, onClose }) {
       <${Slider} label=${t('音效')} micro="SFX" icon="signal" value=${s.sfx}
                  onInput=${(v) => { updateSettings({ sfx: v }); if (!tested) { setTested(true); setTimeout(() => setTested(false), 400); audio.sfx('click'); } }} />
       <${Toggle} label=${t('静音')} micro="MUTE" value=${s.muted} onChange=${(v) => updateSettings({ muted: v })} />
+      </section>
+      <section class="set-group" aria-labelledby="settings-notices"><h3 id="settings-notices">${t('交流与更新')}</h3>
       <${Toggle} label=${t('显示消息提示气泡')} micro="CHAT PREVIEWS" value=${s.chatBubbles} onChange=${(v) => updateSettings({ chatBubbles: v })} />
       <div data-testid="release-notes-settings">
+        <${ReleaseHistoryButton} variant="secondary" />
         <${Toggle} label=${t('显示上游更新内容')} micro="UPSTREAM UPDATES" value=${s.upstreamReleaseNotes} onChange=${(v) => updateSettings({ upstreamReleaseNotes: v })} />
         <${Toggle} label=${t('显示扩展更新内容')} micro="EXTENSION UPDATES" value=${s.extensionReleaseNotes} onChange=${(v) => updateSettings({ extensionReleaseNotes: v })} />
         <p class="set-hint">${t('上游与扩展版本更新时分别提醒；同时更新时并排显示。关闭某一项不会影响另一项。')}</p>
       </div>
+      </section>
+      <section class="set-group" aria-labelledby="settings-battle"><h3 id="settings-battle">${t('战斗显示')}</h3>
       <${Toggle} label=${t('显示伤害数字')} micro="DAMAGE NUMBERS" value=${s.damageNumbers} onChange=${(v) => updateSettings({ damageNumbers: v })} />
       <${Toggle} label=${t('官方伤害数字')} micro="OFFICIAL NUMBERS" value=${s.officialDamageNumbers} onChange=${(v) => updateSettings({ officialDamageNumbers: v })} />
       <p class="set-hint">${t('只显示达到官方暴击条件的红色数字。关闭时仍显示每一次命中。')}</p>
@@ -516,6 +523,8 @@ export function SettingsModal({ open, onClose }) {
       <p class="set-hint">${t('打开后，对局左下角可以查看自己干员的伤害、治疗和 DPS / HPS。官方界面没有这个窗口。改变玩法的插件对局在 Worker 里演算，统计不到，按钮不显示。')}</p>
       <${Toggle} label=${t('部署时镜头缩放')} micro="DEPLOYMENT ZOOM" value=${s.deploymentZoom} onChange=${(v) => updateSettings({ deploymentZoom: v })} />
       <p class="set-hint">${t('拖起干员、装备或召唤物，以及放下后选择朝向时，临时收起商店并放大棋盘。关闭后，拿起时既不改变商店的收起状态，也不缩放镜头。')}</p>
+      </section>
+      <section class="set-group" aria-labelledby="settings-display"><h3 id="settings-display">${t('画面与性能')}</h3>
       <${Toggle} label=${t('全屏时保持屏幕常亮')} micro="SCREEN WAKE LOCK" value=${s.fullscreenWakeLock} onChange=${(v) => updateSettings({ fullscreenWakeLock: v })} />
       <p class="set-hint" data-testid="wake-lock-hint">${tParts(isIOS()
         ? N_('全屏期间始终保持屏幕常亮（{support}）；iOS低电量模式下可能不生效。')
@@ -557,14 +566,21 @@ export function SettingsModal({ open, onClose }) {
       </div>
       <${Toggle} label=${t('显示帧率')} micro="SHOW FPS" value=${s.showFps} onChange=${(v) => updateSettings({ showFps: v })} />
       <p class="set-hint">${t('在对局延迟旁显示实际渲染帧率。')}</p>
+      </section>
+      <section class="set-group" aria-labelledby="settings-controls"><h3 id="settings-controls">${t('界面与操作')}</h3>
       <${ScreenFitSection} />
       <${HotkeySection} keys=${s.keys} touchUi=${touchUi} />
+      </section>
+      <section class="set-group" aria-labelledby="settings-appearance"><h3 id="settings-appearance">${t('外观')}</h3>
       <${CosmeticSection} />
       <${UiPluginSection} />
+      </section>
+      <section class="set-group" aria-labelledby="settings-data"><h3 id="settings-data">${t('资源与诊断')}</h3>
       <${StorageSection} />
       <${DiagSection} />
       ${unsupportedReason() ? html`<${PreloadSection} />` : html`<${ResourceRow} enabled=${s.preload} />`}
       <p class="set-hint">${touchUi ? t('触屏操作：点击单位选中（撤退 / 出售）· 长按单位或卡牌查看详情 · 拖动部署后滑动选择朝向') : t('右键查看详情')}</p>
+      </section>
     </div>
   <//>`;
 }

@@ -34,6 +34,14 @@ let allowRoomUniteLayerGains = false;
 let roundCharts = true;
 let liveRoundDamage = true;
 let showPwaInstall = true;
+// Default on; a saved console choice wins over an explicit legacy environment override.
+let allowAiTakeover = null;
+export function getAllowAiTakeover() { return allowAiTakeover ?? !/^(0|false|no|off)$/i.test(process.env.SP_AI_TAKEOVER || ''); }
+export function setAllowAiTakeover(value) {
+  if (typeof value !== 'boolean') return { error: '观战接替 AI 权限必须为开或关' };
+  allowAiTakeover = value;
+  return { ok: true };
+}
 export function getShowPwaInstall() { return showPwaInstall; }
 export function setShowPwaInstall(value) {
   if (typeof value !== 'boolean') return { error: '桌面安装按钮设置必须为开或关' };
@@ -111,7 +119,7 @@ export function setPrep(v) {
 }
 
 /** Back to the data's timers and the official 联防 rule (tests). */
-export function resetHostSettings() { prep = DEFAULT_PREP; uniteLayerGains = false; allowRoomUniteLayerGains = false; roundCharts = true; liveRoundDamage = true; showPwaInstall = true; social = DEFAULT_SOCIAL_SETTINGS; }
+export function resetHostSettings() { prep = DEFAULT_PREP; uniteLayerGains = false; allowRoomUniteLayerGains = false; roundCharts = true; liveRoundDamage = true; showPwaInstall = true; allowAiTakeover = null; social = DEFAULT_SOCIAL_SETTINGS; }
 
 /** The 休整期 seconds of round r for a match whose data gives `base` (null = untimed stays untimed). */
 export function prepSecondsFor(round, base, p = prep) {

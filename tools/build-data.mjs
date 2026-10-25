@@ -59,7 +59,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const RESEARCH_DIR = join(ROOT, 'docs', 'research');
 const GAMEDATA_URL = 'https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/';
 const pinnedUrl = (sha) => `https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/${sha}/zh_CN/gamedata/`;
-const USAGE = 'usage: node tools/build-data.mjs [--version <id>] [--refresh | --offline] [--out <dir>] [--cache <dir>] [--report <file>] [--quiet] [--no-research] [--force]';
+const USAGE = 'usage: node tools/build-data.mjs [--version <id>] [--refresh | --offline] [--out <dir>] [--cache <dir>] [--report <file>] [--quiet] [--no-research] [--force] [--skins-only]';
 
 /**
  * Parse the command line strictly (unknown options and missing values are errors, so a typo can
@@ -73,7 +73,7 @@ function parseArgs(argv) {
     refresh: false, offline: false, quiet: false, noResearch: false, force: false,
     out: null, cache: join(ROOT, '.cache', 'gamedata'), report: null, version: null,
   };
-  const flags = { '--refresh': 'refresh', '--offline': 'offline', '--quiet': 'quiet', '--no-research': 'noResearch', '--force': 'force', '--seat-art-only': 'seatArtOnly' };
+  const flags = { '--refresh': 'refresh', '--offline': 'offline', '--quiet': 'quiet', '--no-research': 'noResearch', '--force': 'force', '--seat-art-only': 'seatArtOnly', '--skins-only': 'skinsOnly' };
   const dirs = { '--out': 'out', '--cache': 'cache', '--report': 'report' };
   for (let i = 0; i < argv.length; i++) {
     const [name, inline] = argv[i].includes('=') ? [argv[i].slice(0, argv[i].indexOf('=')), argv[i].slice(argv[i].indexOf('=') + 1)] : [argv[i], null];
@@ -3307,6 +3307,18 @@ function validateAll(f) {
 // ===== main =====================================================================================
 
 async function main() {
+  if (OPTS.skinsOnly) {
+    if (!IS_DEFAULT) throw new Error('--skins-only writes the shared default catalogue; omit --version');
+    const research = await loadResearch('operator-skins.json');
+    if (!research?.chars) throw new Error('--skins-only requires docs/research/operator-skins.json');
+    const catalogue = skinCatalogue(research);
+    await mkdir(OPTS.out, { recursive: true });
+    const dest = join(OPTS.out, 'skins.json'), tmp = dest + '.tmp-' + process.pid;
+    await writeFile(tmp, JSON.stringify(catalogue));
+    await rename(tmp, dest);
+    log('skins: ' + Object.keys(catalogue.chars).length + ' operators, ' + Object.values(catalogue.chars).flat().length + ' outfits');
+    return;
+  }
   if (OPTS.seatArtOnly) { await buildSeatArt({ root: ROOT, cache: OPTS.cache, out: OPTS.out, download: !OPTS.offline }); return; }
   const t0 = Date.now();
   const ctx = await loadContext();
@@ -3338,7 +3350,7 @@ async function main() {
   for (const b of Object.values(bands)) b.bondIds = bandBondIds(b, { bonds, pools: choices.pools });
   const config = buildConfig(ctx, waves, stages, bands, chess, items);
   const files = { config, chess, bonds, garrisons, items, bands, effects, choices, enemies, factions, waves, stages, bosses, tokens, backups };
-  if (IS_DEFAULT) files.skins = skinCatalogue(ctx.research.skins, new Set([...Object.values(chess).map(c => c.charId).filter(Boolean), ...Object.keys(backups.units)]));
+  if (IS_DEFAULT) files.skins = skinCatalogue(ctx.research.skins);
 
   // the unit forms rebuild every PRESET chess at every rank (before the annotation: each pass as built)
   const errors = [...validateAll(files), ...passes.flatMap((p) => checkUnitFormParity(p.ctx, p.chess).map((e) => `${e} (potential rank ${p.ctx.potRank})`))];

@@ -1,5 +1,5 @@
 {
- "source": "AoyamaT1 PR #85, 83dbfb84be46699617fd45440d9eae762d3f94f1; Paper-Yuan 06cd3d0aafee6d9b1a3c542414fb847e16871a4d. Names: official skin_table; verified model directories: fexli/ArknightsResource.",
+ "source": "AoyamaT1 PR #85, 83dbfb84be46699617fd45440d9eae762d3f94f1; Paper-Yuan 06cd3d0aafee6d9b1a3c542414fb847e16871a4d. Names: official skin_table; verified model directories: fexli/ArknightsResource.; First-period additions: local official skin_table.json (50 outfits for 31 previously uncovered operators), fexli Front/Spine and Back atlases verified 2026-10-25; yuanyan3060 avatars.",
  "chars": {
   "char_498_inside": [
    {
@@ -1622,6 +1622,468 @@
     "group": "玛尔特/IX",
     "stem": "char_1039_thorn2_marthe_9",
     "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_1039_thorn2_marthe%239.png",
+    "back": true
+   }
+  ],
+  "char_017_huang": [
+   {
+    "id": "char_017_huang@as#1",
+    "name": "爆裂菲林",
+    "group": "音律联觉",
+    "stem": "char_017_huang_as_1",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_017_huang_as%231.png",
+    "back": true
+   },
+   {
+    "id": "char_017_huang@witch#5",
+    "name": "易爆蓝焰",
+    "group": "巫异盛宴/V",
+    "stem": "char_017_huang_witch_5",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_017_huang_witch%235.png",
+    "back": true
+   }
+  ],
+  "char_1031_slent2": [
+   {
+    "id": "char_1031_slent2@epoque#32",
+    "name": "栖息",
+    "group": "时代/XXXII",
+    "stem": "char_1031_slent2_epoque_32",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_1031_slent2_epoque%2332.png",
+    "back": true
+   }
+  ],
+  "char_1034_jesca2": [
+   {
+    "id": "char_1034_jesca2@cfa#1",
+    "name": "《上任达维镇》",
+    "group": "中国电影资料馆",
+    "stem": "char_1034_jesca2_cfa_1",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_1034_jesca2_cfa%231.png",
+    "back": true
+   }
+  ],
+  "char_109_fmout": [
+   {
+    "id": "char_109_fmout@epoque#2",
+    "name": "未知的旅行",
+    "group": "时代/II",
+    "stem": "char_109_fmout_epoque_2",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_109_fmout_epoque%232.png",
+    "back": true
+   }
+  ],
+  "char_133_mm": [
+   {
+    "id": "char_133_mm@summer#20",
+    "name": "夏卉 FA054",
+    "group": "珊瑚海岸/XX",
+    "stem": "char_133_mm_summer_20",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_133_mm_summer%2320.png",
+    "back": true
+   }
+  ],
+  "char_134_ifrit": [
+   {
+    "id": "char_134_ifrit@kfc#1",
+    "name": "儿童派对",
+    "group": "肯德基",
+    "stem": "char_134_ifrit_kfc_1",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_134_ifrit_kfc%231.png",
+    "back": true
+   },
+   {
+    "id": "char_134_ifrit@rilakkuma#1",
+    "name": "轻松旅途",
+    "group": "轻松小熊",
+    "stem": "char_134_ifrit_rilakkuma_1",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_134_ifrit_rilakkuma%231.png",
+    "back": true
+   },
+   {
+    "id": "char_134_ifrit@summer#1",
+    "name": "日晒 SS.SP",
+    "group": "珊瑚海岸/I",
+    "stem": "char_134_ifrit_summer_1",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_134_ifrit_summer%231.png",
+    "back": true
+   }
+  ],
+  "char_135_halo": [
+   {
+    "id": "char_135_halo@epoque#25",
+    "name": "所愿",
+    "group": "时代/XXV",
+    "stem": "char_135_halo_epoque_25",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_135_halo_epoque%2325.png",
+    "back": true
+   }
+  ],
+  "char_198_blackd": [
+   {
+    "id": "char_198_blackd@as#1",
+    "name": "无言狂响",
+    "group": "音律联觉",
+    "stem": "char_198_blackd_as_1",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_198_blackd_as%231.png",
+    "back": true
+   },
+   {
+    "id": "char_198_blackd@winter#1",
+    "name": "新航线",
+    "group": "寒武纪/I",
+    "stem": "char_198_blackd_winter_1",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_198_blackd_winter%231.png",
+    "back": true
+   }
+  ],
+  "char_2012_typhon": [
+   {
+    "id": "char_2012_typhon@summer#17",
+    "name": "温差 RT.RX07",
+    "group": "珊瑚海岸/XVII",
+    "stem": "char_2012_typhon_summer_17",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_2012_typhon_summer%2317.png",
+    "back": true
+   },
+   {
+    "id": "char_2012_typhon@wild#9",
+    "name": "北地引路人",
+    "group": "生命之地/IX",
+    "stem": "char_2012_typhon_wild_9",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_2012_typhon_wild%239.png",
+    "back": true
+   }
+  ],
+  "char_215_mantic": [
+   {
+    "id": "char_215_mantic@epoque#19",
+    "name": "面纱之下",
+    "group": "时代/XX",
+    "stem": "char_215_mantic_epoque_19",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_215_mantic_epoque%2319.png",
+    "back": true
+   },
+   {
+    "id": "char_215_mantic@epoque#4",
+    "name": "无形悼挽",
+    "group": "时代/IV",
+    "stem": "char_215_mantic_epoque_4",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_215_mantic_epoque%234.png",
+    "back": true
+   }
+  ],
+  "char_218_cuttle": [
+   {
+    "id": "char_218_cuttle@epoque#12",
+    "name": "暗矢",
+    "group": "时代/XII",
+    "stem": "char_218_cuttle_epoque_12",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_218_cuttle_epoque%2312.png",
+    "back": true
+   }
+  ],
+  "char_230_savage": [
+   {
+    "id": "char_230_savage@boc#8",
+    "name": "地底三百米",
+    "group": "斗争血脉/VIII",
+    "stem": "char_230_savage_boc_8",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_230_savage_boc%238.png",
+    "back": true
+   },
+   {
+    "id": "char_230_savage@kitchen#3",
+    "name": "家传秘方",
+    "group": "罗德厨房/III",
+    "stem": "char_230_savage_kitchen_3",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_230_savage_kitchen%233.png",
+    "back": true
+   },
+   {
+    "id": "char_230_savage@sale#17",
+    "name": "又一年秋季",
+    "group": "忒斯特收藏/XIX",
+    "stem": "char_230_savage_sale_17",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_230_savage_sale%2317.png",
+    "back": true
+   }
+  ],
+  "char_243_waaifu": [
+   {
+    "id": "char_243_waaifu@whirlwind#2",
+    "name": "街道狂花",
+    "group": "0011/飙系列/II",
+    "stem": "char_243_waaifu_whirlwind_2",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_243_waaifu_whirlwind%232.png",
+    "back": true
+   }
+  ],
+  "char_271_spikes": [
+   {
+    "id": "char_271_spikes@unveiling#1",
+    "name": "危险邀约",
+    "group": "待予花冠/I",
+    "stem": "char_271_spikes_unveiling_1",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_271_spikes_unveiling%231.png",
+    "back": true
+   },
+   {
+    "id": "char_271_spikes@winter#2",
+    "name": "随性",
+    "group": "寒武纪/II",
+    "stem": "char_271_spikes_winter_2",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_271_spikes_winter%232.png",
+    "back": true
+   }
+  ],
+  "char_300_phenxi": [
+   {
+    "id": "char_300_phenxi@boc#9",
+    "name": "审判日",
+    "group": "斗争血脉/IX",
+    "stem": "char_300_phenxi_boc_9",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_300_phenxi_boc%239.png",
+    "back": true
+   },
+   {
+    "id": "char_300_phenxi@witch#4",
+    "name": "至圣誓言",
+    "group": "巫异盛宴/IV",
+    "stem": "char_300_phenxi_witch_4",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_300_phenxi_witch%234.png",
+    "back": true
+   }
+  ],
+  "char_304_zebra": [
+   {
+    "id": "char_304_zebra@wild#6",
+    "name": "幽苔",
+    "group": "生命之地/VI",
+    "stem": "char_304_zebra_wild_6",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_304_zebra_wild%236.png",
+    "back": true
+   }
+  ],
+  "char_345_folnic": [
+   {
+    "id": "char_345_folnic@wild#4",
+    "name": "残葛",
+    "group": "生命之地/IV",
+    "stem": "char_345_folnic_wild_4",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_345_folnic_wild%234.png",
+    "back": true
+   }
+  ],
+  "char_348_ceylon": [
+   {
+    "id": "char_348_ceylon@summer#13",
+    "name": "悠然假日 HD49",
+    "group": "珊瑚海岸/XIII",
+    "stem": "char_348_ceylon_summer_13",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_348_ceylon_summer%2313.png",
+    "back": true
+   }
+  ],
+  "char_355_ethan": [
+   {
+    "id": "char_355_ethan@epoque#7",
+    "name": "渗透",
+    "group": "时代/VII",
+    "stem": "char_355_ethan_epoque_7",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_355_ethan_epoque%237.png",
+    "back": true
+   }
+  ],
+  "char_377_gdglow": [
+   {
+    "id": "char_377_gdglow@sanrio#1",
+    "name": "花房茶话会",
+    "group": "三丽鸥家族",
+    "stem": "char_377_gdglow_sanrio_1",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_377_gdglow_sanrio%231.png",
+    "back": true
+   },
+   {
+    "id": "char_377_gdglow@snow#5",
+    "name": "喜夜侍者",
+    "group": "冰原信使/V",
+    "stem": "char_377_gdglow_snow_5",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_377_gdglow_snow%235.png",
+    "back": true
+   },
+   {
+    "id": "char_377_gdglow@summer#12",
+    "name": "夏卉 FA394",
+    "group": "珊瑚海岸/XII",
+    "stem": "char_377_gdglow_summer_12",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_377_gdglow_summer%2312.png",
+    "back": true
+   }
+  ],
+  "char_4004_pudd": [
+   {
+    "id": "char_4004_pudd@snow#5",
+    "name": "火树灵",
+    "group": "冰原信使/V",
+    "stem": "char_4004_pudd_snow_5",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_4004_pudd_snow%235.png",
+    "back": true
+   }
+  ],
+  "char_4045_heidi": [
+   {
+    "id": "char_4045_heidi@epoque#24",
+    "name": "书信零落",
+    "group": "时代/XXIV",
+    "stem": "char_4045_heidi_epoque_24",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_4045_heidi_epoque%2324.png",
+    "back": false
+   }
+  ],
+  "char_4080_lin": [
+   {
+    "id": "char_4080_lin@littlePony#1",
+    "name": "求知的魔法",
+    "group": "小马宝莉",
+    "stem": "char_4080_lin_littlePony_1",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_4080_lin_littlePony%231.png",
+    "back": true
+   },
+   {
+    "id": "char_4080_lin@nian#10",
+    "name": "列瑶台",
+    "group": "0011制造/IX",
+    "stem": "char_4080_lin_nian_10",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_4080_lin_nian%2310.png",
+    "back": true
+   },
+   {
+    "id": "char_4080_lin@summer#19",
+    "name": "夏卉 FA137",
+    "group": "珊瑚海岸/XIX",
+    "stem": "char_4080_lin_summer_19",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_4080_lin_summer%2319.png",
+    "back": true
+   }
+  ],
+  "char_4119_wanqin": [
+   {
+    "id": "char_4119_wanqin@epoque#41",
+    "name": "万顷阳光",
+    "group": "时代/XL",
+    "stem": "char_4119_wanqin_epoque_41",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_4119_wanqin_epoque%2341.png",
+    "back": true
+   }
+  ],
+  "char_4121_zuole": [
+   {
+    "id": "char_4121_zuole@nian#11",
+    "name": "少年游",
+    "group": "0011制造/XI",
+    "stem": "char_4121_zuole_nian_11",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_4121_zuole_nian%2311.png",
+    "back": true
+   },
+   {
+    "id": "char_4121_zuole@sale#16",
+    "name": "无息破局",
+    "group": "忒斯特收藏/XVIII",
+    "stem": "char_4121_zuole_sale_16",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_4121_zuole_sale%2316.png",
+    "back": true
+   }
+  ],
+  "char_4138_narant": [
+   {
+    "id": "char_4138_narant@breaker#1",
+    "name": "链锯陪护者",
+    "group": "破格视界",
+    "stem": "char_4138_narant_breaker_1",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_4138_narant_breaker%231.png",
+    "back": true
+   },
+   {
+    "id": "char_4138_narant@littlePony#1",
+    "name": "率直诚实之人",
+    "group": "小马宝莉",
+    "stem": "char_4138_narant_littlePony_1",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_4138_narant_littlePony%231.png",
+    "back": true
+   }
+  ],
+  "char_416_zumama": [
+   {
+    "id": "char_416_zumama@boc#3",
+    "name": "熔锻铸匠",
+    "group": "斗争血脉/III",
+    "stem": "char_416_zumama_boc_3",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_416_zumama_boc%233.png",
+    "back": true
+   }
+  ],
+  "char_422_aurora": [
+   {
+    "id": "char_422_aurora@boc#4",
+    "name": "极昼捕手",
+    "group": "斗争血脉/IV",
+    "stem": "char_422_aurora_boc_4",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_422_aurora_boc%234.png",
+    "back": true
+   }
+  ],
+  "char_449_glider": [
+   {
+    "id": "char_449_glider@epoque#17",
+    "name": "荒野之后",
+    "group": "时代/XVII",
+    "stem": "char_449_glider_epoque_17",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_449_glider_epoque%2317.png",
+    "back": true
+   },
+   {
+    "id": "char_449_glider@nian#10",
+    "name": "洇灵雨",
+    "group": "0011制造/IX",
+    "stem": "char_449_glider_nian_10",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_449_glider_nian%2310.png",
+    "back": true
+   }
+  ],
+  "char_450_necras": [
+   {
+    "id": "char_450_necras@ambienceSynesthesia#7",
+    "name": "晶化信念",
+    "group": "音律联觉/VIII",
+    "stem": "char_450_necras_ambienceSynesthesia_7",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_450_necras_ambienceSynesthesia%237.png",
+    "back": true
+   },
+   {
+    "id": "char_450_necras@summer#20",
+    "name": "夏卉 FA161",
+    "group": "珊瑚海岸/XX",
+    "stem": "char_450_necras_summer_20",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_450_necras_summer%2320.png",
+    "back": true
+   }
+  ],
+  "char_473_mberry": [
+   {
+    "id": "char_473_mberry@epoque#14",
+    "name": "植药",
+    "group": "时代/XIV",
+    "stem": "char_473_mberry_epoque_14",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_473_mberry_epoque%2314.png",
+    "back": true
+   },
+   {
+    "id": "char_473_mberry@nian#9",
+    "name": "照冰轮",
+    "group": "0011制造/VIII",
+    "stem": "char_473_mberry_nian_9",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_473_mberry_nian%239.png",
     "back": true
    }
   ]

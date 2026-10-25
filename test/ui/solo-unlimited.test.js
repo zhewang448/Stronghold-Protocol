@@ -65,8 +65,8 @@ test('solo time lines: 300/150 when timed and off, the untimed lines otherwise, 
 });
 
 test('the room, the lobby and the picker say the new lines through t(); en.json has the English', () => {
-  assert.match(ROOM, /net\.request\('room\.setSoloUnlimited', \{ on \}\)/);
-  assert.match(LOBBY, /soloUnlimited: true/);
+  assert.match(ROOM, /net\.request\('room\.setConvenience', \{ key, on \}\)/);
+  assert.match(LOBBY, /roomMode === 'solo' \? \{ soloUnlimited \}/);
   assert.match(LOBBY, /data-testid="solo-unlimited"/);
   assert.ok(PICKER.includes("t('核心规则已按该版本。悬赏抽取、部分数值和六名敌人的攻击前摇仍是推算')"));
   assert.ok(!PICKER.includes('部分规则仍按第二期下半，正在逐步复刻'));

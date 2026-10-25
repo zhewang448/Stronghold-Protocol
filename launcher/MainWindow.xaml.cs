@@ -37,6 +37,10 @@ public partial class MainWindow : Window
     private bool _portBusy;
     private bool _adminBusy;
     private bool _portValid;
+    private readonly List<InstanceProfile> _profiles = [];
+    private string? _selectedId;
+    private bool _selecting;
+    private CancellationTokenSource? _installCancellation;
 
     public MainWindow()
     {
@@ -63,6 +67,22 @@ public partial class MainWindow : Window
             "tunnel" => HostMode.Tunnel,
             _ => HostMode.Lan,
         };
+        var savedInstances = InstanceProfiles.Load();
+        _profiles.AddRange(savedInstances.Instances);
+        var selected = _profiles.FirstOrDefault(p => p.Id == savedInstances.SelectedId);
+        if (selected is null && _root is not null && !File.Exists(InstanceProfiles.DefaultPath))
+        {
+            selected = new InstanceProfile(Guid.NewGuid().ToString("N"), InstanceNaming.DefaultName(_root), _root, preferences.Port, preferences.Mode);
+            _profiles.Add(selected);
+        }
+        if (selected is not null)
+        {
+            _selectedId = selected.Id;
+            _root = selected.Root;
+            preferences = new LauncherPreferences(_root, selected.Port, selected.Mode);
+            _mode = ParseMode(selected.Mode);
+        }
+        else _root = null;
         _text = new TextCatalog(_root);
         ApplyText();
         PortBox.Text = preferences.Port.ToString(CultureInfo.InvariantCulture);
@@ -77,6 +97,12 @@ public partial class MainWindow : Window
         await RefreshNodeAsync();
         await RefreshServiceAsync();
         RefreshChecks();
+        RefreshInstanceList();
+        InstallPanel.Visibility = _profiles.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        InstallPathBox.Text = DefaultInstallPath();
+        SavePreferences();
+        await RefreshIndexedInstancesAsync(includeLive: true);
+        WatchInstanceIndex();
         _timer.Start();
     }
 
@@ -85,8 +111,20 @@ public partial class MainWindow : Window
         Title = $"{t("卫戍协议：盟约")} - {t("服主启动器")}";
         ProductTitle.Text = t("卫戍协议：盟约");
         ProductSubtitle.Text = "TACTICAL CO-OP NODE // HOST CONTROL";
-        BuildVersionText.Text = "WINDOWS LAUNCHER";
-        BrowseTopButton.Content = t("选择服务器目录");
+        BuildVersionText.Text = "LAUNCHER v" + (typeof(App).Assembly.GetName().Version?.ToString(3) ?? "1.0.0");
+        BrowseTopButton.Content = t("导入已有实例");
+        InstancesLabel.Text = t("服务器实例");
+        NewInstanceButton.Content = t("新建实例");
+        RemoveInstanceButton.Content = t("移出列表");
+        DeleteInstanceButton.Content = t("删除实例");
+        DiscoverInstancesButton.Content = t("发现本机实例");
+        ImportHintText.Text = t("运行中实例通过本机监听端口识别，停服实例读取索引；无需遍历磁盘。发现后勾选导入。");
+        ImportDiscoveredButton.Content = t("导入所选实例");
+        CancelDiscoveryButton.Content = t("收起");
+        InstallHint.Text = t("选择空目录，自动下载完整游戏包和所需运行环境。已有服务可继续运行。");
+        InstallFolderButton.Content = t("选择位置");
+        InstallButton.Content = t("下载并安装");
+        CancelInstallButton.Content = t("取消安装");
         ModeHeading.Text = t("开服方式");
         LocalModeTitle.Text = t("仅本机");
         LocalModeDetail.Text = t("只允许这台电脑访问");
@@ -130,7 +168,11 @@ public partial class MainWindow : Window
     {
         NodeCheckValue.Text = t("正在检测");
         InstallNodeButton.Visibility = Visibility.Collapsed;
-        _node = await Task.Run(NodeRuntime.Find);
+        var root = _root;
+        var selectedId = _selectedId;
+        var found = await Task.Run(NodeRuntime.Find);
+        if (root != _root || selectedId != _selectedId) return;
+        _node = found;
         if (_node is null)
         {
             NodeCheckValue.Text = t("未找到");
@@ -148,7 +190,12 @@ public partial class MainWindow : Window
         _install = null;
         if (_root is not null && _node?.IsSupported == true)
         {
-            try { _install = await HostLauncher.InspectAsync(_root, _node); }
+            try
+            {
+                var installation = await HostLauncher.InspectAsync(_root, _node);
+                if (root != _root || selectedId != _selectedId) return;
+                _install = installation;
+            }
             catch (Exception error) { AppendVisibleLog(error.Message); }
         }
         RefreshChecks();
@@ -198,7 +245,15 @@ public partial class MainWindow : Window
         LocalMode.IsEnabled = !_serverOnline && !_starting && !_operating;
         LanMode.IsEnabled = !_serverOnline && !_starting && !_operating;
         TunnelMode.IsEnabled = !_serverOnline && !_starting && !_operating;
-        BrowseTopButton.IsEnabled = !_starting && !_operating;
+        BrowseTopButton.IsEnabled = !_operating;
+        InstanceBox.IsEnabled = !_operating;
+        NewInstanceButton.IsEnabled = !_operating;
+        RemoveInstanceButton.IsEnabled = !_operating && _selectedId is not null;
+        DeleteInstanceButton.IsEnabled = !_operating && !_serverOnline && !_starting && _selectedId is not null;
+        DiscoverInstancesButton.IsEnabled = !_operating;
+        InstallButton.IsEnabled = !_operating;
+        InstallPathBox.IsEnabled = !_operating;
+        InstallFolderButton.IsEnabled = !_operating;
         StopButton.IsEnabled = !_operating && _service?.CanShutdown == true;
         RestartButton.IsEnabled = !_operating && _service?.CanRestart == true;
         OpenConsoleButton.IsEnabled = _service?.AdminUrl is not null;
@@ -212,6 +267,8 @@ public partial class MainWindow : Window
     {
         if (_refreshing) return;
         _refreshing = true;
+        var requestedRoot = _root;
+        var requestedPort = CurrentPort();
         try
         {
             var port = CurrentPort();
@@ -248,6 +305,7 @@ public partial class MainWindow : Window
         }
         catch (Exception error)
         {
+            if (requestedRoot != _root || requestedPort != CurrentPort()) return;
             _service = null;
             _serverOnline = false;
             _portBusy = CurrentPort() is int port && HostLauncher.PortHasListener(port);
@@ -436,6 +494,12 @@ public partial class MainWindow : Window
             return;
         }
 
+        var candidate = _profiles.FirstOrDefault(p => p.Id == _selectedId);
+        if (candidate is not null && InstanceProfiles.Conflicts(candidate with { Port = port.Value }, _profiles))
+        {
+            ShowMessage(t("游戏端口或管理端口与其他实例配置冲突，请更换端口。"));
+            return;
+        }
         SavePreferences();
         _failed = false;
         _starting = true;
@@ -498,25 +562,24 @@ public partial class MainWindow : Window
 
     private async void BrowseButton_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFolderDialog { Title = t("选择服务器目录"), InitialDirectory = _root ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop) };
+        var dialog = new OpenFolderDialog { Title = t("选择实例根目录（包含 package.json、server、scripts）"), InitialDirectory = _root ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop) };
         if (dialog.ShowDialog(this) != true) return;
-        if (!InstallationLocator.IsProjectRoot(dialog.FolderName))
+        if (!InstanceDiscovery.IsInstallation(dialog.FolderName))
         {
             ShowMessage(t("项目目录无效，请选择包含 server/index.js 的项目根目录。"));
             return;
         }
-        _root = Path.GetFullPath(dialog.FolderName);
-        _service = null;
-        _wrapper?.Dispose();
-        _wrapper = null;
-        _text = new TextCatalog(_root);
-        ApplyText();
-        RootPathText.Text = _root;
-        RootPathText.ToolTip = _root;
-        LoadLog();
-        SavePreferences();
-        await RefreshNodeAsync();
-        await RefreshServiceAsync();
+        var importedRoot = Path.GetFullPath(dialog.FolderName);
+        var existing = _profiles.FirstOrDefault(p => p.Root.Equals(importedRoot, StringComparison.OrdinalIgnoreCase));
+        if (existing is null)
+        {
+            existing = new InstanceProfile(Guid.NewGuid().ToString("N"), InstanceNaming.DefaultName(importedRoot), importedRoot,
+                await ImportedPortAsync(importedRoot), "local");
+            _profiles.Add(existing);
+        }
+        try { await SelectInstanceAsync(existing); }
+        catch (Exception error) { ShowMessage(error.Message); }
+
     }
 
     private async void InstallNodeButton_Click(object sender, RoutedEventArgs e)
@@ -631,7 +694,14 @@ public partial class MainWindow : Window
 
     private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
-        if (!_serverOnline && !_starting) return;
+        if (App.PreviewDirectory is not null) return;
+        if (_installCancellation is not null)
+        {
+            _installCancellation.Cancel();
+            e.Cancel = true;
+            return;
+        }
+        if (_profiles.Count == 0 && !_serverOnline && !_starting) return;
         var answer = MessageBox.Show(this, t("关闭启动器后，服务器会继续在后台运行。"),
             t("退出启动器"), MessageBoxButton.YesNo, MessageBoxImage.Information, MessageBoxResult.No);
         if (answer != MessageBoxResult.Yes) e.Cancel = true;
@@ -686,6 +756,17 @@ public partial class MainWindow : Window
     private void SavePreferences()
     {
         if (!_ready || App.PreviewDirectory is not null) return;
+        if (_selectedId is not null)
+        {
+            var index = _profiles.FindIndex(p => p.Id == _selectedId);
+            if (index >= 0 && _root is not null && CurrentPort() is int port)
+            {
+                var updated = _profiles[index] with { Root = _root, Port = port, Mode = ModeName(_mode) };
+                if (updated != _profiles[index]) { _profiles[index] = updated; RefreshInstanceList(); }
+            }
+        }
+        try { InstanceProfiles.Save(new InstanceSettings(_selectedId, _profiles)); }
+        catch (Exception error) { AppendVisibleLog(t("保存实例列表失败：{error}", ("error", error.Message))); }
         PreferencesStore.Save(new LauncherPreferences(_root, CurrentPort() ?? 3000, _mode switch
         {
             HostMode.Local => "local",
@@ -755,7 +836,25 @@ public partial class MainWindow : Window
             RefreshChecks(); _portBusy = true; UpdateStatus();
             PortCheckValue.Text = t("端口已被占用"); PortCheckValue.Foreground = Brush("#F6A329"); StartButton.IsEnabled = false;
             await CapturePreviewAsync(directory, "port-busy-demo");
-            File.WriteAllText(Path.Combine(directory, "preview-result.txt"), "Rendered four WPF layouts. Online/address/error states are synthetic; no server was started.");
+            _profiles.Add(new("preview-one", "本机测试（演示）", _root!, 19388, "local"));
+            _profiles.Add(new("preview-two", "朋友联机（演示）", _root!, 19389, "lan"));
+            _selectedId = "preview-one";
+            RefreshInstanceList();
+            Width = 1080; Height = 820;
+            RefreshChecks();
+            await CapturePreviewAsync(directory, "multi-instance-demo");
+            DiscoveryPanel.Visibility = Visibility.Visible;
+            DiscoveryStatusText.Text = t("通过监听端口与本机索引发现 {count} 个未导入目录。在线实例：{ports}。已停止且未登记的旧目录请手动导入。", ("count", "2"), ("ports", "3000 (v0.3.1)、3001 (v0.3.3)"));
+            DiscoveryList.ItemsSource = new[] { @"E:\Stronghold-Protocol", @"E:\Stronghold-Protocol-v0.3.3" };
+            await CapturePreviewAsync(directory, "discovery-demo");
+            DiscoveryPanel.Visibility = Visibility.Collapsed;
+            InstallPanel.Visibility = Visibility.Visible;
+            InstallPathBox.Text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "StrongholdProtocol", "servers", InstanceNaming.DirectoryName(3));
+            InstallStatusText.Text = t("正在获取游戏版本");
+            await CapturePreviewAsync(directory, "first-install-demo");
+            Width = 900; Height = 700;
+            await CapturePreviewAsync(directory, "first-install-compact-demo");
+            File.WriteAllText(Path.Combine(directory, "preview-result.txt"), "Rendered eight WPF layouts. Online/address/error/instance/discovery states are synthetic; no server was started.");
         }
         catch (Exception error)
         {

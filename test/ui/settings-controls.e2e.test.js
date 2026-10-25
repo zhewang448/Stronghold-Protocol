@@ -36,11 +36,12 @@ describe('settings control hit areas and feedback', { skip: process.env.SP_E2E !
         const open = async () => {
           await page.waitForSelector('.title-settings');
           await page.evaluate(() => document.querySelector('.title-settings').click());
-          await page.waitForSelector('.settings-modal');
+          await page.waitForSelector('.modal__box:has(.set-list)');
           await page.evaluate(async () => { await (await import('/js/render/vfx/available.js')).fxAvailable(null); });
           await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
         };
         await open();
+        assert.deepEqual(await page.$$eval('.set-group > h3', es => es.map(e => e.textContent)), ['常规与声音', '交流与更新', '战斗显示', '画面与性能', '界面与操作', '外观', '资源与诊断']);
         const settings = () => page.evaluate(async () => (await import('/js/ui/settings.js')).settingsStore.get());
         const target = async selector => {
           await page.$eval(selector, e => e.scrollIntoView({ block: 'center', behavior: 'instant' }));
@@ -50,7 +51,10 @@ describe('settings control hit areas and feedback', { skip: process.env.SP_E2E !
             const misses = [];
             for (const x of [.2, .5, .8]) for (const y of [.2, .5, .8]) {
               const hit = document.elementFromPoint(r.x + r.width * x, r.y + r.height * y);
-              if (hit !== e && !e.contains(hit)) misses.push(hit?.outerHTML.slice(0, 140));
+              if (hit !== e && !e.contains(hit)) {
+                const h = hit?.getBoundingClientRect();
+                misses.push({ point: { x: r.x + r.width * x, y: r.y + r.height * y }, target: { x: r.x, y: r.y, w: r.width, h: r.height }, hit: hit?.outerHTML.slice(0, 140), hitRect: h ? { x: h.x, y: h.y, w: h.width, h: h.height } : null });
+              }
             }
             return { x: r.x, y: r.y, w: r.width, h: r.height, misses,
               inside: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight };
@@ -70,12 +74,13 @@ describe('settings control hit areas and feedback', { skip: process.env.SP_E2E !
           if (touch) await page.touchscreen.tap(r.x + r.w * fraction, r.y + r.h * fraction);
           else await page.mouse.click(r.x + r.w / 2, r.y + r.h / 2);
         };
-        const groups = await page.$$eval('.settings-modal .set-seg', es => es.map((e, i) => {
+        const groups = await page.$$eval('.set-list .set-seg', es => es.filter(e => e.getClientRects().length && !e.closest('.set-lang')).map((e, i) => {
           e.dataset.controlGroup = String(i);
           const key = e.closest('.set-voice') ? 'voiceLang' : e.matches('.set-textsize') ? 'textSize'
             : e.matches('.set-seg--fps') ? 'fpsLimit' : e.closest('[data-testid="official-fx"]') ? 'officialFx' : 'quality';
           return { id: i, key, count: e.querySelectorAll('button').length };
         }));
+        assert.ok(groups.some(g => g.key === 'voiceLang') && groups.some(g => g.key === 'quality'), 'settings option groups are present');
         const options = { voiceLang: ['cn', 'jp', 'en', 'kr'], quality: ['low', 'medium', 'high'], officialFx: ['off', 'lite', 'full'], textSize: ['sm', 'md', 'lg', 'xl'], fpsLimit: [0, 30, 60, 120] };
         let clicks = 0;
         for (const group of groups) {
@@ -95,7 +100,7 @@ describe('settings control hit areas and feedback', { skip: process.env.SP_E2E !
             clicks++;
           }
         }
-        const switches = await page.$$eval('.settings-modal .set-list > .set-row > [role="switch"]', es => es.map((e, i) => {
+        const switches = await page.$$eval('.set-list .set-row > [role="switch"]', es => es.map((e, i) => {
           e.dataset.controlSwitch = String(i);
           return { id: i, label: e.getAttribute('aria-label') };
         }));
@@ -107,7 +112,11 @@ describe('settings control hit areas and feedback', { skip: process.env.SP_E2E !
           await activate(selector);
           await page.waitForFunction((s, prev) => document.querySelector(s).getAttribute('aria-checked') !== prev, {}, selector, previous);
           const changed = await settings();
-          assert.equal(Object.keys(saved).filter(key => JSON.stringify(saved[key]) !== JSON.stringify(changed[key])).length, 1, `${control.label} changes one setting`);
+          const changedKeys = Object.keys(saved).filter(key => JSON.stringify(saved[key]) !== JSON.stringify(changed[key]));
+          if (control.label === '部署时镜头缩放') {
+            assert.deepEqual(changedKeys.sort(), ['deploymentZoom', 'prepDeployFold']);
+            assert.equal(changed.deploymentZoom, changed.prepDeployFold, 'the migrated alias follows the same switch');
+          } else assert.equal(changedKeys.length, 1, `${control.label} changes one setting`);
           assert.equal(await page.$eval(selector, e => e.classList.contains('is-on')), previous === 'false');
           clicks++;
         }
@@ -115,7 +124,7 @@ describe('settings control hit areas and feedback', { skip: process.env.SP_E2E !
         assert.equal((await settings()).voiceNative, true);
         assert.equal(await page.$eval('[data-testid="voice-native"]', e => e.classList.contains('is-on')), true);
         step = 'screen-fit steps';
-        const fitRows = await page.$$eval('.set-fit__row', es => es.map((e, i) => { e.dataset.controlFit = String(i); return i; }));
+        const fitRows = await page.$$eval('.set-fit__row:has(input[data-testid^="fit-"])', es => es.map((e, i) => { e.dataset.controlFit = String(i); return i; }));
         for (const n of fitRows) {
           const row = `[data-control-fit="${n}"]`;
           const aligned = await page.$eval(row, e => {
@@ -128,10 +137,10 @@ describe('settings control hit areas and feedback', { skip: process.env.SP_E2E !
           await activate(`${row} .set-fit__step:first-of-type`);
           assert.equal(await page.$eval(`${row} input`, e => e.value), '50');
         }
-        assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('sp.pref.screenFit'))), { l: 0, r: 0, t: 0, b: 0 });
+        assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('sp.pref.screenFit'))), { l: 0, r: 0, t: 0, b: 0, ui: 100 });
         step = 'open shortcuts';
-        await activate('.set-shortcuts-open');
-        await page.waitForSelector('.settings-shortcuts-modal');
+        if (await page.$('.set-keys__more:not([open])')) await activate('.set-keys__more > summary');
+        await page.waitForSelector('.set-keys__list', { visible: true });
         const keys = await page.$$eval('.set-key[data-action]', es => es.map(e => e.dataset.action));
         for (const action of keys) {
           step = `hotkey ${action}`;
@@ -140,9 +149,8 @@ describe('settings control hit areas and feedback', { skip: process.env.SP_E2E !
           await page.keyboard.press('Escape');
           await page.waitForSelector('.set-key.is-waiting', { hidden: true });
         }
-        await page.keyboard.press('Escape');
-        await page.waitForSelector('.settings-shortcuts-modal', { hidden: true });
-        const sliders = await page.$$eval('.settings-modal label.set-row .set-range', es => es.map((e, i) => { e.dataset.controlSlider = String(i); return i; }));
+        assert.ok(await page.$('.set-list'), 'canceling key capture keeps settings open');
+        const sliders = await page.$$eval('.set-list label.set-row .set-range', es => es.map((e, i) => { e.dataset.controlSlider = String(i); return i; }));
         for (const i of sliders) {
           step = `slider ${i}`;
           const selector = `[data-control-slider="${i}"]`;

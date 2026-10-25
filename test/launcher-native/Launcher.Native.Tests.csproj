@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <LauncherRoot Condition="'$(LauncherRoot)' == ''">$(MSBuildThisFileDirectory)../../launcher</LauncherRoot>
+    <DefineConstants Condition="Exists('$(LauncherRoot)/Services/BootstrapInstaller.cs')">$(DefineConstants);BOOTSTRAP</DefineConstants>
+    <DefineConstants Condition="Exists('$(LauncherRoot)/Services/InstanceDiscovery.cs')">$(DefineConstants);DISCOVERY</DefineConstants>
+    <DefineConstants Condition="Exists('$(LauncherRoot)/Services/InstanceIndex.cs')">$(DefineConstants);INSTANCE_INDEX</DefineConstants>
+    <DefineConstants Condition="Exists('$(LauncherRoot)/Services/LiveInstanceDiscovery.cs')">$(DefineConstants);LIVE_DISCOVERY</DefineConstants>
+    <DefineConstants Condition="Exists('$(LauncherRoot)/Services/InstanceNaming.cs')">$(DefineConstants);INSTANCE_NAMING</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(LauncherRoot)/Services/InstallationLocator.cs" Link="InstallationLocator.cs" />
+    <Compile Include="$(LauncherRoot)/Services/LauncherPreferences.cs" Link="LauncherPreferences.cs" />
+    <Compile Include="$(LauncherRoot)/Services/InstanceProfiles.cs" Link="InstanceProfiles.cs" Condition="Exists('$(LauncherRoot)/Services/InstanceProfiles.cs')" />
+    <Compile Include="$(LauncherRoot)/Services/InstanceNaming.cs" Link="InstanceNaming.cs" Condition="Exists('$(LauncherRoot)/Services/InstanceNaming.cs')" />
+    <Compile Include="$(LauncherRoot)/Services/InstanceDiscovery.cs" Link="InstanceDiscovery.cs" Condition="Exists('$(LauncherRoot)/Services/InstanceDiscovery.cs')" />
+    <Compile Include="$(LauncherRoot)/Services/InstanceIndex.cs" Link="InstanceIndex.cs" Condition="Exists('$(LauncherRoot)/Services/InstanceIndex.cs')" />
+    <Compile Include="$(LauncherRoot)/Services/LiveInstanceDiscovery.cs" Link="LiveInstanceDiscovery.cs" Condition="Exists('$(LauncherRoot)/Services/LiveInstanceDiscovery.cs')" />
+    <Compile Include="$(LauncherRoot)/Services/BootstrapInstaller.cs" Link="BootstrapInstaller.cs" Condition="Exists('$(LauncherRoot)/Services/BootstrapInstaller.cs')" />
+  </ItemGroup>
+</Project>

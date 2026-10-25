@@ -221,6 +221,7 @@ import { createExternalAI } from './llmGate.js';
 import { PHASE, modeIdFor } from '../../shared/constants.js';
 import { isContentHash } from '../../shared/plugins/identity.js';
 import { DEFAULT_VERSION, versionById } from '../../shared/versions.js';
+import { roomConvenience, convenienceRules } from '../../shared/roomConvenience.js';
 import { Battle } from '../sim/Battle.js';
 import { DataSource } from '../sim/simdata.js';
 import { createRng, deriveSeed } from '../sim/rng.js';
@@ -315,6 +316,11 @@ export class Match {
     if (Array.isArray(opts.kitted)) this.diyKitted = Object.freeze(opts.kitted.filter((id) => typeof id === 'string'));
     // The room's rule switches (DESIGN §34.15). Omitted on a vanilla match, so its own keys stay the same.
     if (opts.rules && typeof opts.rules === 'object' && !Array.isArray(opts.rules)) this.rules = Object.freeze({ ...opts.rules });
+    if (opts.convenience) {
+      this.convenience = Object.freeze(roomConvenience(opts.convenience));
+      this.rules = Object.freeze(convenienceRules(this.convenience, opts.rules));
+      this.opts = { ...opts, soloUnlimited: this.mode === 'solo' && this.convenience.soloUnlimited };
+    }
     /**
      * The interaction windows this match's content set declares (PLUGIN API v2, docs/PLUGINS.md §10b): the normalized
      * `offers` of the plugins the host installed, handed in as `opts.offers` before construction so test journals

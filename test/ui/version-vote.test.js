@@ -111,13 +111,13 @@ test('VersionTag: another version\'s name; nothing for 第二期下半 or an unk
   assert.equal(tag.props['data-version'], 'act1autochess@V1_1');
 });
 
-test('the room screen: the strip between the 观战席 and the footer, the version pill, the vote blocks 开始模拟, the banner, the invite', () => {
+test('the room screen: the strip between the 观战席 and the footer, the version pill, the vote blocks 开始模拟, the invite', () => {
   const src = readFileSync(path.join(ROOT, 'public/js/screens/room.js'), 'utf8').replace(/\r\n/g, '\n');
   assert.match(src, /<\$\{SpectatorBar\}[^\n]*\/>\n\s*<\$\{VersionVote\} room=\$\{room\} \/>/);
   assert.match(src, /data-testid="room-version"/);
   assert.match(src, /disabled=\$\{!facts\.canStart \|\| !online \|\| busy === 'start' \|\| !!vote\}/);
   assert.match(src, /t\('请先关闭改变玩法的插件'\)/);
-  assert.match(src, /data-testid="version-banner"/);
+  assert.ok(src.includes('versionLabel(roomVersion(room))'), 'the active room version remains visible in the pill');
   assert.match(src, /t\('\{name\}邀请你加入卫戍协议：盟约·\{version\}【\{difficulty\}】'/);
   assert.match(src, /net\.request\('room\.proposeVersion', \{ version \}\)/);
   const game = readFileSync(path.join(ROOT, 'public/js/screens/game.js'), 'utf8');

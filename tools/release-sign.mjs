@@ -37,7 +37,7 @@ export function keygen(file) {
   return publicKey.export({ format: 'der', type: 'spki' }).toString('base64');
 }
 
-const zipsFor = (tag, dir) => fs.readdirSync(dir).filter((n) => n.startsWith(`Stronghold-Protocol-${tag}-`) && n.endsWith('.zip')).sort();
+const zipsFor = (tag, dir) => fs.readdirSync(dir).filter((n) => (n.startsWith(`Stronghold-Protocol-${tag}-`) && n.endsWith('.zip')) || /^StrongholdProtocolLauncher-v[0-9]+[.][0-9]+[.][0-9]+-win-x64[.]zip$/.test(n)).sort();
 
 export async function sign(tag, dir, { file, keys } = {}) {
   const zips = zipsFor(tag, dir);

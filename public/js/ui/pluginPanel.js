@@ -67,7 +67,7 @@ export function companionCosmeticHints(plugin, plugins, active) {
   if (!['content', 'script', 'trusted'].includes(plugin.class)) return [];
   return cosmeticPlugins(plugins, 'personal').filter(p => !active.has(p.id)
     && Object.hasOwn(plugin.optional || {}, p.id) && appVersionMatches(plugin.optional[p.id], p.version))
-    .map(p => t('外观在『{name}』（设置 → 外观插件）', { name: pluginName(p) }));
+    .map(p => t('外观在『{name}』（设置 → 外观）', { name: pluginName(p) }));
 }
 
 /** One warning of the room's set as a sentence (room.state.content.warnings, server/plugins/visualSet.js / roomSets.js). */

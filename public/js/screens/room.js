@@ -1,6 +1,6 @@
 import { VersionPicker } from '../ui/versionPicker.js';
 import { VersionVote } from '../ui/versionVote.js';
-import { roomVersion, serverDefaultVersion, versionLabel, needsContent, offeredDifficulties, soloTimedOf } from '../versions.js';
+import { DEFAULT_VERSION, roomVersion, serverDefaultVersion, versionLabel, needsContent, offeredDifficulties, soloTimedOf, soloTimeMsgid } from '../versions.js';
 import { useAccount, AccountTag } from '../ui/accounts.js';
 import { TrophyBadge } from '../ui/trophies.js';
 import { isOwnerName, decorateOwnerName } from '../ui/ownerName.js';
@@ -65,6 +65,7 @@ import { SearchPanel, FoundPanel } from '../ui/matchFlow.js';
 import { usePresence, useRise, afterLeave } from '../ui/transitions.js';
 import { t, tc } from '../../../shared/i18n.js';
 import { BondPlanBadge, BondPlanControl } from '../ui/bondPlan.js';
+import { roomConvenience } from '../../../shared/roomConvenience.js';
 import { AnnouncementButton } from '../ui/announcement.js';
 
 const MAX_SEATS = Number(SEAT_CONST.MAX_SEATS) || 4;
@@ -332,9 +333,17 @@ function RoomProtocol({ room, variant, onClose, onPick, busy, leaving = false })
 }
 
 /** ⚙ of the bottom pill: 私密房间, 人数上限, AI 队友最后选择, room-local 联防叠层, 无限火力 branch. */
-function RoomOptions({ room, facts, myId, busy, online, variant, onPrivate, onMaxSeats, onAiLast, onAiTakeover, onUniteLayerGains, onVariant, onClose, leaving = false }) {
+function RoomOptions({ room, facts, myId, busy, online, variant, onPrivate, onMaxSeats, onAiLast, onAiTakeover, onUniteLayerGains, onConvenience, onVariant, onClose, leaving = false }) {
   const coop = room.mode !== 'solo';
   const host = facts.isHost;
+  const choices = roomConvenience(room.convenience);
+  const conveniences = [
+    ['benchEquip', t('允许整备区装备'), t('第一期也可直接给整备区干员配发装备；第二期原本支持')],
+    ['soloUnlimited', t('独立模拟不限时'), t('第一期独立模拟不再计时；第二期原本不限时，同盟不受此项影响')],
+    ['prepLoadout', t('休整期调整技能与模组'), t('休整期未准备就绪时，可以调整干员技能与模组')],
+    ['unequip', t('允许卸下装备'), t('可单独取回已配发装备；整备区与临时区都满时无法卸下')],
+    ['morphPairing', t('变形同构体增强规则'), t('同构体不占装备格，每名干员限一件，仅配对最左侧盟约装备')],
+  ];
   useEffect(() => {
     const away = (e) => { if (!e.target.closest?.('.rs-opts, .rs-pill__gear')) onClose(); };
     const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } };
@@ -350,10 +359,18 @@ function RoomOptions({ room, facts, myId, busy, online, variant, onPrivate, onMa
         ${SEAT_CONST.ROOM_CAPACITIES.map((n) => html`<option key=${n} value=${String(n)} selected=${n === facts.seats.length}>${t('{n} 人', { n })}</option>`)}
       </select></label>` : null}
     <${AiLastToggle} option=${aiLastOption(room, myId)} busy=${busy} onToggle=${onAiLast} />
-    ${coop ? html`<label class="rs-opt"><input name="ai-takeover" type="checkbox" checked=${room.aiTakeoverEnabled === true} disabled=${!host || !!busy || !online || room.inMatch === true || room.content?.vanilla === false} onChange=${(e) => onAiTakeover(e.currentTarget.checked)} />
-      <span>${t('允许观战者接替 AI')}<small>${t('默认关闭。开启后，观战者可在休整期经同房间真人投票接替 AI；继承记录不计个人统计或奖励。')}</small></span></label>` : null}
+    ${coop ? html`<label class="rs-opt"><input name="ai-takeover" type="checkbox" checked=${room.aiTakeoverEnabled === true} disabled=${!host || !!busy || !online || room.inMatch === true || room.canSetAiTakeover !== true} onChange=${(e) => onAiTakeover(e.currentTarget.checked)} />
+      <span>${t('允许观战者接替 AI')}<small>${room.aiTakeoverAllowed !== true ? t('主机尚未允许观战接替 AI') : roomVersion(room) !== DEFAULT_VERSION || room.content?.vanilla === false ? t('仅第二期下半的原版合作房支持观战接替 AI') : room.inMatch === true ? t('开局后不可修改观战接替 AI 设置') : t('默认关闭。开启后，观战者可在休整期经同房间真人投票接替 AI；继承记录不计个人统计或奖励。')}</small></span></label>` : null}
     ${typeof room.uniteLayerGains === 'boolean' ? html`<label class="rs-opt"><input name="unite-layer-gains" type="checkbox" checked=${room.uniteLayerGains} disabled=${!host || room.canSetUniteLayerGains !== true || !!busy || !online || room.inMatch === true} onChange=${(e) => onUniteLayerGains(e.currentTarget.checked)} />
       <span>${t('允许联防叠层')}<small>${room.canSetUniteLayerGains === true ? t('仅本房间生效，开局后不可修改；最终攻势和隐秘核心不叠层') : t('主机未允许房主修改联防叠层规则')}</small></span></label>` : null}
+    <fieldset class="rs-convenience"><legend>${t('便利设置')}</legend>
+      <small>${t('仅本房间生效，开局后不可修改；修改后其他博士需要重新准备')}</small>
+      ${conveniences.map(([key, label, hint]) => {
+        const plugin = room.content?.rules && Object.hasOwn(room.content.rules, key);
+        const pluginOn = key === 'prepLoadout' ? room.content?.rules?.[key] === 'prep' : key === 'unequip' ? room.content?.rules?.[key] === 'allow' : room.content?.rules?.[key] === 'plus';
+        return html`<label key=${key} class="rs-opt"><input type="checkbox" name=${`convenience-${key}`} checked=${plugin ? pluginOn : choices[key]} disabled=${!host || !!busy || !online || room.inMatch === true || !!plugin || (key === 'soloUnlimited' && coop)} onChange=${e => onConvenience(key, e.currentTarget.checked)} /><span>${label}<small>${plugin ? t('由房间玩法插件决定') : hint}</small></span></label>`;
+      })}
+    </fieldset>
     ${room.random === true ? html`<div class="rs-opt rs-opt--variant"><span>${t('模式分支')}</span>
       <div class="dpick" role="radiogroup" aria-label=${t('模式分支')}>
         ${[['blitz', t('快速突袭 {totalRounds} 回合', { totalRounds: RANDOM_MODE.totalRounds })], ['endurance', t('持久鏖战 {totalRounds} 回合', { totalRounds: RANDOM_MODE.endurance.totalRounds })], ['marathon', t('最长时赛 {totalRounds} 回合', { totalRounds: RANDOM_MODE.marathon.totalRounds })]].map(([v, label]) => html`
@@ -368,7 +385,6 @@ export function RoomScreen() {
   const versions = useStore(s => s.versions);
   const serverDefault = useStore(serverDefaultVersion);
   const [versionOpen, setVersionOpen] = useState(false);
-  const setSoloUnlimited = on => net.request('room.setSoloUnlimited', { on }).catch(toastError);
   const room = useStore((s) => s.room);
   const me = useStore((s) => s.me, shallowEqual);
   const conn = useStore((s) => s.connection, shallowEqual);
@@ -498,6 +514,7 @@ export function RoomScreen() {
   const setAiTakeover = (on) => run('ai-takeover', () => net.request('room.setAiTakeover', { on }));
   const setAiLast = (on) => run('ailast', () => net.request('room.setAiPicksLast', { on }));
   const setUniteLayerGains = (on) => run('unite-layers', () => net.request('room.setUniteLayerGains', { on }));
+  const setConvenience = (key, on) => run(`convenience-${key}`, () => net.request('room.setConvenience', { key, on }));
   // spectator seats: the host frees one; a spectator takes a free player seat with room.join of this room
   const removeSpectator = (playerId) => run(`rs${playerId}`, () => net.request('room.removeSpectator', { playerId }));
   const sit = () => run('sit', () => net.request('room.join', { code: room.code, ...(room.test ? { testAck: true } : {}) }));
@@ -554,7 +571,6 @@ export function RoomScreen() {
   return html`<div class=${`screen room-screen rs${coop ? '' : ' rs--solo'}${facts.seats.length > DEFAULT_SEATS ? ' rs--big' : ''}${exiting ? ' is-leaving' : ''}`} style=${`--d-color:${DIFFICULTY_COLORS[room.difficulty]}; --n:${facts.seats.length}`}>
     <div class="rs__bg" aria-hidden="true"></div>
     ${versionOpen ? html`<${VersionPicker} mode="room" versions=${versions || []} current=${roomVersion(room)} serverDefault=${serverDefault} roomMode=${room.mode} onClose=${() => setVersionOpen(false)} note=${versionWhy} editable=${!versionWhy} onPick=${async version => { try { await net.request('room.proposeVersion', { version }); setVersionOpen(false); } catch (err) { toastError(err); } }} />` : null}
-    ${room.version ? html`<p class="rs-verbanner" data-testid="version-banner">${versionLabel(roomVersion(room))}</p>` : null}
     <header class="rs-top">
       <div class="rs-top__left">
         <${Tooltip} text=${t('离开同盟')} placement="bottom">
@@ -602,19 +618,18 @@ export function RoomScreen() {
         <ul>
           ${info.effects.map((e) => html`<li key=${e}>${e}</li>`)}
           <li>${t('共')} <b class="num">${info.rounds}</b> ${tc('rounds', '回合')}${info.hidden ? t('，满足条件时进入隐秘核心') : ''}</li>
-          <li>${t('独立模拟中休整期与机变阶段不限时')}</li>
+          <li>${t(soloTimeMsgid('brief', { timed: soloTimedOf(getConfig(), roomVersion(room)), unlimited: room.soloUnlimited === true }) || '独立模拟中休整期与机变阶段不限时')}</li>
         </ul>
       </aside>`}
     </main>
     <${SpectatorBar} facts=${facts} myId=${me.playerId} busy=${busy} onRemove=${removeSpectator} onSit=${sit} />
     <${VersionVote} room=${room} />
 
-    <footer class="rs-foot">
+    <footer class=${optsShown ? 'rs-foot rs-foot--options' : 'rs-foot'}>
       <div class="rs-foot__left" aria-hidden="true"></div>
       <div class="rs-foot__center">
         <p class="rs-hint">${coop ? html`<span class="rs-ready num" title=${t('已就绪')}>${facts.humans.map((s) => html`<${Icon} key=${s.playerId} name="user" class=${facts.isReady(s) ? 'is-on' : ''} />`)}<b>${facts.readyHumans}</b>/${facts.humans.length}</span>` : null}${statusLine}</p>
         <div class="rs-pill">
-          ${room.mode === 'solo' && soloTimedOf(getConfig(), roomVersion(room)) ? html`<label><input type="checkbox" checked=${room.soloUnlimited === true} onChange=${e => setSoloUnlimited(e.currentTarget.checked)} />${t('不限时')}</label>` : null}
           ${Array.isArray(versions) ? html`<button type="button" class="rs-pill__ver" data-testid="room-version" disabled=${!facts.isHost || !!busy || !!room.versionVote} onClick=${() => setVersionOpen(true)}><${Icon} name="book" /><span>${versionLabel(roomVersion(room))}</span></button>` : null}
           ${coop && CAN_QUEUE ? html`<span class="rs-pill__mode" title=${t('精确搜寻：只与选择相同难度的博士组成同盟')}><${Icon} name="search" />${t('精确搜寻')}</span><i class="rs-pill__sep"></i>` : null}
           <button type="button" class="rs-pill__diff" disabled=${!facts.isHost || !!busy} onClick=${() => setPicker(true)}
@@ -623,7 +638,7 @@ export function RoomScreen() {
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 2h3.4l.5 2.6 1.9.8 2.2-1.5 2.4 2.4-1.5 2.2.8 1.9 2.6.5v3.4l-2.6.5-.8 1.9 1.5 2.2-2.4 2.4-2.2-1.5-1.9.8-.5 2.6h-3.4l-.5-2.6-1.9-.8-2.2 1.5-2.4-2.4 1.5-2.2-.8-1.9L2 13.7v-3.4l2.6-.5.8-1.9-1.5-2.2 2.4-2.4 2.2 1.5 1.9-.8zM12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" fill-rule="evenodd" /></svg>
           </button>
           ${optsShown ? html`<${RoomOptions} room=${room} facts=${facts} myId=${me.playerId} busy=${busy} online=${online} variant=${variant}
-            onPrivate=${setPrivate} onMaxSeats=${setMaxSeats} onAiLast=${setAiLast} onAiTakeover=${setAiTakeover} onUniteLayerGains=${setUniteLayerGains} onVariant=${setVariant} onClose=${() => setOpts(false)} leaving=${optsLeaving} />` : null}
+            onPrivate=${setPrivate} onMaxSeats=${setMaxSeats} onAiLast=${setAiLast} onAiTakeover=${setAiTakeover} onUniteLayerGains=${setUniteLayerGains} onConvenience=${setConvenience} onVariant=${setVariant} onClose=${() => setOpts(false)} leaving=${optsLeaving} />` : null}
         </div>
       </div>
       <div class="rs-foot__right">

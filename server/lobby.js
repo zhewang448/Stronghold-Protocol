@@ -174,7 +174,7 @@ import { RoomChat, cleanChatText, getChatSettings } from './chat.js';
 import { getData as defaultGetData, lookup } from './data.js';
 import { Match as DefaultMatch } from './match/Match.js';
 import { getUniteLayerGains, getAllowRoomUniteLayerGains, getSocialSettings } from './match/hostSettings.js';
-import { getShowPwaInstall } from './match/hostSettings.js';
+import { getShowPwaInstall, getAllowAiTakeover } from './match/hostSettings.js';
 import { ServerSocial } from './social.js';
 import { KITTED_CHARS } from './sim/content/kits/index.js';
 import { SiteAnnouncements } from './announcements.js';
@@ -183,6 +183,7 @@ const VANILLA_KITTED = new Set(KITTED_CHARS);
 const UNVERIFIED_CS = 'unverified';
 import { isContentHash } from '../shared/plugins/identity.js';
 import { ruleOption } from '../shared/plugins/rules.js';
+import { CONVENIENCE_KEYS, roomConvenience, effectiveRoomRules } from '../shared/roomConvenience.js';
 import { msg, wireMessage } from '../shared/i18n.js';
 import { parseTestModeEnv, testModeGate, unrecognizedTestMode } from './testMode.js';
 
@@ -304,6 +305,7 @@ export class Room {
     this.aiTakeoverEnabled = false;
     this.version = version;
     this.versionVote = null; this.versionVoteSeq = 0; this.versionProposeAt = -Infinity; this.versionRetryAt = -Infinity; this.soloUnlimited = false;
+    this.convenience = roomConvenience();
     // Capture the host default once; later changes belong to this room alone.
     this.uniteLayerGains = getUniteLayerGains();
     /** @type {string | null} */
@@ -373,7 +375,9 @@ export class Room {
   toState(now = Date.now()) {
     return {
       t: 'room.state',
-      ...(this.aiTakeoverEnabled ? { aiTakeoverEnabled: true, aiTakeoverVotes: this.aiTakeoverVotes || [] } : {}),
+      aiTakeoverAllowed: getAllowAiTakeover(),
+      canSetAiTakeover: getAllowAiTakeover() && this.mode === 'coop' && this.version === DEFAULT_VERSION && !this.modded && !this.match,
+      ...(this.aiTakeoverEnabled && getAllowAiTakeover() ? { aiTakeoverEnabled: true, aiTakeoverVotes: this.aiTakeoverVotes || [] } : {}),
       ...(this.version !== DEFAULT_VERSION ? { version: this.version } : {}),
       ...(this.versionVote ? { versionVote: { id: this.versionVote.id, proposerId: this.versionVote.proposerId, version: this.versionVote.version, voters: [...this.versionVote.voters], agreed: this.versionVote.voters.filter(id => this.versionVote.agreed.has(id)), remainingMs: Math.max(0, this.versionVote.expiresAt - now) } } : {}),
       ...(this.soloUnlimited ? { soloUnlimited: true } : {}),
@@ -385,6 +389,7 @@ export class Room {
       maxSeats: this.capacity,
       aiPicksLast: this.aiPicksLast,
       uniteLayerGains: this.uniteLayerGains,
+      convenience: { ...this.convenience },
       canSetUniteLayerGains: getAllowRoomUniteLayerGains(),
       inMatch: !!this.match,
       textChat: true,
@@ -702,6 +707,7 @@ export class Lobby {
       case 'social.invite': return this.social.invite(session, msg);
       case 'social.respond': return this.social.respond(session, msg);
       case 'room.setSoloUnlimited': return this.setSoloUnlimited(session, msg);
+      case 'room.setConvenience': return this.setConvenience(session, msg);
       case 'room.proposeVersion': return this.proposeVersion(session, msg);
       case 'room.versionVote': return this.versionVote(session, msg);
       case 'room.cancelVersionVote': return this.cancelVersionVote(session, msg);
@@ -840,7 +846,8 @@ export class Lobby {
     const room = new Room(code, mode, difficulty, this.now(), capacity, version);
     room.test = test === true;
     room.content = this.baseContent(version);
-    room.soloUnlimited = mode === 'solo' && soloUnlimited === true && this.versionSoloTimed(version);
+    room.convenience.soloUnlimited = typeof soloUnlimited === 'boolean' ? soloUnlimited : true;
+    room.soloUnlimited = mode === 'solo' && room.convenience.soloUnlimited && this.versionSoloTimed(version);
     // the server owner's default plugins (plugins/config.json `default`; header "Gameplay plugins"): none — the original game
     const defaults = this.plugins?.defaults?.() || [];
     if (defaults.length) {
@@ -1033,7 +1040,7 @@ export class Lobby {
 
   /** 「AI 队友最后选择」 (GitHub #338): host-only, before the match, co-op rooms only (a solo room has no AI seat). */
   setAiTakeover(session, { on }) {
-    if (on && process.env.SP_AI_TAKEOVER !== '1') return fail(ERR.BAD_TARGET, 'AI handover is deferred in this extension');
+    if (on && !getAllowAiTakeover()) return fail(ERR.BAD_TARGET, 'AI handover is disabled by the host');
     const room = this.roomOf(session);
     if (!room) return fail(ERR.NOT_IN_ROOM);
     if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
@@ -1359,7 +1366,7 @@ export class Lobby {
     let r;
     try {
       // Preserve named defaults for prep merging: normalisation drops them, but they mean reset this operator.
-      r = ruleOption(room.content?.rules, 'prepLoadout') === 'prep'
+      r = ruleOption(effectiveRoomRules(room), 'prepLoadout') === 'prep'
         ? room.match.setLoadout(session.playerId, entries, ops)
         : room.match.setLoadout(session.playerId, loadout, opsSet);
     } catch (e) {
@@ -1605,6 +1612,7 @@ export class Lobby {
         // 「AI 队友最后选择」 (GitHub #338): fixed for the match
         aiPicksLast: room.mode !== 'solo' && room.aiPicksLast === true,
         uniteLayerGains: room.uniteLayerGains,
+        convenience: { ...room.convenience },
         ...(!modded && !versioned && this.simPool ? { simPool: this.simPool } : {}),
         seats: restored?.seats || seats,
         // the spectator seats (header): watched like eliminated players, never players
@@ -1631,7 +1639,7 @@ export class Lobby {
         // The list the lobby just checked the picks with (kittedFor). Vanilla rooms omit it: setDiy stays on
         // KITTED_CHARS, and the worker payload / test journal of a normal match do not grow a key.
         ...(modded ? { kitted: this.kittedFor(room) } : {}),
-        ...(room.content?.rules ? { rules: room.content.rules } : {}),
+        rules: effectiveRoomRules(room),
         data,
         log: this.log,
         now: this.now,
@@ -2160,6 +2168,23 @@ export class Lobby {
     return sendSession(session, msg, encoded);
   }
 
+  setConvenience(session, { key, on }) {
+    const room = this.roomOf(session);
+    if (!room) return fail(ERR.NOT_IN_ROOM);
+    if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
+    if (room.match) return fail(ERR.ROOM_STARTED);
+    if (!CONVENIENCE_KEYS.includes(key) || typeof on !== 'boolean') return fail(ERR.BAD_MSG);
+    if (room.content?.rules && Object.hasOwn(room.content.rules, key)) return fail(ERR.BAD_TARGET, 'this rule is supplied by a gameplay plugin');
+    if (room.convenience[key] !== on) {
+      this.dropReplay(room, session.playerId);
+      room.convenience = { ...room.convenience, [key]: on };
+      room.soloUnlimited = room.mode === 'solo' && this.versionSoloTimed(room.version) && room.convenience.soloUnlimited;
+      for (const s of room.seats) if (s && !s.isBot && s.playerId !== room.hostId) s.ready = false;
+      this.broadcastState(room);
+    }
+    return OK;
+  }
+
   setSoloUnlimited(session, { on }) {
     const room = this.roomOf(session);
     if (!room) return fail(ERR.NOT_IN_ROOM);
@@ -2171,6 +2196,7 @@ export class Lobby {
     const next = on === true;
     if (room.soloUnlimited !== next) {
       room.soloUnlimited = next;
+      room.convenience = { ...room.convenience, soloUnlimited: next };
       this.broadcastState(room);
     }
     return OK;
@@ -2319,7 +2345,7 @@ export class Lobby {
     room.version = version;
     // 「不限时」 belongs to a timed solo only (header): a co-op room, or a version whose solo is not timed, drops it.
     // Switching between the two 第一期 versions keeps it.
-    if (room.mode !== 'solo' || !this.versionSoloTimed(version)) room.soloUnlimited = false;
+    room.soloUnlimited = room.mode === 'solo' && this.versionSoloTimed(version) && room.convenience.soloUnlimited;
     room.difficulty = this.fallbackDifficulty(version, room.mode, room.difficulty);
     let next = this.baseContent(version);
     const ids = (before?.plugins || []).filter((p) => !p.auto).map((p) => p.id);

@@ -1207,3 +1207,8 @@ and replay records keep full frames.
 ### Optional spectator AI handover (§35.100, PR #691)
 
 The host’s pre-match `room.setAiTakeover {on}` opts a co-op room in; default off. Only default-version vanilla PREP supports requests. Online, non-autoplay humans throughout the room vote by strict majority; if none qualify, the online host decides. The 30-second request is bound to match/round/electorate and is cancelled on membership/eligibility/phase changes. A successful handover preserves the AI seat’s resources and rebinds the spectator token, cancels that seat’s old rehearsal, and resynchronizes its unchanged delta capability. Inherited records retain `aiTakeoverRound` and previous AI metrics but grant no personal aggregates, titles, trophies or reward. These are maintainer-approved remake-only rules [ASSUMED]; see [network](design/network.md) and [handover revision](history/0.3.2/ai-handover.md).
+
+
+### Room-local convenience choices (2026-10-25)
+
+shared/roomConvenience.js normalizes five room booleans. Lobby snapshots them into Match options and wireOptions preserves them for historical-version hosts. Match combines prepLoadout, unequip and morphPairing with verified plugin rules (plugin wins); benchEquip bypasses only the historical bench target gate. A timed solo uses its existing soloUnlimited path. New-room defaults are three on, two off; standalone Match fixtures are unchanged. Recovery, journals and result metadata retain the choices.

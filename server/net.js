@@ -139,6 +139,8 @@ export class Session {
     this.card = null;
     /** @type {string} client address of the latest connection (logging) */
     this.addr = '?';
+    /** @type {string | null} latest page host from Origin; local console display only */
+    this.accessDomain = null;
     /** @type {string | null} per-network limit key of the latest connection (null = not limited), see clientAddress */
     this.limitKey = null;
     /**
@@ -508,12 +510,29 @@ export function clientAddress(req, trustProxy = NET_DEFAULTS.trustProxy) {
 // Network: per-socket pipeline
 // ---------------------------------------------------------------------------------------------------
 
+/**
+ * Browser page host from Origin; display metadata, never authorization.
+ * Host/forwarding headers may name a proxy upstream, so are not fallbacks.
+ * @param {import('node:http').IncomingMessage} [req]
+ * @returns {string | null}
+ */
+export function accessDomainOf(req) {
+  const origin = req?.headers?.origin;
+  if (typeof origin !== 'string' || origin.length > 1024 || !/^https?:\/\/[^/\\?#\s]+$/i.test(origin)) return null;
+  try {
+    const url = new URL(origin);
+    return url.username || url.password || !url.hostname ? null : url.host;
+  } catch { return null; }
+}
+
 /** Per-socket state. */
 class Connection {
   /** @param {import('ws').WebSocket} ws @param {{ ip: string, key: string | null }} addr @param {number} now @param {typeof NET_DEFAULTS} opts */
   constructor(ws, addr, now, opts) {
     this.ws = ws;
     this.ip = addr.ip;
+    /** @type {string | null} page host captured at this handshake */
+    this.accessDomain = null;
     /** @type {string | null} per-network limit key (see clientAddress) */
     this.key = addr.key;
     this.openedAt = now;
@@ -601,6 +620,7 @@ export class Network {
   handleConnection(ws, req) {
     if (this.closed) { try { ws.close(CLOSE.SHUTDOWN, 'server shutdown'); } catch { /* ignore */ } return; }
     const conn = new Connection(ws, clientAddress(req, this.opts.trustProxy), this.now(), this.opts);
+    conn.accessDomain = accessDomainOf(req);
     this.conns.set(ws, conn);
     if (conn.key) this.connsPerKey.set(conn.key, (this.connsPerKey.get(conn.key) || 0) + 1);
     ws.on('message', (data, isBinary) => {
@@ -756,6 +776,7 @@ export class Network {
     session.name = name;
     session.lastSeen = now;
     session.addr = conn.ip;
+    session.accessDomain = conn.accessDomain;
     session.limitKey = conn.key;
     // Opt-in state deltas (shared/stateDelta.js): a hello may name the version it decodes. A repeated hello keeps the
     // baseline it already has, a client that never names one (or names an unknown version) keeps getting plain frames.

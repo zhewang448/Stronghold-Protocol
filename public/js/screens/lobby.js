@@ -43,6 +43,7 @@ import { FriendsTile } from '../ui/friends.js';
 
 import { SettingsButton } from '../ui/settings.js';
 import { AnnouncementButton } from '../ui/announcement.js';
+import { ReleaseHistoryButton } from '../ui/releaseHistory.js';
 import { PwaInstallButton, fullscreen } from '../ui/device.js';
 import { LoadoutButton } from './loadout.js';
 import { SweepReport } from './sweep.js';
@@ -527,7 +528,7 @@ export function ProtocolSelect({ card, roomMode, random, variant, difficulty, on
   online, maint, busy, isSearching, onCreate, onQueue, purpose = 'create', onSearch, onCancel, mm, onBrowse, chained = false, onUnlimited = null }) {
   const currentVersion = useStore(shownVersion);
   const allowedDifficulties = offeredDifficulties(getConfig(), roomMode);
-  const [unlimited, setUnlimited] = useState(false);
+  const [unlimited, setUnlimited] = useState(true);
   const timedSolo = roomMode === 'solo' && soloTimedOf(getConfig(), currentVersion) === true;
   const [leaving, leave] = useLeave(onClose);
   const pageRef = useRef(null);
@@ -826,7 +827,7 @@ export function LobbyScreen() {
   const me = useStore((s) => s.me, shallowEqual);
   const conn = useStore((s) => s.connection, shallowEqual);
   useData('config');
-  const [soloUnlimited, setSoloUnlimited] = useState(false);
+  const [soloUnlimited, setSoloUnlimited] = useState(true);
   const [simulation, setSimulation] = useState(lobbySimulationPreference);
   const [difficulty, setDifficulty] = useState(() => preferredDifficulty(lobbySimulationPreference()));
   const [fpVariant, setFpVariant] = useState(firepowerVariantPreference);
@@ -941,7 +942,7 @@ export function LobbyScreen() {
       return;
     }
     return run('create', () => net.request('room.create', {
-      mode: roomMode, difficulty, ...(!isDefaultVersion(selectedVersion) ? { version: selectedVersion } : {}), ...(roomMode === 'solo' && soloUnlimited ? { soloUnlimited: true } : {}), ...(testMode && asTest ? { test: true } : {}),
+      mode: roomMode, difficulty, ...(!isDefaultVersion(selectedVersion) ? { version: selectedVersion } : {}), ...(roomMode === 'solo' ? { soloUnlimited } : {}), ...(testMode && asTest ? { test: true } : {}),
       ...(roomMode === 'coop' && customCode ? { code: customCode } : {}),
       ...(CAN_FIREPOWER ? { random: randomMode, ...(randomMode ? { variant } : {}) } : {}),
       ...(CAN_PRIVATE ? { private: roomMode !== 'solo' && privateRoom } : {}),
@@ -1041,6 +1042,7 @@ export function LobbyScreen() {
           <${NoticesButton} />
           <${SettingsButton} class="lobby-settings" variant="secondary" square=${true} />
           <${AnnouncementButton} class="lobby-notice" />
+          <${ReleaseHistoryButton} class="lobby-updates" variant="secondary" />
           <${GuideButton} class="lobby-guide" variant="secondary" square=${true} />
           <${Button} variant="secondary" size="sm" square=${true} class="hub-bg-btn" onClick=${() => setBgOpen(true)}
             title=${t('大厅背景')} aria-label=${t('大厅背景')}><${BackdropGlyph} /><//>

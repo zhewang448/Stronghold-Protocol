@@ -12,7 +12,7 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 [下载正式版](https://github.com/zhewang448/Stronghold-Protocol/releases/latest) · [开始运行](#开始运行) · [本库特色](#本库特色) · [和朋友一起玩](#和朋友一起玩) · [更新记录](docs/LOCAL-CHANGELOG.md) · [反馈问题](https://github.com/zhewang448/Stronghold-Protocol/issues)
 
-> 当前版本为 **`v0.3.3-extended.1`**，基于上游 `0.3.3`。保留本库大厅、等待室、开局界面、发布更新与 Windows 启动器；接入状态增量同步和本次上游功能更新。历史版本入口与外部大模型 AI 暂不启用。验证记录见[扩展更新记录](docs/LOCAL-CHANGELOG.md)；该分支尚未发布新安装包。
+> 当前版本为 **`v0.3.3-extended.1`**，基于上游 0.3.3。默认开放四版，新增完整更新历史、224 套可选皮肤与多实例 Windows 启动器；外部 LLM 不随发行包启用。详情见[扩展更新记录](docs/LOCAL-CHANGELOG.md)。
 >
 > 非官方、非商业同人项目，与《明日方舟》官方无隶属或授权关系。游戏素材与数据的权利归原权利人；代码、素材及截图的许可边界见 [NOTICE.md](NOTICE.md)。
 
@@ -36,7 +36,7 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 不同分支的插件格式和宿主 API 并不通用。**Forge-Mods 与 Lele 插件尚未验证可直接用于本库**；更多来源、安装前核对项和兼容边界见[社区插件索引](docs/COMMUNITY-PLUGINS.md)。本库设置页提供本机插件工作台入口。
 
-本版已整合上游 **v0.3.1**，包含 Forge 导入与工作台扩展、测试房间、联防及干员规则修复，详见 [更新记录](docs/LOCAL-CHANGELOG.md)。
+本版已整合上游 **v0.3.3**，包含 Forge 导入与工作台扩展、测试房间、联防及干员规则修复，详见 [更新记录](docs/LOCAL-CHANGELOG.md)。
 
 ## 本库特色
 
@@ -48,7 +48,7 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 | [公告与交流](#公告聊天与战场标点) | 公告草稿、四类模板、Markdown 预览与跨重启保留；房间聊天、主机消息、屏蔽词和可拖动战场标点 |
 | [复盘与记录](#局内统计对局记录与回放) | 全员每回合曲线与干员伤害排行、本机战绩、主机跨局汇总、最近 50 局回放 |
 | [数据迁移](#个人数据备份与域名迁移) | 恢复码与文件导入 / 导出，覆盖本机配置、战绩、调配、皮肤、背景和音乐；旧域名授权传输 |
-| [干员与外观](#联动干员皮肤与组队海报) | 7 名联动自选干员、174 套可选皮肤、可搜索的组队海报、随机外观与素材预加载 |
+| [干员与外观](#联动干员皮肤与组队海报) | 7 名联动自选干员、224 套可选皮肤、可搜索的组队海报、随机外观与素材预加载 |
 | [手机与个性化](#手机适配与个性化) | 手机横屏 HUD、可拖动聊天与标点、小屏统计和触控适配；自定义背景、音乐、界面设置及 FPS 显示 |
 | [素材与加载](#素材与加载管理) | 统一入口与唯一下载按钮；按浏览器能力预载或兼容下载，本地素材与缓存 ZIP 导入 / 导出 |
 | [插件与测试工具](#插件与测试工具) | 沿用上游插件工作台与 Forge 导入；本库控制台提供开发者模式、6 个模拟工具和 30 个场景入口 |
@@ -58,14 +58,9 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 ## 开始运行
 
-Windows 服主可使用 `StrongholdProtocolLauncher.exe`：将它放在**同版项目根目录**，与 `package.json` 同级，
-双击后选择「仅本机 / 局域网 / 公网隧道」，确认端口并启动。启动器检查运行环境、依赖、素材和双端口占用，
-提供地址复制、管理控制台、重启、正常停服和诊断日志；界面沿用本项目的深绿灰与薄荷绿视觉。
-**关闭 EXE 窗口后服务继续运行；停服请点击「停止服务器」。**
+Windows 服主从同版本 Release 下载 StrongholdProtocolLauncher-v1.1.0-win-x64.zip，解压后双击 StrongholdProtocolLauncher.exe。可新建空目录自动安装完整游戏包和便携 Node.js，也可导入已有根目录；EXE 可放在实例目录外。启动器支持多实例、监听端口＋索引发现、回收站删除和安全控制，不提供文件搜索。
 
-EXE 自带 .NET 运行时，游戏仍需 Node.js 22+ 和包含 `scripts/host-launcher.mjs` 的同版项目文件；
-公网隧道另需 cloudflared。源码构建、故障处理和验证边界见 [启动器说明](launcher/README.md)。
-从同版本 Release 下载 `launcher-win-x64.zip`，解压 EXE 到游戏根目录使用；完整包、轻量包与增量包均提供配套桥接脚本，原脚本入口继续可用。
+**关闭启动器窗口后服务继续运行；停服请点击「停止服务器」。** 公网隧道另需 cloudflared。使用与构建见 [启动器说明](launcher/README.md)，原脚本继续可用。
 
 需要 **Node.js 22 或 24** 和支持 WebGL 的现代浏览器；Windows、macOS、Linux 均可开服。手机建议横屏游玩，战斗在玩家浏览器中模拟，设备性能会影响流畅度。
 
@@ -75,7 +70,7 @@ EXE 自带 .NET 运行时，游戏仍需 Node.js 22+ 和包含 `scripts/host-lau
 
 | 附件 | 适合的情况 |
 | --- | --- |
-| `*-assets.zip` | 带游戏代码、运行依赖、11 个官方战场场景、官方 3D 棋盘、40 组召唤物模型、中文 / 日文语音等本地素材与 174 套可选皮肤，适合希望直接启动的玩家 |
+| `*-assets.zip` | 带游戏代码、运行依赖、11 个官方战场场景、官方 3D 棋盘、40 组召唤物模型、中文 / 日文语音等本地素材与 224 套可选皮肤，适合希望直接启动的玩家 |
 | `*-lite.zip` | 带同版代码与运行依赖，首次启动时联网下载默认素材；官方战场场景、棋盘等本地素材和可选皮肤需另行导入 / 安装 |
 | `*-update.zip` | 发布时若提供，为控制台升级使用的增量附件；不能当作新安装包，版本不适配时改用完整包 |
 | `SHA256SUMS.txt` | 用于核对安装包的 SHA-256 校验值 |
@@ -232,7 +227,7 @@ winget install Cloudflare.cloudflared
 
 自选池共 **79 名**干员，比上游增加灰烬、艾拉、麒麟R夜刀、玛露西尔、丰川祥子、结城理、焰狐龙梓兰这 **7 名联动干员**。可在「干员调配 → 自选编队」配置，或由控制台发放；部分专属视觉效果和外语文本尚未完成，见[联动实现说明](docs/LOCAL-DEV.md#8-联动干员进自选池)。
 
-可选皮肤覆盖 **115 名干员、174 套皮肤**，支持手选、随机装备、随调配文件导入 / 导出，以及联机、重连与观战同步。只改变外观，不改变战斗数值。设置里可预加载画面或全部素材，查看进度并取消，详见[皮肤说明](docs/SKINS.md)。
+可选皮肤覆盖 **115 名干员、224 套皮肤**，支持手选、随机装备、随调配文件导入 / 导出，以及联机、重连与观战同步。只改变外观，不改变战斗数值。设置里可预加载画面或全部素材，查看进度并取消，详见[皮肤说明](docs/SKINS.md)。
 
 ![当前干员调配：卡片视图、皮肤立绘与随机装备](docs/img/features/operator-skins.webp)
 

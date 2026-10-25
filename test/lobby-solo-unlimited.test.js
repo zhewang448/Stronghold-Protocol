@@ -89,7 +89,7 @@ test('create stores soloUnlimited only for a timed solo, and room.state omits it
   assert.equal(h.state(host).version, V1);
 
   ok(h.lobby.create(host, { mode: 'solo', version: V1 }));
-  assert.equal(h.state(host).soloUnlimited, undefined);
+  assert.equal(h.state(host).soloUnlimited, true, 'timed solo defaults to untimed');
   ok(h.lobby.create(host, { mode: 'solo', version: V1, soloUnlimited: false }));
   assert.equal(h.state(host).soloUnlimited, undefined);
 
@@ -160,8 +160,8 @@ test('startMatch and wireOptions omit soloUnlimited unless the flag is on', () =
   ok(h.lobby.contentReady(host, { cs: room.content.cs }));
   ok(h.lobby.start(host));
   assert.equal(Rec.last.version, V1);
-  assert.equal(Rec.last.soloUnlimited, undefined);
-  assert.equal(wireOptions(Rec.last).soloUnlimited, undefined);
+  assert.equal(Rec.last.soloUnlimited, true);
+  assert.equal(wireOptions(Rec.last).soloUnlimited, true);
   assert.equal(wireOptions({ roomCode: 'ABCD', mode: 'solo', hostId: 'p', test: false, soloUnlimited: true }).soloUnlimited, true);
   const localWire = wireOptions({ roomCode: 'ABCD', mode: 'solo', hostId: 'p', test: false });
   assert.equal(localWire.extensionSettings.roundCharts, true);

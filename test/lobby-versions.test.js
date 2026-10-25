@@ -661,7 +661,8 @@ test('startMatch: a version room plays in its version host (version + requireCs)
   ok(h.lobby.start(q));
   assert.equal(hosted.length, 1);
   const keys = Object.keys(Rec.last).sort();
-  assert.deepEqual(keys, ['aiPicksLast', 'broadcast', 'cs', 'data', 'difficulty', 'hostId', 'log', 'matchNo', 'mode', 'modeId', 'now', 'onEnd', 'roomCode', 'seats', 'seed', 'send', 'spectators', 'uniteLayerGains']);
+  assert.deepEqual(keys, ['aiPicksLast', 'broadcast', 'convenience', 'cs', 'data', 'difficulty', 'hostId', 'log', 'matchNo', 'mode', 'modeId', 'now', 'onEnd', 'roomCode', 'rules', 'seats', 'seed', 'send', 'spectators', 'uniteLayerGains']);
+  assert.equal(Rec.last.convenience.prepLoadout, true);
   // a version room without a version host, and the real Match class: never in this process
   const lone = new Lobby({ registry: new SessionRegistry(), log: quiet, content: { cs: VANILLA }, getData, versions: versionStub() });
   const s = lone.registry.create('C');

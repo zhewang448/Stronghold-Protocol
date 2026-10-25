@@ -871,6 +871,9 @@
 .settings-btn.btn--square .btn__label { display: contents; }
 .settings-btn.btn--square .btn__icon { width: 62%; height: 62%; } /* the gear glyph is drawn smaller in its box than the book */
 .set-list { display: flex; flex-direction: column; gap: .16rem; padding-top: .06rem; }
+.set-group { display: flex; flex-direction: column; gap: .16rem; min-width: 0; border-top: 1px solid var(--line-2); padding-top: .2rem; margin-top: .1rem; }
+.set-group:first-child { border-top: 0; margin-top: 0; padding-top: 0; }
+.set-group > h3 { margin: 0 0 .04rem; font-size: calc(.21 * var(--t)); font-weight: 700; color: var(--text-hi); }
 .set-row { display: grid; grid-template-columns: minmax(0, 3.3rem) minmax(0, 1fr) auto; align-items: center; gap: .18rem; min-height: .44rem; }
 /* The label column may shrink (the label wraps) instead of pushing its control out of the modal: at 设置 →「文字大小」
    大 / 特大 a phone's label (a Chinese name plus its Latin micro label) is wider than 3.3rem at 1rem = 40 px. */

@@ -7,6 +7,7 @@ import crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { WebSocket } from 'ws';
 import { computeBuildTag } from './http/buildTag.js';
+import { VERSIONS } from '../shared/versions.js';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 export function supportsUpdateProbe(root) {
@@ -33,7 +34,7 @@ async function socketCheck(port) {
   } finally { ws.terminate(); }
 }
 export async function waitReleaseHealth(root, port, { app, timeout = 30000, exited = () => false } = {}) {
-  const build = computeBuildTag(root), until = Date.now() + timeout;
+  const until = Date.now() + timeout;
   let last = '服务尚未就绪';
   while (Date.now() < until && !exited()) {
     try {
@@ -41,6 +42,13 @@ export async function waitReleaseHealth(root, port, { app, timeout = 30000, exit
       const response = await get('/healthz');
       if (!response.ok) throw new Error('健康接口未就绪');
       const h = await response.json();
+      // Historical data contributes to the serving process fingerprint only when enabled.
+      // Use the local registry to resolve its directories, matching startServer's buildTag inputs.
+      const enabled = Array.isArray(h.versions?.enabled) ? h.versions.enabled : [];
+      if (enabled.some(id => !VERSIONS.some(version => version.id === id))) throw new Error('服务报告未知玩法版本');
+      const servedVersionDirs = VERSIONS.filter(version => version.dir && enabled.includes(version.id))
+        .map(version => path.join(root, 'data', version.dir));
+      const build = computeBuildTag(root, { servedVersionDirs });
       if (h.ok !== true || h.app !== app || h.build !== build) throw new Error('服务版本或构建指纹与目标不一致');
       const page = await get('/'), script = await get('/js/main.js');
       if (!page.ok || !/<html[\s>]/i.test(await page.text()) || !script.ok || !(await script.text()).trim()) throw new Error('关键前端资源验证失败');
@@ -53,7 +61,8 @@ export async function waitReleaseHealth(root, port, { app, timeout = 30000, exit
 export async function probeRelease(root, { app, timeout = 30000, legacy = false } = {}) {
   const nonce = crypto.randomBytes(16).toString('hex'), port = await freePort();
   let log = '', exited = false, actualPort = legacy ? port : null;
-  const child = spawn(process.execPath, [...process.execArgv, path.join(root, 'server', 'index.js')], {
+  // The candidate is a script, never the caller's -e/--eval/--input-type payload.
+  const child = spawn(process.execPath, [path.join(root, 'server', 'index.js')], {
     cwd: root, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
     env: { ...process.env, HOST: '127.0.0.1', PORT: String(port), SP_ADMIN: '0', SP_REPLAY: '0',
       SP_PLUGIN_SCRIPTS: 'off', SP_UPDATE_RESTART: '', SP_UPDATE_PROBE: nonce },

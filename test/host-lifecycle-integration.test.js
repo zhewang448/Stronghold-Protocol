@@ -77,7 +77,11 @@ test('real project update probe leaves settings, recovery, plugin files and cach
   fs.writeFileSync(path.join(f.root, 'logs/admin-settings.json'), '{"recovery":{"enabled":true}}');
   fs.writeFileSync(path.join(f.root, 'logs/recovery.json'), '{"sentinel":"preserve"}');
   const before = ['logs', '.cache', 'plugins'].map((dir) => snapshot(path.join(f.root, dir)));
-  const result = await probeRelease(f.root, { app: APP_VERSION });
+  const savedVersions = process.env.SP_VERSIONS;
+  process.env.SP_VERSIONS = 'all';
+  let result;
+  try { result = await probeRelease(f.root, { app: APP_VERSION }); }
+  finally { if (savedVersions === undefined) delete process.env.SP_VERSIONS; else process.env.SP_VERSIONS = savedVersions; }
   assert.equal(result.app, APP_VERSION); assert.ok(result.build);
   assert.deepEqual(['logs', '.cache', 'plugins'].map((dir) => snapshot(path.join(f.root, dir))), before);
 });
@@ -103,6 +107,33 @@ test('real supervised server restarts with the same tunnel and graceful shutdown
   assert.equal((await call(next, 'shutdown')).status, 202);
   assert.equal(await runtime.done, 0); tunnel.stop(); await tunnel.closed;
   assert.equal(await runningInstance(f.root, port), null);
+});
+
+test('two real installations stay independent while desktop selection, restart and stop change one instance', { timeout: 60000 }, async (t) => {
+  const { desktopStatus, restartDesktop } = await import('../scripts/host-launcher.mjs');
+  const { stopInstance } = await import('../server/instance.js');
+  const a = checkout(t), b = checkout(t);
+  const portA = await freePort(), adminA = await freePort(), portB = await freePort(), adminB = await freePort();
+  const runtimeA = superviseServer({ root: a.root, port: portA, log() {}, restartDelay: 10,
+    env: { ...process.env, HOST: '127.0.0.1', SP_ADMIN_PORT: String(adminA), SP_REPLAY: '0', SP_ASSET_INDEX: '0' } });
+  const runtimeB = superviseServer({ root: b.root, port: portB, log() {}, restartDelay: 10,
+    env: { ...process.env, HOST: '127.0.0.1', SP_ADMIN_PORT: String(adminB), SP_REPLAY: '0', SP_ASSET_INDEX: '0' } });
+  t.after(async () => { runtimeA.stop(); runtimeB.stop(); await Promise.all([runtimeA.done, runtimeB.done]); });
+  await Promise.all([runtimeA.ready, runtimeB.ready]);
+  const originalA = await runningInstance(a.root, portA), originalB = await runningInstance(b.root, portB);
+  assert.notEqual(originalA.pid, originalB.pid);
+  assert.equal((await desktopStatus({ root: a.root, port: portA })).state, 'online');
+  assert.equal((await desktopStatus({ root: b.root, port: portB })).state, 'online');
+  assert.equal((await desktopStatus({ root: a.root, port: portB })).state, 'busy');
+  assert.equal((await restartDesktop({ root: a.root, port: portA })).ok, true);
+  await until(async () => { const r = await runningInstance(a.root, portA); return r && r.pid !== originalA.pid; });
+  assert.equal((await runningInstance(b.root, portB)).pid, originalB.pid);
+  assert.equal((await stopInstance(b.root, portB, { confirmActive: true })).ok, true);
+  await runtimeB.done;
+  assert.equal(await runningInstance(b.root, portB), null);
+  assert.equal((await desktopStatus({ root: a.root, port: portA })).state, 'online');
+  assert.equal((await stopInstance(a.root, portA, { confirmActive: true })).ok, true);
+  await runtimeA.done;
 });
 
 test('offline recovery refuses active launchers, listeners and installers, then restores verified files and metadata', { timeout: 60000 }, async (t) => {

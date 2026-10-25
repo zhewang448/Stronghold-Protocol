@@ -84,6 +84,7 @@ export class MatchViews {
       deadline: this.deadline,
       serverNow: this.sched.now(),
       modeId: this.modeId,
+      ...(this.convenience ? { convenience: this.convenience } : {}),
       difficulty: this.difficulty,
       stageId: this.stageId,
       // a non-default official version's match (DESIGN §35.23): its registry id, so a page that never saw the room (a

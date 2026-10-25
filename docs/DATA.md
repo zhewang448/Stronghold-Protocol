@@ -12,6 +12,7 @@ downloads failed on this machine unless `--allow-shrink` (or `--prune`) is passe
 ```
 node tools/build-data.mjs              # build (downloads missing official files into .cache/gamedata/)
 node tools/build-data.mjs --offline    # never download; fail if a cached file is missing
+node tools/build-data.mjs --skins-only --offline # rebuild only the shared four-version cosmetic catalogue
 node tools/build-data.mjs --refresh    # re-download every official file; fail if any download fails
 node tools/build-data.mjs --no-research --out /tmp/x   # research-free build (fallback defaults), other dir
 node tools/build-data.mjs --cache <dir> --report <file> # other cache dir / report file (tests, CI)

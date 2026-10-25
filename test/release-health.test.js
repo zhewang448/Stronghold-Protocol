@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import net from 'node:net';
+import { spawnSync } from 'node:child_process';
 import { probeRelease } from '../server/release-health.js';
 import { scheduleInstall, updatePaths } from '../server/release-update.js';
 import { APP_VERSION } from '../shared/constants.js';
@@ -30,6 +31,19 @@ test('read-only candidate validation checks HTTP, build identity, assets and Web
   put(root, 'server/index.js', healthServerSource(0));
   const result = await probeRelease(root, { app: APP_VERSION, timeout: 10000 });
   assert.equal(result.app, APP_VERSION); assert.equal(fs.existsSync(path.join(root, 'logs')), false);
+});
+
+test('candidate probe invoked from inline Node code starts the server script, not the caller payload', { timeout: 15000 }, t => {
+  const root = temp(t);
+  put(root, 'package.json', JSON.stringify({ version: APP_VERSION, type: 'module' }));
+  put(root, 'server/index.js', healthServerSource(0));
+  const module = new URL('../server/release-health.js', import.meta.url).href;
+  const code = 'import { probeRelease } from ' + JSON.stringify(module)
+    + '; console.log(JSON.stringify(await probeRelease(' + JSON.stringify(root)
+    + ',{app:' + JSON.stringify(APP_VERSION) + ',timeout:8000})));';
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', code], { encoding: 'utf8', timeout: 12000, windowsHide: true });
+  assert.equal(result.status, 0, result.stderr || result.error?.message);
+  assert.equal(JSON.parse(result.stdout.trim()).app, APP_VERSION);
 });
 test('a candidate that crashes during its private probe restores the old program and version before restarting', { timeout: 20000 }, async (t) => {
   const root = temp(t), p = await port(), oldSource = healthServerSource(p);

@@ -56,6 +56,7 @@
 import { PHASE, MAX_SEATS } from '../../../shared/constants.js';
 import { sanitizeName } from './playerName.js';
 import { DEFAULT_VERSION, versionById } from '../../../shared/versions.js';
+import { roomConvenience } from '../../../shared/roomConvenience.js';
 
 /** Current record-envelope version (bump + add a MIGRATIONS step when the record shape changes). */
 export const STATS_VERSION = 3;
@@ -309,6 +310,7 @@ export function normalizeRecord(raw) {
     content: contentOf(r.content),
     // the official version it played (see the header): a registry id other than 第二期下半, else left out
     ...(versionOf(r.version) ? { version: versionOf(r.version) } : {}),
+    ...(isObj(r.convenience) ? { convenience: roomConvenience(r.convenience) } : {}),
     players,
     roundHistory: normalizeRoundHistory(r.roundHistory),
   };
@@ -420,7 +422,7 @@ export function peekStatsRecords() {
 // ---- compaction + the storage budget ---------------------------------------------------------------------------
 
 const COMPACT_FRAME = ['id', 'v', 't', 'end', 'victory', 'roundsPassed', 'lastRound', 'hiddenReached', 'hiddenCleared', 'reason', 'modeId',
-  'difficulty', 'roomMode', 'durationMs', 'selfId', 'vs', 'content', 'version', 'test', 'testActions'];
+  'difficulty', 'roomMode', 'durationMs', 'selfId', 'vs', 'content', 'version', 'test', 'testActions', 'convenience'];
 
 /**
  * The compact form of a record: the frame and the player's OWN row without lineup, bonds and name — everything the
@@ -557,6 +559,7 @@ export function buildRecord(res, ctx = {}) {
     vs: vsOf(ctx.vs),
     content: contentOf(ctx.content),
     version: ctx.version ?? null,
+    convenience: r.convenience,
     players: r.players,
     roundHistory: r.roundHistory,
   });
@@ -665,6 +668,7 @@ export function buildQuitRecord(state, ctx = {}) {
     content: contentOf(state.room?.content),
     // the room's version, else the frames' (m.public `version`; absent = 第二期下半, as versions.js matchFrameVersion)
     version: state.room ? state.room.version ?? null : str(pub.version) ?? null,
+    convenience: state.room?.convenience ?? pub.convenience,
     players: [{
       playerId: myId, seat: row.seat, name: row.name, isBot: false, left: true, alive, victory: false, roundsPassed,
       ...(Number.isInteger(row.aiTakeoverRound) ? { aiTakeoverRound: row.aiTakeoverRound } : {}),

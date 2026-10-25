@@ -38,6 +38,7 @@ import { scriptOf } from '../../../shared/i18nPacks.js';
 import { GIcon } from '../ui/gameComponents.js';
 import { SettingsModal } from '../ui/settings.js';
 import { AnnouncementButton } from '../ui/announcement.js';
+import { ReleaseHistoryButton } from '../ui/releaseHistory.js';
 import { ResourceLauncher } from '../ui/resourcePanel.js';
 import { useSettings } from '../ui/settings.js';
 import { installedCount } from '../content.js';
@@ -272,6 +273,7 @@ export function TitleScreen() {
           ${conn.status === 'online' ? html`<${PingPill} ms=${conn.ping} />` : null}
           <${GuideButton} class="title-guide" label=${t('玩法说明')} />
           <${AnnouncementButton} class="title-notice" />
+          <${ReleaseHistoryButton} class="title-updates" />
           <button type="button" class="title-settings fsbtn tapx" aria-label=${t('设置')} title=${t('设置')}
             onClick=${() => setSettingsOpen(true)}><${GIcon} name="gear" /></button>
           <${FullscreenButton} class="title-fs" />

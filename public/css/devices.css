@@ -70,6 +70,11 @@ html:not(.sp-in-match) .toast-host { margin-top: var(--sa-t); }
   transform: translate(-50%, -50%);
   background: transparent; border: 0; box-shadow: none; clip-path: none; pointer-events: auto;
 }
+/* Settings controls already have distinct visible boxes. Keep enlarged targets inside those boxes so a later
+   row cannot intercept taps on the preceding row (voice languages, toggles and screen-fit step buttons). */
+.sp-coarse .set-list :is(.set-seg button, .set-toggle, .set-fit__step)::before {
+  inset: 0; width: 100%; height: 100%; transform: none;
+}
 /* The 交流 panel's pager (‹ dots ›) sits in the strip under the emote cells (panel y 1.97–2.31rem, css/emotes.css). Its
    hit areas stay inside that strip and never overlap each other: a centred 44 px area of ‹ / › covered the centres of
    the bottom-left / bottom-right emotes (a tap there turned the page or hit the disabled ‹), and 28 px dot areas 0.21rem

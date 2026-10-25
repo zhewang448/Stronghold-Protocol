@@ -19,7 +19,7 @@
 // answers 500.
 
 import { PROTOCOL_VERSION, APP_VERSION } from '../../shared/constants.js';
-import { readReleaseNotes, readUpstreamReleaseNotes } from '../release-notes.js';
+import { readReleaseNotes, readUpstreamReleaseNotes, readReleaseHistory } from '../release-notes.js';
 import { ROOT } from './config.js';
 import { buildTag } from './buildTag.js';
 import { setSecurityHeaders, sendError, sendJson, splitUrl } from './common.js';
@@ -108,6 +108,7 @@ export function createRequestHandler({ serveStatic, health, log, trustProxy = 'a
       sendError(req, res, 405, '不支持的请求方法 · Method not allowed');
       return;
     }
+    if (parts.rawPath === '/release-history.json') { sendJson(req, res, 200, readReleaseHistory(ROOT)); return; }
     if (parts.rawPath === '/release-notes.json') { sendJson(req, res, 200, readReleaseNotes(ROOT)); return; }
     if (parts.rawPath === '/upstream-release-notes.json') { sendJson(req, res, 200, readUpstreamReleaseNotes(ROOT)); return; }
     if (parts.rawPath === '/personal-data-config.json') { sendJson(req, res, 200, readPersonalDataConfig()); return; }

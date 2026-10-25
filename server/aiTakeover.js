@@ -2,6 +2,7 @@
 import { ERR, PROTOCOL_VERSION } from '../shared/constants.js';
 import { DEFAULT_VERSION } from '../shared/versions.js';
 import { resetStateDelta, stateDeltaVersion } from './stateTransport.js';
+import { getAllowAiTakeover } from './match/hostSettings.js';
 const fail = detail => ({ error: ERR.BAD_TARGET, detail });
 const pending = new WeakMap();
 export function resetAiTakeover(room) {
@@ -19,7 +20,7 @@ export function takeoverVoters(room) {
 export function transferAiSeat(lobby, room, applicantId, botId) {
   const m = room.match, session = lobby.registry.byId(applicantId), spectator = room.spectatorOf(applicantId);
   const ps = m?.players?.get(botId), seat = room.seatOf(botId);
-  if (room.aiTakeoverEnabled !== true || room.mode !== 'coop' || room.version !== DEFAULT_VERSION) return fail('AI handover is disabled');
+  if (!getAllowAiTakeover() || room.aiTakeoverEnabled !== true || room.mode !== 'coop' || room.version !== DEFAULT_VERSION) return fail('AI handover is disabled');
   if (!session?.connected || !session.ws || !spectator || !ps?.isBot || ps.left || !ps.alive || !seat || m.phase !== 'PREP' || m.ended || m.disposed || m.emergencyFrozen) return fail('AI handover unavailable');
   if (room.modded || m.hosted) return fail('AI handover is unavailable in isolated plugin matches');
   if (lobby.registry.byId(botId)) return fail('AI seat already has a session');
@@ -57,7 +58,7 @@ export function reconcileAiTakeover(lobby, room) {
   let changed = false;
   for (const [id, v] of votes) {
     const applicant = lobby.registry.byId(v.applicantId), bot = m?.players?.get(v.botId);
-    if (room.aiTakeoverEnabled !== true || room.modded || m?.hosted || room.version !== DEFAULT_VERSION
+    if (!getAllowAiTakeover() || room.aiTakeoverEnabled !== true || room.modded || m?.hosted || room.version !== DEFAULT_VERSION
       || m !== v.match || m.phase !== 'PREP' || m.round !== v.round || m.ended || m.disposed || m.emergencyFrozen
       || !room.spectatorOf(v.applicantId)?.connected || !applicant?.connected || applicant.roomCode !== room.code
       || !bot?.isBot || !bot.alive || bot.left || Date.now() >= v.expiresAt
@@ -71,7 +72,7 @@ export function reconcileAiTakeover(lobby, room) {
 export function aiTakeover(lobby, session, msg) {
   const room = lobby.roomOf(session), m = room?.match;
   if (room && reconcileAiTakeover(lobby, room)) lobby.broadcastState(room);
-  if (!room || room.aiTakeoverEnabled !== true || room.mode !== 'coop' || room.version !== DEFAULT_VERSION || !m || m.hosted || room.modded || m.phase !== 'PREP' || m.ended || m.disposed || m.emergencyFrozen) return fail('AI handover requires preparation in an original-content match');
+  if (!getAllowAiTakeover() || !room || room.aiTakeoverEnabled !== true || room.mode !== 'coop' || room.version !== DEFAULT_VERSION || !m || m.hosted || room.modded || m.phase !== 'PREP' || m.ended || m.disposed || m.emergencyFrozen) return fail('AI handover requires preparation in an original-content match');
   let votes = pending.get(room); if (!votes) pending.set(room, votes = new Map());
   const sync = () => { snapshot(room, votes); lobby.broadcastState(room); };
   if (msg.t === 'room.aiRequest') {

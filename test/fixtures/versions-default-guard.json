@@ -7,6 +7,8 @@
   },
   "roomState": {
     "t": "room.state",
+    "aiTakeoverAllowed": true,
+    "canSetAiTakeover": true,
     "code": "<code>",
     "hostId": "<player>",
     "mode": "coop",
@@ -15,6 +17,13 @@
     "maxSeats": 4,
     "aiPicksLast": true,
     "uniteLayerGains": false,
+    "convenience": {
+      "benchEquip": true,
+      "soloUnlimited": true,
+      "prepLoadout": true,
+      "unequip": false,
+      "morphPairing": false
+    },
     "canSetUniteLayerGains": false,
     "inMatch": false,
     "textChat": true,

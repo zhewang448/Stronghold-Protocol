@@ -11,11 +11,14 @@ public sealed class TextCatalog
     public TextCatalog(string? projectRoot)
     {
         var locale = LocaleCode(Environment.GetEnvironmentVariable("SP_LAUNCHER_LANG") ?? "zh-CN");
-        if (projectRoot is null || locale == "zh-CN") return;
-        var path = Path.Combine(projectRoot, "public", "i18n", $"{locale}.json");
+        if (locale == "zh-CN") return;
+        var path = projectRoot is null ? null : Path.Combine(projectRoot, "public", "i18n", $"{locale}.json");
         try
         {
-            using var json = JsonDocument.Parse(File.ReadAllText(path));
+            using var stream = path is not null && File.Exists(path) ? File.OpenRead(path)
+                : typeof(TextCatalog).Assembly.GetManifestResourceStream($"i18n.{locale}.json");
+            if (stream is null) return;
+            using var json = JsonDocument.Parse(stream);
             foreach (var entry in json.RootElement.EnumerateObject())
                 if (entry.Value.ValueKind == JsonValueKind.String)
                     _values[entry.Name] = entry.Value.GetString()!;

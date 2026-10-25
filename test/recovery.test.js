@@ -40,6 +40,27 @@ function fixture(t, mode = 'coop', options = {}) {
   return { dir, h, recovery, lobby, room, host, file: path.join(dir, 'recovery', `room-${room.code}.bin`) };
 }
 
+test('disk recovery preserves all room convenience choices and effective match rules', t => {
+  const f = fixture(t);
+  const choices = { benchEquip: false, soloUnlimited: false, prepLoadout: false, unequip: true, morphPairing: true };
+  f.room.convenience = choices;
+  f.recovery.save(f.room, f.h.m, f.h.m.prepSnapshots.get(1));
+  assert.deepEqual(deserialize(fs.readFileSync(f.file)).room.convenience, choices);
+  class RestoredMatch extends Match {
+    constructor(opts) { super({ ...opts, scheduler: new VirtualScheduler(), BattleClass: FakeBattle, botRehearsal: 0, clientCombat: false }); }
+  }
+  const registry = new SessionRegistry(), lobby = new Lobby({ registry, MatchClass: RestoredMatch, getData: () => DATA, log });
+  const recovery = createRecovery({ lobby, root: process.cwd(), dir: path.dirname(f.file), identity: 'test', log });
+  t.after(() => { recovery.prepareShutdown(); lobby.shutdown(); });
+  recovery.restore();
+  const restored = lobby.rooms.get(f.room.code);
+  assert.deepEqual(restored.convenience, choices);
+  assert.deepEqual(restored.match.convenience, choices);
+  assert.equal(restored.match.rules.prepLoadout, 'locked');
+  assert.equal(restored.match.rules.unequip, 'allow');
+  assert.equal(restored.match.rules.morphPairing, 'plus');
+});
+
 test('disk recovery preserves the room AI-last choice; old snapshots keep the historical default off', t => {
   const f = fixture(t);
   class RestoredMatch extends Match {

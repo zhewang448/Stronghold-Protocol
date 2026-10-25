@@ -94,11 +94,13 @@ test('tools/release-sign.mjs: keygen never overwrites, sign writes verifiable SH
   assert.throws(() => keygen(key), /already exists/);
   const name = 'Stronghold-Protocol-v0.2.5-extended.9-lite.zip';
   fs.writeFileSync(path.join(dir, name), 'zip bytes');
+  const launcher = 'StrongholdProtocolLauncher-v1.1.0-win-x64.zip';
+  fs.writeFileSync(path.join(dir, launcher), 'launcher bytes');
   fs.writeFileSync(path.join(dir, 'Stronghold-Protocol-v0.2.5-extended.8-lite.zip'), 'other release');
   await assert.rejects(sign('v0.2.5-extended.9', dir, { file: key }), /not in RELEASE_PUBLIC_KEYS/);
-  assert.deepEqual(await sign('v0.2.5-extended.9', dir, { file: key, keys: [pub] }), [name]);
-  assert.equal(fs.readFileSync(path.join(dir, 'SHA256SUMS.txt'), 'utf8'), `${sha('zip bytes')}  ${name}\n`);
-  assert.deepEqual(await verify('v0.2.5-extended.9', dir, { keys: [pub] }), [name]);
+  assert.deepEqual(await sign('v0.2.5-extended.9', dir, { file: key, keys: [pub] }), [name, launcher]);
+  assert.equal(fs.readFileSync(path.join(dir, 'SHA256SUMS.txt'), 'utf8'), sha('zip bytes') + '  ' + name + String.fromCharCode(10) + sha('launcher bytes') + '  ' + launcher + String.fromCharCode(10));
+  assert.deepEqual(await verify('v0.2.5-extended.9', dir, { keys: [pub] }), [name, launcher]);
   await assert.rejects(verify('v0.2.5-extended.10', dir, { keys: [pub] }), /signature/);
   fs.writeFileSync(path.join(dir, name), 'changed');
   await assert.rejects(verify('v0.2.5-extended.9', dir, { keys: [pub] }), /hash mismatch/);

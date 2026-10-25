@@ -1907,6 +1907,11 @@ button.ally-card:disabled { filter: grayscale(.7) brightness(.7); cursor: defaul
 .rs-opts { --room-options-x: -50%; position: absolute; left: 50%; bottom: calc(100% + .14rem); z-index: 10; transform: translateX(var(--room-options-x)); width: min(5.2rem, 92vw); display: flex; flex-direction: column; gap: .12rem;
   padding: .16rem .2rem; background: linear-gradient(180deg, #202323, #141616); border: 1px solid rgba(255, 255, 255, .16); box-shadow: 0 .1rem .4rem rgba(0, 0, 0, .7);
   animation: sw-in 140ms var(--ease-out) backwards; }
+.rs-foot--options { z-index: 5; }
+.rs-opts { width: min(max(5.2rem, 32px, calc(320px * var(--sp-ui, 1))), calc(100vw - 24px)); max-height: min(75svh, calc(100svh - 1rem)); overflow-y: auto; overscroll-behavior: contain; }
+.rs-convenience { display: flex; flex-direction: column; gap: .12rem; min-width: 0; margin: 0; padding: .12rem 0 0; border: 0; border-top: 1px solid var(--line); }
+.rs-convenience legend { padding: 0 .06rem 0 0; color: var(--text-hi); font-size: max(calc(.18 * var(--t)), 12px); font-weight: 700; }
+.rs-convenience > small { color: var(--text-lo); font-size: max(calc(.13 * var(--t)), 11px); }
 .rs-opts h4 { display: flex; align-items: baseline; justify-content: space-between; margin: 0; font-size:max(calc(.2 * var(--t)), 13px); }
 .rs-opts h4 small { font-size: .75em; font-weight: 500; color: #8d9391; }
 .rs-opt { display: flex; align-items: center; justify-content: space-between; gap: .14rem; font-size:max(calc(.18 * var(--t)), 12px); }

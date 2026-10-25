@@ -111,7 +111,8 @@ describe('official versions (real server, SP_VERSIONS=all)', { skip: !ENABLED &&
       await guest.page.waitForSelector('.room-screen .seat.is-me [data-testid="seat-content"]');
       await waitState(guest, (s) => s.version === 'act1autochess' && s.status === 'ready', 'the guest loads 第一期下半');
       await guest.page.waitForFunction(() => document.querySelector('.room-screen .seat.is-me [data-testid="seat-content"]')?.textContent.includes('版本数据就绪'), { timeout: 15000 });
-      assert.match(await guest.page.$eval('[data-testid="version-banner"]', (e) => e.textContent), /第一期下半.*第二期下半/, 'leaving restores the guest\'s lobby version');
+      assert.match(await guest.page.$eval('[data-testid="room-version"]', (e) => e.textContent), /第一期下半/, 'the room pill shows the joined version');
+      assert.equal(await guest.page.evaluate(() => globalThis.__SP__.store.get().lobbyVersion), 'act2autochess', 'joining preserves the lobby preference for leaving');
       await guest.page.waitForFunction(() => !document.querySelector('.rs-go')?.disabled, { timeout: 10000 });
       await guest.shot('guest-room');
 
@@ -353,8 +354,7 @@ describe('official versions (real server, SP_VERSIONS=all)', { skip: !ENABLED &&
       await pickVersion(host, 'act2autochess');
       await guest.page.waitForSelector('[data-testid="version-vote"]', { visible: true, timeout: 10000 });
       for (const c of [host, guest]) assert.equal(await noHScroll(c), true, `${c.label}: the strip wraps`);
-      // a short screen gives the banner's line to the seats (the pill's tooltip says it)
-      assert.equal(await guest.page.$eval('[data-testid="version-banner"]', (e) => getComputedStyle(e).display), 'none');
+      assert.match(await guest.page.$eval('[data-testid="room-version"]', (e) => e.textContent), /第一期上半/, 'the active version remains visible while voting on a short screen');
       await guest.shot('vote-guest');
       await host.shot('vote-host');
       assert.deepEqual(problemsOf([host, guest]), []);

@@ -516,6 +516,7 @@ export const C2S = {
   // test: only the literal true (DESIGN §34.8). Omit it for a normal room — `false` is a bad field, so a
   // string cannot sneak in as "not a test". The server still refuses it unless SP_TEST_MODE is on.
   'room.setSoloUnlimited': { on: isBool },
+  'room.setConvenience': { key: v => ['benchEquip', 'soloUnlimited', 'prepLoadout', 'unequip', 'morphPairing'].includes(v), on: isBool },
   'room.proposeVersion': { version: isVersionId },
   'room.versionVote': { voteId: (v) => isInt(v, 1, 2 ** 31), agree: isBool },
   'room.cancelVersionVote': { voteId: (v) => isInt(v, 1, 2 ** 31) },

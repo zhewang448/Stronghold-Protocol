@@ -46,7 +46,7 @@ view.setCamera(kind /* 'prep'|'normal'|'unite'|'boss' */, { rect, side, shop, ms
                                              //   folded shop's prep camera (official shop-collapsed framing, §21.27);
                                              //   ms overrides the flight duration — the shop fold / unfold zoom takes
                                              //   the short FOLD_CAMERA_MS (render/app/tune.js, GitHub #602).
-                                             //   设置「部署时收起商店」 (prepDeployFold, default on) is that zoom;
+                                             //   设置「部署时镜头缩放」 (deploymentZoom, default off) controls that zoom;
                                              //   off, a pickup changes neither the shop fold nor the camera (§34.3).
                                              //   Opening 敌方情报 during a held drag leaves that one-shot restore owed
                                              //   until the pen closes [ASSUMED] (§34.3).
@@ -456,8 +456,9 @@ sliding, so a block — which freezes velocity — still turns it with the front
 ### Local preferences and recovery (§28.14, §28.18–20)
 
 Settings persist `textSize` (sm/md/lg/xl; default sm), `voiceLang` (cn/jp/en/kr; default cn), `voiceNative` (the
-本土语言 switch; default false), `voiceOverrides` (charId → cn/jp/en/kr/native; default empty), `prepDeployFold`
-(部署时收起商店; default true — only an explicit false turns the 0.3.0 deploy fold off) and `ammoEnergyCount`
+本土语言 switch; default false), `voiceOverrides` (charId → cn/jp/en/kr/native; default empty), `deploymentZoom`
+(部署时镜头缩放; default false; an explicit saved boolean wins, otherwise the old `prepDeployFold === true` migrates
+to on; `prepDeployFold` remains a synchronized compatibility alias) and `ammoEnergyCount`
 (显示弹药与能量数量; default false). A saved `ammoCount` or `mysticEnergy` of `true` migrates into `ammoEnergyCount`
 on read and is not written back. CSS text uses `--t`;
 the layout rem, camera and board geometry stay unchanged. Larger text and translated controls wrap within the settings
@@ -755,9 +756,9 @@ version shown.
 status line; `modded` stays the 非官方 mark. A version room's words: 版本数据载入中 / 就绪 / 校验失败, 「等待所有博士载入
 「{version}」的数据」, the two GoButton tooltips, the invite 「…盟约·{version}【…】」. `ui/pluginTag.js VersionTag` (nothing for
 第二期下半) sits beside the mode in the top bar and beside UnofficialMark in the briefing, the settlement and the result
-[ASSUMED placement]. A timed solo (第一期) shows ⚙ 模拟设置 with the 「不限时」 switch (the host toggles `room.setSoloUnlimited`; everybody else reads
-it). The solo briefing states the 300 s / 150 s rule, or the untimed line when the switch is on or the version's solo is
-not timed; while that version's data is not on screen the briefing omits the time line and the gear stays hidden. The
+[ASSUMED placement]. The extension's ⚙ 同盟设置 contains 便利设置 → 独立模拟不限时, on by default. The host changes it before start via
+`room.setConvenience`; co-op leaves it disabled, and the legacy `room.setSoloUnlimited` message remains compatible. In a timed first-period
+solo, turning it off restores 300 s prep / 150 s choice timers; the briefing follows that effective switch through `soloTimeMsgid`. The
 version pill beside the difficulty and ⚙'s 版本 row open the picker in room mode. The compact pill may abbreviate its
 visible name with an ellipsis (the existing `versions-fit` policy, now covered on default servers too, §35.23.12);
 its accessible name and the picker's version names stay complete, and its control stays inside the footer and reachable.
@@ -967,10 +968,10 @@ latest draft and disable save while pending. Trial bodies match the 160 MiB auth
 are embedded for the replay lifetime (8 MiB compressed image total inside the 16 MiB result cap [ASSUMED]).
 No new route or gameplay rule is introduced.
 
-### Combat metrics (作战统计) — ported from the xinhai-ai fork, opt-in
+### Combat metrics (作战统计) — ported from the xinhai-ai fork
 
-设置 →「作战统计」 (`combatMetrics`, PR #618 by @robll-v1) defaults off, the same kind of decision as 显示弹药与能量数量: the
-official HUD has no such panel. Off, the corner button is not rendered and `trackCombat` is not called (no `damaged`
+设置 →「作战统计」 (`combatMetrics`, PR #618 by @robll-v1) defaults on in this extension; an explicitly saved false stays off.
+The official HUD has no such panel. Off, the corner button is not rendered and `trackCombat` is not called (no `damaged`
 hook, `battle.heal` is not wrapped). On, the corner's 作战统计 button (`gm__metrics`, `ui/combatMetrics.js`) opens a
 modeless panel over the running battle: the fight keeps playing behind it, ✕ / Esc closes it, and the next frame's
 prep keeps it usable.
@@ -1060,3 +1061,73 @@ is presentation inferred from the available animation roles; simulation facing a
 ### Independent upstream and extension release notices (§36.5)
 
 Settings `upstreamReleaseNotes` and `extensionReleaseNotes` both default to true, with stored false preserved. The game loads upstream notes keyed by APP_VERSION from the installed CHANGELOG.md and extension notes keyed by RELEASE_TAG from LOCAL-CHANGELOG.md. Each has its own acknowledged version. First visits establish baselines; legacy extension tags seed the upstream baseline. An enabled changed source opens one dialog; available enabled sources appear side by side on desktop, stacked below 700 px. Close/Esc acknowledges displayed sources only. Disabled sources retain their previous baseline. No external update check or installation occurs.
+
+
+### Room convenience controls (2026-10-25)
+
+The bottom gear contains five convenience checkboxes. Defaults are on/on/on/off/off in bench equipment, untimed solo, prep loadout, unequip and morph enhancement order. Untimed solo is read-only in co-op; its stored preference applies on applicable solo versions. Non-hosts, offline clients and started rooms cannot edit. A plugin-controlled choice shows its effective value read-only. The options panel scrolls within short screens; checkbox dimensions do not shrink with long descriptions. The duplicate footer untimed checkbox is removed.
+
+
+### Extension appearance settings (2026-10-26)
+
+设置 → 外观 is the shared heading for installed skins and personal cosmetic plugins. Both settings branches show 外观 / APPEARANCE; plugin classification and permissions stay unchanged. The installed catalogue currently has 146 operators / 224 outfits, all with a front-model record. Picture-only plugin support does not imply a shipped picture-only outfit.
+
+### Settings groups and automatic release notices (2026-10-26)
+
+Player settings are grouped into 常规与声音, 交流与更新, 战斗显示, 画面与性能, 界面与操作, 外观, and 资源与诊断. Groups remain expanded, with the same persisted preference keys and controls. The settings modal carries its existing settings-modal scope so responsive and touch rules apply. Enlarged touch targets for segmented choices, toggles and screen-fit steps stay within their visible boxes; a later row cannot cover an adjacent control.
+
+Automatic release notices display only changed, enabled sources. One changed source shows one column, both show two; closing acknowledges only those rendered sources. Disabled sources retain unread changes. First-install baselines and legacy upstream-version migration remain unchanged. Manual 更新内容 history still lists all local records independently of automatic preferences and read marks. Companion cosmetic hints point to 设置 → 外观 in all language packs.
+
+### Manual release history (2026-10-26)
+
+The title, lobby and shared settings expose a permanent release-notes button. The installed /release-history.json contains separate upstream and extension histories in document order, including unversioned extension development records. Source buttons switch lists; native details expand each release, newest open initially. The dialog scrolls on small screens, supports Escape/close, loading, empty and retry states. Manual browsing neither reads nor changes automatic-notice preferences or acknowledgement keys. History prose remains Chinese; UI labels use every shipped language pack.
+
+
+## 默认勾选与重启恢复入口修正（2026-10-26）
+
+本段覆盖先前主机 AI 权限“默认关闭”的历史描述：主机控制台“允许房主开启观战接替 AI”现在默认勾选；保存的 false 保留，无保存值时 SP_AI_TAKEOVER=0/false/no/off 可显式关闭。该设置只授予权限，房间本身仍需房主手动开启接替。
+
+重启恢复管理器本来默认启用，但进程入口丢弃 runMain 传入的 recovery:true，造成普通启动没有管理器，控制台被 disabled。修复为完整转发启动 options；正常脚本/直接 Node 启动后默认勾选且可保存开关。显式程序化 recovery:false 和更新安装探针隔离保持不加载旧局。已保存恢复关闭不被覆盖。运行中的旧进程不会被源码热补丁改变；本轮不强制重启活动服务。
+
+验证与四角色补充位于 E:/Stronghold-Protocol-v0.3.3/.cache/default-recovery-20261026。完整 CI/golden 未作为本轮前置，按专项真实结果记录，不引用旧通过替代。
+
+### 更新内容弹窗手机适配（2026-10-26）
+
+沿用公告栏的界面文字比例、窗口宽度与安全区边距，更新内容弹窗改为自适应动态视口；窄屏/矮横屏自动单栏，上游与扩展切换按钮可换行，标题和关闭栏固定、正文独立触屏纵向滚动。大字号和界面缩放下不挤出关闭按钮；手动历史、自动更新提醒与主机更新确认共享基础样式，控制台无游戏主题时保留独立字号回退。真实触屏用例覆盖 844×390、640×360、大字/75%布局、390×844 和模拟安全区，测试实际滑动、来源切换和关闭。
+
+### Console player access label (2026-10-26)
+
+The local console room overview, waiting-room names and active player rows show a small secondary line below each human name: 接入：host while connected, 上次接入：host while offline, 未知 for unavailable metadata. AI names have no line. Long hosts wrap within the name cell. There is no extra column, detail section, link, domain summary or player-facing display.
+
+## 导入、扫描与删除实例（2026-10-26）
+
+- 导入已有实例：点击窗口右上角「导入已有实例」，选择同时包含 package.json、server/index.js、scripts/launch.mjs 和 scripts/host-launcher.mjs 的项目根目录。不要选 ZIP、server 子目录或只有 EXE 的目录。导入只登记原路径，不复制、不升级、不启动服务；已登记目录不重复添加，已有在线实例优先沿用经鉴权核验的端口，否则分配空闲端口。
+- 「扫描本机实例」后台检查本机固定磁盘，以及当前已登记目录和默认安装位置，按本库包名与上述文件组合识别。结果展示完整路径，支持多选后「导入所选实例」。可随时取消。扫描跳过系统目录、node_modules、.git、.cache、bin/obj、无权限目录及目录链接；最多 100000 个目录、32 层。故不能保证发现全设备所有副本，未发现的目录用手动导入。
+- 「移出列表」仅取消登记，保留文件与后台服务。「删除实例」将整个目录（含存档、配置、日志、素材）放入 Windows 回收站，并从列表移除。明确确认后才执行；运行中、无法核验的运行记录、包含其他已登记实例、含目录链接或当前启动器所在目录均拒绝删除。先正常停服，先备份需要的数据。可在回收站恢复目录后重新导入。
+- 扫描与删除不会强杀进程、不会自动导入扫描结果，也不会启动服务。实例列表仍保存到原 instances.json。新增详细提示在部分非中文语言包中暂用英文，主要操作按钮已本地化。
+
+## 索引发现替代全盘扫描（2026-10-26）
+
+此节取代上一节的“扫描本机固定磁盘”。现在主入口为「刷新实例索引」：安装/导入实例保存偏好时，以及使用新版服务启动时，主动写入当前用户 LOCALAPPDATA/StrongholdProtocol/discovered-instances。每个绝对目录对应一个 SHA256 命名的 JSON，独立文件原子替换，不把所有进程写到同一个列表，不包含管理 token、密码或控制台地址。关闭服务保留目录索引；实例删除后移除索引，外部删除/移动产生的旧路径在读取时过滤。
+
+启动器打开时读取该目录及已登记实例，不枚举安装目录；目录观察器在新索引到达时刷新候选。候选仍需用户选择导入，索引不是在线状态证明，服务控制仍走原凭据鉴权。
+
+旧版本、从未运行/导入过的任意离线副本不会凭空登记；首次选项目根目录导入即可。文件搜索功能已按维护者要求移除；旧目录请直接导入。索引跨进程协议由 Node 服务和 C# 启动器共用，新功能在本候选 EXE/服务代码中生效；旧服务需下次正常更新启动后自登记，不为此重启已有实例。
+
+### 运行实例通过端口发现（2026-10-26）
+
+「发现本机实例」现在同时使用监听端口和目录索引。Windows 启动时及手动刷新读取本机 TCP 监听表，按进程 PID 关联 Node 命令行，仅对绝对 server/index.js 入口且包名和必要文件校验通过的目录发送回环 GET /healthz；验证协议、应用版本及内容指纹，已存在的服务租约还核对 PID/port。不遍历整盘，也不从 1 到 65535 探测端口。不依赖旧服务安装新版索引代码，现有 v0.3.1/v0.3.3 已可识别。
+
+结果包含真实游戏端口和版本；管理控制仍由原有实例凭据验证，端口发现和健康接口不授予停服/删除权限，不启动或重启服务。查询有 12 秒总时限，每次 HTTP 响应最多 64 KiB，不跟随重定向，不经 HTTP 代理。系统查询不可用时显示说明并保留索引/手动导入。使用相对入口、其他用户进程信息不可见、容器/WSL 内服务等不能保证识别，仍可手动导入。
+
+停服实例没有监听端口，由索引补齐；从未登记且已停服的旧目录仍需首次导入。不提供文件搜索入口。端口识别不改实例登记或用户配置，选择候选后才导入。
+
+### 移除文件扫描入口（2026-10-26）
+
+按维护者要求，移除「搜索指定文件夹」、扫描取消按钮的扫描行为、递归 Scan 实现和测试工具的 --scan-roots 路由；默认安装目录子文件夹枚举也移除。当前仅通过系统监听端口/进程身份及已有实例索引发现候选；保留「导入已有实例」直接选定根目录。收起按钮只关闭候选列表。已停止、从未登记的旧目录需要手动导入一次。
+
+### 命名约定（2026-10-26）
+
+- 程序文件统一为 StrongholdProtocolLauncher.exe；不再使用 Indexed、Ports、final 等功能或阶段后缀。启动器版本独立于游戏版本，当前沿用 csproj 的 1.0.0，不冒充新的游戏发布。
+- 发布目录与 ZIP 使用 StrongholdProtocolLauncher-v1.0.0-win-x64（版本取 csproj），内部 EXE 保持固定名。build.ps1 自动生成带版本的平台目录和 ZIP，目录内有 README。
+- 新实例目录默认按 server-01、server-02 顺序分配；实例显示名为 Stronghold Protocol · v<游戏/扩展版本>，端口由列表另行显示。不把 MODIFIED_FILE 等事务目录名展示为实例名称；精确匹配旧自动名称时在载入时迁移，仅更新显示名，保留 ID、Root、Port、Mode 和选中状态。用户自定义名称保持原样。不会重命名已有安装目录或重启服务。
