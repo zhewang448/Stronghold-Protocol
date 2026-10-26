@@ -626,7 +626,7 @@ export class Network {
     ws.on('message', (data, isBinary) => {
       try { this.onFrame(conn, data, isBinary); } catch (e) { this.log.error('[net] frame handler crashed', e); }
     });
-    ws.on('pong', () => { conn.alive = true; if (conn.session && conn.session.ws === ws) conn.session.lastSeen = this.now(); });
+    ws.on('pong', () => { conn.alive = true; this.monitor?.pong(ws); if (conn.session && conn.session.ws === ws) conn.session.lastSeen = this.now(); });
     ws.on('error', (e) => { this.log.debug?.('[net] socket error', e?.code || e?.message); });
     ws.on('close', () => { try { this.onClose(conn); } catch (e) { this.log.error('[net] close handler crashed', e); } });
   }
@@ -869,6 +869,7 @@ export class Network {
       }
       if (!conn.alive) { conn.ws.terminate(); return; }
       conn.alive = false;
+      this.monitor?.ping(conn.ws);
       conn.ws.ping();
     } catch (e) {
       this.log.debug?.('[net] heartbeat error', e?.message);

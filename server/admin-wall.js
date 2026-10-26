@@ -8,14 +8,18 @@ export function wallView(lobby, code) {
   const room = lobby.rooms.get(code);
   if (!room) return { error: '房间已关闭', seats: Array(4).fill(null) };
   const m = room.match;
-  if (m?.hosted) return m.admin('wall');
+  if (m?.hosted) return m.admin('wall').then(view => !Array.isArray(view.seats) ? view : ({ ...view, seats: view.seats.map(seat => {
+    if (!seat) return null;
+    const current = room.seats.find(p => p?.playerId === seat.playerId);
+    return { ...seat, connected: !!(current && !current.left && (current.isBot || current.connected)), left: !!(seat.left || current?.left) };
+  }) }));
   if (m && !matches.has(m)) matches.set(m, ++nextMatch);
   return { room: code, matchId: m && !m.ended && !m.disposed ? matches.get(m) : null,
     phase: m ? PHASE_NAMES[m.phase] || m.phase : '对局未开始或已结束', round: m?.round ?? null,
     seats: Array.from({ length: room.seats.length }, (_, i) => {
       const seat = room.seats[i]; if (!seat) return null;
       const ps = m?.players.get(seat.playerId);
-      return { seat: i, playerId: seat.playerId, name: seat.name, connected: seat.connected, isBot: seat.isBot,
+      return { seat: i, playerId: seat.playerId, name: seat.name, connected: !!(seat.connected && !seat.left && !ps?.left), isBot: seat.isBot,
         alive: ps?.alive, left: ps?.left ?? seat.left, autoplay: ps?.autoplay, ready: ps?.ready ?? seat.ready,
         lp: ps?.lp ?? null, funds: ps?.funds ?? null, level: ps?.shop.level ?? null,
         board: ps ? boardOrder(ps.board).filter(({ r, c }) => r >= GEO.FIELD.r0 && r <= GEO.FIELD.r1 && c >= GEO.FIELD.c0 && c <= GEO.FIELD.c1)

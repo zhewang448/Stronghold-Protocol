@@ -45,7 +45,11 @@ test('console replay: normal playback, boss/hidden attempts across versions, con
     const href = await page.$eval('.replay-link', (el) => el.getAttribute('href'));
     await page.goto(`${admin.url}${href}`, { waitUntil: 'networkidle0' });
     await page.waitForSelector('[data-field]');
-    await page.select('#speed', '8'); await page.click('#play');
+    const controlsField = replay.rounds.flatMap(r => r.fields).findIndex(f => f.playable && f.kind === 'normal'
+      && f.result.time >= 10 && f.lineup.some(p => p.units.length));
+    assert.ok(controlsField >= 0, 'pause controls require a recorded battle that does not end immediately');
+    await page.click('[data-field="' + controlsField + '"]');
+    await page.select('#speed', '1'); await page.click('#play');
     await waitPlaying();
     await page.click('#pause');
     assert.equal(await page.$eval('#pause', (el) => el.textContent), '继续播放');

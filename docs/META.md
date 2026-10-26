@@ -1225,3 +1225,11 @@ shared/roomConvenience.js normalizes five room booleans. Lobby snapshots them in
 `Lobby.matchmaking` 由 `server/matchmaking.js` 管理临时散人与主动招募房队列。使用原 `create` / `join`，
 不复制房间或 Match 状态机。凑人后留在等待室，原 ready/start 决定开局；不自动启动或填 AI。
 `Room.matching` 是临时展示状态，不进入重启恢复。生命周期、兼容边界和完整协议见 [真人匹配](MATCHMAKING.md)。
+
+
+## 控制台版本与目录（2026-10-27）
+
+主机控制台共用活动 matchId/version/cs，换局/版本/插件内容使目录失效；发放按当前对局和目录校验。
+实时观察保留房间便利规则及插件覆盖优先级，补齐四项既有普通动作，保留阶段与席位限制。
+历史回放传递原版本的数据标记与 bounds；默认约定仅用于无版本旧记录。
+实现及实际测试边界见 [控制台修复记录](CONSOLE-NEXT-RELEASE-FIXES.md)。

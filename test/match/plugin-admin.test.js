@@ -39,6 +39,14 @@ for (const transport of ['process', 'worker']) test(`local console preserves gam
   assert.ok(room.adminLog.some(e => e.action === 'funds' && e.ok));
   assert.ok((await catalogView(lobby, 'TEST')).chess.length > 0);
   assert.equal((await wallView(lobby, 'TEST')).seats[0].funds, funds + 23);
+  seats[0].connected = false;
+  m.onDisconnect('p_0');
+  assert.equal((await wallView(lobby, 'TEST')).seats[0].connected, false);
+  assert.equal((await m.admin('wall')).seats[0].connected, false, 'child refreshes its own cached room seats');
+  seats[0].connected = true;
+  m.onReconnect('p_0');
+  assert.equal((await wallView(lobby, 'TEST')).seats[0].connected, true);
+  assert.equal((await m.admin('wall')).seats[0].connected, true);
   const live = await liveState(lobby, { room: 'TEST', playerId: 'p_0' });
   assert.equal(live.ok, true);
   assert.equal(live.room, 'TEST');

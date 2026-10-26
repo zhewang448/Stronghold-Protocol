@@ -11,10 +11,10 @@ function roomFor(match) {
   let room = rooms.get(match);
   if (!room) {
     room = { code: match.roomCode, mode: match.mode, difficulty: match.difficulty, match,
-      seats: match.order.map(p => ({ seat: p.seat, playerId: p.playerId, name: p.name, isBot: p.isBot, connected: p.connected })),
       adminLog: [] };
     rooms.set(match, room);
   }
+  room.seats = match.order.map(p => ({ seat: p.seat, playerId: p.playerId, name: p.name, isBot: p.isBot, connected: p.connected && !p.left, left: p.left }));
   return room;
 }
 export function syncExtensionSettings(config) {

@@ -290,6 +290,8 @@
 <script type="module">
 import { drawRoundChart, drawUnitRounds } from '/js/ui/roundChart.js';
 import { playerSeries } from '/js/ui/playerSeries.js';
+import { DEFAULT_VERSION, VERSIONS, versionById } from '/shared/versions.js';
+const gameVersion = (id) => versionById(id || DEFAULT_VERSION)?.label || id;
 import { DEV_PAGES, DEV_SCENES, devSceneUrl } from '/shared/devtools.js';
 import { initAnnouncementEditor } from '/js/ui/announcementEditor.js';
 const chartBonds = await fetch('/data/bonds.json').then((r) => r.ok ? r.json() : {}).catch(() => ({}));
@@ -450,7 +452,9 @@ async function waitService(action) {
   status.textContent = action === 'restart' ? '重启后未恢复连接，请检查 logs/service-restart.log 或服务管理器，然后刷新页面。' : '服务仍可连接，关闭未完成，请检查服务日志。';
 }
 
-let catalogRoom = null;
+let catalogKey = null, catalogReady = null, catalogRequest = 0;
+const catalogIdentity = (m) => m ? JSON.stringify([m.matchId, m.version || DEFAULT_VERSION, m.cs || null]) : null;
+const roomCatalogKey = (room) => { const m = latestRooms.find(r => r.code === room)?.match; return m ? JSON.stringify([room, catalogIdentity(m)]) : null; };
 let catalogPending = null;
 const names = { chess: new Map(), diy: new Map(), item: new Map(), equip: new Map(), card: new Map() };
 const idNames = new Map(); // operator / item / card id → its catalog label (the action log)
@@ -466,7 +470,7 @@ function playerAccessLabel(p) {
 function roomOverview(rooms) {
   return `<section class="room"><h2>房间概览 · ${rooms.length}</h2><p class="meta">选择房间查看操作或数据。</p><div class="xscroll"><table class="room-summary"><thead><tr><th>房间</th><th>模式 / 难度</th><th>阶段 / 回合</th><th>剩余时间</th><th>玩家 · LP · 在线状态</th></tr></thead><tbody>${rooms.map(r => {
     const m = r.match;
-    return `<tr class="${selectedRoom === r.code ? 'is-selected' : ''}"><td><button data-open-room="${esc(r.code)}" aria-expanded="${selectedRoom === r.code}">${disclosureArrow}${esc(r.code)}</button></td><td>${r.mode === 'solo' ? '独立模拟' : '同盟'} · ${esc(r.difficulty)}</td><td>${m ? `${esc(m.phaseName)} · 第 ${m.round} 回合` : '等待开局'}</td><td>${m ? m.left != null ? `${m.left} 秒` : m.paused ? '已暂停' : '不限时' : '—'}</td><td>${(m?.players || r.seats).map(p => `<span class="player-label">${esc(p.name)}${p.bot ? ' (AI)' : ''} · ${p.lp != null ? `LP ${p.lp} · ` : ''}${p.connected || p.bot ? '在线' : '离线'}${playerAccessLabel(p)}</span>`).join('')}</td></tr>`;
+    return `<tr class="${selectedRoom === r.code ? 'is-selected' : ''}"><td><button data-open-room="${esc(r.code)}" aria-expanded="${selectedRoom === r.code}">${disclosureArrow}${esc(r.code)}</button></td><td>${r.mode === 'solo' ? '独立模拟' : '同盟'} · ${esc(r.difficulty)} · ${esc(gameVersion(m?.version || r.version))}</td><td>${m ? `${esc(m.phaseName)} · 第 ${m.round} 回合` : '等待开局'}</td><td>${m ? m.left != null ? `${m.left} 秒` : m.paused ? '已暂停' : '不限时' : '—'}</td><td>${(m?.players || r.seats).map(p => `<span class="player-label">${esc(p.name)}${p.bot ? ' (AI)' : ''} · ${p.lp != null ? `LP ${p.lp} · ` : ''}${p.connected || p.bot ? '在线' : '离线'}${playerAccessLabel(p)}</span>`).join('')}</td></tr>`;
   }).join('')}</tbody></table></div></section>`;
 }
 function renderRooms() {
@@ -534,7 +538,13 @@ document.addEventListener('keydown', (e) => {
 });
 
 async function act(room, action, playerId, value, label) {
-  const send = (v) => api('/api/action', { room, action, playerId, value: v }).catch(() => ({ error: '连接服务器失败' }));
+  const grant = ['chess', 'diy', 'item', 'card', 'pieceEquip'].includes(action);
+  const identity = grant ? catalogIdentity(latestRooms.find(r => r.code === room)?.match) : null;
+  if (grant) {
+    try { await loadCatalog(room); } catch { say('发放目录已变化或加载失败，请重试', true); return; }
+    if (catalogReady !== roomCatalogKey(room) || identity !== catalogIdentity(latestRooms.find(r => r.code === room)?.match)) { say('发放目录已变化，请重试', true); return; }
+  }
+  const send = (v) => api('/api/action', { room, action, playerId, value: v, ...(identity ? { catalogIdentity: identity } : {}) }).catch(() => ({ error: '连接服务器失败' }));
   let r = await send(value);
   if ((action === 'item' || action === 'pieceEquip') && r.code === 'ITEM_STOCK_CONFIRM') {
     if (!await confirmStock(r.error)) { say('已取消发放装备'); return; }
@@ -559,11 +569,21 @@ function confirmStock(message) {
 }
 
 function loadCatalog(room) {
-  if (catalogRoom === room) return catalogPending;
-  catalogRoom = room;
+  const key = roomCatalogKey(room);
+  if (!key) return Promise.reject(new Error('没有活动对局'));
+  if (catalogKey === key) return catalogPending;
+  const request = ++catalogRequest;
+  const changed = catalogKey != null;
+  catalogKey = key; catalogReady = null;
+  for (const map of Object.values(names)) map.clear();
+  idNames.clear(); diyEntries.clear(); diyDraft.clear();
+  for (const list of ['#chess-list', '#item-list', '#equip-list', '#card-list']) $(list).replaceChildren();
+  if (changed) for (const input of document.querySelectorAll('[data-grant], [data-equip]')) input.value = '';
   catalogPending = api(`/api/catalog?room=${encodeURIComponent(room)}`).then((c) => {
     if (c.error) throw new Error(c.error);
-    if (catalogRoom !== room) return;
+    if (request !== catalogRequest || catalogKey !== key || roomCatalogKey(room) !== key) throw new Error('发放目录请求已过期');
+    if (JSON.stringify([room, catalogIdentity(c)]) !== key) throw new Error('目录对应的对局已变化');
+    catalogReady = key;
     const fill = (list, kind, sel) => {
       names[kind].clear();
       $(sel).innerHTML = list.map((x) => {
@@ -593,7 +613,7 @@ function loadCatalog(room) {
       idNames.set(x.id, label);
       return `<option value="${esc(label)}"></option>`;
     }).join('');
-  }).catch((e) => { if (catalogRoom === room) catalogRoom = null; throw e; });
+  }).catch((e) => { if (request === catalogRequest) { catalogKey = catalogReady = null; } throw e; });
   return catalogPending;
 }
 
@@ -779,7 +799,7 @@ function roomCard(r) {
     <div class="row">
       <h2 id="room-${r.code}">房间 ${r.code}</h2>
       <a class="live-link" href="/wall?room=${encodeURIComponent(r.code)}" target="_blank" rel="noopener">监控墙</a>
-      <span class="meta">${r.mode === 'solo' ? '独立模拟' : '同盟'} · ${esc(r.difficulty)}</span>
+      <span class="meta">${r.mode === 'solo' ? '独立模拟' : '同盟'} · ${esc(r.difficulty)} · 游戏版本 ${esc(gameVersion(m?.version || r.version))}</span>
       <button class="danger" style="margin-left:auto" data-click="closeRoom" data-room="${r.code}" data-label="关闭房间" data-confirm="关闭房间 ${r.code}？里面的玩家会被送回大厅。">关闭房间</button>
     </div>
     ${body}
@@ -951,9 +971,9 @@ function statsPanel(r) {
         <div><h3>每回合曲线</h3><div data-part="chart"></div></div>
         <div><h3>每回合详情</h3><div data-part="rounds"></div></div>
       <details><summary>漏怪分析</summary><div data-part="leaks"></div></details>
-        <div><h3>每回合干员伤害排行</h3><div data-part="unitRounds"></div><p class="meta">伤害是实际扣掉的敌人血量（不算溢出），只算各自战场；召唤物不单列。</p></div>
+        <div><h3>每回合干员伤害排行</h3><div data-part="unitRounds"></div><p class="meta">伤害是实际扣掉的敌人血量（不算溢出），包含普通战斗与多轮联防；召唤物不单列，旧记录缺失的干员字段不补算。</p></div>
         <div><h3>累计数据</h3><div data-part="totals"></div><p class="meta">花费 = 实际花掉的金币；获得金币含利息、悬赏和控制台加的。</p></div>
-        <div><h3>本局干员伤害排行（累计前 5）</h3><div data-part="units"></div><p class="meta">只算各自战场里的伤害；联防里的伤害计入累计数据，但不分干员。</p></div>
+        <div><h3>本局干员伤害排行（累计前 5）</h3><div data-part="units"></div><p class="meta">累计普通战斗与多轮联防的已记录干员伤害；旧记录缺失的干员字段不补算。</p></div>
       </div></details>
       <details class="stats" data-plan><summary>敌人日程（剧透：游戏里对玩家隐藏）</summary><div class="stats-body" data-part="plan"></div></details>
       <details class="stats"><summary>控制台操作日志</summary><div class="stats-body" data-part="log"></div></details>`;
@@ -978,7 +998,7 @@ function statsPanel(r) {
       p.el.querySelector('details[data-match] > summary').textContent = ended ? '上一局统计' : '本局统计';
       host.hidden = !ended;
       host.innerHTML = ended ? `<span class="${r.lastMatch.victory ? 'good' : 'bad'}">${outcomeText(r.lastMatch)}</span>
-        <span class="meta">${clock(r.lastMatch.savedAt)} 结束 · 通过 ${r.lastMatch.roundsPassed ?? 0} 回合 · 下一局开始前一直显示</span>
+        <span class="meta">游戏版本 ${esc(gameVersion(r.lastMatch.version))} · ${clock(r.lastMatch.savedAt)} 结束 · 通过 ${r.lastMatch.roundsPassed ?? 0} 回合 · 下一局开始前一直显示</span>
         ${r.lastMatch.id ? `<button data-open-record="${esc(r.lastMatch.id)}">查看完整记录</button>` : '<span class="bad">记录没能保存（见服务器日志）</span>'}` : '';
     });
     // the round picker starts over at the latest round when the match shown changes (live ↔ ended)
@@ -1002,14 +1022,14 @@ let summaryRequest = 0, lastSummaryJson = '';
 async function showSummary() {
   const request = ++summaryRequest;
   const params = new URLSearchParams();
-  for (const k of ['mode','difficulty']) { const v = $(`#summary-${k}`).value; if(v) params.set(k,v); }
+  for (const k of ['mode','difficulty','version']) { const v = $(`#summary-${k}`).value; if(v) params.set(k,v); }
   for (const k of ['from','to']) { const v = $(`#summary-${k}`).value; if(v) params.set(k,String(new Date(v + (k === 'to' ? 'T23:59:59.999' : 'T00:00:00')).getTime())); }
   const d = await api('/api/results-summary?' + params);
   if (request !== summaryRequest) return;
   const json = JSON.stringify(d);
   if (json === lastSummaryJson) return;
   const rank = (list, text) => `<ol>${list.slice(0,10).map((r)=>`<li>${esc(r.name)} · ${text(r)}</li>`).join('')}</ol>`;
-  $('#summary-data').innerHTML = `<p>${d.games} 局 · ${d.wins} 胜 · 胜率 ${(100*d.winRate).toFixed(1)}% · 跳过 ${d.skipped} 份损坏或字段缺失记录</p><div class="xscroll"><table><thead><tr><th>模式 / 难度</th><th>局数</th><th>胜率</th><th>平均到达回合</th></tr></thead><tbody>${d.groups.map((g)=>`<tr><td>${esc(g.mode)} / ${esc(g.difficulty)}</td><td>${g.games}</td><td>${(100*g.winRate).toFixed(1)}%</td><td>${g.averageRound.toFixed(1)}</td></tr>`).join('')}</tbody></table></div><div class="units"><div><h3>常用干员（按局去重）</h3>${rank(d.operators,r=>r.games+' 局')}</div><div><h3>常用盟约</h3>${rank(d.bonds,r=>r.games+' 局')}</div><div><h3>伤害累计</h3>${rank([...d.operators].sort((a,b)=>b.damage-a.damage),r=>fmt(r.damage))}</div><div><h3>单局最高伤害</h3>${rank([...d.operators].sort((a,b)=>b.maxDamage-a.maxDamage),r=>fmt(r.maxDamage))}</div></div><p class="meta">旧记录仅统计已保存的阵容、激活盟约与伤害；早期未保存的回合使用情况不会补算。</p>`;
+  $('#summary-data').innerHTML = `<p>${d.games} 局 · ${d.wins} 胜 · 胜率 ${(100*d.winRate).toFixed(1)}% · 跳过 ${d.skipped} 份损坏或字段缺失记录</p><div class="xscroll"><table><thead><tr><th>游戏版本</th><th>模式 / 难度</th><th>局数</th><th>胜率</th><th>平均到达回合</th></tr></thead><tbody>${d.groups.map((g)=>`<tr><td>${esc(gameVersion(g.version))}</td><td>${esc(g.mode)} / ${esc(g.difficulty)}</td><td>${g.games}</td><td>${(100*g.winRate).toFixed(1)}%</td><td>${g.averageRound.toFixed(1)}</td></tr>`).join('')}</tbody></table></div><div class="units"><div><h3>常用干员（按局去重）</h3>${rank(d.operators,r=>r.games+' 局')}</div><div><h3>常用盟约</h3>${rank(d.bonds,r=>r.games+' 局')}</div><div><h3>伤害累计</h3>${rank([...d.operators].sort((a,b)=>b.damage-a.damage),r=>fmt(r.damage))}</div><div><h3>单局最高伤害</h3>${rank([...d.operators].sort((a,b)=>b.maxDamage-a.maxDamage),r=>fmt(r.maxDamage))}</div></div><p class="meta">旧记录仅统计已保存的阵容、激活盟约与伤害；早期未保存的回合使用情况不会补算。</p>`;
   lastSummaryJson = json;
 }
 
@@ -1017,11 +1037,11 @@ let recordList = [], recordQuery = '', recordPage = 0, recordsLoad = null;
 const RECORD_PAGE_SIZE = 20;
 function drawRecordList() {
   const q = recordQuery.trim().toLowerCase();
-  const all = recordList.filter(x => !q || [x.room, x.id, x.mode, x.mode === 'solo' ? '独立模拟' : '同盟', x.difficulty, outcomeText(x), ...(x.players || []).map(p => p.name)].join(' ').toLowerCase().includes(q));
+  const all = recordList.filter(x => !q || [x.room, x.id, x.version, gameVersion(x.version), x.mode, x.mode === 'solo' ? '独立模拟' : '同盟', x.difficulty, outcomeText(x), ...(x.players || []).map(p => p.name)].join(' ').toLowerCase().includes(q));
   const pages = Math.max(1, Math.ceil(all.length / RECORD_PAGE_SIZE));
   recordPage = Math.min(Math.max(0, recordPage), pages - 1);
   const list = all.slice(recordPage * RECORD_PAGE_SIZE, (recordPage + 1) * RECORD_PAGE_SIZE);
-  $('#records-list').innerHTML = list.length ? `<div class="xscroll"><table><thead><tr><th>结束时间</th><th>房间</th><th>模式</th><th>结果</th><th>通过回合</th><th>时长</th><th>玩家</th><th>操作</th></tr></thead><tbody>${list.map(x => `<tr><td>${new Date(x.savedAt).toLocaleString('zh-CN', { hour12: false })}</td><td>${esc(x.room)}</td><td>${x.mode === 'solo' ? '独立模拟' : '同盟'} · ${esc(x.difficulty)}</td><td class="${x.victory ? 'good' : 'bad'}">${outcomeText(x)}</td><td>${x.roundsPassed ?? ''}</td><td>${dur(x.durationMs)}</td><td>${(x.players || []).map(p => esc(p.name)).join('、')}</td><td><button data-record="${esc(x.id)}">查看</button><a class="replay-link" href="/replay?id=${encodeURIComponent(x.id)}" target="_blank" rel="noopener">回放</a><button class="danger" data-record-delete="${esc(x.id)}">删除</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="empty">没有匹配的记录。</p>';
+  $('#records-list').innerHTML = list.length ? `<div class="xscroll"><table><thead><tr><th>结束时间</th><th>房间</th><th>模式</th><th>结果</th><th>通过回合</th><th>时长</th><th>玩家</th><th>操作</th></tr></thead><tbody>${list.map(x => `<tr><td>${new Date(x.savedAt).toLocaleString('zh-CN', { hour12: false })}</td><td>${esc(x.room)}</td><td>${x.mode === 'solo' ? '独立模拟' : '同盟'} · ${esc(x.difficulty)} · ${esc(gameVersion(x.version))}</td><td class="${x.victory ? 'good' : 'bad'}">${outcomeText(x)}</td><td>${x.roundsPassed ?? ''}</td><td>${dur(x.durationMs)}</td><td>${(x.players || []).map(p => esc(p.name)).join('、')}</td><td><button data-record="${esc(x.id)}">查看</button><a class="replay-link" href="/replay?id=${encodeURIComponent(x.id)}" target="_blank" rel="noopener">回放</a><button class="danger" data-record-delete="${esc(x.id)}">删除</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="empty">没有匹配的记录。</p>';
   $('#record-pagination').innerHTML = `<button data-record-page="${recordPage - 1}" ${recordPage === 0 ? 'disabled' : ''}>上一页</button><span role="status">第 ${recordPage + 1} / ${pages} 页 · ${all.length} 条 · 每页 ${RECORD_PAGE_SIZE} 条</span><button data-record-page="${recordPage + 1}" ${recordPage + 1 >= pages ? 'disabled' : ''}>下一页</button>`;
 }
 function showRecords() {
@@ -1032,7 +1052,7 @@ function showRecords() {
 async function loadRecords() {
   const host = $('#records');
   // Create the page once; refresh data without blanking the summary or filters.
-  if (!$('#records-list')) host.innerHTML = `<section class="room"><h2>跨局汇总</h2><div class="row"><label>开始日期 <input id="summary-from" type="date"></label><label>结束日期 <input id="summary-to" type="date"></label><label>模式 <select id="summary-mode"><option value="">全部</option><option value="solo">独立</option><option value="coop">同盟</option></select></label><label>难度 <input id="summary-difficulty" placeholder="全部"></label><button data-summary-filter>应用筛选</button></div><div id="summary-data" role="status">正在汇总…</div></section><section class="room"><div class="row"><h2>对局记录</h2><span class="meta">对局结束时自动保存在 logs/results/，只在这台电脑上可见</span>
+  if (!$('#records-list')) host.innerHTML = `<section class="room"><h2>跨局汇总</h2><div class="row"><label>开始日期 <input id="summary-from" type="date"></label><label>结束日期 <input id="summary-to" type="date"></label><label>模式 <select id="summary-mode"><option value="">全部</option><option value="solo">独立</option><option value="coop">同盟</option></select></label><label>游戏版本 <select id="summary-version"><option value="">全部版本</option>${VERSIONS.map(v => `<option value="${esc(v.id)}">${esc(v.label)}</option>`).join('')}</select></label><label>难度 <input id="summary-difficulty" placeholder="全部"></label><button data-summary-filter>应用筛选</button></div><div id="summary-data" role="status">正在汇总…</div></section><section class="room"><div class="row"><h2>对局记录</h2><span class="meta">对局结束时自动保存在 logs/results/，只在这台电脑上可见</span>
       <button style="margin-left:auto" data-records-reload>刷新</button></div><div class="row"><label for="record-filter">搜索记录</label><input id="record-filter" type="search" placeholder="房间码、玩家、模式、难度或结果" value="${esc(recordQuery)}"></div><div id="records-list"></div><div class="row record-pagination" id="record-pagination"></div>
   </section><div id="record"></div>`;
   const button = $('[data-records-reload]');
@@ -1077,7 +1097,7 @@ async function showRecord(id) {
     <div class="row"><h2>${new Date(rec.savedAt).toLocaleString('zh-CN', { hour12: false })} · 房间 ${esc(rec.room)}</h2>
       <span class="${res.victory ? 'good' : 'bad'}">${outcomeText(res)}</span>
       <a class="replay-link" href="/replay?id=${encodeURIComponent(id)}" target="_blank" rel="noopener">打开整局回放</a>
-      <span class="meta">${rec.mode === 'solo' ? '独立模拟' : '同盟'} · ${esc(rec.difficulty)} · 通过 ${res.roundsPassed ?? 0} 回合 · ${dur(res.durationMs)} · 种子 ${esc(res.seed)}</span></div>
+      <span class="meta">${rec.mode === 'solo' ? '独立模拟' : '同盟'} · ${esc(rec.difficulty)} · 游戏版本 ${esc(gameVersion(rec.version))} · 通过 ${res.roundsPassed ?? 0} 回合 · ${dur(res.durationMs)} · 种子 ${esc(res.seed)}</span></div>
     <div class="stats-body">
       <div><h3>玩家</h3><div class="xscroll"><table><thead><tr><th scope="col">玩家</th><th scope="col">评语</th><th scope="col" class="n">通过回合</th><th scope="col" class="n">LP</th><th scope="col">分队</th><th scope="col">终局阵容</th><th scope="col">盟约</th></tr></thead>
         <tbody>${players.map((p) => `<tr><th scope="row">${esc(p.name)}${p.isBot ? ' <span class="tag">AI</span>' : ''}${p.alive ? '' : ` <span class="tag off">第 ${p.eliminatedRound ?? '?'} 回合淘汰</span>`}</th>
@@ -1358,7 +1378,7 @@ async function showSettings() {
     <section class="room" id="plugin-settings"><h2>插件管理</h2><p>在插件工作台安装、启停、编辑和导出插件。</p><a class="replay-link" href="/studio" target="_blank" rel="noopener noreferrer">打开插件工作台 ↗</a><p class="meta">仅本机可通过此入口获取工作台权限；工作台关闭时会显示原因。</p></section>
     <section class="room" id="issue-feedback"><h2>问题反馈与功能建议</h2><p>欢迎反馈使用中遇到的问题，或提出新的功能拓展建议，帮助项目持续改进。</p><a class="replay-link" href="https://github.com/zhewang448/Stronghold-Protocol/issues" target="_blank" rel="noopener noreferrer">前往 GitHub Issues ↗</a><p class="meta">提交问题时，欢迎附上复现步骤、运行方式与相关日志。</p></section>
     <section class="room" id="replay-settings"><h2>整局回放</h2>
-      <p class="meta" id="replay-help">默认录制，保留最近 50 局回放，自动清理只删除回放文件。普通战斗与联防可播放，领袖战仅展示结果。关闭后，当前对局后续战斗及新对局不再录制，未完整录制的对局不保存回放。</p>
+      <p class="meta" id="replay-help">默认录制，保留最近 50 局回放，自动清理只删除回放文件。普通战斗与联防可播放，最终攻势与隐秘核心可确认后限时尝试播放，缺少共享血池时间线，无法保证原样重放；合成结果和未完成战斗仅供查看。关闭后，当前对局后续战斗及新对局不再录制，未完整录制的对局不保存回放。</p>
       <label><input id="replay-enabled" type="checkbox" aria-describedby="replay-help" ${d.replay.enabled ? 'checked' : ''} ${d.replay.forcedOff ? 'disabled' : ''}> 录制整局回放</label>
       ${d.replay.forcedOff ? '<p class="note">SP_REPLAY=0 已强制关闭录制，修改环境变量并重启后才能开启。</p>' : ''}
       <div class="row"><button class="primary" data-replay-save ${d.replay.forcedOff ? 'disabled' : ''}>保存回放设置</button><span id="replay-saved" class="meta" role="status"></span></div>
@@ -1626,7 +1646,7 @@ function updateDiyDraft(el) {
 }
 
 function showCandidates(el) {
-  const ready = catalogRoom === el.dataset.room && names[el.dataset.candidateKind].size > 0;
+  const ready = catalogReady === roomCatalogKey(el.dataset.room) && names[el.dataset.candidateKind].size > 0;
   if (el.dataset.candidateKind === 'diy') updateDiyDraft(el);
   drawCandidates(el, ready ? null : '正在加载候选项…');
   if (ready) return;
@@ -2074,7 +2094,7 @@ document.addEventListener('keydown', (e) => {
       idNames.set(JSON.stringify(v), diyLabel(el.value, v));
       act(el.dataset.room, 'diy', el.dataset.player, v, '发放自选');
       el.blur();
-    });
+    }).catch(() => say('发放目录已变化，请重新选择', true));
   } else if (el.dataset.grant) {
     loadCatalog(el.dataset.room).then(() => {
       const id = names[el.dataset.grant].get(el.value) || (el.dataset.grant === 'diy' ? null : el.value.trim());
@@ -2082,7 +2102,7 @@ document.addEventListener('keydown', (e) => {
       act(el.dataset.room, el.dataset.grant, el.dataset.player, id, { chess: '发放干员', diy: '发放自选', item: '发放道具', card: '补发机变卡' }[el.dataset.grant]);
       el.value = '';
       el.blur();
-    });
+    }).catch(() => say('发放目录已变化，请重新选择', true));
   }
 });
 // Keep number drafts stable when a wheel gesture passes over a focused input.

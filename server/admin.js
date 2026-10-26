@@ -50,10 +50,12 @@ import { gzipSync } from 'node:zlib';
 import { createStaticHandler } from './http/static.js';
 import { getReplayConfig, setReplayConfig, replayRecord, recordReplayAdmin } from './match/replay.js';
 import { replayIdentity, saveReplay, readReplay, replayFiles, recordFiles, deleteRecordFiles, replayAdminLogs, REPLAY_ID } from './replay-store.js';
-import { liveState, liveIntent } from './admin-live.js';
+import { liveState, liveIntent, matchId } from './admin-live.js';
 import { DEV_PAGES } from '../shared/devtools.js';
 import { sendSession, send as sendSocket } from './net.js';
 import { cleanChatText, getBlockedWords, normalizeBlockedWords, setBlockedWords, getChatSettings, normalizeChatSettings, setChatSettings, DEFAULT_CHAT_SETTINGS } from './chat.js';
+
+import { DEFAULT_VERSION } from '../shared/versions.js';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const OK = { ok: true };
@@ -110,6 +112,7 @@ function playerDetail(m, ps) {
 
 export function matchView(m) {
   return {
+    matchId: matchId(m), version: m.version || DEFAULT_VERSION, cs: m.cs || null,
     phase: m.phase, phaseName: PHASE_NAMES[m.phase] || m.phase, round: m.round, ended: m.ended, paused: m.paused, solo: m.isSolo,
     left: m.deadline ? Math.max(0, Math.round((m.deadline - m.sched.now()) / 1000)) : null,
     rewindRounds: [...m.prepSnapshots.keys()].sort((a, b) => a - b), errors: m.errorCount,
@@ -165,7 +168,7 @@ export function roomsView(lobby) {
     }));
   }
   return [...lobby.rooms.values()].map((r) => ({
-    code: r.code, mode: r.mode, difficulty: r.difficulty,
+    code: r.code, mode: r.mode, difficulty: r.difficulty, version: r.version || DEFAULT_VERSION, content: r.content || null,
     seats: r.seats.filter(Boolean).map((s) => playerAccess(lobby, { id: s.playerId, seat: s.seat, left: !!s.left, muted: !!r.chat?.muted.has(s.playerId), name: s.name, bot: s.isBot, connected: s.connected && !s.left })),
     spectators: (r.spectators || []).map((s) => playerAccess(lobby, { id: s.playerId, name: s.name, connected: s.connected })),
     chat: r.chat?.history(r.code) || { messages: [] },
@@ -183,6 +186,7 @@ export function catalogView(lobby, code) {
   if (!m || !m.gd) return { chess: [], items: [] };
   const gd = m.gd;
   return {
+    matchId: matchId(m), version: m.version || DEFAULT_VERSION, cs: m.cs || null,
     chess: gd.visibleChess.map((id) => {
       const c = gd.chess(id);
       return { id, name: c.name, tier: c.tier, goldenId: c.goldenId && gd.chess(c.goldenId) ? c.goldenId : null };
@@ -464,6 +468,18 @@ export function handleAction(lobby, body) {
     const match = room.match;
     return match.admin('action', body).then(result => { room.adminLog = match.adminLog; return result; });
   }
+  if (body.catalogIdentity && (!room.match || body.catalogIdentity !== JSON.stringify([matchId(room.match), room.match.version || DEFAULT_VERSION, room.match.cs || null]))) {
+    return { error: '发放目录对应的对局已变化，请刷新后重试', code: 'BAD_TARGET' };
+  }
+  if (body.catalogIdentity && ['chess', 'diy', 'item', 'card', 'pieceEquip'].includes(action)) {
+    const catalog = catalogView(lobby, code);
+    const id = String(action === 'pieceEquip' ? obj(value).item : typeof value === 'object' ? obj(value).id : value);
+    const allowed = action === 'chess' ? catalog.chess.some(c => c.id === id || c.goldenId === id)
+      : action === 'diy' ? catalog.diy.some(c => c.charId === obj(value).charId && c.tier === obj(value).tier)
+      : action === 'card' ? catalog.cards.some(c => c.id === id)
+      : catalog.items.some(c => c.id === id && (action !== 'pieceEquip' || c.equip));
+    if (!allowed) return { error: '该条目不属于当前发放目录，请重新选择', code: 'BAD_TARGET' };
+  }
   // the player's name as it was when the action ran (before the action: a closed room has no log to keep)
   const player = room.match?.players?.get(String(playerId)) || room.seatOf?.(playerId) || room.spectatorOf?.(playerId);
   if (room.match?.order) recordReplayAdmin(room.match, { action: String(action), player: player?.name || null, value, round: room.match.round });
@@ -553,7 +569,7 @@ export function resultRecord(room, m, summary, now = new Date()) {
   });
   return {
     savedAt: now.getTime(), room: room.code, mode: room.mode, difficulty: room.difficulty,
-    ...(m.version ? { version: m.version } : {}),
+    version: m.version || DEFAULT_VERSION,
     result: { ...summary, players },
     history: m.history || [],
   };
@@ -577,7 +593,7 @@ function saveRecord(dir, room, rec, log) {
 function lastMatchView(rec, id) {
   const r = rec.result;
   return {
-    id, savedAt: rec.savedAt, victory: !!r.victory, hiddenCleared: !!r.hiddenCleared, reason: r.reason, roundsPassed: r.roundsPassed,
+    id, version: rec.version || DEFAULT_VERSION, savedAt: rec.savedAt, victory: !!r.victory, hiddenCleared: !!r.hiddenCleared, reason: r.reason, roundsPassed: r.roundsPassed,
     players: (r.players || []).map((p) => ({ id: p.playerId, seat: p.seat, name: p.name, stats: p.stats })),
     history: rec.history,
   };
@@ -594,7 +610,7 @@ export function listRecords(dir) {
       if (!rec.result || !rec.savedAt) continue;
       const r = rec.result;
       out.push({
-        id, savedAt: rec.savedAt, room: rec.room, mode: rec.mode, difficulty: rec.difficulty, victory: !!r.victory,
+        id, version: rec.version || DEFAULT_VERSION, savedAt: rec.savedAt, room: rec.room, mode: rec.mode, difficulty: rec.difficulty, victory: !!r.victory,
         hiddenCleared: !!r.hiddenCleared, reason: r.reason, roundsPassed: r.roundsPassed, rounds: (rec.history || []).length, durationMs: r.durationMs,
         players: (r.players || []).map((p) => ({ name: p.name, bot: !!p.isBot, alive: !!p.alive })),
       });

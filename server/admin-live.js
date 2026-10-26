@@ -5,14 +5,16 @@ import { validateC2S } from '../shared/protocol.js';
 import { PHASE } from '../shared/constants.js';
 import { recordReplayAdmin } from './match/replay.js';
 import { snapFrame } from './match/fields.js';
+import { DEFAULT_VERSION } from '../shared/versions.js';
 
 const ids = new WeakMap();
-const matchId = (m) => {
+export const matchId = (m) => {
   if (!ids.has(m)) ids.set(m, randomBytes(12).toString('hex'));
   return ids.get(m);
 };
 export const LIVE_INTENTS = new Set([
   'g.infoReady', 'g.band', 'g.bandSkip', 'g.bandFocus', 'g.buy', 'g.refresh', 'g.freeze', 'g.levelUp',
+  'g.unequip', 'g.offer', 'g.offerRefresh', 'g.uniteSkipVote',
   'g.sell', 'g.move', 'g.equip', 'g.art', 'g.destroy', 'g.reward', 'g.choice', 'g.ready', 'g.autoplay', 'g.pause',
 ]);
 const active = (lobby, code, pid) => {
@@ -57,7 +59,8 @@ export function liveState(lobby, query) {
     if (scout?.alive && scout !== ps) fieldMeta = m.prepFieldMeta(scout);
   }
   return {
-    ok: true, content: room.content || null, vanilla: lobby.vanilla?.cs || (!m.requireCs ? m.cs : null), matchId: id, revision: revision(m, ps), room: room.code, playerId: ps.playerId, name: ps.name,
+    ok: true, version: m.version || DEFAULT_VERSION, mode: m.mode, difficulty: m.difficulty,
+    content: room.content || null, vanilla: lobby.vanilla?.cs || (!m.requireCs ? m.cs : null), matchId: id, revision: revision(m, ps), room: room.code, playerId: ps.playerId, name: ps.name,
     controllable: !ps.isBot && !ps.left && ps.alive,
     players: m.order.map((p) => ({ playerId: p.playerId, name: p.name, isBot: p.isBot, left: p.left, alive: p.alive })),
     public: m.publicView(), private: ps.privateView(), field: fieldMeta, snapshot, battle,

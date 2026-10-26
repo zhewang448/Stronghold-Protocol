@@ -8,7 +8,8 @@ import { battleRunner } from '/js/battle/runner.js';
 import { ToastHost, toast } from '/js/ui/toasts.js';
 import { closeAllDialogs } from '/js/ui/components.js';
 import { audio } from '/js/audio.js';
-import { installContent, installContentSet } from '/js/content.js';
+import { installContent, installContentSet, contentFor } from '/js/content.js';
+import { DEFAULT_VERSION } from '/shared/versions.js';
 installContent({ toast });
 installContentSet({ net: null, toast });
 
@@ -87,10 +88,18 @@ async function sync() {
       $('live-game').hidden = false;
       store.set({ me: { playerId, name: next.name, token: null }, session: { entered: true },
         connection: { status: 'online', ping: null, everOnline: true },
-        room: { code: room, inMatch: true, spectators: [], seats: next.players, ...(next.content ? { content: next.content } : {}) },
+        room: { code: room, inMatch: true, version: next.version || next.public.version || DEFAULT_VERSION,
+          convenience: next.public.convenience, mode: next.mode, difficulty: next.difficulty,
+          spectators: [], seats: next.players, ...(next.content ? { content: next.content } : {}) },
         content: next.vanilla ? { vanilla: next.vanilla } : null,
         clock: { offset: next.public.serverNow - Date.now(), rtt: null, synced: true } });
       store.patch('match', { public: next.public, private: next.private });
+      if (next.content && (next.content.vanilla === false || store.get().room.version !== DEFAULT_VERSION)) {
+        status('正在加载对局版本与内容…');
+        const content = await contentFor(next.content.cs);
+        if (disposed || seq !== sequence) return;
+        if (!content) throw new Error('对局内容尚未就绪，请重试或重新打开实时查看');
+      }
       if (!mounted) { render(h(GameScreen), $('live-game')); mounted = true; }
       if (next.pool) battleRunner.onPool(next.pool);
       battleRunner.setPaused(!!next.public.paused);

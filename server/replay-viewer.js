@@ -1,6 +1,7 @@
 /* global document, location, window */
 // i18n-ignore-file: host-only Chinese console, served only by admin.js.
 import { DIFFICULTY_NAMES } from '/shared/constants.js';
+import { DEFAULT_VERSION, versionById } from '/shared/versions.js';
 const $ = (id) => document.getElementById(id);
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const kindName = { normal: '各自行动', unite: '联防', boss: '最终攻势', hidden: '隐秘核心' };
@@ -66,15 +67,23 @@ async function play() {
       import('/js/battle/runner.js'), import('/js/render/app.js'), import('/js/data.js'), import('/js/assets.js'), import('/sim/spec.js'),
     ]);
     await data.loadAll('chess', 'tokens', 'items', 'enemies', 'stages', 'bonds', 'config');
+    if (seq !== sequence) return;
     let replayContent = null, contentIndex = null;
     if (f.spec.cs) {
-      const { loadContentSet } = await import('/js/content.js');
-      const set = await loadContentSet(f.spec.cs, { allowVanilla: true });
+      const { loadContentSet, loadVersionSet } = await import('/js/content.js');
+      const version = replay.version || DEFAULT_VERSION;
+      const set = version !== DEFAULT_VERSION
+        ? await loadVersionSet(f.spec.cs, version)
+        : await loadContentSet(f.spec.cs, { allowVanilla: true });
+      if (seq !== sequence) return;
       if (set.canSim === false) throw new Error('该回放需要脚本插件授权，请在原房间确认脚本后查看实时战场');
       contentIndex = set.index;
       data.setContent({ id: set.cs, values: set.values });
-      replayContent = { cs: set.cs, data: Object.fromEntries(set.values), bounds: set.bounds, scripts: set.scripts || [], hashInput: set.index, nativeVerified: set.nativeVerified };
-    } else data.setContent(null);
+      replayContent = { cs: set.cs, version: set.version, data: Object.fromEntries(set.values), bounds: set.bounds, scripts: set.scripts || [], hashInput: set.index, nativeVerified: set.nativeVerified };
+    } else {
+      if (replay.version && replay.version !== DEFAULT_VERSION) throw new Error('历史版本回放缺少内容身份，无法加载原版本数据');
+      data.setContent(null);
+    }
     await assets.ready();
     if (seq !== sequence) return;
     $('field').hidden = false;
@@ -83,7 +92,7 @@ async function play() {
     view = nextView;
     view.setStage(data.lookup('stages', f.spec.stageId));
     const net = { on: () => () => {}, send() {}, request: async () => ({ ok: true }) };
-    runner = createBattleRunner({ net, store: null, vanillaCs: () => contentIndex?.vanilla ? f.spec.cs : 'original',
+    runner = createBattleRunner({ net, store: null, vanillaCs: () => contentIndex?.vanilla && !replayContent?.version ? f.spec.cs : 'original',
       simContent: () => replayContent, contentFor: async () => replayContent });
     runner.on('field', (field) => { view.enterBattle(field); view.setCamera(f.kind, { rect: field.rect, side: 'L', instant: true }); });
     runner.on('snap', (snap) => view.pushSnapshot(snap));
@@ -123,7 +132,7 @@ async function play() {
 $('play').onclick = $('restart').onclick = play;
 $('pause').onclick = () => {
   paused = !paused;
-  runner?.setPaused(paused); view?.setPaused(paused);
+  runner?.setPaused(paused);
   $('pause').textContent = paused ? '继续播放' : '暂停';
   if (!runner?.state()?.done) $('digest').textContent = paused
     ? `已暂停${selected.playable ? '，继续播放后核对结果。' : `；${warnings(selected)}`}`
@@ -140,7 +149,7 @@ async function init() {
     replay = await response.json();
     if (!response.ok || replay.error) throw new Error(replay.error || '读取失败');
     const modeName = replay.mode.startsWith('mode_single_') ? '独立模拟' : '同盟';
-    $('match-meta').textContent = `房间 ${replay.room} · ${modeName} / ${DIFFICULTY_NAMES[replay.difficulty] || replay.difficulty} · ${new Date(replay.savedAt).toLocaleString('zh-CN')} · 种子 ${replay.seed} · ${replay.made.app}${replay.made.release ? ` / ${replay.made.release}` : ''}`;
+    $('match-meta').textContent = `房间 ${replay.room} · 游戏版本 ${versionById(replay.version || DEFAULT_VERSION)?.label || replay.version} · ${modeName} / ${DIFFICULTY_NAMES[replay.difficulty] || replay.difficulty} · ${new Date(replay.savedAt).toLocaleString('zh-CN')} · 种子 ${replay.seed} · 程序版本 ${replay.made.app}${replay.made.release ? ` / ${replay.made.release}` : ''}`;
     $('notice').className = replay.compatible ? 'meta' : 'warn';
     $('notice').textContent = replay.compatible ? '录制与当前模拟器、数据指纹一致。最终攻势和隐秘核心可确认后尝试播放，无法保证原样重放；合成结果和未完成战斗仅供查看。' : '版本已变，无法保证原样重放。普通战斗、联防、最终攻势和隐秘核心可确认后尝试播放；合成结果和未完成战斗仅供查看。';
     const rounds = new Map(); let index = 0;
