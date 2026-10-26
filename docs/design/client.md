@@ -1151,3 +1151,9 @@ EXE 占用或暂不可写时保留已验签载荷和受保护备份，控制台�
 目录关系：控制台更新总能处理游戏根目录启动器；实例外启动器只有在新版实际运行并将自身绝对路径/哈希登记到实例logs/launcher-location.json后才可由该实例控制台同步更新。同目录不是必要条件。独立自更新直接以当前运行EXE为目标，放在其他文件夹也可用，不依赖任何实例位置。
 
 旧版1.1.0不具备自更新和位置登记能力，需首次手动换用包含此功能的新版本；之后使用启动器自更新。现有已发布v0.3.3-extended.1和1.1.0附件不覆盖。本轮功能随 v0.3.3-extended.2 和启动器1.2.0发布；旧版本附件不覆盖。
+
+### Match avatar messages and phase actions (2026-10-26)
+
+Avatar messages render in a sibling layer outside the scrolling team list. Position follows the full player card with an 8 CSS px gap outside its right edge, keeping the name and LP unobscured, bounded by the visible HUD/member area and above the shop. Scroll and resize remeasure it; an offscreen sender keeps a visible bounded message with a name. Expiry, notification settings and emote precedence stay unchanged. Prep-only loadout belongs below Ready in the top-right phase controls, retaining its readiness/spectator/rule gates. The unite-skip vote belongs below the clock in the same column, with count/status and unchanged eligibility/majority/settlement rules. [ASSUMED] Dock and gap are remake presentation choices. Regression: test/ui/match-layout.e2e.test.js (1920x1080 and 1366x768, normal text).
+
+Bond-layer pops retain five responsive screen-space slots below the actual top HUD and bond strip. They reserve room for their rise, scale and glow, and fit their bounds on each frame including resize. Loaded icons retain their 46 px local size. [ASSUMED] Presentation only; no layer gain, sound or simulation changes. Regression: test/render/fxpop.test.js.

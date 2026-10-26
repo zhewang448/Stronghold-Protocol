@@ -577,6 +577,11 @@
 .team__frame--plain { inset: -.04rem; background: none; -webkit-mask: none; mask: none; border: 2px solid var(--mint-500); box-shadow: 0 0 .14rem rgba(78, 216, 175, .65); }
 .team__row.is-self.is-team .pavatar { box-shadow: none; }
 .team__bubble { position: absolute; left: calc(100% + .06rem); top: 50%; transform: translateY(-50%); width: max-content; max-width: 3.2rem; }
+/* Separate message layer: list scrolling must never clip a bubble extending past a portrait. */
+.team__messages { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.team__message { position: absolute; width: max-content; max-width: min(3.2rem, 55vw); pointer-events: none; }
+.team__message .ebubble.team__bubble { position: relative; left: auto; top: auto; transform: none; }
+.team__message[data-offscreen]::before { content: attr(data-author); display: block; font-size: max(.12rem, 11px); color: var(--mint-400); background: var(--bg-0); padding: 2px 6px; }
 /* 前往查看 / 返回战场 (research 09 §3.1: tapping a teammate's avatar expands a mint button under it) */
 .team__row.is-open .pavatar { box-shadow: 0 0 0 2px var(--mint-400), 0 0 .2rem rgba(23, 249, 183, .45); }
 .team__row.is-open .team__info { background: linear-gradient(90deg, rgba(13, 44, 36, .92), rgba(8, 11, 10, 0)); }
@@ -1320,6 +1325,12 @@
 }
 
 .gm__corner-actions { display: contents; }
+/* Phase decisions stay beside the timer/ready action, rather than the general settings corner. */
+.gm__prep-loadout { min-height: .44rem; height: auto; max-width: min(3.6rem, 30vw); padding-block: .08rem; white-space: normal; }
+.gm__prep-loadout .lo-entry__icon { width: 1.25em; height: 1.25em; object-fit: contain; flex: none; }
+.unite-vote { display: flex; flex-direction: column; align-items: flex-end; gap: .06rem; max-width: min(3.8rem, 32vw); }
+.unite-vote .btn { min-height: .44rem; height: auto; padding-block: .08rem; white-space: normal; line-height: 1.4; }
+.unite-vote__count { color: var(--text-lo); font-size: calc(.13 * var(--t)); text-align: right; }
 
 /* Restored extension-only rules absent from upstream merge. */
 .fps-pill { --pc: var(--text-hi); gap: .04rem; padding-inline: .08rem; white-space: nowrap; flex: none; }

@@ -405,7 +405,10 @@ export async function createFieldView(host, options = {}) {
     fieldTop: () => {
       const R = camRect();
       const p = cam.project((R.c0 + R.c1) / 2, R.r1 + 0.5, 1.6);
-      return Math.max(80, Math.min(size().height * 0.4, p.y));
+      const canvasTop = canvas.getBoundingClientRect().top;
+      const hud = host.closest('.gm')?.querySelectorAll('.gtop, .gm__bonds') || [];
+      const hudBottom = Math.max(0, ...[...hud].map(node => node.getBoundingClientRect().bottom - canvasTop));
+      return Math.max(80, hudBottom, Math.min(size().height * 0.4, p.y));
     },
   });
   setupCleanup.push(() => fx.destroy());

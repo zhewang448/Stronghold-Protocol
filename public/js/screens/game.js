@@ -1951,6 +1951,8 @@ function MatchScreen() {
         pen=${pen} penAvail=${penAvail} onPen=${togglePen} config=${gd.config} frozenAt=${frozenAt}
         pause=${canPause || paused ? { show: canPause, paused, busy: pauseBusy, onToggle: () => togglePause(!paused) } : null}
         live=${liveLpNow} spectator=${spectator}
+        prepAction=${prepLoadoutOpen && phase === PHASE.PREP && priv && !priv.ready && !spectator
+          ? html`<${LoadoutButton} from="prep" size="sm" class="gm__prep-loadout" />` : null}
         spectators=${specFacts.list} myId=${myId} isHost=${specFacts.isHost} onRemoveSpectator=${removeSpectator} onUniteSkipVote=${actions.uniteSkipVote} room=${modRoom}
         held=${hudIn === 'wait'} />
 
@@ -2030,8 +2032,6 @@ function MatchScreen() {
             setSel(null);
             setBondOpen(null);
           }}><${Icon} name="signal" /></button>` : null}
-        ${prepLoadoutOpen && phase === PHASE.PREP && priv && !priv.ready && !spectator
-          ? html`<${LoadoutButton} from="prep" size="sm" />` : null}
         <button type="button" class="gm__gear" data-testid="settings-btn" aria-label=${t('设置')} title=${t('设置')} onClick=${() => setSettingsOpen(true)}><${GIcon} name="gear" /></button>
         <button type="button" class="gm__gear" aria-label=${t('公告')} title=${t('公告')} onClick=${openAnnouncement}><${Icon} name="info" /></button>
 

@@ -181,7 +181,6 @@ export function TeamPanel({ pub, myId, watching, bubbles, emotes = [], emoteNow 
       const status = p.alive === false ? 'dead' : p.status;
       const meta = STATUS_META[status] || STATUS_META.acting;
       const watched = teammateFieldShown(watching, p);
-      const bubble = bubbles?.get(p.playerId);
       const offline = p.connected === false && !p.isBot;
       const open = !!observe && openPid === p.playerId && !self;
       const back = !!observe && self && observe.observing;
@@ -190,7 +189,7 @@ export function TeamPanel({ pub, myId, watching, bubbles, emotes = [], emoteNow 
       const inTeam = team.has(p.playerId);
       const groupTip = group ? t('{group}组 · 同组共享卡池', { group: group.label }) : null;
       const avatarTitle = [title, inTeam && !self && t('与你在同一战场'), groupTip].filter(Boolean).join(' · ');
-      return html`<div key=${p.playerId} class=${cx('team__row', self && 'is-self', inTeam && 'is-team', watched && 'is-watched', p.alive === false && 'is-dead', open && 'is-open')}>
+      return html`<div key=${p.playerId} data-player-id=${p.playerId} class=${cx('team__row', self && 'is-self', inTeam && 'is-team', watched && 'is-watched', p.alive === false && 'is-dead', open && 'is-open')}>
         <button type="button" class="team__btn" onClick=${() => click(p, self)} onDblClick=${(e) => dblClick(e, p, self)} title=${avatarTitle} aria-label=${avatarTitle} aria-expanded=${observe && !self ? String(open) : undefined}>
           <${PlayerAvatar} player=${p} self=${self} />
           ${inTeam ? html`<span class=${cx('team__frame', !frameArt && 'team__frame--plain')} style=${frameArt ? `--frame:url("${frameArt}")` : undefined} aria-hidden="true"></span>` : null}
@@ -222,10 +221,12 @@ export function TeamPanel({ pub, myId, watching, bubbles, emotes = [], emoteNow 
           ${back ? html`<button type="button" class="btn btn--secondary btn--sm team__back"
             onClick=${() => observe.onBack()}><span class="btn__label">${t('返回战场')}</span></button>` : null}
         </div>
-        <${AvatarMessage} playerId=${p.playerId} emote=${bubble} />
       </div>`;
     })}
     </div>`)}
+    </div>
+    <div class="team__messages">
+      ${players.map(p => html`<${AvatarMessage} key=${p.playerId} playerId=${p.playerId} name=${p.name} emote=${bubbles?.get(p.playerId)} />`)}
     </div>
     ${many && activeEmotes.length ? html`<div class="team__emote-feed" role="log" aria-live="polite" aria-label=${t('同盟表情')} ref=${feedRef}>
       ${activeEmotes.map((e) => {

@@ -85,9 +85,11 @@ export class FxArrivals {
   pop(icon, label, tint, i = 0) {
     const P = this.P;
     const size = this.ctx.screenSize();
-    const top = this.ctx.fieldTop ? this.ctx.fieldTop() : size.height * 0.2;
+    // Reserve the full rise and icon/glow above the starting position.
+    const top = (this.ctx.fieldTop ? this.ctx.fieldTop() : size.height * 0.2) + 110;
     const c = new P.Container();
-    const x = size.width / 2 + (i % 5 - 2) * 70;
+    const spacing = Math.min(170, size.width / 5);
+    const x = size.width / 2 + (i % 5 - 2) * spacing;
     c.position.set(x, top);
     if (icon) {
       const glow = new P.Sprite(this.tex.glow);
@@ -115,7 +117,7 @@ export class FxArrivals {
       c.addChild(t);
     }
     this.ctx.layers.screen.addChild(c);
-    this.pops.push({ c, t: 0, dur: 1.4, y0: top });
+    this.pops.push({ c, t: 0, dur: 1.4, y0: top, slot: i % 5 });
     if (this.pops.length > 12) { const o = this.pops.shift(); o.c.destroy({ children: true }); }
   }
 
@@ -128,7 +130,16 @@ export class FxArrivals {
       p.c.position.y = p.y0 - 40 * easeOut(k);
       p.c.alpha = k < 0.15 ? k / 0.15 : k > 0.7 ? 1 - (k - 0.7) / 0.3 : 1;
       const s = k < 0.15 ? 0.6 + (k / 0.15) * 0.5 : 1.1 - Math.min(0.1, (k - 0.15));
-      p.c.scale.set(s);
+      const size = this.ctx.screenSize();
+      const spacing = Math.min(170, size.width / 5);
+      p.c.position.x = size.width / 2 + (p.slot - 2) * spacing;
+      p.c.scale.set(s * Math.min(1, Math.max(1, size.width - 16) / 850));
+      // Screen-space effects must stay visible through zoom/resize and their rise.
+      const bounds = p.c.getBounds?.();
+      if (bounds) {
+        p.c.position.x += Math.max(8 - bounds.left, Math.min(0, size.width - 8 - bounds.right));
+        p.c.position.y += Math.max(8 - bounds.top, Math.min(0, size.height - 8 - bounds.bottom));
+      }
       this.pops[w++] = p;
     }
     this.pops.length = w;
