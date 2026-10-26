@@ -44,8 +44,10 @@ test('disk recovery preserves all room convenience choices and effective match r
   const f = fixture(t);
   const choices = { benchEquip: false, soloUnlimited: false, prepLoadout: false, unequip: true, morphPairing: true };
   f.room.convenience = choices;
+  f.room.private = true;
   f.recovery.save(f.room, f.h.m, f.h.m.prepSnapshots.get(1));
   assert.deepEqual(deserialize(fs.readFileSync(f.file)).room.convenience, choices);
+  assert.equal(deserialize(fs.readFileSync(f.file)).room.private, true);
   class RestoredMatch extends Match {
     constructor(opts) { super({ ...opts, scheduler: new VirtualScheduler(), BattleClass: FakeBattle, botRehearsal: 0, clientCombat: false }); }
   }
@@ -54,6 +56,8 @@ test('disk recovery preserves all room convenience choices and effective match r
   t.after(() => { recovery.prepareShutdown(); lobby.shutdown(); });
   recovery.restore();
   const restored = lobby.rooms.get(f.room.code);
+  assert.equal(restored.private, true);
+  assert.equal(lobby.listRooms().rooms.some(room => room.code === restored.code), false);
   assert.deepEqual(restored.convenience, choices);
   assert.deepEqual(restored.match.convenience, choices);
   assert.equal(restored.match.rules.prepLoadout, 'locked');

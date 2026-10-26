@@ -291,3 +291,9 @@ threads; work is submitted as a task (a function name plus its arguments) and co
 
 The rule of thumb for new work: if it is pure CPU over data the worker can be given (a simulation step, an encode, a
 snapshot), it belongs in a task; if it touches sockets, timers or the lobby, it stays on the main thread.
+
+## 本服真人匹配（扩展）
+
+`server/matchmaking.js` 为 Lobby 的内存队列服务，复用 `Lobby.create` / `join` 及原准备/开始。
+前端继续用 `screens/lobby.js` / `screens/room.js` 的搜寻组件，`main.js` 把三种 match.* 服务端帧写入 store。
+协议、队列生命周期与限制见 [真人匹配](MATCHMAKING.md)。

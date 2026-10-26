@@ -520,7 +520,12 @@ export const C2S = {
   'room.proposeVersion': { version: isVersionId },
   'room.versionVote': { voteId: (v) => isInt(v, 1, 2 ** 31), agree: isBool },
   'room.cancelVersionVote': { voteId: (v) => isInt(v, 1, 2 ** 31) },
-  'room.create': { mode: (v) => v === 'solo' || v === 'coop', difficulty: (v) => DIFFICULTIES.includes(v), code: (v) => typeof v === 'string' && new RegExp(`^[A-Za-z0-9]{${ROOM_CODE_LEN}}$`).test(v), capacity: (v) => ROOM_CAPACITIES.includes(v), test: (v) => v === true, version: isVersionId, soloUnlimited: (v) => typeof v === 'boolean', $optional: ['difficulty', 'code', 'capacity', 'test', 'version', 'soloUnlimited'] },
+  'room.create': { mode: (v) => v === 'solo' || v === 'coop', difficulty: (v) => DIFFICULTIES.includes(v), code: (v) => typeof v === 'string' && new RegExp(`^[A-Za-z0-9]{${ROOM_CODE_LEN}}$`).test(v), capacity: (v) => ROOM_CAPACITIES.includes(v), test: (v) => v === true, version: isVersionId, soloUnlimited: (v) => typeof v === 'boolean', private: isBool, $optional: ['difficulty', 'code', 'capacity', 'test', 'version', 'soloUnlimited', 'private'] },
+  // Read-only directory replies in the existing rid-correlated ok envelope, not a second S2C event.
+  'room.list': {},
+  'match.queue': { mode: v => v === 'coop', difficulty: v => DIFFICULTIES.includes(v), version: isVersionId, anyVersion: isBool, anyDifficulty: isBool, random: v => v === false, fillBots: v => v === false, $optional: ['version', 'anyVersion', 'anyDifficulty', 'random', 'fillBots'] },
+  'match.cancel': {},
+  'room.setPrivate': { private: isBool },
   'room.join': { $optional: ['testAck'], testAck: (v) => v === true, code: (v) => isStr(v, ROOM_CODE_LEN + 2) && /^[A-Za-z0-9]+$/.test(v) },
   'room.leave': {},
   'room.ready': { ready: isBool },
@@ -668,6 +673,7 @@ export const C2S = {
 export const S2C = [
   'welcome', 'ok', 'error', 'pong',
   'social.state',
+  'match.state', 'match.found', 'match.counts',
   'room.state', 'room.closed', 'chat.message', 'chat.history', 'site.announcement', 'site.settings',
   'm.public', 'm.private', 'm.state', 'm.field', 'm.toast', 'm.ticker', 'm.emote', 'm.ping', 'm.result',
   // m.layer { playerId, bondId, add } — own live prep layer gain; ephemeral, never replayed on resync.

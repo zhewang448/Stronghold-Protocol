@@ -326,6 +326,10 @@ describe('room content sets (P1c: gameplay plugins)', () => {
     await host.waitFor('room.state', (s) => seatOf(s, guest.id)?.ready === true);
     await ok(host, { t: 'room.setPlugins', plugins: [{ id: 'bond-def' }] });
     const s1 = await guest.waitFor('room.state', (s) => s.content?.vanilla === false);
+    const directory = srv.lobby.listRooms().rooms.find(r => r.code === s0.code);
+    assert.equal(directory.modded, true, 'public directory reuses the real content-set classification');
+    assert.equal(directory.joinable, true);
+    assert.equal(Object.hasOwn(directory, 'content'), false, 'no content consent or private payload in discovery');
     assert.notEqual(s1.content.cs, srv.content.cs, 'a content set of its own');
     assert.deepEqual(s1.content.plugins.map((p) => [p.id, p.class, p.version]), [['bond-def', 'content', '1.0.0']]);
     assert.match(s1.content.plugins[0].hash, /^[0-9a-f]{16}$/);

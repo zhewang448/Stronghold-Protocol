@@ -91,6 +91,30 @@ const refused = (r, code, detail) => {
   if (detail) assert.equal(r.detail, detail);
 };
 
+test('matching separates official versions and switches invalidate room recruitment', () => {
+  const h = harness();
+  try {
+    const people = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(h.player);
+    const request = { t: 'match.queue', mode: 'coop', difficulty: 'NORMAL' };
+    for (let i = 0; i < 3; i++) ok(h.lobby.handleMessage(people[i], { ...request, version: DEFAULT_VERSION }));
+    for (let i = 3; i < 6; i++) ok(h.lobby.handleMessage(people[i], { ...request, version: 'act1autochess' }));
+    assert.equal(h.lobby.rooms.size, 0);
+    ok(h.lobby.handleMessage(people[6], { ...request, version: 'act1autochess' }));
+    const first = h.lobby.roomOf(people[6]);
+    assert.equal(first.version, 'act1autochess');
+    assert.ok(people.slice(0, 3).every(p => !p.roomCode));
+    ok(h.lobby.handleMessage(people[7], { ...request, version: DEFAULT_VERSION }));
+    assert.equal(h.lobby.rooms.size, 2);
+    assert.notEqual(first.code, people[7].roomCode);
+    const host = h.player('Switcher');
+    ok(h.lobby.create(host, { mode: 'coop', difficulty: 'NORMAL' }));
+    ok(h.lobby.handleMessage(host, { ...request, version: DEFAULT_VERSION }));
+    assert.ok(h.lobby.roomOf(host).matching);
+    ok(h.lobby.proposeVersion(host, { version: 'act1autochess' }));
+    assert.equal(h.lobby.roomOf(host).matching, undefined);
+  } finally { h.lobby.shutdown(); }
+});
+
 test('room.create frees the sole-held old room set for default plugins at maxSets (without a socket)', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-version-content-limit-'));
   let contents;
@@ -162,6 +186,7 @@ test('a lone human switches at once — solo, and co-op with AI teammates: versi
     assert.equal(room.replay, null);
     const st = h.last(p);
     assert.equal(st.version, 'act1autochess');
+    if (mode === 'coop') assert.equal(h.lobby.listRooms().rooms.find(r => r.code === st.code)?.version, 'act1autochess');
     assert.deepEqual(st.content, { cs: CS.act1autochess, vanilla: true, version: 'act1autochess', plugins: [] });
     assert.equal(st.seats[0].content, 'loading');
     assert.equal(st.versionVote, undefined);
@@ -173,6 +198,7 @@ test('a lone human switches at once — solo, and co-op with AI teammates: versi
     assert.equal(Object.hasOwn(back, 'version'), false);
     assert.deepEqual(back.content, { cs: VANILLA, vanilla: true, plugins: [] });
     assert.equal(Object.hasOwn(back.seats[0], 'content'), false);
+    if (mode === 'coop') assert.equal(h.lobby.listRooms().rooms.find(r => r.code === back.code)?.version, DEFAULT_VERSION);
     h.lobby.shutdown();
   }
 });
@@ -714,4 +740,165 @@ test('server/plugins/roomSets.js resolve({ gameplay: false }): a content / scrip
   assert.deepEqual(built, [], 'refused before any set is built');
   assert.equal(sets.resolve(['skin'], { gameplay: false }).ok, true);
   assert.equal(sets.resolve(['rules']).ok, true, 'the default keeps gameplay plugins');
+});
+
+const queueRequest = { t: 'match.queue', mode: 'coop', difficulty: 'NORMAL' };
+test('four any-version solos use FIFO host preference with no bots or start', () => {
+  const h = harness();
+  try {
+    const players = ['A', 'B', 'C', 'D'].map(h.player);
+    for (const [index, player] of players.entries()) ok(h.lobby.handleMessage(player, { ...queueRequest, anyVersion: true, version: index === 0 ? 'act1autochess' : DEFAULT_VERSION }));
+    const room = h.lobby.roomOf(players[0]);
+    assert.equal(room.version, 'act1autochess'); assert.equal(room.hostId, players[0].playerId);
+    assert.ok(players.every(player => player.roomCode === room.code));
+    assert.equal(room.match, null); assert.equal(room.seats.filter(p => p?.isBot).length, 0);
+    assert.equal(h.last(players[3], 'match.found').version, room.version);
+  } finally { h.lobby.shutdown(); }
+});
+test('exact and any-version solos share a pool and satisfy every exact constraint', () => {
+  const h = harness();
+  try {
+    const players = ['A', 'B', 'C', 'D'].map(h.player);
+    for (const [index, player] of players.entries()) ok(h.lobby.handleMessage(player, { ...queueRequest, anyVersion: index !== 2, version: index === 2 ? 'act1autochess' : DEFAULT_VERSION }));
+    const room = h.lobby.roomOf(players[0]);
+    assert.equal(room.version, 'act1autochess'); assert.ok(players.every(player => player.roomCode === room.code));
+  } finally { h.lobby.shutdown(); }
+});
+test('wildcards never bridge incompatible exact versions and preserve remaining FIFO entries', () => {
+  const h = harness();
+  try {
+    const players = ['ExactA', 'ExactB', 'AnyA', 'AnyB', 'AnyC'].map(h.player);
+    ok(h.lobby.handleMessage(players[0], { ...queueRequest, version: DEFAULT_VERSION }));
+    ok(h.lobby.handleMessage(players[1], { ...queueRequest, version: 'act1autochess' }));
+    for (const player of players.slice(2,4)) ok(h.lobby.handleMessage(player, { ...queueRequest, anyVersion: true }));
+    assert.equal(h.lobby.rooms.size, 0);
+    ok(h.lobby.handleMessage(players[4], { ...queueRequest, anyVersion: true }));
+    assert.equal(h.lobby.roomOf(players[0]).version, DEFAULT_VERSION);
+    assert.equal(players[1].roomCode, null); assert.equal(h.lobby.matchmaking.solo.size, 1);
+  } finally { h.lobby.shutdown(); }
+});
+test('any-version fallback keeps difficulty and skips unavailable or unsupported versions', () => {
+  const h = harness();
+  try {
+    const players = ['A', 'B', 'C', 'D'].map(h.player);
+    for (const player of players) ok(h.lobby.handleMessage(player, { ...queueRequest, difficulty: 'ABYSS', version: 'act1autochess', anyVersion: true }));
+    const room = h.lobby.roomOf(players[0]); assert.equal(room.version, DEFAULT_VERSION); assert.equal(room.difficulty, 'ABYSS');
+    const hard = h.player('Hard'); const normal = h.player('Normal');
+    ok(h.lobby.handleMessage(hard, { ...queueRequest, difficulty: 'HARD', anyVersion: true }));
+    ok(h.lobby.handleMessage(normal, { ...queueRequest, anyVersion: true }));
+    assert.equal(h.lobby.rooms.size, 1);
+    h.lobby.versions.available = id => id !== 'act1autochess';
+    const more = ['E', 'F', 'G'].map(h.player);
+    for (const player of more) ok(h.lobby.handleMessage(player, { ...queueRequest, version: 'act1autochess', anyVersion: true }));
+    assert.equal(h.lobby.roomOf(normal).version, DEFAULT_VERSION);
+  } finally { h.lobby.shutdown(); }
+});
+test('any-version recruits fill an existing party without changing its version or replacing members', () => {
+  const h = harness();
+  try {
+    const host = h.player('Host'), guest = h.player('Guest');
+    ok(h.lobby.create(host, { mode: 'coop', difficulty: 'NORMAL', version: 'act1autochess', code: 'TEAM' }));
+    ok(h.lobby.join(guest, { code: 'TEAM' }));
+    ok(h.lobby.handleMessage(host, { ...queueRequest, version: 'act1autochess' }));
+    const room = h.lobby.roomOf(host), seats = room.seats.slice(0,2);
+    assert.equal(h.lobby.handleMessage(host, { ...queueRequest, version: 'act1autochess', anyVersion: true }).error, ERR.BAD_TARGET);
+    for (const name of ['A', 'B']) ok(h.lobby.handleMessage(h.player(name), { ...queueRequest, version: DEFAULT_VERSION, anyVersion: true }));
+    assert.equal(room.version, 'act1autochess'); assert.equal(room.code, 'TEAM'); assert.deepEqual(room.seats.slice(0,2), seats);
+    assert.equal(room.activeHumans().length, 4); assert.equal(room.match, null);
+  } finally { h.lobby.shutdown(); }
+});
+test('any-version preference changes restart only that entry; counts and manual room actions remain private and consistent', () => {
+  const h = harness();
+  try {
+    const player = h.player('Visible'), hidden = h.player('Hidden'); hidden.presenceStatus = 'invisible';
+    ok(h.lobby.handleMessage(player, { ...queueRequest, anyVersion: true }));
+    ok(h.lobby.handleMessage(hidden, { ...queueRequest, anyVersion: true }));
+    const counts = h.lobby.matchmaking.countFrame(); assert.equal(counts.anyVersion.total,1); assert.deepEqual(counts.byVersion,{});
+    const first = h.lobby.matchmaking.solo.get(player.playerId);
+    h.clock.t += 1000;
+    ok(h.lobby.handleMessage(player, { ...queueRequest, version: 'act1autochess' }));
+    const changed = h.lobby.matchmaking.solo.get(player.playerId);
+    assert.ok(changed.startedAt > first.startedAt); assert.equal(changed.anyVersion, false);
+    assert.equal(h.last(player,'match.state').anyVersion, false);
+    ok(h.lobby.handleMessage(player, { t:'room.create', mode:'coop', difficulty:'NORMAL', code:'MOVE' }));
+    assert.equal(h.lobby.matchmaking.solo.has(player.playerId),false);
+    ok(h.lobby.handleMessage(hidden, { t:'room.spectate', code:'MOVE' }));
+    assert.equal(h.lobby.matchmaking.solo.size,0);
+  } finally { h.lobby.shutdown(); }
+});
+
+test('any-version rejects a difficulty unavailable on every enabled version without changing queue state', () => {
+  const h = harness({ versions: versionStub({ enabled: ['act1autochess'] }) });
+  try {
+    const player = h.player('Unsupported');
+    assert.equal(h.lobby.handleMessage(player, { ...queueRequest, version: 'act1autochess', difficulty: 'ABYSS', anyVersion: true }).error, ERR.MATCH_UNSUPPORTED);
+    assert.equal(h.lobby.matchmaking.solo.size, 0); assert.equal(h.lobby.rooms.size, 0);
+    assert.equal(h.lobby.matchmaking.countFrame().offered.act1autochess.includes('ABYSS'), false);
+  } finally { h.lobby.shutdown(); }
+});
+
+test('no existing rooms is a valid queue state and wildcard difficulty need not exist in the preferred version', () => {
+  const h = harness();
+  try {
+    const player = h.player('Empty');
+    assert.equal(h.lobby.rooms.size, 0);
+    ok(h.lobby.handleMessage(player, { ...queueRequest, version: 'act1autochess', difficulty: 'ABYSS', anyDifficulty: true }));
+    assert.equal(h.last(player, 'match.state').anyDifficulty, true);
+    assert.equal(h.lobby.matchmaking.solo.size, 1); assert.equal(h.lobby.rooms.size, 0);
+    assert.equal(h.lobby.matchmaking.countFrame().features.anyDifficulty, true);
+    ok(h.lobby.handleMessage(player, { t: 'match.cancel' }));
+    ok(h.lobby.handleMessage(player, { ...queueRequest, version: 'act1autochess', difficulty: 'ABYSS', anyVersion: true }));
+    assert.equal(h.lobby.matchmaking.solo.size, 1);
+  } finally { h.lobby.shutdown(); }
+});
+test('any difficulty shares one pool with exact difficulties and never bridges incompatible exact requests', () => {
+  const h = harness();
+  try {
+    const players = ['Normal', 'Hard', 'Any1', 'Any2', 'Any3'].map(h.player);
+    for (let i = 0; i < 4; i++) ok(h.lobby.handleMessage(players[i], { ...queueRequest, version: DEFAULT_VERSION, difficulty: i === 1 ? 'HARD' : 'NORMAL', anyDifficulty: i >= 2 }));
+    assert.equal(h.lobby.rooms.size, 0);
+    ok(h.lobby.handleMessage(players[4], { ...queueRequest, version: DEFAULT_VERSION, difficulty: 'HARD', anyDifficulty: true }));
+    const room = h.lobby.roomOf(players[0]);
+    assert.equal(room.difficulty, 'NORMAL'); assert.equal(room.activeHumans().length, 4);
+    assert.equal(players[1].roomCode, null); assert.equal(room.match, null);
+  } finally { h.lobby.shutdown(); }
+});
+test('both wildcard dimensions honor exact version and difficulty constraints together', () => {
+  const h = harness();
+  try {
+    const players = ['Any1', 'Version', 'Difficulty', 'Any2'].map(h.player);
+    const choices = [{ anyVersion: true, anyDifficulty: true }, { version: 'act1autochess', anyDifficulty: true }, { anyVersion: true, difficulty: 'HARD' }, { anyVersion: true, anyDifficulty: true }];
+    for (const [i, player] of players.entries()) ok(h.lobby.handleMessage(player, { ...queueRequest, ...choices[i] }));
+    const room = h.lobby.roomOf(players[0]);
+    assert.equal(room.version, 'act1autochess'); assert.equal(room.difficulty, 'HARD');
+    assert.ok(players.every(p => p.roomCode === room.code)); assert.equal(room.match, null);
+    assert.equal(room.seats.filter(p => p?.isBot).length, 0);
+  } finally { h.lobby.shutdown(); }
+});
+test('all wildcard players fall back to a supported difficulty without treating their preference as a constraint', () => {
+  const h = harness({ versions: versionStub({ enabled: ['act1autochess'], defaultId: 'act1autochess' }) });
+  try {
+    for (const name of ['A', 'B', 'C', 'D']) ok(h.lobby.handleMessage(h.player(name), { ...queueRequest, version: 'act1autochess', difficulty: 'ABYSS', anyVersion: true, anyDifficulty: true }));
+    const room = [...h.lobby.rooms.values()][0];
+    assert.equal(room.version, 'act1autochess');
+    assert.ok(h.lobby.offered(room.version, 'coop').includes(room.difficulty));
+    assert.notEqual(room.difficulty, 'ABYSS'); assert.equal(room.activeHumans().length, 4);
+  } finally { h.lobby.shutdown(); }
+});
+test('any-difficulty recruit preserves the existing room settings and exposes only aggregate counts', () => {
+  const h = harness();
+  try {
+    const host = h.player('Host'), solo = h.player('Solo'), hidden = h.player('Hidden'); hidden.presenceStatus = 'invisible';
+    ok(h.lobby.handleMessage(solo, { ...queueRequest, version: DEFAULT_VERSION, anyDifficulty: true }));
+    ok(h.lobby.handleMessage(hidden, { ...queueRequest, anyVersion: true, anyDifficulty: true }));
+    const frame = h.lobby.matchmaking.countFrame();
+    assert.equal(frame.byVersion[DEFAULT_VERSION].anyDifficulty, 1);
+    assert.deepEqual(frame.byVersion[DEFAULT_VERSION].byDifficulty, {});
+    assert.equal(frame.anyVersion.total, 0);
+    ok(h.lobby.create(host, { mode: 'coop', difficulty: 'HARD', version: DEFAULT_VERSION, code: 'DIFF' }));
+    assert.equal(h.lobby.handleMessage(host, { ...queueRequest, difficulty: 'HARD', anyDifficulty: true }).error, ERR.BAD_TARGET);
+    ok(h.lobby.handleMessage(host, { ...queueRequest, difficulty: 'HARD' }));
+    const room = h.lobby.roomOf(host);
+    assert.equal(solo.roomCode, 'DIFF'); assert.equal(room.difficulty, 'HARD'); assert.equal(room.match, null);
+  } finally { h.lobby.shutdown(); }
 });

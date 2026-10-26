@@ -81,7 +81,7 @@ import { validPing } from './ui/fieldPings.js';
 import { installContent, installContentSet } from './content.js';
 import { cosmetics } from './cosmetics.js';
 
-import { sanitizeVersions, roomVersion, isDefaultVersion, matchFrameVersion } from './versions.js';
+import { sanitizeVersions, lobbyVersion, roomVersion, isDefaultVersion, matchFrameVersion } from './versions.js';
 import { CoveredVersionVote } from './ui/versionVote.js';
 import { isCombatPhase } from './ui/gameLogic/phases.js';
 import { preloadBootArt } from './ui/protocolBoot.js';
@@ -251,6 +251,7 @@ const CLOSE_REASON = {
 function wireNet() {
   installSocial();
   net.on('status', (snap) => {
+    if (snap.status !== 'online') store.set({ matchmaking: { status: 'idle' }, matchmakingCounts: null, matchmakingVersions: null, matchmakingFeatures: null });
     const cur = store.get().connection;
     store.set({
       connection: {
@@ -268,6 +269,24 @@ function wireNet() {
   net.on('replaced', () => toast(t('该身份已在其他页面登录，本页已断开'), 'warn', { ttl: 6000 }));
   net.on('unhandledError', (err) => toastError(err));
   net.on('room.state', onRoomState);
+  net.on('match.state', msg => { store.set({ matchmaking: payload(msg) }); if (msg.error) toastError({ code: msg.error }); });
+  net.on('match.found', msg => store.set({ matchmaking: { ...payload(msg), status: 'found' } }));
+  net.on('match.counts', msg => {
+    const byVersion = msg.byVersion == null ? null : { ...msg.byVersion };
+    if (byVersion) for (const version of store.get().versions || [{ id: lobbyVersion(store.get()) }]) {
+      const exact = byVersion[version.id] || { total: 0, byDifficulty: {} };
+      const byDifficulty = { ...exact.byDifficulty };
+      for (const [difficulty, count] of Object.entries(msg.anyVersion?.byDifficulty || {})) {
+        if (msg.offered?.[version.id] && !msg.offered[version.id].includes(difficulty)) continue;
+        byDifficulty[difficulty] = (byDifficulty[difficulty] || 0) + count;
+      }
+      const anyDifficulty = (exact.anyDifficulty || 0) + (msg.anyVersion?.anyDifficulty || 0);
+      for (const difficulty of msg.offered?.[version.id] || Object.keys(byDifficulty)) byDifficulty[difficulty] = (byDifficulty[difficulty] || 0) + anyDifficulty;
+      byVersion[version.id] = { total: exact.total + (msg.anyVersion?.anyDifficulty || 0)
+        + Object.entries(msg.anyVersion?.byDifficulty || {}).filter(([d]) => !msg.offered?.[version.id] || msg.offered[version.id].includes(d)).reduce((sum, [, n]) => sum + n, 0), byDifficulty };
+    }
+    store.set({ matchmakingCounts: byVersion, matchmakingVersions: msg.offered ?? null, matchmakingFeatures: msg.features ?? {} });
+  });
   net.on('site.announcement', (message) => store.set({ announcement: announcementFromMessage(message) }));
   net.on('site.settings', (message) => pwaInstall.setEnabled(message.showPwaInstall));
   net.on('room.closed', (msg) => {

@@ -176,6 +176,7 @@ import { Match as DefaultMatch } from './match/Match.js';
 import { getUniteLayerGains, getAllowRoomUniteLayerGains, getSocialSettings } from './match/hostSettings.js';
 import { getShowPwaInstall, getAllowAiTakeover } from './match/hostSettings.js';
 import { ServerSocial } from './social.js';
+import { Matchmaking } from './matchmaking.js';
 import { KITTED_CHARS } from './sim/content/kits/index.js';
 import { SiteAnnouncements } from './announcements.js';
 
@@ -303,6 +304,9 @@ export class Room {
      */
     this.aiPicksLast = mode !== 'solo';
     this.aiTakeoverEnabled = false;
+    // [ASSUMED] Owner-requested public directory (#12), adapted from NeoPecos 2cadc618.
+    // Private rooms remain reachable through existing invitation/key routes.
+    this.private = false;
     this.version = version;
     this.versionVote = null; this.versionVoteSeq = 0; this.versionProposeAt = -Infinity; this.versionRetryAt = -Infinity; this.soloUnlimited = false;
     this.convenience = roomConvenience();
@@ -392,6 +396,8 @@ export class Room {
       convenience: { ...this.convenience },
       canSetUniteLayerGains: getAllowRoomUniteLayerGains(),
       inMatch: !!this.match,
+      ...(this.matching ? { matching: { startedAt: this.matching.startedAt, target: DEFAULT_SEATS } } : {}),
+      ...(this.private ? { private: true } : {}),
       textChat: true,
       seats: this.seats.map((s) => (s
         ? { seat: s.seat, playerId: s.playerId, name: s.name, isBot: s.isBot, ready: s.ready, connected: s.connected && !s.left, bondPlan: s.bondPlan || null,
@@ -468,6 +474,7 @@ export class Lobby {
     /** @type {Map<string, Room>} */
     this.rooms = new Map();
     this.social = new ServerSocial(this);
+    this.matchmaking = new Matchmaking(this);
     this.chatTimes = new WeakMap();
     this.announcements = new SiteAnnouncements({ now: this.now, broadcast: (frame) => {
       for (const session of this.registry.all()) if (session.connected) sendSession(session, frame);
@@ -599,6 +606,7 @@ export class Lobby {
     this.social.lastSent.delete(session);
     this.social.sync();
     sendSession(session, this.announcements.frame());
+    this.matchmaking.hello(session);
     if (!resumed && !repeat) return;
     const room = this.roomOf(session);
     if (!room) {
@@ -700,6 +708,9 @@ export class Lobby {
    * @param {{ from?: { seat: Seat, gen: number } | null } | null} [ctx]
    */
   handleMessage(session, msg, ctx = null) {
+    if (msg.t === 'match.queue') return this.matchmaking.queue(session, msg);
+    if (msg.t === 'match.cancel') return this.matchmaking.cancel(session);
+    if (msg.t === 'room.create' || msg.t === 'room.join' || msg.t === 'room.spectate') this.matchmaking.leave(session);
     switch (msg.t) {
       case 'state.resync': this.resync(session, true); return OK;
       case 'social.list': return this.social.list(session, msg);
@@ -711,6 +722,8 @@ export class Lobby {
       case 'room.proposeVersion': return this.proposeVersion(session, msg);
       case 'room.versionVote': return this.versionVote(session, msg);
       case 'room.cancelVersionVote': return this.cancelVersionVote(session, msg);
+      case 'room.list': return this.listRooms();
+      case 'room.setPrivate': return this.setPrivate(session, msg);
       case 'room.create': return this.create(session, msg);
       case 'room.join': return this.join(session, msg);
       case 'room.leave': return this.leave(session);
@@ -750,6 +763,7 @@ export class Lobby {
 
   /** The session's socket closed. @param {import('./net.js').Session} session */
   onDisconnect(session) {
+    this.matchmaking.leave(session);
     this.social.sync();
     this.clearResync(session.playerId); // the next resume resyncs immediately
     const room = this.roomOf(session);
@@ -778,6 +792,7 @@ export class Lobby {
 
   /** The session's reconnect window elapsed (already removed from the registry). */
   onExpire(session) {
+    this.matchmaking.leave(session);
     session.notice = null;
     session.pendingResult = null;
     this.clearResync(session.playerId);
@@ -797,6 +812,7 @@ export class Lobby {
    * @param {string} [reason]
    */
   shutdown(reason = 'shutdown') {
+    this.matchmaking.dispose();
     this.social.dispose();
     this.announcements.dispose();
     this.offStale?.();
@@ -814,7 +830,50 @@ export class Lobby {
   // room.* handlers
   // ---------------------------------------------------------------------------------------------------
 
-  create(session, { mode, difficulty = DEFAULT_DIFFICULTY, code: requestedCode, capacity = DEFAULT_SEATS, test, version: askedVersion, soloUnlimited } = {}) {
+  /** Public summaries only: never publish room.state, content consent, identities or session tokens. */
+  listRooms() {
+    const rooms = [...this.rooms.values()]
+      .filter(room => !room.disposed && room.mode === 'coop' && !room.private && !room.test && room.activeHumans().length > 0)
+      .map(room => {
+        const host = this.registry.byId(room.hostId);
+        const occupied = room.seats.filter(Boolean).length;
+        return {
+          code: room.code,
+          hostName: host && this.social.visible(host) ? host.name : '',
+          difficulty: room.difficulty,
+          version: room.version,
+          humans: room.activeHumans().length,
+          bots: room.seats.filter(seat => seat?.isBot).length,
+          maxSeats: room.capacity,
+          spectators: room.spectators.length,
+          inMatch: !!room.match,
+          joinable: !room.match && room.freeSeat() >= 0,
+          watchable: room.spectators.length < MAX_SPECTATORS,
+          occupied,
+          modded: room.modded,
+        };
+      })
+      .sort((a, b) => Number(b.joinable) - Number(a.joinable) || Number(a.inMatch) - Number(b.inMatch)
+        || (a.maxSeats - a.occupied) - (b.maxSeats - b.occupied) || a.code.localeCompare(b.code));
+    return { ok: true, rooms, roomsCount: rooms.length, matchesCount: rooms.filter(room => room.inMatch).length,
+      online: getSocialSettings().counts ? [...this.registry.all()].filter(session => this.social.visible(session)).length : null };
+  }
+
+  setPrivate(session, { private: isPrivate }) {
+    if (typeof isPrivate !== 'boolean') return fail(ERR.BAD_MSG);
+    const room = this.roomOf(session);
+    if (!room) return fail(ERR.NOT_IN_ROOM);
+    if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
+    if (room.match) return fail(ERR.ROOM_STARTED);
+    if (room.mode !== 'coop') return fail(ERR.BAD_TARGET);
+    if (room.private !== isPrivate) {
+      room.private = isPrivate;
+      this.broadcastState(room);
+    }
+    return OK;
+  }
+
+  create(session, { mode, difficulty = DEFAULT_DIFFICULTY, code: requestedCode, capacity = DEFAULT_SEATS, test, version: askedVersion, soloUnlimited, private: isPrivate = false } = {}) {
     if (!ROOM_CAPACITIES.includes(capacity)) return fail(ERR.BAD_MSG);
     // A test room exists only when the process switch allowed it. The check runs before the room is built.
     if (test === true && this.testEnabled !== true) return fail(ERR.TEST_DISABLED);
@@ -845,6 +904,7 @@ export class Lobby {
     if (!code) return fail(ERR.INTERNAL, 'no room code available');
     const room = new Room(code, mode, difficulty, this.now(), capacity, version);
     room.test = test === true;
+    room.private = mode === 'coop' && isPrivate === true;
     room.content = this.baseContent(version);
     room.convenience.soloUnlimited = typeof soloUnlimited === 'boolean' ? soloUnlimited : true;
     room.soloUnlimited = mode === 'solo' && room.convenience.soloUnlimited && this.versionSoloTimed(version);
@@ -1571,6 +1631,7 @@ export class Lobby {
   /** @param {Room} room @param {string | null} [key] per-network limit key of the starter */
   startMatch(room, key = null, restored = null) {
     if (room.test && !this.testEnabled) return fail(ERR.TEST_DISABLED);
+    this.matchmaking.stopRoom(room);
 
     const host = room.seatOf(room.hostId);
     if (host) host.ready = true;
@@ -1983,6 +2044,8 @@ export class Lobby {
    * @param {Room} room @param {string} playerId
    */
   removeMember(room, playerId) {
+    const matchingMember = this.registry.byId(playerId);
+    if (matchingMember) this.matchmaking.leave(matchingMember);
     if (room.versionVote && room.seatOf(playerId) && !room.seatOf(playerId).isBot) this.voidVersionVote(room, 'members');
     const session = this.registry.byId(playerId);
     if (session && session.roomCode === room.code) session.roomCode = null;
@@ -2061,6 +2124,7 @@ export class Lobby {
    * @param {Room} room @param {string} reason
    */
   disposeRoom(room, reason) {
+    this.matchmaking.stopRoom(room);
     if (room.versionVote) this.voidVersionVote(room, 'members');
     if (room.disposed) return;
     this.recovery?.roomClosed(room.code);
@@ -2124,6 +2188,7 @@ export class Lobby {
 
   broadcastState(room) {
     if (room.disposed) return;
+    this.matchmaking.reconcile(room);
     reconcileAiTakeover(this, room);
     if (this.trustedRuntime) {
       const state = room.toState(this.now()), prev = room.trustedPrevious;

@@ -1212,3 +1212,25 @@ The host’s pre-match `room.setAiTakeover {on}` opts a co-op room in; default o
 ### Room-local convenience choices (2026-10-25)
 
 shared/roomConvenience.js normalizes five room booleans. Lobby snapshots them into Match options and wireOptions preserves them for historical-version hosts. Match combines prepLoadout, unequip and morphPairing with verified plugin rules (plugin wins); benchEquip bypasses only the historical bench target gate. A timed solo uses its existing soloUnlimited path. New-room defaults are three on, two off; standalone Match fixtures are unchanged. Recovery, journals and result metadata retain the choices.
+
+## 公开房间目录（本库扩展 #12）
+
+`Lobby.listRooms` 从已有 Room 注册表生成只读摘要；不创建第二套房间、匹配队列或观战系统。
+`room.list` 返回在原 rid/ok 信封内，复用 Network 的重请求限流；`room.join`、`room.spectate` 仍由原处理器裁决。
+公开合作房默认可发现，私密开关只控制目录可见性，不能替代密钥/邀请。私密属性经 `server/recovery.js` 保存和恢复。
+四个玩法版本、扩展容量及插件的既有内容加载不变。完整约定、NeoPecos 来源与验收见 [公开房间大厅](PUBLIC-ROOM-LOBBY.md)。
+
+## 本服真人匹配（扩展，2026-10-26）
+
+`Lobby.matchmaking` 由 `server/matchmaking.js` 管理临时散人与主动招募房队列。使用原 `create` / `join`，
+不复制房间或 Match 状态机。凑人后留在等待室，原 ready/start 决定开局；不自动启动或填 AI。
+`Room.matching` 是临时展示状态，不进入重启恢复。生命周期、兼容边界和完整协议见 [真人匹配](MATCHMAKING.md)。
+
+同盟大厅续版（2026-10-26）：`match.queue.anyVersion` true 接受任意可用玩法版本，难度仍相同；缺省保持旧精确
+语义。先补主动房且不切版，再按精确约束/FIFO 组四人；全不限优先最早者偏好，回退服务器注册顺序。
+大厅直接筛选、搜寻与取消，沿用目录加入/观战。`match.counts.offered` 提供可选版本/难度，`anyVersion` 单独
+统计可见不限版本散人。完整约定见 [真人匹配](MATCHMAKING.md)。
+
+2026-10-27 续版：anyDifficulty true 独立接受不限难度，指定约束仍严格保留。同局采用一个实际版本/难度，
+房主招募仍固定。零房间允许排队；无可用条件用 MATCH_UNSUPPORTED，客户端根据 match.counts.features
+阻止旧服务器不支持的不限请求。3005 空闲测试实例已平滑重启并复现同输入由失败转成功。

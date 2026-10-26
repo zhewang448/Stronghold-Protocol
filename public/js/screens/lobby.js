@@ -1,19 +1,18 @@
 import { VersionSwitch } from '../ui/versionPicker.js';
-import { lobbyVersion, isDefaultVersion, versionLabel, shownVersion, offeredDifficulties, soloTimedOf } from '../versions.js';
+import { lobbyVersion, isDefaultVersion, versionLabel, shownVersion, offeredDifficulties, soloTimedOf, setLobbyVersion } from '../versions.js';
 import { LobbyMusicButton } from '../ui/lobbyMusic.js';
 import { AccountMeChip } from '../ui/accounts.js';
 import { OnlinePlayersButton, PresenceSelector } from '../ui/social.js';
-import { isOwnerName, decorateOwnerName } from '../ui/ownerName.js';
-import { enabled as federationEnabled } from '../federation.js';
 import { MatchmakingCount } from '../ui/matchmaking.js';
 import { Emblem } from './title.js';
 import { useHubBackdrop, HubBackdrop, HubRadar, BackdropSettings, BackdropGlyph, backdropTheme } from '../ui/hubBackdrop.js';
 // Lobby screen — a hub (owner's request, 2026-10-13): an original backdrop (ui/hubBackdrop.js: generated night scenes or
 // the player's own picture) with the game's dot-matrix emblem in the middle, a left column (密钥加入 · tips), a right
-// column (缺人同盟 card · S.W.E.E.P.报告 (screens/sweep.js) · 干员调配) and four big entries at the bottom right:
+// column (S.W.E.E.P.报告 (screens/sweep.js) · 干员调配 · local data tools) and three main entries at the bottom right:
+// 独立模拟 / 同盟模拟 / 同盟大厅. Announcements and release history sit beside achievements, below them on small screens.
 // 独立模拟 / 无限火力 open their difficulty picker; 同盟模拟 goes through 选择同盟方式 → difficulty picker → room.
 // The existing start sheet also holds the mode settings (无限火力's variant, private room,
-// 快速匹配, create), 搜寻队友 opens the room list. The 密钥加入 dialog joins with a 同盟密钥 (recent codes remembered) —
+// create), 搜寻队友 opens the shared directory and queue. The 密钥加入 dialog joins with a 同盟密钥 (recent codes remembered) —
 // as a player (加入同盟) or in one of its MAX_SPECTATORS spectator seats (观战: room.spectate, also while its match
 // runs; community report #26). The server is picked on the title screen.
 
@@ -48,7 +47,7 @@ import { PwaInstallButton, fullscreen } from '../ui/device.js';
 import { LoadoutButton } from './loadout.js';
 import { SweepReport } from './sweep.js';
 import { ProtocolScene } from '../ui/protocolScene.js';
-import { SearchPanel, RadarScene, CreateArt, JoinArt } from '../ui/matchFlow.js';
+import { RadarScene, CreateArt, JoinArt } from '../ui/matchFlow.js';
 import { useLeave } from '../ui/transitions.js';
 import { net, identity } from '../net.js';
 import { store, useStore, shallowEqual, loadPref, savePref } from '../store.js';
@@ -336,46 +335,49 @@ function TipsPanel() {
  */
 export function recruitingRooms(rooms) {
   return (Array.isArray(rooms) ? rooms : [])
-    .filter((r) => r && typeof r.code === 'string' && !r.inMatch && r.humans > 0 && r.humans < (r.maxSeats || MAX_SEATS))
-    .sort((a, b) => ((a.maxSeats || MAX_SEATS) - a.humans) - ((b.maxSeats || MAX_SEATS) - b.humans) || b.humans - a.humans);
+    .filter((r) => r && typeof r.code === 'string' && r.humans > 0 && directoryRoomFacts(r).joinable)
+    .sort((a, b) => directoryRoomFacts(a).free - directoryRoomFacts(b).free || b.humans - a.humans);
 }
 
-function RecruitCard({ rooms, online, onJoin, onAll, onCreate }) {
-  const open = recruitingRooms(rooms);
-  return html`<section class="hub-recruit" aria-label=${t('缺人同盟')}>
-    <header class="hub-recruit__head">
-      <span class=${`hub-recruit__pulse${open.length ? ' is-live' : ''}`} aria-hidden="true"></span>
-      <span class="hub-recruit__title">${t('缺人同盟')}</span>
-      <span class="hub-recruit__en">RECRUITING</span>
-      <span class="hub-recruit__n num">${open.length}</span>
-      <button type="button" class="hub-recruit__all" onClick=${onAll}>${t('全部')}<${Icon} name="chevronRight" /></button>
-    </header>
-    <div class="hub-recruit__list">
-      ${open.length ? open.slice(0, 3).map((r) => {
-        const max = r.maxSeats || MAX_SEATS;
-        const name = r.name || t('同盟 #{code}', { code: r.code });
-        return html`<div key=${`${r.node || ''}:${r.code}`} class="hub-recruit__row" style=${`--d-color:${DIFFICULTY_COLORS[r.difficulty] || 'var(--mint-500)'}`}>
-          <span class="hub-recruit__info">
-            <span class=${`hub-recruit__name${isOwnerName(r.hostName || r.name) ? ' sp-owner-name' : ''}`}>${name}</span>
-            <span class="hub-recruit__meta">
-              <${DifficultyIcon} difficulty=${r.difficulty} class="diff-glyph" />
-              <span>${DIFFICULTY_NAMES[r.difficulty] ? t(DIFFICULTY_NAMES[r.difficulty]) : r.difficulty}</span>
-              ${r.random ? html`<span class="hub-recruit__fp">${t('无限火力')}</span>` : null}
-              ${r.nodeName ? html`<span class="t-dim">${r.nodeName}</span>` : null}
-            </span>
-          </span>
-          <span class="hub-recruit__seats">
-            <span class="hub-recruit__pips" aria-hidden="true">${Array.from({ length: max }, (_, i) => html`<i key=${i} class=${i < r.humans ? 'is-on' : ''}></i>`)}</span>
-            <span class="hub-recruit__need">${t('缺')}<b class="num">${max - r.humans}</b>${t('人')}</span>
-          </span>
-          <button type="button" class="hub-recruit__join" disabled=${!online} onClick=${() => onJoin(r.code, r.node)}>${t('加入')}</button>
-        </div>`;
-      }) : html`<div class="hub-recruit__empty">
-        <span>${t('暂时没有缺人的同盟')}</span>
-        <button type="button" class="hub-recruit__create" onClick=${onCreate}>${t('创建同盟')}<${Icon} name="chevronRight" /></button>
-      </div>`}
-    </div>
-  </section>`;
+/** Reuse the server's actual seat availability; fallback only for older directory summaries. */
+export function directoryRoomFacts(room) {
+  const capacity = room.maxSeats || MAX_SEATS;
+  const occupied = room.occupied ?? ((room.humans || 0) + (room.bots || 0));
+  return { capacity, occupied, free: capacity - occupied,
+    joinable: !room.inMatch && (room.joinable ?? occupied < capacity),
+    watchable: room.watchable ?? (room.spectators || 0) < MAX_SPECTATORS };
+}
+
+/** One directory poll shared by the hub card and dialog; hidden/offline pages do not poll. */
+function useRoomDirectory(online, interval) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const refresh = useRef(null);
+  useEffect(() => {
+    if (!online || !CAN_LIST) { setData(null); setError(false); setLoading(false); refresh.current = null; return undefined; }
+    let cancelled = false, pending = false;
+    const fetchRooms = async () => {
+      if (pending || document.hidden) return;
+      pending = true; setLoading(true);
+      try {
+        const res = await net.request('room.list');
+        if (!Array.isArray(res?.rooms)) throw new Error('Invalid room directory');
+        if (!cancelled) { setData(res); setError(false); }
+      } catch {
+        if (!cancelled) setError(true);
+      } finally {
+        pending = false;
+        if (!cancelled) setLoading(false);
+      }
+    };
+    refresh.current = fetchRooms;
+    fetchRooms();
+    const timer = setInterval(fetchRooms, interval);
+    document.addEventListener('visibilitychange', fetchRooms);
+    return () => { cancelled = true; clearInterval(timer); document.removeEventListener('visibilitychange', fetchRooms); refresh.current = null; };
+  }, [online, interval]);
+  return { data, loading, error, refresh: () => refresh.current?.() };
 }
 
 /** 全屏 / 退出全屏 in the top bar, styled like its neighbours (hidden where the browser has no element fullscreen). */
@@ -412,11 +414,11 @@ function SweepPlate({ onClick }) {
   </button>`;
 }
 
-/** One of the four big entries at the bottom right. */
-export function HubEntry({ group, name, en, icon, badge, tone = 'mint', count = null, onClick, disabled = false }) {
+/** Main action at the bottom right; optional capability entries reuse the same component. */
+export function HubEntry({ group, name, en, icon, badge, tone = 'mint', count = null, onClick, disabled = false, testId, title }) {
   return html`<div class="hub-entry-wrap">
     ${group ? html`<span class="hub-entry__group"><${Icon} name=${group.icon} />${group.label}</span>` : html`<span class="hub-entry__group hub-entry__group--blank"></span>`}
-    <button type="button" aria-label=${en} class=${`hub-entry hub-entry--${tone}`} onClick=${onClick} disabled=${disabled}>
+    <button type="button" aria-label=${name} data-testid=${testId} title=${title} class=${`hub-entry hub-entry--${tone}`} onClick=${onClick} disabled=${disabled}>
       <span class="hub-entry__icon"><${Icon} name=${icon} /></span>
       <span class="hub-entry__en">${en}</span>
       <span class="hub-entry__name">${name}${badge ? html`<span class="mode-beta">${badge}</span>` : null}</span>
@@ -520,12 +522,12 @@ export function ProtoCard({ roomMode, difficulty, selected, onSelect, matchmakin
  * 选择模拟协议 (2026-10-13, the owner's request: the event's second screen after 独立模拟): full screen, the picture of
  * the selected difficulty at the left (ui/protocolScene.js, original), the difficulties down the right with the
  * 已选定 stamp, 开始模拟 at the bottom right. Kept from the old start sheet: 无限火力's variants and notes, the private
- * room, 快速匹配, the queue counts, rounds / 隐秘核心 / battlefields and the hints. Esc or ‹ returns to the hub.
+ * room, the directory, the queue counts, rounds / 隐秘核心 / battlefields and the hints. Esc or ‹ returns to the hub.
  * Comes up from black over the hub (`chained`: straight after 选择同盟方式, already black) and fades back out
  * (ui/transitions.js); the picture is redrawn for each difficulty.
  */
 export function ProtocolSelect({ card, roomMode, random, variant, difficulty, onDifficulty, onClose, matchmaking, brief, privateRoom, onPrivate,
-  online, maint, busy, isSearching, onCreate, onQueue, purpose = 'create', onSearch, onCancel, mm, onBrowse, chained = false, onUnlimited = null }) {
+  online, maint, busy, isSearching, onCreate, onBrowse, chained = false, onUnlimited = null }) {
   const currentVersion = useStore(shownVersion);
   const allowedDifficulties = offeredDifficulties(getConfig(), roomMode);
   const [unlimited, setUnlimited] = useState(true);
@@ -540,33 +542,10 @@ export function ProtocolSelect({ card, roomMode, random, variant, difficulty, on
     return () => { removeEventListener('keydown', onKey); document.body.classList.remove('hub-dialog-open'); };
   }, []);
   const fx = `${leaving ? ' is-leaving' : ''}${chained ? ' is-chained' : ''}`;
-  const search = purpose === 'search';
   const info = difficultyInfo(roomMode, difficulty, { random, variant });
-  const label = maint?.active ? t('维护中 · 暂停开局') : search ? t('开始搜寻') : random ? t('创建无限火力') : roomMode === 'solo' ? t('开始模拟') : t('创建同盟');
+  const label = maint?.active ? t('维护中 · 暂停开局') : random ? t('创建无限火力') : roomMode === 'solo' ? t('开始模拟') : t('创建同盟');
   const hint = !online ? t('正在连接服务器…') : maint?.active ? t('服务器即将停机维护，暂时停止开启新的同盟')
-    : search ? t('精确搜寻：只与选择相同难度的博士组成同盟，凑齐 4 人即开始')
     : isSearching ? t('正在匹配真人队友，AI 补位已暂停') : roomMode === 'solo' ? t('独自调配阵容，按自己的节奏开始模拟') : t('创建后可邀请好友，AI 队友已暂停');
-  // 搜寻队友: while the queue runs, the right column is the 搜寻中 panel (the server's elapsed / matched counts)
-  if (search && isSearching) {
-    const d = mm?.difficulty && DIFFICULTIES.includes(mm.difficulty) ? mm.difficulty : difficulty;
-    return html`<div class=${`proto proto--searching${fx}`} style=${`--d-color:${DIFFICULTY_COLORS[d]}`} data-difficulty=${d} role="dialog" aria-label=${t('搜寻队友')}>
-      <div class="proto__bg" aria-hidden="true"></div>
-      <header class="proto-top">
-        <button type="button" class="proto-back" onClick=${leave} title=${t('返回大厅（继续搜寻）')} aria-label=${t('返回大厅')}>
-          <${Icon} name="chevronLeft" /><span class="proto-back__home"><${Icon} name="rook" /></span>
-        </button>
-      </header>
-      <div class="proto-body">
-        <section class="proto-stage"><${ProtocolScene} key=${d} difficulty=${d} /></section>
-        <section class="proto-side proto-side--search">
-          <${SearchPanel} elapsed=${mm?.elapsed || 0} onStop=${onCancel} stopping=${busy === 'cancel'}
-            note=${t('已找到 {matched}/{target} 名博士', { matched: mm?.matched || 1, target: mm?.target || 4 })}
-            tags=${[{ key: 'mode', label: t('精确搜寻'), icon: html`<${Icon} name="search" />` },
-              { key: 'diff', label: t(DIFFICULTY_NAMES[d]), color: DIFFICULTY_COLORS[d], icon: html`<${DifficultyIcon} difficulty=${d} />` }]} />
-        </section>
-      </div>
-    </div>`;
-  }
   return html`<div class=${`proto${fx}`} style=${`--d-color:${DIFFICULTY_COLORS[difficulty]}`} data-difficulty=${difficulty} ref=${pageRef} role="main" aria-label=${t('选择模拟协议')}>
     <div class="proto__bg" aria-hidden="true"></div>
     <header class="proto-top">
@@ -575,7 +554,7 @@ export function ProtocolSelect({ card, roomMode, random, variant, difficulty, on
       </button>
       <div class="proto-title">
         <h2>${t('选择模拟协议')}</h2>
-        <span class="proto-title__mode">${search ? t('搜寻队友') : t(card.name)}<i>${search ? 'FIND ALLIES' : card.en}</i></span>
+        <span class="proto-title__mode">${t(card.name)}<i>${card.en}</i></span>
       </div>
     </header>
     <div class="proto-body">
@@ -595,17 +574,13 @@ ${timedSolo ? html`<label class="proto-unlimited" data-testid="solo-unlimited"><
             matchmaking=${matchmaking} random=${random} variant=${variant} />`)}
         </div>
         <div class="proto-foot">
-          ${search ? html`<div class="proto-opts">
-            <span class="proto-mode-chip"><${Icon} name="search" />${t('精确搜寻')}</span>
-            <${Button} variant="secondary" size="md" icon="users" onClick=${onBrowse}>${t('浏览公开同盟')}<//>
-          </div>` : roomMode !== 'solo' ? html`<div class="proto-opts">
+          ${roomMode !== 'solo' ? html`<div class="proto-opts">
             ${roomMode !== 'solo' && CAN_PRIVATE ? html`<label class="proto-private" title=${t('不在公开大厅显示，仅通过房间码或邀请加入')}>
               <input type="checkbox" checked=${privateRoom} onChange=${(e) => onPrivate(e.currentTarget.checked)} /><span>${t('私密房间')}</span></label>` : null}
-            ${roomMode === 'coop' && CAN_QUEUE ? html`<${Button} variant="secondary" size="md" icon="refresh" loading=${busy === 'queue'} disabled=${!online || maint?.active || isSearching}
-              onClick=${onQueue}>${t('快速匹配')}<//>` : null}
+            ${roomMode === 'coop' && CAN_LIST ? html`<${Button} variant="secondary" size="md" icon="search" onClick=${onBrowse}>${t('同盟大厅')}<//>` : null}
           </div>` : null}
           <p class="proto-hint">${hint}</p>
-          <button type="button" class="proto-start" disabled=${!online || maint?.active || busy === 'create' || busy === 'queue'} onClick=${search ? onSearch : onCreate}>
+          <button type="button" class="proto-start" disabled=${!online || maint?.active || !!busy} onClick=${onCreate}>
             <span class="proto-start__mark" aria-hidden="true"><span class="proto-start__rook"><i>[</i><${Icon} name="rook" /><i>]</i></span><small>STRONGHOLD<br />PROTOCOL</small></span>
             <span class="proto-start__label">${busy === 'create' || busy === 'queue' ? html`<${Spinner} size="sm" />` : null}${label}</span>
             <span class="proto-start__deco" aria-hidden="true"></span>
@@ -619,10 +594,10 @@ ${timedSolo ? html`<label class="proto-unlimited" data-testid="solo-unlimited"><
 
 /**
  * 选择同盟方式: the radar at the left (ui/matchFlow.js), 创建同盟 (choose a difficulty before a room is created) and 加入同盟 (the
- * key field, 观战, recent keys) at the right, 模拟邀约 (the public alliances) and 搜寻队友 between them, 入门协议 (玩法说明)
+ * key field, 观战, recent keys) at the right, 搜寻队友 (the shared alliance directory) between them, 入门协议 (玩法说明)
  * at the bottom left. Esc or ‹ returns to the hub.
  */
-export function AllianceSelect({ customCode, onCustomCode, customCodeOk, onClose, code, onCode, codeOk, recent, online, maint, busy, onCreate, onJoin, onSpectate, onBrowse, onSearch, recruiting = 0, difficulty }) {
+export function AllianceSelect({ customCode, onCustomCode, customCodeOk, onClose, code, onCode, codeOk, recent, online, maint, busy, onCreate, onJoin, onSpectate, onSearch, difficulty }) {
   const [leaving, leave] = useLeave(onClose);
   const pageRef = useRef(null);
   useDialogFocus(true, pageRef, leave);
@@ -657,8 +632,7 @@ export function AllianceSelect({ customCode, onCustomCode, customCodeOk, onClose
         </button>
         </div>
         <div class="ally-links">
-          ${CAN_QUEUE ? html`<button type="button" class="ally-pill" onClick=${onSearch}><${Icon} name="search" />${t('搜寻队友')}</button>` : null}
-          ${CAN_LIST ? html`<button type="button" class="ally-pill ally-pill--invite" onClick=${onBrowse}>${t('模拟邀约')}${recruiting ? html`<b class="num">${recruiting}</b>` : null}<span class="ally-pill__mark" aria-hidden="true"></span></button>` : null}
+          ${CAN_QUEUE ? html`<button type="button" class="ally-pill" data-testid="matchmaking-open" onClick=${onSearch}><${Icon} name="search" />${t('搜寻队友')}</button>` : null}
         </div>
         <div class="ally-card ally-card--join">
           <span class="ally-card__art"><${JoinArt} /></span>
@@ -679,59 +653,46 @@ export function AllianceSelect({ customCode, onCustomCode, customCodeOk, onClose
   </div>`;
 }
 
-function MatchmakingModal({ open, onClose, onJoin, onSpectate }) {
-  const lobbyStats = useStore((s) => s.lobbyStats, shallowEqual);
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState(() => ({
-    online: lobbyStats?.online ?? 1,
-    roomsCount: lobbyStats?.roomsCount ?? 0,
-    matchesCount: lobbyStats?.matchesCount ?? 0,
-    rooms: lobbyStats?.rooms ?? [],
-  }));
-
-  useEffect(() => {
-    if (federationEnabled) {net.request('room.list').then(r=>setData(r)).catch(()=>{});return;}
-    if (lobbyStats && typeof lobbyStats.online === 'number') {
-      setData({
-        online: lobbyStats.online,
-        roomsCount: lobbyStats.roomsCount,
-        matchesCount: lobbyStats.matchesCount,
-        rooms: lobbyStats.rooms,
-      });
-    }
-  }, [lobbyStats]);
-
-  const fetchRooms = async () => {
-    setLoading(true);
-    try {
-      const res = CAN_LIST ? await net.request('room.list') : null;
-      if (res && res.ok) {
-        setData(res);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
-  };
-
+export function MatchmakingModal({ open, onClose, onJoin, onSpectate, directory, online, busy, maint, mm, onQueue, onCancel }) {
+  const { data: result, loading, error, refresh: fetchRooms } = directory;
+  const data = result || {};
+  const selectedVersion = useStore(lobbyVersion);
+  const versions = useStore(s => s.versions);
+  const queueVersions = useStore(s => s.matchmakingVersions);
+  const features = useStore(s => s.matchmakingFeatures);
+  const [version, setVersion] = useState('any');
+  const savedDifficulty = () => loadPref('lobby.matchDifficulty', null) === 'any' ? 'any' : preferredDifficulty('coop');
+  const [difficulty, setDifficulty] = useState(savedDifficulty);
+  const searching = mm?.status === 'searching';
+  useEffect(() => { if (open && !searching) setDifficulty(savedDifficulty()); }, [open, searching]);
+  const [, tick] = useState(0);
+  useEffect(() => { if (!open || !searching) return undefined; const id = setInterval(() => tick(n => n + 1), 1000); return () => clearInterval(id); }, [open, searching]);
+  const elapsed = Math.max(0, Math.floor((net.serverNow() - (mm?.startedAt ?? net.serverNow())) / 1000));
+  const time = String(Math.floor(elapsed / 60)).padStart(2, '0') + ':' + String(elapsed % 60).padStart(2, '0');
+  const shownVersion = searching ? (mm.anyVersion ? 'any' : mm.version) : version;
+  const shownDifficulty = searching ? (mm.anyDifficulty ? 'any' : mm.difficulty) : difficulty;
+  const allowed = queueVersions ? version === 'any' ? DIFFICULTIES.filter(d => Object.values(queueVersions).some(list => list.includes(d))) : queueVersions[version] || []
+    : version === 'any' ? DIFFICULTIES : offeredDifficulties(getConfig(), 'coop');
+  const compatible = (version !== 'any' || features?.anyVersion === true) && (difficulty !== 'any' || features?.anyDifficulty === true);
+  const supported = compatible && (difficulty === 'any' ? allowed.length > 0 : allowed.includes(difficulty));
+  const rooms = (data.rooms || []).filter(room => (shownVersion === 'any' || room.version === shownVersion) && (shownDifficulty === 'any' || room.difficulty === shownDifficulty));
+  const boxRef = useRef(null);
+  useDialogFocus(open, boxRef, onClose);
   useEffect(() => {
     if (!open) return undefined;
-    fetchRooms();
-    const timer = setInterval(() => { if (!document.hidden) fetchRooms(); }, 4000);
-    return () => clearInterval(timer);
+    document.body.classList.add('hub-dialog-open');
+    return () => document.body.classList.remove('hub-dialog-open');
   }, [open]);
 
   if (!open) return null;
 
   return html`<div class="modal mm-modal" role="presentation"
       onMouseDown=${(e) => { if (e.target === e.currentTarget && onClose) onClose(); }}>
-    <div class="modal__box mm-modal__box brackets" role="dialog" aria-modal="true">
+    <div ref=${boxRef} class="modal__box mm-modal__box brackets" role="dialog" aria-modal="true" aria-label=${t('同盟大厅')} tabindex="-1">
       <div class="modal__stripe" aria-hidden="true"></div>
       <header class="modal__head mm-modal__head">
-        <${MicroLabel} tone="mint">MULTIPLAYER MATCHMAKING<//>
         <div class="mm-modal__title-row">
-          <h2 class="modal__title mm-modal__title">${t('三服统一大厅')}</h2>
+          <h2 class="modal__title mm-modal__title">${t('同盟大厅')}</h2>
           <button type="button" class="mm-modal__close" onClick=${onClose} aria-label=${t('关闭')}>
             <${Icon} name="close" />
           </button>
@@ -739,45 +700,45 @@ function MatchmakingModal({ open, onClose, onJoin, onSpectate }) {
       </header>
 
       <div class="mm-modal__body">
-        <div class="mm-stats-bar">
-          <div class="mm-stats-col">
-            <span class="mm-stats-num mm-stats-num--mint num">${data.online ?? 1}</span>
-            <span class="mm-stats-label">${t('在线博士')}</span>
-          </div>
-          <div class="mm-stats-col">
-            <span class="mm-stats-num num">${data.roomsCount ?? 0}</span>
-            <span class="mm-stats-label">${t('同盟房间')}</span>
-          </div>
-          <div class="mm-stats-col">
-            <span class="mm-stats-num num">${data.matchesCount ?? 0}</span>
-            <span class="mm-stats-label">${t('进行中对局')}</span>
-          </div>
-          <button type="button" class="mm-refresh-btn" onClick=${fetchRooms} disabled=${loading}>
-            <${Icon} name="refresh" class=${loading ? 'is-spinning' : ''} />
-            <span>${t('刷新')}</span>
-          </button>
+        <div class="mm-search-bar">
+          <label class="mm-filter"><span>${t('版本')}</span><select data-testid="match-version" value=${shownVersion} disabled=${searching || !!busy} onChange=${e => { const id = e.currentTarget.value; setVersion(id); if (id !== 'any') setLobbyVersion(id); }}>
+            <option value="any">${t('不限版本')}</option>
+            ${(versions || [{ id: selectedVersion }]).filter(v => !v.roomModes || v.roomModes.includes('coop')).map(v => html`<option key=${v.id} value=${v.id}>${versionLabel(v.id)}</option>`)}
+          </select></label>
+          <label class="mm-filter"><span>${t('难度')}</span><select data-testid="match-difficulty" value=${shownDifficulty} disabled=${searching || !!busy} onChange=${e => { const d = e.currentTarget.value; setDifficulty(d); savePref('lobby.matchDifficulty', d); if (d !== 'any') savePref('lobby.difficulty', d); }}>
+            <option value="any">${t('不限难度')}</option>
+            ${DIFFICULTIES.map(d => html`<option key=${d} value=${d} disabled=${!allowed.includes(d)}>${t(DIFFICULTY_NAMES[d])}</option>`)}
+          </select></label>
+          ${CAN_QUEUE ? searching ? html`<div class="mm-search-state"><span role="status">${t('搜寻中')} · <span class="num">${time}</span></span>
+            <${Button} variant="secondary" class="mm-cancel" size="md" disabled=${!online || !!busy} loading=${busy === 'cancel'} onClick=${onCancel}>${t('取消')}<//></div>`
+            : html`<${Button} variant="primary" class="mm-search" size="md" icon="search" loading=${busy === 'queue'} disabled=${!online || !!busy || maint?.active || !supported}
+              onClick=${() => onQueue({ version: version === 'any' ? selectedVersion : version, anyVersion: version === 'any', difficulty: difficulty === 'any' ? preferredDifficulty('coop') : difficulty, anyDifficulty: difficulty === 'any' })}>${t('搜寻队友')}<//>` : null}
         </div>
+        <p class="mm-search-note">${features && !compatible ? t('服务器匹配功能尚未更新，请重启测试服务并刷新页面') : t('版本与难度可分别不限；指定条件始终保留，入房后采用房间设置。')}</p>
 
-        ${data.partial ? html`<p>${t('部分节点暂未连通，当前列表可能不完整。')}</p>` : null}
-        <div class="mm-room-list">
-          ${data.rooms && data.rooms.length > 0
-            ? data.rooms.map((r) => html`<div key=${`${r.node || ''}:${r.code}`} class="mm-room-card">
+        ${!online ? html`<p role="status">${t('连接中断，请稍候重试')}</p>` : error ? html`<p role="status">${t('房间列表加载失败，请刷新重试；已有列表保留。')}</p>` : null}
+        <div class="mm-room-list" aria-busy=${loading}>
+          ${rooms.length > 0
+            ? rooms.map((r) => html`<div key=${r.code} class="mm-room-card" data-room-code=${r.code}>
                 <div class="mm-room-code num">${r.code}${r.nodeName ? html`<small style="display:block;font-size:11px">${r.nodeName}</small>` : null}</div>
                 <div class="mm-room-info">
-                  <div class="mm-room-name"><span class=${isOwnerName(r.hostName || r.name) ? "sp-owner-name" : ""}>${r.name || t('同盟 #{code}', { code: r.code })}</span>${["isomer", t('凑鹈鹕'), t('香鹈鹕')].includes(String(r.hostName || r.name || "").trim().toLowerCase()) ? html`<span class="mm-owner-badge" title=${t('服主')} style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:2px 6px;border:1px solid #e4bd60;color:#e4bd60;font-size:11px;line-height:1.4;white-space:nowrap;vertical-align:middle"><${Icon} name="crown" />${t('服主')}</span>` : null}</div>
+                  <div class="mm-room-name">${r.hostName || t('同盟 #{code}', { code: r.code })}</div>
                   <div class="mm-room-meta">
                     <span class="mm-room-diff" style=${`--d-color:${DIFFICULTY_COLORS[r.difficulty] || 'var(--mint)'}`}>
                       <${DifficultyIcon} difficulty=${r.difficulty} class="diff-glyph" />
-                      <span>${DIFFICULTY_NAMES[r.difficulty] || r.difficulty}</span>
+                      <span>${DIFFICULTY_NAMES[r.difficulty] ? t(DIFFICULTY_NAMES[r.difficulty]) : r.difficulty}</span>
                     </span>
                     ${r.random ? html`<span class="mm-room-rm">${t('无限火力 · 1.1 ·')} ${r.variant === 'endurance' ? t('持久鏖战') : r.variant === 'marathon' ? t('最长时赛') : t('快速突袭')}</span>` : null}
                     <span class="mm-room-players">
                       <${Icon} name="users" />
-                      <span class="num">${r.humans} / ${r.maxSeats || MAX_SEATS}</span>
+                      <span class="num">${directoryRoomFacts(r).occupied} / ${directoryRoomFacts(r).capacity}</span>
                     </span>
                     <span class=${`mm-room-status ${r.inMatch ? 'is-in-match' : 'is-waiting'}`}>
-                      ${r.inMatch ? t('进行中') : t('等待中')}
+                      ${r.inMatch ? t('进行中') : directoryRoomFacts(r).joinable ? t('等待中') : t('已满员')}
                     </span>
+                    <span>${versionLabel(r.version)}</span>
+                    ${r.modded ? html`<span>${t('玩法插件')}</span>` : null}
+                    <span>${t('观战 {n}/{max}', { n: r.spectators || 0, max: MAX_SPECTATORS })}</span>
                   </div>
                 </div>
                 <div class="mm-room-actions">
@@ -786,7 +747,7 @@ function MatchmakingModal({ open, onClose, onJoin, onSpectate }) {
                     size="md"
                     icon="users"
                     class=${`mm-btn-join ${r.inMatch ? 'is-disabled-match' : ''}`}
-                    disabled=${r.inMatch}
+                    disabled=${!online || !!busy || !directoryRoomFacts(r).joinable}
                     onClick=${() => { onClose(); onJoin(r.code,r.node); }}>
                     ${t('加入')}
                   <//>
@@ -795,6 +756,7 @@ function MatchmakingModal({ open, onClose, onJoin, onSpectate }) {
                     size="md"
                     icon="eye"
                     class="mm-btn-spectate"
+                    disabled=${!online || !!busy || !directoryRoomFacts(r).watchable}
                     onClick=${() => { onClose(); onSpectate(r.code,r.node); }}>
                     ${t('观战')}
                   <//>
@@ -802,14 +764,14 @@ function MatchmakingModal({ open, onClose, onJoin, onSpectate }) {
               </div>`)
             : html`<div class="mm-room-empty">
                 <${Icon} name="search" />
-                <span>${t('暂无公开同盟房间，可创建同盟或使用快速匹配')}</span>
+                <span>${loading && !result ? t('正在加载公开房间…') : !error && online ? t('暂无符合条件的公开同盟，可搜寻队友或调整筛选') : t('请连接服务器后刷新房间列表')}</span>
               </div>`
           }
         </div>
 
         <footer class="mm-modal__foot">
-          <div class="mm-foot-tag"><${MicroLabel}>AUTO-REFRESH 4S<//></div>
-          <div class="mm-foot-text">${t('列表每 4 秒自动刷新；观战不占博士席位，「进行中」的同盟只能观战。')}</div>
+          <div class="mm-foot-text">${t('在线博士')} <span class="num">${data.online ?? '—'}</span> · ${t('同盟房间')} <span class="num">${data.roomsCount ?? 0}</span> · ${t('进行中对局')} <span class="num">${data.matchesCount ?? 0}</span> · ${t('每 4 秒自动刷新')}</div>
+          <button type="button" class="mm-refresh-btn" onClick=${fetchRooms} disabled=${loading || !online}><${Icon} name="refresh" class=${loading ? 'is-spinning' : ''} /><span>${t('刷新')}</span></button>
         </footer>
       </div>
     </div>
@@ -823,7 +785,7 @@ const CAN_QUEUE = HAS('match.queue'), CAN_FIREPOWER = HAS('room.setRandom'), CAN
 /** Lobby screen component. */
 export function LobbyScreen() {
   const selectedVersion = useStore(lobbyVersion);
-  const matchmakingCounts = useStore(s => s.presence?.matchmaking);
+  const matchmakingCounts = useStore(s => s.matchmakingCounts?.[selectedVersion]);
   const me = useStore((s) => s.me, shallowEqual);
   const conn = useStore((s) => s.connection, shallowEqual);
   useData('config');
@@ -856,9 +818,7 @@ export function LobbyScreen() {
   const mm = useStore((s) => s.matchmaking, shallowEqual);
   const maint = useStore((s) => s.maintenance, shallowEqual);
   const [modalOpen, setModalOpen] = useState(() => new URLSearchParams(location.search).has('modal'));
-  const lobbyStats = useStore((s) => s.lobbyStats, shallowEqual);
-  const [_onlineCount, setOnlineCount] = useState(() => lobbyStats?.online ?? 1);
-  const [rooms, setRooms] = useState(() => (federationEnabled ? [] : lobbyStats?.rooms ?? []));
+  const directory = useRoomDirectory(online, modalOpen ? 4000 : 10000);
   const bg = useHubBackdrop();
   const [bgOpen, setBgOpen] = useState(false);
   // The Android shell can ask the local network who hosts a key, so a guest never types an address: the code is enough.
@@ -880,32 +840,9 @@ export function LobbyScreen() {
     return () => { cancelled = true; delete globalThis.__onRoomFound; };
   }, [code, roomMode]);
   const isSearching = mm?.status === 'searching';
-
-  useEffect(() => {
-    if (!federationEnabled && lobbyStats && Number.isFinite(lobbyStats.online)) {
-      setOnlineCount(lobbyStats.online);
-    }
-  }, [lobbyStats?.online]);
-  useEffect(() => {
-    if (!federationEnabled && Array.isArray(lobbyStats?.rooms)) setRooms(lobbyStats.rooms);
-  }, [lobbyStats?.rooms]);
-
-  useEffect(() => {
-    if (!online) return undefined;
-    let cancelled = false;
-    const poll = () => {
-      if (document.hidden || !CAN_LIST) return;
-      net.request('room.list').then((res) => {
-        if (!cancelled && res && res.ok && Number.isFinite(res.online)) {
-          setOnlineCount(res.online);
-        }
-        if (!cancelled && res && res.ok && Array.isArray(res.rooms)) setRooms(res.rooms);
-      }).catch(() => {});
-    };
-    poll();
-    const t = setInterval(poll, 10000);
-    return () => { cancelled = true; clearInterval(t); };
-  }, [online]);
+  const [, queueTick] = useState(0);
+  useEffect(() => { if (!isSearching) return undefined; const id = setInterval(() => queueTick(n => n + 1), 1000); return () => clearInterval(id); }, [isSearching]);
+  const queueElapsed = Math.max(0, Math.floor((net.serverNow() - (mm?.startedAt || net.serverNow())) / 1000));
 
   const pickMode = (m) => {
     if (!MODE_CARDS.some((c) => c.id === m)) return;
@@ -958,14 +895,22 @@ export function LobbyScreen() {
       toast(t('同盟密钥为 {ROOM_CODE_LEN} 位字母或数字', { ROOM_CODE_LEN }), 'warn');
       return;
     }
-    setSheetPurpose('create'); setSheetChained(true); setAllyOpen(false); setSheetOpen(true);
+    setSheetChained(true); setAllyOpen(false); setSheetOpen(true);
   };
   const closeProtocol = () => {
     const returnToAlliance = sheetChained && roomMode === 'coop';
     setSheetOpen(false); setSheetChained(false);
     if (returnToAlliance) setAllyOpen(true);
   };
-  const queueMatch = () => run('queue', () => net.request('match.queue', { mode: roomMode, difficulty, random: randomMode, ...(randomMode ? { variant } : {}), fillBots: false }));
+  const queueMatch = criteria => run('queue', async () => {
+    try { return await net.request('match.queue', { mode: 'coop', ...criteria, fillBots: false }); } catch (err) {
+      if (err?.code === ERR.VERSION_UNSUPPORTED || err?.code === ERR.MATCH_UNSUPPORTED) {
+        toast(t('服务器没有可用的版本与难度组合，请调整筛选后重试'), 'warn');
+        return false;
+      }
+      throw err;
+    }
+  });
   const cancelMatch = () => run('cancel', () => net.request('match.cancel'));
   const join = (c = code, federationNode) => {
     // `onClick=${join}` hands the click EVENT as the first argument, and a default parameter only applies to
@@ -974,7 +919,7 @@ export function LobbyScreen() {
     if (!CODE_RE.test(k)) { toast(t('同盟密钥为 {ROOM_CODE_LEN} 位字母或数字', { ROOM_CODE_LEN }), 'warn'); return; }
     // A room found on another phone is a different origin: hand the WebView over to it instead of asking the
     // server we are on, which by definition does not have that room.
-    if (nativeShell && lanRoom) {
+    if (nativeShell && lanRoom && k === code) {
       nativeShell.connectToHost(lanRoom.ip, k);
       setLanNote(t('正在进入 {ip} 的房间…', { ip: lanRoom.ip }));
       return;
@@ -1014,22 +959,20 @@ export function LobbyScreen() {
     if (previousSheet.current && !sheetOpen) document.querySelector(modeTrigger.current || '.hub-entry')?.focus();
     previousSheet.current = sheetOpen;
   }, [sheetOpen]);
-  const [sheetPurpose, setSheetPurpose] = useState('create'); // 'create' | 'search' (搜寻队友)
   const [allyOpen, setAllyOpen] = useState(false);            // 选择同盟方式
   const [sheetChained, setSheetChained] = useState(false);    // opened from 选择同盟方式: no darkening of the hub between
   const [joinOpen, setJoinOpen] = useState(false);
   const [achOpen, setAchOpen] = useState(false);              // 成就统计 (ui/achievements.js)
   // 同盟模拟 → 选择同盟方式; 独立模拟 / 无限火力 → 选择模拟协议
-  const openMode = (m) => { modeTrigger.current = m === 'solo' ? '.hub-entry[aria-label="SOLO"]' : '.hub-entry[aria-label="ALLIANCE"]'; pickMode(m); if (m === 'coop') { setSheetChained(false); setAllyOpen(true); } else { setSheetPurpose('create'); setSheetChained(false); setSheetOpen(true); } };
-  const openSearch = () => { pickMode('coop'); setSheetChained(allyOpen); setAllyOpen(false); setSheetPurpose('search'); setSheetOpen(true); };
+  const openMode = (m) => { modeTrigger.current = m === 'solo' ? '.hub-entries__row .hub-entry-wrap:first-child .hub-entry' : '.hub-entries__row .hub-entry-wrap:nth-child(2) .hub-entry'; pickMode(m); if (m === 'coop') { setSheetChained(false); setAllyOpen(true); } else { setSheetChained(false); setSheetOpen(true); } };
+  const openSearch = () => { setSheetOpen(false); setSheetChained(false); setAllyOpen(false); setModalOpen(true); };
   const modeCard = MODE_CARDS.find((c) => c.id === simulation) || MODE_CARDS[0];
 
   if (sheetOpen) return html`<${ProtocolSelect} card=${modeCard} roomMode=${roomMode} random=${randomMode} variant=${variant} difficulty=${difficulty}
       onUnlimited=${setSoloUnlimited} onDifficulty=${pickDifficulty} onClose=${closeProtocol} matchmaking=${matchmakingCounts}
       brief=${randomMode ? html`<${FirepowerBrief} variant=${fpVariant} onVariant=${pickVariant} />` : null}
       privateRoom=${privateRoom} onPrivate=${setPrivateRoom} online=${online} maint=${maint} busy=${busy} isSearching=${isSearching}
-      onCreate=${sheetChained && roomMode === 'coop' && sheetPurpose === 'create' ? createCoop : create} onQueue=${async () => { await queueMatch(); setSheetOpen(false); }}
-      purpose=${sheetPurpose} onSearch=${queueMatch} onCancel=${cancelMatch} mm=${mm} onBrowse=${() => setModalOpen(true)} chained=${sheetChained} />`;
+      onCreate=${sheetChained && roomMode === 'coop' ? createCoop : create} onBrowse=${openSearch} chained=${sheetChained} />`;
   return html`<div class="screen lobby-screen lobby-hub" data-hub-theme=${backdropTheme(bg)}>
     <${HubBackdrop} bg=${bg} />
     <header class="topbar hub-topbar">
@@ -1041,8 +984,6 @@ export function LobbyScreen() {
           <${VersionSwitch} />
           <${NoticesButton} />
           <${SettingsButton} class="lobby-settings" variant="secondary" square=${true} />
-          <${AnnouncementButton} class="lobby-notice" />
-          <${ReleaseHistoryButton} class="lobby-updates" variant="secondary" />
           <${GuideButton} class="lobby-guide" variant="secondary" square=${true} />
           <${Button} variant="secondary" size="sm" square=${true} class="hub-bg-btn" onClick=${() => setBgOpen(true)}
             title=${t('大厅背景')} aria-label=${t('大厅背景')}><${BackdropGlyph} /><//>
@@ -1068,7 +1009,13 @@ export function LobbyScreen() {
       </div>
 
       <aside class="hub-side">
-        <${AchievementEntry} key=${achOpen ? 'open' : 'shut'} onOpen=${() => setAchOpen(true)} />
+        <div class="hub-ach-group">
+          <${AchievementEntry} key=${achOpen ? 'open' : 'shut'} onOpen=${() => setAchOpen(true)} />
+          <div class="hub-ach-news">
+            <${AnnouncementButton} class="hub-news-btn lobby-notice" />
+            <${ReleaseHistoryButton} class="hub-news-btn lobby-updates" variant="secondary" />
+          </div>
+        </div>
         <${HubTile} icon="key" label=${t('密钥加入')} en="JOIN WITH KEY" onClick=${() => setJoinOpen(true)} />
         <${FriendsTile} />
 
@@ -1076,7 +1023,6 @@ export function LobbyScreen() {
       </aside>
 
       <aside class="hub-right">
-        ${CAN_LIST ? html`<${RecruitCard} rooms=${rooms} online=${online} onJoin=${join} onAll=${() => setModalOpen(true)} onCreate=${() => openMode('coop')} />` : null}
         <div class="hub-right__plates">
           <${SweepPlate} onClick=${() => setSweepOpen(true)} />
           <${LoadoutButton} from="lobby" size="lg" class="hub-plate hub-plate--loadout" label=${t('干员调配')} />
@@ -1088,14 +1034,7 @@ export function LobbyScreen() {
       </aside>
 
       <section class="hub-entries" aria-label=${t('模拟方式')}>
-        ${isSearching ? html`<div class="matchmaking-hud brackets hub-searching">
-            <div class="matchmaking-hud__info">
-              <${Spinner} size="sm" />
-              <span class="matchmaking-hud__text">${t('正在匹配同盟 (')}${mm?.matched || 1}/${mm?.target || 4})...</span>
-              <span class="matchmaking-hud__time num">${String(Math.floor((mm?.elapsed || 0) / 60)).padStart(2, '0')}:${String((mm?.elapsed || 0) % 60).padStart(2, '0')}</span>
-            </div>
-            <${Button} variant="danger" size="md" loading=${busy === 'cancel'} onClick=${cancelMatch}>${t('取消匹配')}<//>
-          </div>` : null}
+        ${isSearching ? html`<button type="button" class="hub-search-status" onClick=${openSearch}>${t('搜寻中')} · <span class="num">${String(Math.floor(queueElapsed / 60)).padStart(2, '0')}:${String(queueElapsed % 60).padStart(2, '0')}</span><${Icon} name="chevronRight" /></button>` : null}
         ${maint?.active ? html`<div class="hub-maint">${t('服务器即将维护，暂停开启新的模拟')}</div>` : null}
         ${testMode ? html`<label class="create-box__test" data-testid="create-test">
           <input type="checkbox" checked=${asTest} onChange=${e => setAsTest(e.target.checked)} />
@@ -1104,8 +1043,8 @@ export function LobbyScreen() {
         <div class="hub-entries__row">
           <${HubEntry} group=${{ icon: 'user', label: t('独立模拟') }} name=${t('独立模拟')} en="SOLO" icon="user" onClick=${() => openMode('solo')} />
           <${HubEntry} group=${{ icon: 'users', label: t('同盟模拟') }} name=${t('同盟模拟')} en="ALLIANCE" icon="users" count=${matchmakingCounts?.total} onClick=${() => openMode('coop')} />
+          ${CAN_LIST ? html`<${HubEntry} group=${{ icon: 'users', label: t('同盟大厅') }} name=${t('同盟大厅')} en="ALLIANCE LOBBY" icon="users" testId="public-room-lobby" title=${t('浏览公开房间，加入或观战')} onClick=${() => setModalOpen(true)} />` : null}
           ${CAN_FIREPOWER ? html`<${HubEntry} name=${t('无限火力')} en="FIREPOWER" icon="dice" badge="1.1" tone="gold" onClick=${() => openMode('firepower')} />` : null}
-          ${CAN_QUEUE ? html`<${HubEntry} name=${t('搜寻队友')} en="FIND ALLIES" icon="search" tone="bright" onClick=${openSearch} />` : null}
         </div>
       </section>
     </main>
@@ -1113,8 +1052,8 @@ export function LobbyScreen() {
 
 
     ${allyOpen ? html`<${AllianceSelect} customCode=${customCode} onCustomCode=${setCustomCode} customCodeOk=${customCodeOk} onClose=${() => setAllyOpen(false)} code=${code} onCode=${(v) => setCode(normalizeCode(v))} codeOk=${codeOk}
-      recent=${recent} online=${online} maint=${maint} busy=${busy} difficulty=${difficulty} recruiting=${recruitingRooms(rooms).length}
-      onCreate=${openCoopCreate} onJoin=${() => join()} onSpectate=${() => spectate()} onBrowse=${() => setModalOpen(true)} onSearch=${openSearch} />` : null}
+      recent=${recent} online=${online} maint=${maint} busy=${busy} difficulty=${difficulty}
+      onCreate=${openCoopCreate} onJoin=${() => join()} onSpectate=${() => spectate()} onSearch=${openSearch} />` : null}
 
     <${HubDialog} open=${joinOpen} micro="JOIN WITH ALLIANCE KEY" title=${t('密钥加入')} onClose=${() => setJoinOpen(false)}>
       <div class="join-row">
@@ -1140,7 +1079,7 @@ export function LobbyScreen() {
       <${BackdropSettings} bg=${bg} />
     <//>
 
-    <${MatchmakingModal} open=${modalOpen} onClose=${() => setModalOpen(false)} onJoin=${join} onSpectate=${spectate} />
+    <${MatchmakingModal} open=${modalOpen} onClose=${() => setModalOpen(false)} onJoin=${join} onSpectate=${spectate} directory=${directory} online=${online} busy=${busy} maint=${maint} mm=${mm} onQueue=${queueMatch} onCancel=${cancelMatch} />
     ${achOpen ? html`<${AchievementPanel} me=${me} onClose=${() => setAchOpen(false)} />` : null}
 
     ${sweepOpen ? html`<${SweepReport} onClose=${() => setSweepOpen(false)} />` : null}

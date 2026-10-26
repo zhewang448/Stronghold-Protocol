@@ -105,3 +105,9 @@ under GPL-3.0-or-later. Adaptation keeps the current room API, four-player rules
 [SiderLock/Stronghold-Protocol](https://github.com/SiderLock/Stronghold-Protocol) 的 0.3.1 适配
 （提交 `85bc37c84bf28f751f19c26bc0e5111027272b8f`），保留 GPL-3.0-or-later 许可与来源。
 本库补充回档 / 重启恢复、统计、控制台与普通四人玩法兼容；具体范围见 [扩展联机说明](docs/EXPANDED-COOP.md)。
+
+## 公开房间目录参考（2026-10-26，#12）
+
+公开目录筛选、邀请制可见性和加入/观战状态参考 NeoPecos/Stronghold-Protocol（GPL-3.0-or-later），
+固定提交 `2cadc6183c133fb22f5853c15db945bbaf4ce700`，`server/lobby.js` 与 `public/js/screens/lobby.js`。
+本库保留既有组件与消息机制并适配版本、插件和扩展人数，未复制游戏素材；详细来源与差异见 `docs/PUBLIC-ROOM-LOBBY.md`。

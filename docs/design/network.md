@@ -479,3 +479,38 @@ room.state always carries aiTakeoverAllowed (host policy) and canSetAiTakeover (
 ### Console access domain (2026-10-26)
 
 The WebSocket handshake records only a bounded, valid HTTP(S) Origin host (including a non-default port) in Connection.accessDomain and copies it to Session.accessDomain after successful hello/resume. Missing, opaque or malformed origins clear it to null. Host and forwarding headers are not fallback page identities. This client-reported field is display-only metadata, never authority. Only the authenticated local console projection joins it by player ID, including hosted match views and spectators; normal player frames, results and recovery do not gain the field. Offline sessions retain the last host until expiry; a restart has no persisted domain.
+
+### 公开合作房间目录（扩展 #12，2026-10-26）
+
+`room.list {}` 经既有 rid/ok 请求回复返回公开合作房摘要，不新增 S2C 事件。
+`room.create` 可选布尔 `private`，缺省 false；`room.setPrivate { private }` 仅合作房房主开局前可用。
+私密房仍可凭密钥及邀请进入，`room.state.private` 仅 true 时出现并随既有重启恢复保存。
+列表排除 solo、测试、私密、已销毁及无人房间；实际空位含 AI 和掉线保留席，开始后禁止新玩家加入但允许观战。
+四版本、4–20 席及玩法插件沿用现有加入和内容就绪流程。在线计数与隐身房主名遵循社交策略。
+摘要字段、排序、限流和验证见 [公开房间大厅](../PUBLIC-ROOM-LOBBY.md)。本功能为 `[ASSUMED]` 复刻便利。
+
+### 本服真人匹配（扩展，2026-10-26）
+
+`match.queue`、`match.cancel` 复用原 rid/ok，`match.state`、`match.found`、`match.counts` 同步队列。
+同版本同难度四席原版队列，个人四人建房或房主主动补人；不自动开局、不补 AI。既有创建/加入和准备开始
+仍为唯一房间/游戏逻辑。断线、离开、规则变化及房主更换取消搜寻；恢复记录不保存队列。
+计数服从社交隐身及 counts 开关。字段、边界和测试见 [真人匹配](../MATCHMAKING.md)。
+
+### 同盟大厅不限版本搜寻（2026-10-26）
+
+`match.queue.anyVersion` 可选布尔，缺省/false 保持精确版本；true 把 version 作为偏好。难度始终严格一致。
+精确与不限版本共用 FIFO 池；先补主动招募房且不切房间版本；散人组房满足所有精确约束。全部不限时采用
+最早者偏好，失败按服务器注册顺序选支持难度的可用版本。已有房主不可申请不限版本。
+`match.state.anyVersion` 标记偏好语义；`match.found.version` 为实际版本。`match.counts` 将不限版本聚合放在
+`anyVersion { total, byDifficulty }`，精确仍在 byVersion；二者受 counts/隐身控制。`offered` 给出可用版本及难度，
+不含个人信息。完整边界见 [真人匹配](../MATCHMAKING.md)。
+
+### 独立不限难度与匹配能力声明（2026-10-27）
+
+`match.queue.anyDifficulty` 可选布尔，缺省/false 保持精确难度；true 令 difficulty 仅为偏好。
+与 anyVersion 独立组合，分组满足所有精确约束；同局仍统一实际版本和难度。原房招募拒绝两个不限条件。
+`match.state.anyDifficulty` 回显偏好，`match.found.difficulty` 返回实际难度；计数桶的 anyDifficulty 数字
+单独表示可见不限难度散人，不重复进入 byDifficulty，隐身与 counts 同样生效。
+`match.counts.features { anyVersion: true, anyDifficulty: true }` 声明能力；旧服务未声明时客户端阻止不限
+请求并说明需重启刷新。无可用组合使用 MATCH_UNSUPPORTED，不以 VERSION_UNSUPPORTED 的插件文案替代。
+零房间允许正常排队。详见 [真人匹配](../MATCHMAKING.md)。
