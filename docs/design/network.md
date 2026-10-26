@@ -479,3 +479,12 @@ room.state always carries aiTakeoverAllowed (host policy) and canSetAiTakeover (
 ### Console access domain (2026-10-26)
 
 The WebSocket handshake records only a bounded, valid HTTP(S) Origin host (including a non-default port) in Connection.accessDomain and copies it to Session.accessDomain after successful hello/resume. Missing, opaque or malformed origins clear it to null. Host and forwarding headers are not fallback page identities. This client-reported field is display-only metadata, never authority. Only the authenticated local console projection joins it by player ID, including hosted match views and spectators; normal player frames, results and recovery do not gain the field. Offline sessions retain the last host until expiry; a restart has no persisted domain.
+
+### 公开合作房间目录（扩展 #12，2026-10-26）
+
+`room.list {}` 经既有 rid/ok 请求回复返回公开合作房摘要，不新增 S2C 事件。
+`room.create` 可选布尔 `private`，缺省 false；`room.setPrivate { private }` 仅合作房房主开局前可用。
+私密房仍可凭密钥及邀请进入，`room.state.private` 仅 true 时出现并随既有重启恢复保存。
+列表排除 solo、测试、私密、已销毁及无人房间；实际空位含 AI 和掉线保留席，开始后禁止新玩家加入但允许观战。
+四版本、4–20 席及玩法插件沿用现有加入和内容就绪流程。在线计数与隐身房主名遵循社交策略。
+摘要字段、排序、限流和验证见 [公开房间大厅](../PUBLIC-ROOM-LOBBY.md)。本功能为 `[ASSUMED]` 复刻便利。

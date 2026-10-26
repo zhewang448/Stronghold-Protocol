@@ -303,6 +303,9 @@ export class Room {
      */
     this.aiPicksLast = mode !== 'solo';
     this.aiTakeoverEnabled = false;
+    // [ASSUMED] Owner-requested public directory (#12), adapted from NeoPecos 2cadc618.
+    // Private rooms remain reachable through existing invitation/key routes.
+    this.private = false;
     this.version = version;
     this.versionVote = null; this.versionVoteSeq = 0; this.versionProposeAt = -Infinity; this.versionRetryAt = -Infinity; this.soloUnlimited = false;
     this.convenience = roomConvenience();
@@ -392,6 +395,7 @@ export class Room {
       convenience: { ...this.convenience },
       canSetUniteLayerGains: getAllowRoomUniteLayerGains(),
       inMatch: !!this.match,
+      ...(this.private ? { private: true } : {}),
       textChat: true,
       seats: this.seats.map((s) => (s
         ? { seat: s.seat, playerId: s.playerId, name: s.name, isBot: s.isBot, ready: s.ready, connected: s.connected && !s.left, bondPlan: s.bondPlan || null,
@@ -711,6 +715,8 @@ export class Lobby {
       case 'room.proposeVersion': return this.proposeVersion(session, msg);
       case 'room.versionVote': return this.versionVote(session, msg);
       case 'room.cancelVersionVote': return this.cancelVersionVote(session, msg);
+      case 'room.list': return this.listRooms();
+      case 'room.setPrivate': return this.setPrivate(session, msg);
       case 'room.create': return this.create(session, msg);
       case 'room.join': return this.join(session, msg);
       case 'room.leave': return this.leave(session);
@@ -814,7 +820,50 @@ export class Lobby {
   // room.* handlers
   // ---------------------------------------------------------------------------------------------------
 
-  create(session, { mode, difficulty = DEFAULT_DIFFICULTY, code: requestedCode, capacity = DEFAULT_SEATS, test, version: askedVersion, soloUnlimited } = {}) {
+  /** Public summaries only: never publish room.state, content consent, identities or session tokens. */
+  listRooms() {
+    const rooms = [...this.rooms.values()]
+      .filter(room => !room.disposed && room.mode === 'coop' && !room.private && !room.test && room.activeHumans().length > 0)
+      .map(room => {
+        const host = this.registry.byId(room.hostId);
+        const occupied = room.seats.filter(Boolean).length;
+        return {
+          code: room.code,
+          hostName: host && this.social.visible(host) ? host.name : '',
+          difficulty: room.difficulty,
+          version: room.version,
+          humans: room.activeHumans().length,
+          bots: room.seats.filter(seat => seat?.isBot).length,
+          maxSeats: room.capacity,
+          spectators: room.spectators.length,
+          inMatch: !!room.match,
+          joinable: !room.match && room.freeSeat() >= 0,
+          watchable: room.spectators.length < MAX_SPECTATORS,
+          occupied,
+          modded: room.modded,
+        };
+      })
+      .sort((a, b) => Number(b.joinable) - Number(a.joinable) || Number(a.inMatch) - Number(b.inMatch)
+        || (a.maxSeats - a.occupied) - (b.maxSeats - b.occupied) || a.code.localeCompare(b.code));
+    return { ok: true, rooms, roomsCount: rooms.length, matchesCount: rooms.filter(room => room.inMatch).length,
+      online: getSocialSettings().counts ? [...this.registry.all()].filter(session => this.social.visible(session)).length : null };
+  }
+
+  setPrivate(session, { private: isPrivate }) {
+    if (typeof isPrivate !== 'boolean') return fail(ERR.BAD_MSG);
+    const room = this.roomOf(session);
+    if (!room) return fail(ERR.NOT_IN_ROOM);
+    if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
+    if (room.match) return fail(ERR.ROOM_STARTED);
+    if (room.mode !== 'coop') return fail(ERR.BAD_TARGET);
+    if (room.private !== isPrivate) {
+      room.private = isPrivate;
+      this.broadcastState(room);
+    }
+    return OK;
+  }
+
+  create(session, { mode, difficulty = DEFAULT_DIFFICULTY, code: requestedCode, capacity = DEFAULT_SEATS, test, version: askedVersion, soloUnlimited, private: isPrivate = false } = {}) {
     if (!ROOM_CAPACITIES.includes(capacity)) return fail(ERR.BAD_MSG);
     // A test room exists only when the process switch allowed it. The check runs before the room is built.
     if (test === true && this.testEnabled !== true) return fail(ERR.TEST_DISABLED);
@@ -845,6 +894,7 @@ export class Lobby {
     if (!code) return fail(ERR.INTERNAL, 'no room code available');
     const room = new Room(code, mode, difficulty, this.now(), capacity, version);
     room.test = test === true;
+    room.private = mode === 'coop' && isPrivate === true;
     room.content = this.baseContent(version);
     room.convenience.soloUnlimited = typeof soloUnlimited === 'boolean' ? soloUnlimited : true;
     room.soloUnlimited = mode === 'solo' && room.convenience.soloUnlimited && this.versionSoloTimed(version);

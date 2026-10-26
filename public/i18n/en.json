@@ -3497,4 +3497,14 @@
   "【启动器】正在下载并校验启动器… {received} MB": "Downloading and verifying launcher… {received} MB",
   "【启动器】启动器更新已取消，原文件未变。": "Launcher update cancelled. The original file is unchanged.",
   "【启动器】启动器更新失败：{error}": "Launcher update failed: {error}"
+,
+  "联机大厅": "Multiplayer Lobby",
+  "房间列表加载失败，请刷新重试；已有列表保留。": "Could not refresh rooms. Retry to update the saved list.",
+  "正在加载公开房间…": "Loading public rooms…",
+  "暂无公开同盟房间，可创建同盟或使用密钥加入": "No public rooms. Create an alliance or join with a key.",
+  "请连接服务器后刷新房间列表": "Connect to the server, then refresh the room list.",
+  "公开大厅可见，可直接加入或观战": "Visible in the public lobby; others can join or spectate.",
+  "已满员": "Full",
+  "玩法插件": "Gameplay plugins",
+  "观战 {n}/{max}": "Spectators {n}/{max}"
 }

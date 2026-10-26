@@ -162,6 +162,7 @@ test('a lone human switches at once — solo, and co-op with AI teammates: versi
     assert.equal(room.replay, null);
     const st = h.last(p);
     assert.equal(st.version, 'act1autochess');
+    if (mode === 'coop') assert.equal(h.lobby.listRooms().rooms.find(r => r.code === st.code)?.version, 'act1autochess');
     assert.deepEqual(st.content, { cs: CS.act1autochess, vanilla: true, version: 'act1autochess', plugins: [] });
     assert.equal(st.seats[0].content, 'loading');
     assert.equal(st.versionVote, undefined);
@@ -173,6 +174,7 @@ test('a lone human switches at once — solo, and co-op with AI teammates: versi
     assert.equal(Object.hasOwn(back, 'version'), false);
     assert.deepEqual(back.content, { cs: VANILLA, vanilla: true, plugins: [] });
     assert.equal(Object.hasOwn(back.seats[0], 'content'), false);
+    if (mode === 'coop') assert.equal(h.lobby.listRooms().rooms.find(r => r.code === back.code)?.version, DEFAULT_VERSION);
     h.lobby.shutdown();
   }
 });

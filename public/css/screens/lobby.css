@@ -561,6 +561,8 @@
 
 /* ---- Matchmaking Modal (图2 HUD风格房间大厅) ------------------------------------------------------- */
 .mm-modal__box {
+  display: flex;
+  flex-direction: column;
   --bk-c: var(--mint-400);
   --bk-l: .25rem;
   width: min(8.8rem, 95vw);
@@ -575,6 +577,7 @@
   opacity: .8;
 }
 .mm-modal__head {
+  flex: none;
   padding: .24rem .32rem .1rem;
 }
 .mm-modal__title-row {
@@ -604,12 +607,16 @@
   color: var(--mint-400);
 }
 .mm-modal__body {
+  min-height: 0;
+  overflow-y: auto;
   padding: .14rem .32rem .24rem;
   display: flex;
   flex-direction: column;
   gap: .18rem;
 }
+.mm-modal__body > * { flex-shrink: 0; }
 .mm-stats-bar {
+  flex-wrap: wrap;
   display: flex;
   align-items: center;
   padding: .16rem .28rem;
@@ -673,6 +680,7 @@
   overflow-y: auto;
 }
 .mm-room-card {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: .2rem;
@@ -686,6 +694,9 @@
 }
 .mm-room-code {
   width: 1.1rem;
+  min-width: calc(6ch + .16rem);
+  flex-shrink: 0;
+  padding-inline: .08rem;
   height: .64rem;
   display: grid;
   place-items: center;
@@ -704,11 +715,13 @@
   min-width: 0;
 }
 .mm-room-name {
+  overflow-wrap: anywhere;
   font-size: calc(.22 * var(--t));
   font-weight: 700;
   color: var(--text-hi);
 }
 .mm-room-meta {
+  flex-wrap: wrap;
   display: flex;
   align-items: center;
   gap: .18rem;
@@ -790,6 +803,7 @@
   color: var(--text-dim);
 }
 .mm-modal__foot {
+  flex-wrap: wrap;
   display: flex;
   align-items: center;
   gap: .14rem;
@@ -800,6 +814,24 @@
   font-size: calc(.13 * var(--t));
   color: var(--text-dim);
   letter-spacing: .02em;
+}
+
+/* Reuse the existing room directory layout on short/touch screens. */
+@media (max-width: 700px), (max-height: 500px) {
+  .mm-modal__box { width: min(12rem, calc(100vw - 24px)); }
+  .mm-modal__head { padding: .12rem .16rem .08rem; }
+  .mm-modal__body { padding: .08rem .16rem .12rem; gap: .1rem; }
+  .mm-stats-bar { padding: .08rem .12rem; gap: .1rem .2rem; }
+  .mm-stats-num { font-size: calc(.26 * var(--t)); }
+  .mm-room-list { min-height: 0; max-height: none; overflow: visible; }
+  .mm-room-card { flex-wrap: wrap; gap: .1rem; padding: .1rem; }
+  .mm-room-code { flex-shrink: 0; }
+  .mm-room-info { flex-basis: 55%; }
+  .mm-room-meta { gap: .06rem .12rem; }
+  .mm-room-actions { margin-inline-start: auto; }
+  .mm-room-actions .btn { min-height: 44px; height: auto; }
+  .mm-modal__close, .mm-refresh-btn { min-height: 44px; min-width: 44px; }
+  .mm-foot-tag { display: none; }
 }
 
 

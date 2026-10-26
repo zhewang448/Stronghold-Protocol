@@ -1212,3 +1212,10 @@ The host’s pre-match `room.setAiTakeover {on}` opts a co-op room in; default o
 ### Room-local convenience choices (2026-10-25)
 
 shared/roomConvenience.js normalizes five room booleans. Lobby snapshots them into Match options and wireOptions preserves them for historical-version hosts. Match combines prepLoadout, unequip and morphPairing with verified plugin rules (plugin wins); benchEquip bypasses only the historical bench target gate. A timed solo uses its existing soloUnlimited path. New-room defaults are three on, two off; standalone Match fixtures are unchanged. Recovery, journals and result metadata retain the choices.
+
+## 公开房间目录（本库扩展 #12）
+
+`Lobby.listRooms` 从已有 Room 注册表生成只读摘要；不创建第二套房间、匹配队列或观战系统。
+`room.list` 返回在原 rid/ok 信封内，复用 Network 的重请求限流；`room.join`、`room.spectate` 仍由原处理器裁决。
+公开合作房默认可发现，私密开关只控制目录可见性，不能替代密钥/邀请。私密属性经 `server/recovery.js` 保存和恢复。
+四个玩法版本、扩展容量及插件的既有内容加载不变。完整约定、NeoPecos 来源与验收见 [公开房间大厅](PUBLIC-ROOM-LOBBY.md)。

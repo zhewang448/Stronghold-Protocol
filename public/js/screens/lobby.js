@@ -4,7 +4,6 @@ import { LobbyMusicButton } from '../ui/lobbyMusic.js';
 import { AccountMeChip } from '../ui/accounts.js';
 import { OnlinePlayersButton, PresenceSelector } from '../ui/social.js';
 import { isOwnerName, decorateOwnerName } from '../ui/ownerName.js';
-import { enabled as federationEnabled } from '../federation.js';
 import { MatchmakingCount } from '../ui/matchmaking.js';
 import { Emblem } from './title.js';
 import { useHubBackdrop, HubBackdrop, HubRadar, BackdropSettings, BackdropGlyph, backdropTheme } from '../ui/hubBackdrop.js';
@@ -336,8 +335,49 @@ function TipsPanel() {
  */
 export function recruitingRooms(rooms) {
   return (Array.isArray(rooms) ? rooms : [])
-    .filter((r) => r && typeof r.code === 'string' && !r.inMatch && r.humans > 0 && r.humans < (r.maxSeats || MAX_SEATS))
-    .sort((a, b) => ((a.maxSeats || MAX_SEATS) - a.humans) - ((b.maxSeats || MAX_SEATS) - b.humans) || b.humans - a.humans);
+    .filter((r) => r && typeof r.code === 'string' && r.humans > 0 && directoryRoomFacts(r).joinable)
+    .sort((a, b) => directoryRoomFacts(a).free - directoryRoomFacts(b).free || b.humans - a.humans);
+}
+
+/** Reuse the server's actual seat availability; fallback only for older directory summaries. */
+export function directoryRoomFacts(room) {
+  const capacity = room.maxSeats || MAX_SEATS;
+  const occupied = room.occupied ?? ((room.humans || 0) + (room.bots || 0));
+  return { capacity, occupied, free: capacity - occupied,
+    joinable: !room.inMatch && (room.joinable ?? occupied < capacity),
+    watchable: room.watchable ?? (room.spectators || 0) < MAX_SPECTATORS };
+}
+
+/** One directory poll shared by the hub card and dialog; hidden/offline pages do not poll. */
+function useRoomDirectory(online, interval) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const refresh = useRef(null);
+  useEffect(() => {
+    if (!online || !CAN_LIST) { setData(null); setError(false); setLoading(false); refresh.current = null; return undefined; }
+    let cancelled = false, pending = false;
+    const fetchRooms = async () => {
+      if (pending || document.hidden) return;
+      pending = true; setLoading(true);
+      try {
+        const res = await net.request('room.list');
+        if (!Array.isArray(res?.rooms)) throw new Error('Invalid room directory');
+        if (!cancelled) { setData(res); setError(false); }
+      } catch {
+        if (!cancelled) setError(true);
+      } finally {
+        pending = false;
+        if (!cancelled) setLoading(false);
+      }
+    };
+    refresh.current = fetchRooms;
+    fetchRooms();
+    const timer = setInterval(fetchRooms, interval);
+    document.addEventListener('visibilitychange', fetchRooms);
+    return () => { cancelled = true; clearInterval(timer); document.removeEventListener('visibilitychange', fetchRooms); refresh.current = null; };
+  }, [online, interval]);
+  return { data, loading, error, refresh: () => refresh.current?.() };
 }
 
 function RecruitCard({ rooms, online, onJoin, onAll, onCreate }) {
@@ -352,8 +392,8 @@ function RecruitCard({ rooms, online, onJoin, onAll, onCreate }) {
     </header>
     <div class="hub-recruit__list">
       ${open.length ? open.slice(0, 3).map((r) => {
-        const max = r.maxSeats || MAX_SEATS;
-        const name = r.name || t('同盟 #{code}', { code: r.code });
+        const { capacity: max, occupied, free } = directoryRoomFacts(r);
+        const name = r.hostName || r.name || t('同盟 #{code}', { code: r.code });
         return html`<div key=${`${r.node || ''}:${r.code}`} class="hub-recruit__row" style=${`--d-color:${DIFFICULTY_COLORS[r.difficulty] || 'var(--mint-500)'}`}>
           <span class="hub-recruit__info">
             <span class=${`hub-recruit__name${isOwnerName(r.hostName || r.name) ? ' sp-owner-name' : ''}`}>${name}</span>
@@ -365,8 +405,8 @@ function RecruitCard({ rooms, online, onJoin, onAll, onCreate }) {
             </span>
           </span>
           <span class="hub-recruit__seats">
-            <span class="hub-recruit__pips" aria-hidden="true">${Array.from({ length: max }, (_, i) => html`<i key=${i} class=${i < r.humans ? 'is-on' : ''}></i>`)}</span>
-            <span class="hub-recruit__need">${t('缺')}<b class="num">${max - r.humans}</b>${t('人')}</span>
+            <span class="hub-recruit__pips" aria-hidden="true">${Array.from({ length: max }, (_, i) => html`<i key=${i} class=${i < occupied ? 'is-on' : ''}></i>`)}</span>
+            <span class="hub-recruit__need">${t('缺')}<b class="num">${free}</b>${t('人')}</span>
           </span>
           <button type="button" class="hub-recruit__join" disabled=${!online} onClick=${() => onJoin(r.code, r.node)}>${t('加入')}</button>
         </div>`;
@@ -679,59 +719,26 @@ export function AllianceSelect({ customCode, onCustomCode, customCodeOk, onClose
   </div>`;
 }
 
-function MatchmakingModal({ open, onClose, onJoin, onSpectate }) {
-  const lobbyStats = useStore((s) => s.lobbyStats, shallowEqual);
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState(() => ({
-    online: lobbyStats?.online ?? 1,
-    roomsCount: lobbyStats?.roomsCount ?? 0,
-    matchesCount: lobbyStats?.matchesCount ?? 0,
-    rooms: lobbyStats?.rooms ?? [],
-  }));
-
-  useEffect(() => {
-    if (federationEnabled) {net.request('room.list').then(r=>setData(r)).catch(()=>{});return;}
-    if (lobbyStats && typeof lobbyStats.online === 'number') {
-      setData({
-        online: lobbyStats.online,
-        roomsCount: lobbyStats.roomsCount,
-        matchesCount: lobbyStats.matchesCount,
-        rooms: lobbyStats.rooms,
-      });
-    }
-  }, [lobbyStats]);
-
-  const fetchRooms = async () => {
-    setLoading(true);
-    try {
-      const res = CAN_LIST ? await net.request('room.list') : null;
-      if (res && res.ok) {
-        setData(res);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
-  };
-
+function MatchmakingModal({ open, onClose, onJoin, onSpectate, directory, online, busy }) {
+  const { data: result, loading, error, refresh: fetchRooms } = directory;
+  const data = result || {};
+  const boxRef = useRef(null);
+  useDialogFocus(open, boxRef, onClose);
   useEffect(() => {
     if (!open) return undefined;
-    fetchRooms();
-    const timer = setInterval(() => { if (!document.hidden) fetchRooms(); }, 4000);
-    return () => clearInterval(timer);
+    document.body.classList.add('hub-dialog-open');
+    return () => document.body.classList.remove('hub-dialog-open');
   }, [open]);
 
   if (!open) return null;
 
   return html`<div class="modal mm-modal" role="presentation"
       onMouseDown=${(e) => { if (e.target === e.currentTarget && onClose) onClose(); }}>
-    <div class="modal__box mm-modal__box brackets" role="dialog" aria-modal="true">
+    <div ref=${boxRef} class="modal__box mm-modal__box brackets" role="dialog" aria-modal="true" aria-label=${t('联机大厅')} tabindex="-1">
       <div class="modal__stripe" aria-hidden="true"></div>
       <header class="modal__head mm-modal__head">
-        <${MicroLabel} tone="mint">MULTIPLAYER MATCHMAKING<//>
         <div class="mm-modal__title-row">
-          <h2 class="modal__title mm-modal__title">${t('三服统一大厅')}</h2>
+          <h2 class="modal__title mm-modal__title">${t('联机大厅')}</h2>
           <button type="button" class="mm-modal__close" onClick=${onClose} aria-label=${t('关闭')}>
             <${Icon} name="close" />
           </button>
@@ -741,7 +748,7 @@ function MatchmakingModal({ open, onClose, onJoin, onSpectate }) {
       <div class="mm-modal__body">
         <div class="mm-stats-bar">
           <div class="mm-stats-col">
-            <span class="mm-stats-num mm-stats-num--mint num">${data.online ?? 1}</span>
+            <span class="mm-stats-num mm-stats-num--mint num">${data.online ?? '—'}</span>
             <span class="mm-stats-label">${t('在线博士')}</span>
           </div>
           <div class="mm-stats-col">
@@ -752,32 +759,35 @@ function MatchmakingModal({ open, onClose, onJoin, onSpectate }) {
             <span class="mm-stats-num num">${data.matchesCount ?? 0}</span>
             <span class="mm-stats-label">${t('进行中对局')}</span>
           </div>
-          <button type="button" class="mm-refresh-btn" onClick=${fetchRooms} disabled=${loading}>
+          <button type="button" class="mm-refresh-btn" onClick=${fetchRooms} disabled=${loading || !online}>
             <${Icon} name="refresh" class=${loading ? 'is-spinning' : ''} />
             <span>${t('刷新')}</span>
           </button>
         </div>
 
-        ${data.partial ? html`<p>${t('部分节点暂未连通，当前列表可能不完整。')}</p>` : null}
-        <div class="mm-room-list">
+        ${!online ? html`<p role="status">${t('连接中断，请稍候重试')}</p>` : error ? html`<p role="status">${t('房间列表加载失败，请刷新重试；已有列表保留。')}</p>` : null}
+        <div class="mm-room-list" aria-busy=${loading}>
           ${data.rooms && data.rooms.length > 0
-            ? data.rooms.map((r) => html`<div key=${`${r.node || ''}:${r.code}`} class="mm-room-card">
+            ? data.rooms.map((r) => html`<div key=${r.code} class="mm-room-card" data-room-code=${r.code}>
                 <div class="mm-room-code num">${r.code}${r.nodeName ? html`<small style="display:block;font-size:11px">${r.nodeName}</small>` : null}</div>
                 <div class="mm-room-info">
-                  <div class="mm-room-name"><span class=${isOwnerName(r.hostName || r.name) ? "sp-owner-name" : ""}>${r.name || t('同盟 #{code}', { code: r.code })}</span>${["isomer", t('凑鹈鹕'), t('香鹈鹕')].includes(String(r.hostName || r.name || "").trim().toLowerCase()) ? html`<span class="mm-owner-badge" title=${t('服主')} style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:2px 6px;border:1px solid #e4bd60;color:#e4bd60;font-size:11px;line-height:1.4;white-space:nowrap;vertical-align:middle"><${Icon} name="crown" />${t('服主')}</span>` : null}</div>
+                  <div class="mm-room-name">${r.hostName || t('同盟 #{code}', { code: r.code })}</div>
                   <div class="mm-room-meta">
                     <span class="mm-room-diff" style=${`--d-color:${DIFFICULTY_COLORS[r.difficulty] || 'var(--mint)'}`}>
                       <${DifficultyIcon} difficulty=${r.difficulty} class="diff-glyph" />
-                      <span>${DIFFICULTY_NAMES[r.difficulty] || r.difficulty}</span>
+                      <span>${DIFFICULTY_NAMES[r.difficulty] ? t(DIFFICULTY_NAMES[r.difficulty]) : r.difficulty}</span>
                     </span>
                     ${r.random ? html`<span class="mm-room-rm">${t('无限火力 · 1.1 ·')} ${r.variant === 'endurance' ? t('持久鏖战') : r.variant === 'marathon' ? t('最长时赛') : t('快速突袭')}</span>` : null}
                     <span class="mm-room-players">
                       <${Icon} name="users" />
-                      <span class="num">${r.humans} / ${r.maxSeats || MAX_SEATS}</span>
+                      <span class="num">${directoryRoomFacts(r).occupied} / ${directoryRoomFacts(r).capacity}</span>
                     </span>
                     <span class=${`mm-room-status ${r.inMatch ? 'is-in-match' : 'is-waiting'}`}>
-                      ${r.inMatch ? t('进行中') : t('等待中')}
+                      ${r.inMatch ? t('进行中') : directoryRoomFacts(r).joinable ? t('等待中') : t('已满员')}
                     </span>
+                    <span>${versionLabel(r.version)}</span>
+                    ${r.modded ? html`<span>${t('玩法插件')}</span>` : null}
+                    <span>${t('观战 {n}/{max}', { n: r.spectators || 0, max: MAX_SPECTATORS })}</span>
                   </div>
                 </div>
                 <div class="mm-room-actions">
@@ -786,7 +796,7 @@ function MatchmakingModal({ open, onClose, onJoin, onSpectate }) {
                     size="md"
                     icon="users"
                     class=${`mm-btn-join ${r.inMatch ? 'is-disabled-match' : ''}`}
-                    disabled=${r.inMatch}
+                    disabled=${!online || !!busy || !directoryRoomFacts(r).joinable}
                     onClick=${() => { onClose(); onJoin(r.code,r.node); }}>
                     ${t('加入')}
                   <//>
@@ -795,6 +805,7 @@ function MatchmakingModal({ open, onClose, onJoin, onSpectate }) {
                     size="md"
                     icon="eye"
                     class="mm-btn-spectate"
+                    disabled=${!online || !!busy || !directoryRoomFacts(r).watchable}
                     onClick=${() => { onClose(); onSpectate(r.code,r.node); }}>
                     ${t('观战')}
                   <//>
@@ -802,7 +813,7 @@ function MatchmakingModal({ open, onClose, onJoin, onSpectate }) {
               </div>`)
             : html`<div class="mm-room-empty">
                 <${Icon} name="search" />
-                <span>${t('暂无公开同盟房间，可创建同盟或使用快速匹配')}</span>
+                <span>${loading && !result ? t('正在加载公开房间…') : !error && online ? t('暂无公开同盟房间，可创建同盟或使用密钥加入') : t('请连接服务器后刷新房间列表')}</span>
               </div>`
           }
         </div>
@@ -856,9 +867,8 @@ export function LobbyScreen() {
   const mm = useStore((s) => s.matchmaking, shallowEqual);
   const maint = useStore((s) => s.maintenance, shallowEqual);
   const [modalOpen, setModalOpen] = useState(() => new URLSearchParams(location.search).has('modal'));
-  const lobbyStats = useStore((s) => s.lobbyStats, shallowEqual);
-  const [_onlineCount, setOnlineCount] = useState(() => lobbyStats?.online ?? 1);
-  const [rooms, setRooms] = useState(() => (federationEnabled ? [] : lobbyStats?.rooms ?? []));
+  const directory = useRoomDirectory(online, modalOpen ? 4000 : 10000);
+  const rooms = directory.data?.rooms ?? [];
   const bg = useHubBackdrop();
   const [bgOpen, setBgOpen] = useState(false);
   // The Android shell can ask the local network who hosts a key, so a guest never types an address: the code is enough.
@@ -880,32 +890,6 @@ export function LobbyScreen() {
     return () => { cancelled = true; delete globalThis.__onRoomFound; };
   }, [code, roomMode]);
   const isSearching = mm?.status === 'searching';
-
-  useEffect(() => {
-    if (!federationEnabled && lobbyStats && Number.isFinite(lobbyStats.online)) {
-      setOnlineCount(lobbyStats.online);
-    }
-  }, [lobbyStats?.online]);
-  useEffect(() => {
-    if (!federationEnabled && Array.isArray(lobbyStats?.rooms)) setRooms(lobbyStats.rooms);
-  }, [lobbyStats?.rooms]);
-
-  useEffect(() => {
-    if (!online) return undefined;
-    let cancelled = false;
-    const poll = () => {
-      if (document.hidden || !CAN_LIST) return;
-      net.request('room.list').then((res) => {
-        if (!cancelled && res && res.ok && Number.isFinite(res.online)) {
-          setOnlineCount(res.online);
-        }
-        if (!cancelled && res && res.ok && Array.isArray(res.rooms)) setRooms(res.rooms);
-      }).catch(() => {});
-    };
-    poll();
-    const t = setInterval(poll, 10000);
-    return () => { cancelled = true; clearInterval(t); };
-  }, [online]);
 
   const pickMode = (m) => {
     if (!MODE_CARDS.some((c) => c.id === m)) return;
@@ -974,7 +958,7 @@ export function LobbyScreen() {
     if (!CODE_RE.test(k)) { toast(t('同盟密钥为 {ROOM_CODE_LEN} 位字母或数字', { ROOM_CODE_LEN }), 'warn'); return; }
     // A room found on another phone is a different origin: hand the WebView over to it instead of asking the
     // server we are on, which by definition does not have that room.
-    if (nativeShell && lanRoom) {
+    if (nativeShell && lanRoom && k === code) {
       nativeShell.connectToHost(lanRoom.ip, k);
       setLanNote(t('正在进入 {ip} 的房间…', { ip: lanRoom.ip }));
       return;
@@ -1039,6 +1023,7 @@ export function LobbyScreen() {
         <span class="topbar__sep" aria-hidden="true"></span>
         <div class="topbar__tools">
           <${VersionSwitch} />
+          ${CAN_LIST ? html`<${Button} variant="secondary" size="sm" icon="users" data-testid="public-room-lobby" onClick=${() => setModalOpen(true)}>${t('联机大厅')}<//>` : null}
           <${NoticesButton} />
           <${SettingsButton} class="lobby-settings" variant="secondary" square=${true} />
           <${AnnouncementButton} class="lobby-notice" />
@@ -1140,7 +1125,7 @@ export function LobbyScreen() {
       <${BackdropSettings} bg=${bg} />
     <//>
 
-    <${MatchmakingModal} open=${modalOpen} onClose=${() => setModalOpen(false)} onJoin=${join} onSpectate=${spectate} />
+    <${MatchmakingModal} open=${modalOpen} onClose=${() => setModalOpen(false)} onJoin=${join} onSpectate=${spectate} directory=${directory} online=${online} busy=${busy} />
     ${achOpen ? html`<${AchievementPanel} me=${me} onClose=${() => setAchOpen(false)} />` : null}
 
     ${sweepOpen ? html`<${SweepReport} onClose=${() => setSweepOpen(false)} />` : null}

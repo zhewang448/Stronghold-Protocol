@@ -1,5 +1,7 @@
 # 交接：移植社区「仿游戏」UI 界面包
 
+> 历史阶段记录：2026-10-26 的 #12 已另行实现公开房间目录及私密开关；当前约定见 [公开房间大厅](PUBLIC-ROOM-LOBBY.md)。匹配队列仍未实现。
+
 2026-10-15 编写。给接手的助手：先读仓库根目录的 [CLAUDE.md](../CLAUDE.md)、[AGENTS.md](../AGENTS.md)、[HANDOFF.md](HANDOFF.md) 和 [LOCAL-DEV.md](LOCAL-DEV.md) 第 2 节，再按本文动手。本文只讲这次任务要做什么，不复述那些文档。
 
 ## 1. 需求

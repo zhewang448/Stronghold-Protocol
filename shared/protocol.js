@@ -520,7 +520,10 @@ export const C2S = {
   'room.proposeVersion': { version: isVersionId },
   'room.versionVote': { voteId: (v) => isInt(v, 1, 2 ** 31), agree: isBool },
   'room.cancelVersionVote': { voteId: (v) => isInt(v, 1, 2 ** 31) },
-  'room.create': { mode: (v) => v === 'solo' || v === 'coop', difficulty: (v) => DIFFICULTIES.includes(v), code: (v) => typeof v === 'string' && new RegExp(`^[A-Za-z0-9]{${ROOM_CODE_LEN}}$`).test(v), capacity: (v) => ROOM_CAPACITIES.includes(v), test: (v) => v === true, version: isVersionId, soloUnlimited: (v) => typeof v === 'boolean', $optional: ['difficulty', 'code', 'capacity', 'test', 'version', 'soloUnlimited'] },
+  'room.create': { mode: (v) => v === 'solo' || v === 'coop', difficulty: (v) => DIFFICULTIES.includes(v), code: (v) => typeof v === 'string' && new RegExp(`^[A-Za-z0-9]{${ROOM_CODE_LEN}}$`).test(v), capacity: (v) => ROOM_CAPACITIES.includes(v), test: (v) => v === true, version: isVersionId, soloUnlimited: (v) => typeof v === 'boolean', private: isBool, $optional: ['difficulty', 'code', 'capacity', 'test', 'version', 'soloUnlimited', 'private'] },
+  // Read-only directory replies in the existing rid-correlated ok envelope, not a second S2C event.
+  'room.list': {},
+  'room.setPrivate': { private: isBool },
   'room.join': { $optional: ['testAck'], testAck: (v) => v === true, code: (v) => isStr(v, ROOM_CODE_LEN + 2) && /^[A-Za-z0-9]+$/.test(v) },
   'room.leave': {},
   'room.ready': { ready: isBool },
