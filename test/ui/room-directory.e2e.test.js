@@ -42,6 +42,7 @@ test('public directory: join, running spectator, privacy, retry, shared polling 
   assert.equal(await page.$('.hub-topbar .lobby-notice, .hub-topbar .lobby-updates'), null);
   assert.equal(await page.$eval('.hub-entries [data-testid="public-room-lobby"]', e => e.textContent.includes('同盟大厅')), true);
   assert.equal(await page.$$eval('.hub-ach-news button', buttons => buttons.length), 2);
+  assert.equal(await page.$eval('[data-testid="public-room-lobby"]', button => button.parentElement.querySelector('.hub-entry__group').textContent.trim()), '同盟大厅');
   const layoutOut = path.resolve('.cache/room-directory'); fs.mkdirSync(layoutOut, { recursive: true });
   for (const viewport of [{ width: 1440, height: 900 }, { width: 844, height: 390, isMobile: true, hasTouch: true, isLandscape: true }, { width: 640, height: 360, isMobile: true, hasTouch: true, isLandscape: true }]) {
     await page.setViewport(viewport);
@@ -61,6 +62,13 @@ test('public directory: join, running spectator, privacy, retry, shared polling 
     assert.ok(placement.buttons.every(r => r.width > 0 && r.height >= 32 && r.left >= -1 && r.top >= -1 && r.right <= placement.width + 1 && r.bottom <= placement.height + 1 && r.hit), JSON.stringify(placement));
     if (viewport.width > 1100) assert.ok(placement.news.left >= placement.card.right, 'desktop news stays beside the achievement card');
     else assert.ok(placement.news.top >= placement.card.bottom - 1, 'short screens reflow news below achievement');
+    const newsCentered = await page.$$eval('.hub-ach-news button', buttons => buttons.map(button => {
+      const box = button.getBoundingClientRect();
+      const icon = button.querySelector('.btn__icon').getBoundingClientRect();
+      const label = button.querySelector('.btn__label').getBoundingClientRect();
+      return { horizontal: Math.abs((Math.min(icon.left, label.left) + Math.max(icon.right, label.right)) / 2 - (box.left + box.right) / 2), vertical: Math.abs((Math.min(icon.top, label.top) + Math.max(icon.bottom, label.bottom)) / 2 - (box.top + box.bottom) / 2) };
+    }));
+    assert.ok(newsCentered.every(offset => offset.horizontal <= 2 && offset.vertical <= 2), JSON.stringify(newsCentered));
     await page.screenshot({ path: path.join(layoutOut, 'home-layout-' + viewport.width + '.png') });
   }
   await page.setViewport({ width: 1280, height: 720 });

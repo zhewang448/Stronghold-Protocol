@@ -1053,7 +1053,7 @@ export function LobbyScreen() {
         <div class="hub-entries__row">
           <${HubEntry} group=${{ icon: 'user', label: t('独立模拟') }} name=${t('独立模拟')} en="SOLO" icon="user" onClick=${() => openMode('solo')} />
           <${HubEntry} group=${{ icon: 'users', label: t('同盟模拟') }} name=${t('同盟模拟')} en="ALLIANCE" icon="users" count=${matchmakingCounts?.total} onClick=${() => openMode('coop')} />
-          ${CAN_LIST ? html`<${HubEntry} name=${t('同盟大厅')} en="ALLIANCE LOBBY" icon="users" testId="public-room-lobby" title=${t('浏览公开房间，加入或观战')} onClick=${() => setModalOpen(true)} />` : null}
+          ${CAN_LIST ? html`<${HubEntry} group=${{ icon: 'users', label: t('同盟大厅') }} name=${t('同盟大厅')} en="ALLIANCE LOBBY" icon="users" testId="public-room-lobby" title=${t('浏览公开房间，加入或观战')} onClick=${() => setModalOpen(true)} />` : null}
           ${CAN_FIREPOWER ? html`<${HubEntry} name=${t('无限火力')} en="FIREPOWER" icon="dice" badge="1.1" tone="gold" onClick=${() => openMode('firepower')} />` : null}
           ${CAN_QUEUE ? html`<${HubEntry} name=${t('搜寻队友')} en="FIND ALLIES" icon="search" tone="bright" onClick=${openSearch} />` : null}
         </div>
