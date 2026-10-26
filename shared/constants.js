@@ -143,6 +143,7 @@ export const ANIM = Object.freeze({ IDLE: 0, MOVE: 1, ATTACK: 2, SKILL: 3, DIE: 
 export const ERR = Object.freeze({
   VERSION_UNKNOWN: 'VERSION_UNKNOWN',
   VERSION_UNSUPPORTED: 'VERSION_UNSUPPORTED',
+  MATCH_UNSUPPORTED: 'MATCH_UNSUPPORTED',
   VERSION_VOTE: 'VERSION_VOTE',
   BAD_MSG: 'BAD_MSG',             // malformed / unknown message
   CHAT_MUTED: 'CHAT_MUTED',
@@ -208,6 +209,7 @@ export const ERR = Object.freeze({
 export const ERR_TEXT = {
   VERSION_UNKNOWN: N_('本服务器没有启用该版本'),
   VERSION_UNSUPPORTED: N_('该版本不能用于当前房间（例如房间开着改变玩法的插件）'),
+  MATCH_UNSUPPORTED: N_('服务器没有可用的版本与难度组合，请调整筛选后重试'),
   VERSION_VOTE: N_('切换版本投票进行中，请等投票结束'),
   CHAT_MUTED: N_('你已被主机禁言，请联系主机解除'),
   CHAT_DISABLED: N_('主机已暂时关闭房间文字聊天'),

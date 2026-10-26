@@ -1,6 +1,6 @@
-// [ASSUMED] Opt-in local matching: same official version/difficulty, four seats, no automatic start or AI fill.
+// [ASSUMED] Opt-in local matching: compatible version/difficulty preferences, four seats, no automatic start or AI fill.
 // Reuses Lobby.create/join; existing parties stay together and explicitly request solo recruits.
-import { DEFAULT_SEATS, ERR } from '../shared/constants.js';
+import { DEFAULT_SEATS, DIFFICULTIES, ERR } from '../shared/constants.js';
 import { CONVENIENCE_DEFAULTS } from '../shared/roomConvenience.js';
 import { sendSession } from './net.js';
 import { getSocialSettings } from './match/hostSettings.js';
@@ -27,10 +27,18 @@ export class Matchmaking {
       && Object.entries(CONVENIENCE_DEFAULTS).every(([key, value]) => room.convenience[key] === value);
   }
   same(a, b) { return a.version === b.version && a.difficulty === b.difficulty; }
+  versions(difficulty = null) {
+    return (this.lobby.versions?.ids ?? [this.lobby.defaultVersion()]).filter(version =>
+      this.lobby.versionEnabled(version) && this.lobby.versionAvailable(version)
+      && (difficulty == null ? this.lobby.offered(version, 'coop').length > 0 : this.lobby.offered(version, 'coop').includes(difficulty)));
+  }
+  accepts(entry, version, difficulty) {
+    return (entry.anyDifficulty || entry.difficulty === difficulty) && (entry.anyVersion || entry.version === version);
+  }
   state(session) {
     const room = this.lobby.roomOf(session);
     const entry = this.solo.get(session.playerId) || (room && this.parties.get(room.code));
-    return entry ? { t: 'match.state', status: 'searching', version: entry.version, difficulty: entry.difficulty,
+    return entry ? { t: 'match.state', status: 'searching', version: entry.version, anyVersion: entry.anyVersion === true, anyDifficulty: entry.anyDifficulty === true, difficulty: entry.difficulty,
       startedAt: entry.startedAt, target: DEFAULT_SEATS, matched: room ? room.seats.filter(Boolean).length : 1, roomCode: room?.code ?? null }
       : { t: 'match.state', status: 'idle' };
   }
@@ -51,11 +59,14 @@ export class Matchmaking {
     const room = this.lobby.roomOf(session);
     const version = msg.version ?? room?.version ?? this.lobby.defaultVersion();
     if (!this.lobby.versionEnabled(version)) return fail(ERR.VERSION_UNKNOWN);
-    if (!this.lobby.versionAvailable(version) || !this.lobby.offered(version, 'coop').includes(msg.difficulty)) return fail(ERR.VERSION_UNSUPPORTED);
+    const anyVersion = msg.anyVersion === true;
+    const anyDifficulty = msg.anyDifficulty === true;
+    const available = this.versions(anyDifficulty ? null : msg.difficulty);
+    if (anyVersion ? !available.length : !available.includes(version)) return fail(ERR.MATCH_UNSUPPORTED);
     const existing = this.solo.get(session.playerId);
     if (room) {
       if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
-      if (!this.eligible(room) || room.version !== version || room.difficulty !== msg.difficulty) return fail(ERR.BAD_TARGET);
+      if (anyVersion || anyDifficulty || !this.eligible(room) || room.version !== version || room.difficulty !== msg.difficulty) return fail(ERR.BAD_TARGET);
       const previous = this.parties.get(room.code);
       if (!previous) {
         const entry = { version, difficulty: room.difficulty, startedAt: this.lobby.now(), hostId: room.hostId };
@@ -64,8 +75,8 @@ export class Matchmaking {
       }
       this.roomState(room);
     } else {
-      if (existing && !this.same(existing, { version, difficulty: msg.difficulty })) this.cancel(session);
-      if (!this.solo.has(session.playerId)) this.solo.set(session.playerId, { version, difficulty: msg.difficulty, startedAt: this.lobby.now() });
+      if (existing && (!this.same(existing, { version, difficulty: msg.difficulty }) || !!existing.anyVersion !== anyVersion || !!existing.anyDifficulty !== anyDifficulty)) this.cancel(session);
+      if (!this.solo.has(session.playerId)) this.solo.set(session.playerId, { version, anyVersion, anyDifficulty, difficulty: msg.difficulty, startedAt: this.lobby.now() });
       this.send(session);
     }
     this.pump();
@@ -113,7 +124,7 @@ export class Matchmaking {
         if (!this.eligible(room) || !this.same(entry, room) || room.hostId !== entry.hostId) { this.stopRoom(room); continue; }
         for (const [id, solo] of [...this.solo]) {
           if (room.freeSeat() < 0) break;
-          if (!this.same(solo, entry)) continue;
+          if (!this.accepts(solo, entry.version, entry.difficulty)) continue;
           const session = this.lobby.registry.byId(id);
           const joined = this.lobby.join(session, { code });
           if (joined.error) { this.send(session); continue; }
@@ -123,16 +134,28 @@ export class Matchmaking {
         if (room.freeSeat() < 0) { this.stopRoom(room); for (const seat of room.activeHumans()) this.found(this.lobby.registry.byId(seat.playerId), room); }
         else this.roomState(room);
       }
-      const buckets = new Map();
-      for (const pair of this.solo) {
-        const key = pair[1].version + '/' + pair[1].difficulty;
-        if (!buckets.has(key)) buckets.set(key, []);
-        buckets.get(key).push(pair);
-      }
-      for (const entries of buckets.values()) for (let offset = 0; offset + DEFAULT_SEATS <= entries.length; offset += DEFAULT_SEATS) {
-        const group = entries.slice(offset, offset + DEFAULT_SEATS), first = group[0][1];
+      // [ASSUMED] One FIFO pool. Choose a room version before grouping, so wildcard entries never bridge incompatible exact requests.
+      const entries = [...this.solo];
+      for (const [anchorId, anchor] of entries) {
+        if (!this.solo.has(anchorId)) continue;
+        const available = this.versions(anchor.anyDifficulty ? null : anchor.difficulty);
+        const compatible = entries.filter(([id]) => this.solo.has(id));
+        // Exact constraints first, then the oldest player's preference, then stable server registry order.
+        const versions = [...new Set([...compatible.filter(([, entry]) => !entry.anyVersion).map(([, entry]) => entry.version), anchor.version, ...available])];
+        const difficulties = [...new Set([...compatible.filter(([, entry]) => !entry.anyDifficulty).map(([, entry]) => entry.difficulty), anchor.difficulty, ...DIFFICULTIES])];
+        let group, version, difficulty;
+        for (const candidate of versions) {
+          if (!available.includes(candidate)) continue;
+          for (const d of difficulties) {
+            if (!this.lobby.offered(candidate, 'coop').includes(d) || !this.accepts(anchor, candidate, d)) continue;
+            const players = compatible.filter(([, entry]) => this.accepts(entry, candidate, d)).slice(0, DEFAULT_SEATS);
+            if (players.length === DEFAULT_SEATS) { group = players; version = candidate; difficulty = d; break; }
+          }
+          if (group) break;
+        }
+        if (!group) continue;
         const host = this.lobby.registry.byId(group[0][0]);
-        const created = this.lobby.create(host, { mode: 'coop', difficulty: first.difficulty, version: first.version });
+        const created = this.lobby.create(host, { mode: 'coop', difficulty, version });
         if (created.error) { this.solo.delete(host.playerId); sendSession(host, { t: 'match.state', status: 'idle', error: created.error }); continue; }
         const room = this.lobby.roomOf(host);
         if (!this.eligible(room)) { this.lobby.disposeRoom(room, 'empty'); sendSession(host, { t: 'room.closed', reason: 'empty' }); this.solo.delete(host.playerId); sendSession(host, { t: 'match.state', status: 'idle', error: ERR.BAD_TARGET }); continue; }
@@ -148,16 +171,21 @@ export class Matchmaking {
     } finally { this.running = false; this.counts(); }
   }
   countFrame() {
-    const byVersion = {};
+    const byVersion = {}, anyVersion = { total: 0, byDifficulty: {} };
+    const offered = Object.fromEntries((this.lobby.versions?.ids ?? [this.lobby.defaultVersion()])
+      .filter(version => this.lobby.versionEnabled(version) && this.lobby.versionAvailable(version))
+      .map(version => [version, this.lobby.offered(version, 'coop')]));
     if (getSocialSettings().counts) {
       for (const [id, entry] of this.solo) {
         const session = this.lobby.registry.byId(id);
         if (!session || !this.lobby.social.visible(session)) continue;
-        const bucket = byVersion[entry.version] ||= { total: 0, byDifficulty: {} };
-        bucket.total++; bucket.byDifficulty[entry.difficulty] = (bucket.byDifficulty[entry.difficulty] || 0) + 1;
+        const bucket = entry.anyVersion ? anyVersion : byVersion[entry.version] ||= { total: 0, byDifficulty: {} };
+        bucket.total++;
+        if (entry.anyDifficulty) bucket.anyDifficulty = (bucket.anyDifficulty || 0) + 1;
+        else bucket.byDifficulty[entry.difficulty] = (bucket.byDifficulty[entry.difficulty] || 0) + 1;
       }
     }
-    return { t: 'match.counts', byVersion: getSocialSettings().counts ? byVersion : null };
+    return { t: 'match.counts', features: { anyVersion: true, anyDifficulty: true }, offered, byVersion: getSocialSettings().counts ? byVersion : null, anyVersion: getSocialSettings().counts ? anyVersion : null };
   }
   counts() {
     const frame = this.countFrame();

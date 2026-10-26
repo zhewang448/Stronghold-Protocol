@@ -1225,3 +1225,12 @@ shared/roomConvenience.js normalizes five room booleans. Lobby snapshots them in
 `Lobby.matchmaking` 由 `server/matchmaking.js` 管理临时散人与主动招募房队列。使用原 `create` / `join`，
 不复制房间或 Match 状态机。凑人后留在等待室，原 ready/start 决定开局；不自动启动或填 AI。
 `Room.matching` 是临时展示状态，不进入重启恢复。生命周期、兼容边界和完整协议见 [真人匹配](MATCHMAKING.md)。
+
+同盟大厅续版（2026-10-26）：`match.queue.anyVersion` true 接受任意可用玩法版本，难度仍相同；缺省保持旧精确
+语义。先补主动房且不切版，再按精确约束/FIFO 组四人；全不限优先最早者偏好，回退服务器注册顺序。
+大厅直接筛选、搜寻与取消，沿用目录加入/观战。`match.counts.offered` 提供可选版本/难度，`anyVersion` 单独
+统计可见不限版本散人。完整约定见 [真人匹配](MATCHMAKING.md)。
+
+2026-10-27 续版：anyDifficulty true 独立接受不限难度，指定约束仍严格保留。同局采用一个实际版本/难度，
+房主招募仍固定。零房间允许排队；无可用条件用 MATCH_UNSUPPORTED，客户端根据 match.counts.features
+阻止旧服务器不支持的不限请求。3005 空闲测试实例已平滑重启并复现同输入由失败转成功。

@@ -44,7 +44,17 @@ test('three main entries and achievement news reuse existing actions without dup
   assert.equal(button.props['data-testid'], 'public-room-lobby');
   assert.ok(source.includes('hub-ach-news'));
 });
-test('create alliance opens protocol first; failure returns to key setup',()=>{const body=source.slice(source.indexOf('const openCoopCreate ='),source.indexOf('const closeProtocol ='));assert.match(body,/setSheetPurpose\('create'\)/);assert.match(body,/setAllyOpen\(false\).*setSheetOpen\(true\)/);assert.match(source,/result === false.*closeProtocol\(\)/);assert.match(source,/customCode.*code: customCode/s);});
+test('create alliance opens protocol first; failure returns to key setup',()=>{const body=source.slice(source.indexOf('const openCoopCreate ='),source.indexOf('const closeProtocol ='));assert.match(body,/setAllyOpen\(false\).*setSheetOpen\(true\)/);assert.match(source,/result === false.*closeProtocol\(\)/);assert.match(source,/customCode.*code: customCode/s);});
 test('version control and create payload follow current version; unavailable difficulties are filtered',()=>{assert.match(source,/VersionSwitch/);assert.match(source,/version: selectedVersion/);assert.match(source,/offeredDifficulties\(getConfig\(\), roomMode\)/);assert.match(source,/allowedDifficulties\.map/);assert.match(source,/data-testid="solo-unlimited"/);assert.match(source,/roomMode === 'solo' \? \{ soloUnlimited \}/);});
 test('local social, records and personal-data recovery remain reachable',()=>{for(const name of ['OnlinePlayersButton','PresenceSelector','openStats','openPersonalData','openRecovery','PersonalDataReminder'])assert.ok(source.includes(name),name);assert.match(source,/AchievementEntry/);assert.match(source,/setSweepOpen\(true\)/);});
 test('Hub keeps complete local scenes and full-screen protocol navigation',()=>{const css=read('public/css/screens/lobby.css');assert.match(source,/ProtocolScene/);assert.match(source,/class="proto-list"/);assert.match(source,/aria-label=.*选择模拟协议/);assert.match(css,/\.proto/);assert.match(css,/prefers-reduced-motion/);});
+
+test('one alliance directory owns filters, search, timer and cancel without replacing the room list', () => {
+  const modal = source.slice(source.indexOf('export function MatchmakingModal'), source.indexOf('// package: features'));
+  for (const part of ['match-version', 'match-difficulty', 'mm-search-state', 'mm-cancel', 'mm-room-list', 'anyVersion:', 'mm-modal__foot']) assert.ok(modal.includes(part), part);
+  assert.match(modal, /useState\('any'\)/);
+  assert.match(source, /const openSearch = .*setModalOpen\(true\)/);
+  assert.equal(source.includes("t('快速匹配')"), false);
+  assert.equal(source.includes("t('模拟邀约')"), false);
+  assert.equal(source.includes('proto--searching'), false);
+});
