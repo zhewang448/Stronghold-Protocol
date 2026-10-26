@@ -13,8 +13,8 @@ import { enabled as federationEnabled, currentNode } from '../federation.js';
 // alliance key with 复制 / 链接. Bottom: 干员调配, the status line, the 精确搜寻 | difficulty | ⚙ pill (the host picks the
 // difficulty in 选择模拟协议 over the room and keeps 私密房间 / 人数上限 / AI 队友最后选择 / 无限火力 branch under ⚙),
 // 开始搜寻 and 开始模拟 (host) or 准备就绪. 开始搜寻 runs the server's room queue (match.queue: same mode and
-// difficulty) and keeps it running until stopped or full (the server ends a room's turn after 10 s without bots: the
-// host's client queues again); everybody sees 搜寻中 (ui/matchFlow.js), then 搜寻成功 when the seats fill or a player
+// difficulty/version) and keeps it running until stopped, changed, disconnected or full. The server owns the queue;
+// clients never periodically re-enqueue. Everybody sees 搜寻中 (ui/matchFlow.js), then 搜寻成功 when the seats fill or a player
 // arrives through match.found. 人数上限 only shows when shared/constants.js allows more than DEFAULT_SEATS.
 // Motion (the event's, css tr-*): the room comes up from black card by card and fades out when left; a doctor turning
 // 已就绪 flashes green; 选择模拟协议, ⚙, 搜寻中 and 搜寻成功 stay mounted while they fade out (ui/transitions.js).
@@ -65,7 +65,7 @@ import { SearchPanel, FoundPanel } from '../ui/matchFlow.js';
 import { usePresence, useRise, afterLeave } from '../ui/transitions.js';
 import { t, tc } from '../../../shared/i18n.js';
 import { BondPlanBadge, BondPlanControl } from '../ui/bondPlan.js';
-import { roomConvenience } from '../../../shared/roomConvenience.js';
+import { CONVENIENCE_DEFAULTS, roomConvenience } from '../../../shared/roomConvenience.js';
 import { AnnouncementButton } from '../ui/announcement.js';
 
 const MAX_SEATS = Number(SEAT_CONST.MAX_SEATS) || 4;
@@ -392,15 +392,10 @@ export function RoomScreen() {
   const [busy, setBusy] = useState(null);
   const [picker, setPicker] = useState(false);
   const [opts, setOpts] = useState(false);
-  const [searchWant, setSearchWant] = useState(false); // the host asked to search and has not stopped
-  const [searchSince, setSearchSince] = useState(0);
   const [found, setFound] = useState(false);
-  const [lastMatching, setLastMatching] = useState(0); // a short grace while the host's client queues the room again
   const [since] = useState(() => Date.now());
   const alive = useRef(true);
   const inFlight = useRef(false); // synchronous guard against double clicks (state updates are async)
-  const requeue = useRef(false);
-  const prevEmpty = useRef(null);
   const [, tick] = useState(0);
   useEffect(() => { const id = setInterval(() => tick((x) => x + 1), 1000); return () => { clearInterval(id); alive.current = false; }; }, []);
   useData('chess', 'assets', 'seat-art');
@@ -420,7 +415,7 @@ export function RoomScreen() {
   // arrived through 搜寻队友 (match.found for this room): 搜寻成功 once
   useEffect(() => {
     if (room && mm?.status === 'found' && mm.roomCode === room.code) {
-      setFound(true);
+      setFound(mm.full !== false);
       store.patch('matchmaking', { status: 'idle' });
     }
   }, [room?.code, mm?.status]);
@@ -431,39 +426,11 @@ export function RoomScreen() {
   const facts = room ? roomFacts(room, me.playerId) : null;
   const vote = room?.versionVote;
   const versionWhy = isModdedRoom(room) ? t('请先关闭改变玩法的插件') : null;
-  const searchable = CAN_QUEUE && !!room && coop && facts.isHost && room.private !== true && facts.seats.length <= DEFAULT_SEATS && !room.inMatch;
+  const searchable = CAN_QUEUE && !!room && coop && facts.isHost && room.private !== true && !room.test && !isModdedRoom(room) && !room.versionVote && room.aiPicksLast === true && !room.aiTakeoverEnabled && !room.uniteLayerGains && Object.entries(CONVENIENCE_DEFAULTS).every(([key, value]) => room.convenience?.[key] === value) && facts.seats.length === DEFAULT_SEATS && facts.humans.every(s => s.connected) && !room.inMatch;
   const firepower = room?.random === true;
   const variant = room?.variant === 'endurance' || room?.variant === 'marathon' ? room.variant : 'blitz';
 
-  // the server ends a room's search turn after 10 s without bots: queue again while the host still wants it
-  const prevMatching = useRef(null);
-  const endedAt = useRef(0);
-  useEffect(() => {
-    if (!room) return undefined;
-    // the end of a search turn: the others keep the panel for a moment while the host's client queues again
-    if (prevMatching.current && !room.matching) { endedAt.current = Date.now(); setLastMatching(endedAt.current); }
-    prevMatching.current = room.matching || null;
-    if (room.matching) return undefined;
-    if (!searchWant || !searchable || facts.emptySeats === 0 || !online || requeue.current) return undefined;
-    requeue.current = true;
-    const id = setTimeout(() => {
-      net.request('match.queue', { mode: room.mode, difficulty: room.difficulty, random: firepower, ...(firepower ? { variant } : {}), fillBots: false })
-        .catch((err) => { if (alive.current) { setSearchWant(false); toastError(err); } })
-        .finally(() => { requeue.current = false; });
-    }, 400);
-    return () => { clearTimeout(id); requeue.current = false; };
-  }, [room?.matching, searchWant, searchable, facts?.emptySeats, online]);
-  // seats filled while searching → 搜寻成功; a stale wish is dropped
-  useEffect(() => {
-    if (!facts) return;
-    const empty = facts.emptySeats;
-    const wasSearching = searchWant || !!room.matching || Date.now() - endedAt.current < 2500;
-    if (prevEmpty.current != null && empty < prevEmpty.current && wasSearching && empty === 0) setFound(true);
-    if (empty === 0 && searchWant) setSearchWant(false);
-    prevEmpty.current = empty;
-  }, [facts?.emptySeats]);
-  useEffect(() => { if (!searchable && searchWant) setSearchWant(false); }, [searchable]);
-  const searching = !!room && coop && facts.emptySeats > 0 && (!!room.matching || (facts.isHost ? searchWant : Date.now() - lastMatching < 1600));
+  const searching = !!room?.matching && coop && facts.emptySeats > 0;
   // the overlays stay mounted while they fade out; 离开同盟 fades the room before the request goes out
   const [searchShown, searchLeaving] = usePresence(searching && !found, 220);
   const [foundShown, foundLeaving] = usePresence(found, 320);
@@ -476,8 +443,7 @@ export function RoomScreen() {
   const info = difficultyInfo(room.mode, room.difficulty, { random: firepower, variant });
   const variantName = variant === 'endurance' ? t('持久鏖战') : variant === 'marathon' ? t('最长时赛') : t('快速突袭');
   const modeName = firepower ? `${RANDOM_MODE_NAME} · ${variantName}` : coop ? t('同盟模拟') : t('独立模拟');
-  const searchElapsed = facts.isHost && searchSince ? (Date.now() - searchSince) / 1000
-    : room.matching?.startedAt ? (serverNow() - room.matching.startedAt) / 1000 : 0;
+  const searchElapsed = room.matching?.startedAt ? Math.max(0, (serverNow() - room.matching.startedAt) / 1000) : 0;
 
   const run = async (kind, fn) => {
     if (inFlight.current) return;
@@ -494,13 +460,10 @@ export function RoomScreen() {
   const addBot = () => run('add-bot', () => net.request('room.addBot', {}));
   const removeBot = (seat) => run(`remove-bot-${seat}`, () => net.request('room.removeBot', { seat }));
   const start = () => run('start', () => net.request('room.start', {}));
-  const queueMatch = () => run('match', async () => {
-    await net.request('match.queue', { mode: room.mode, difficulty: room.difficulty, random: firepower, ...(firepower ? { variant } : {}), fillBots: false });
-    setSearchWant(true); setSearchSince(Date.now());
-  });
+  const queueMatch = () => run('match', () => net.request('match.queue', { mode: 'coop', version: roomVersion(room), difficulty: room.difficulty, fillBots: false }));
   // 房主切换无限火力分支（blitz / endurance）——room.setRandom 带 variant
   const setVariant = (v) => run('variant', () => net.request('room.setRandom', { random: true, variant: v }));
-  const cancelMatch = () => { setSearchWant(false); setLastMatching(0); if (room.matching) run('cancel-match', () => net.request('match.cancel', {})); };
+  const cancelMatch = () => run('cancel-match', () => net.request('match.cancel'));
   // the host removes a human before the match (community report #17): asked first; the player may join again. The
   // confirmed player's id goes along: if they left and someone else took the seat meanwhile, the server refuses it.
   const kick = async (seat, name, playerId) => {
@@ -663,7 +626,7 @@ export function RoomScreen() {
 
     ${searchShown ? html`<${SearchPanel} class=${`rs-searchpanel${searchLeaving ? ' is-leaving' : ''}`} elapsed=${searchElapsed}
       onStop=${facts.isHost ? cancelMatch : null} stopping=${busy === 'cancel-match'}
-      note=${facts.isHost ? t('搜寻期间可随时直接开始模拟') : t('创建者正在搜寻队友')}
+      note=${facts.isHost ? t('停止搜寻后，可沿用准备流程开始模拟') : t('创建者正在搜寻队友')}
       tags=${[{ key: 'mode', label: t('精确搜寻'), icon: html`<${Icon} name="search" />` },
         { key: 'diff', label: t(DIFFICULTY_NAMES[room.difficulty]), color: DIFFICULTY_COLORS[room.difficulty], icon: html`<${DifficultyIcon} difficulty=${room.difficulty} />` }]} />` : null}
     ${foundShown ? html`<${FoundPanel} class=${foundLeaving ? 'is-leaving' : ''} seats=${facts.seats.length} text=${t('同盟集结完毕')} />` : null}

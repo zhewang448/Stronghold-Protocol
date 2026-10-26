@@ -488,3 +488,10 @@ The WebSocket handshake records only a bounded, valid HTTP(S) Origin host (inclu
 列表排除 solo、测试、私密、已销毁及无人房间；实际空位含 AI 和掉线保留席，开始后禁止新玩家加入但允许观战。
 四版本、4–20 席及玩法插件沿用现有加入和内容就绪流程。在线计数与隐身房主名遵循社交策略。
 摘要字段、排序、限流和验证见 [公开房间大厅](../PUBLIC-ROOM-LOBBY.md)。本功能为 `[ASSUMED]` 复刻便利。
+
+### 本服真人匹配（扩展，2026-10-26）
+
+`match.queue`、`match.cancel` 复用原 rid/ok，`match.state`、`match.found`、`match.counts` 同步队列。
+同版本同难度四席原版队列，个人四人建房或房主主动补人；不自动开局、不补 AI。既有创建/加入和准备开始
+仍为唯一房间/游戏逻辑。断线、离开、规则变化及房主更换取消搜寻；恢复记录不保存队列。
+计数服从社交隐身及 counts 开关。字段、边界和测试见 [真人匹配](../MATCHMAKING.md)。

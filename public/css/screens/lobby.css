@@ -1672,6 +1672,16 @@ button.sw-eth:hover { border-color: #fff; }
 /* 搜寻队友 while searching: the panel in place of the cards */
 .proto-side--search { justify-content: stretch; background: linear-gradient(90deg, transparent, rgba(0, 0, 0, .55) 30%); }
 .proto-side--search .mf-search { flex: 1 1 auto; }
+.proto--searching .proto-body, .proto-side--search { min-height: 0; }
+.proto-side--search .mf-search { min-height: 0; max-height: 100%; overflow-y: auto; }
+.proto-side--search .mf-search > * { flex-shrink: 0; }
+@media (max-height: 560px) {
+  .proto-side--search .mf-search { justify-content: flex-start; gap: 6px; padding: 8px 12px; }
+  .proto-side--search .mf-search__title { font-size: clamp(24px, 4vw, 36px); white-space: nowrap; gap: 4px; }
+  .proto-side--search .mf-brand, .proto-side--search .mf-search__tip { display: none; }
+  .proto-side--search .mf-search__scene { max-width: 160px; padding-block: 0; }
+  .proto-side--search .mf-stop { min-height: 44px; margin-top: auto; }
+}
 .proto-mode-chip { display: inline-flex; align-items: center; gap: .06rem; padding: .04rem .16rem; font-size:max(calc(.17 * var(--t)), 12px); font-weight: 700; color: #e9eceb;
   background: #2a2c2d; border-radius: 999px; }
 .proto-mode-chip .icon { width: max(.2rem, 13px); height: max(.2rem, 13px); }

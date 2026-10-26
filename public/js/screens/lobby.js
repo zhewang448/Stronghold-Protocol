@@ -529,6 +529,8 @@ export function ProtoCard({ roomMode, difficulty, selected, onSelect, matchmakin
 export function ProtocolSelect({ card, roomMode, random, variant, difficulty, onDifficulty, onClose, matchmaking, brief, privateRoom, onPrivate,
   online, maint, busy, isSearching, onCreate, onQueue, purpose = 'create', onSearch, onCancel, mm, onBrowse, chained = false, onUnlimited = null }) {
   const currentVersion = useStore(shownVersion);
+  const [, queueTick] = useState(0);
+  useEffect(() => { if (!isSearching) return undefined; const id = setInterval(() => queueTick(n => n + 1), 1000); return () => clearInterval(id); }, [isSearching]);
   const allowedDifficulties = offeredDifficulties(getConfig(), roomMode);
   const [unlimited, setUnlimited] = useState(true);
   const timedSolo = roomMode === 'solo' && soloTimedOf(getConfig(), currentVersion) === true;
@@ -546,7 +548,7 @@ export function ProtocolSelect({ card, roomMode, random, variant, difficulty, on
   const info = difficultyInfo(roomMode, difficulty, { random, variant });
   const label = maint?.active ? t('维护中 · 暂停开局') : search ? t('开始搜寻') : random ? t('创建无限火力') : roomMode === 'solo' ? t('开始模拟') : t('创建同盟');
   const hint = !online ? t('正在连接服务器…') : maint?.active ? t('服务器即将停机维护，暂时停止开启新的同盟')
-    : search ? t('精确搜寻：只与选择相同难度的博士组成同盟，凑齐 4 人即开始')
+    : search ? t('只匹配相同版本和难度的真人队友；进入等待室后准备，由房主开始。')
     : isSearching ? t('正在匹配真人队友，AI 补位已暂停') : roomMode === 'solo' ? t('独自调配阵容，按自己的节奏开始模拟') : t('创建后可邀请好友，AI 队友已暂停');
   // 搜寻队友: while the queue runs, the right column is the 搜寻中 panel (the server's elapsed / matched counts)
   if (search && isSearching) {
@@ -561,7 +563,7 @@ export function ProtocolSelect({ card, roomMode, random, variant, difficulty, on
       <div class="proto-body">
         <section class="proto-stage"><${ProtocolScene} key=${d} difficulty=${d} /></section>
         <section class="proto-side proto-side--search">
-          <${SearchPanel} elapsed=${mm?.elapsed || 0} onStop=${onCancel} stopping=${busy === 'cancel'}
+          <${SearchPanel} elapsed=${Math.max(0, (net.serverNow() - (mm?.startedAt || net.serverNow())) / 1000)} onStop=${onCancel} stopping=${busy === 'cancel'}
             note=${t('已找到 {matched}/{target} 名博士', { matched: mm?.matched || 1, target: mm?.target || 4 })}
             tags=${[{ key: 'mode', label: t('精确搜寻'), icon: html`<${Icon} name="search" />` },
               { key: 'diff', label: t(DIFFICULTY_NAMES[d]), color: DIFFICULTY_COLORS[d], icon: html`<${DifficultyIcon} difficulty=${d} />` }]} />
@@ -607,7 +609,7 @@ ${timedSolo ? html`<label class="proto-unlimited" data-testid="solo-unlimited"><
               onClick=${onQueue}>${t('快速匹配')}<//>` : null}
           </div>` : null}
           <p class="proto-hint">${hint}</p>
-          <button type="button" class="proto-start" disabled=${!online || maint?.active || busy === 'create' || busy === 'queue'} onClick=${search ? onSearch : onCreate}>
+          <button type="button" class="proto-start" disabled=${!online || maint?.active || !!busy} onClick=${search ? onSearch : onCreate}>
             <span class="proto-start__mark" aria-hidden="true"><span class="proto-start__rook"><i>[</i><${Icon} name="rook" /><i>]</i></span><small>STRONGHOLD<br />PROTOCOL</small></span>
             <span class="proto-start__label">${busy === 'create' || busy === 'queue' ? html`<${Spinner} size="sm" />` : null}${label}</span>
             <span class="proto-start__deco" aria-hidden="true"></span>
@@ -659,7 +661,7 @@ export function AllianceSelect({ customCode, onCustomCode, customCodeOk, onClose
         </button>
         </div>
         <div class="ally-links">
-          ${CAN_QUEUE ? html`<button type="button" class="ally-pill" onClick=${onSearch}><${Icon} name="search" />${t('搜寻队友')}</button>` : null}
+          ${CAN_QUEUE ? html`<button type="button" class="ally-pill" data-testid="matchmaking-open" onClick=${onSearch}><${Icon} name="search" />${t('搜寻队友')}</button>` : null}
           ${CAN_LIST ? html`<button type="button" class="ally-pill ally-pill--invite" onClick=${onBrowse}>${t('模拟邀约')}${recruiting ? html`<b class="num">${recruiting}</b>` : null}<span class="ally-pill__mark" aria-hidden="true"></span></button>` : null}
         </div>
         <div class="ally-card ally-card--join">
@@ -796,7 +798,7 @@ const CAN_QUEUE = HAS('match.queue'), CAN_FIREPOWER = HAS('room.setRandom'), CAN
 /** Lobby screen component. */
 export function LobbyScreen() {
   const selectedVersion = useStore(lobbyVersion);
-  const matchmakingCounts = useStore(s => s.presence?.matchmaking);
+  const matchmakingCounts = useStore(s => s.matchmakingCounts?.[selectedVersion]);
   const me = useStore((s) => s.me, shallowEqual);
   const conn = useStore((s) => s.connection, shallowEqual);
   useData('config');
@@ -852,6 +854,9 @@ export function LobbyScreen() {
     return () => { cancelled = true; delete globalThis.__onRoomFound; };
   }, [code, roomMode]);
   const isSearching = mm?.status === 'searching';
+  const [, queueTick] = useState(0);
+  useEffect(() => { if (!isSearching) return undefined; const id = setInterval(() => queueTick(n => n + 1), 1000); return () => clearInterval(id); }, [isSearching]);
+  const queueElapsed = Math.max(0, Math.floor((net.serverNow() - (mm?.startedAt || net.serverNow())) / 1000));
 
   const pickMode = (m) => {
     if (!MODE_CARDS.some((c) => c.id === m)) return;
@@ -911,7 +916,7 @@ export function LobbyScreen() {
     setSheetOpen(false); setSheetChained(false);
     if (returnToAlliance) setAllyOpen(true);
   };
-  const queueMatch = () => run('queue', () => net.request('match.queue', { mode: roomMode, difficulty, random: randomMode, ...(randomMode ? { variant } : {}), fillBots: false }));
+  const queueMatch = () => run('queue', () => net.request('match.queue', { mode: 'coop', difficulty, version: selectedVersion, fillBots: false }));
   const cancelMatch = () => run('cancel', () => net.request('match.cancel'));
   const join = (c = code, federationNode) => {
     // `onClick=${join}` hands the click EVENT as the first argument, and a default parameter only applies to
@@ -966,7 +971,7 @@ export function LobbyScreen() {
   const [joinOpen, setJoinOpen] = useState(false);
   const [achOpen, setAchOpen] = useState(false);              // 成就统计 (ui/achievements.js)
   // 同盟模拟 → 选择同盟方式; 独立模拟 / 无限火力 → 选择模拟协议
-  const openMode = (m) => { modeTrigger.current = m === 'solo' ? '.hub-entry[aria-label="SOLO"]' : '.hub-entry[aria-label="ALLIANCE"]'; pickMode(m); if (m === 'coop') { setSheetChained(false); setAllyOpen(true); } else { setSheetPurpose('create'); setSheetChained(false); setSheetOpen(true); } };
+  const openMode = (m) => { modeTrigger.current = m === 'solo' ? '.hub-entries__row .hub-entry-wrap:first-child .hub-entry' : '.hub-entries__row .hub-entry-wrap:nth-child(2) .hub-entry'; pickMode(m); if (m === 'coop') { setSheetChained(false); setAllyOpen(true); } else { setSheetPurpose('create'); setSheetChained(false); setSheetOpen(true); } };
   const openSearch = () => { pickMode('coop'); setSheetChained(allyOpen); setAllyOpen(false); setSheetPurpose('search'); setSheetOpen(true); };
   const modeCard = MODE_CARDS.find((c) => c.id === simulation) || MODE_CARDS[0];
 
@@ -974,8 +979,8 @@ export function LobbyScreen() {
       onUnlimited=${setSoloUnlimited} onDifficulty=${pickDifficulty} onClose=${closeProtocol} matchmaking=${matchmakingCounts}
       brief=${randomMode ? html`<${FirepowerBrief} variant=${fpVariant} onVariant=${pickVariant} />` : null}
       privateRoom=${privateRoom} onPrivate=${setPrivateRoom} online=${online} maint=${maint} busy=${busy} isSearching=${isSearching}
-      onCreate=${sheetChained && roomMode === 'coop' && sheetPurpose === 'create' ? createCoop : create} onQueue=${async () => { await queueMatch(); setSheetOpen(false); }}
-      purpose=${sheetPurpose} onSearch=${queueMatch} onCancel=${cancelMatch} mm=${mm} onBrowse=${() => setModalOpen(true)} chained=${sheetChained} />`;
+      onCreate=${sheetChained && roomMode === 'coop' && sheetPurpose === 'create' ? createCoop : create} onQueue=${async () => { const result = await queueMatch(); if (result !== false) setSheetPurpose('search'); }}
+      purpose=${sheetPurpose} onSearch=${queueMatch} onCancel=${cancelMatch} mm=${mm} onBrowse=${() => { setSheetOpen(false); setSheetChained(false); setModalOpen(true); }} chained=${sheetChained} />`;
   return html`<div class="screen lobby-screen lobby-hub" data-hub-theme=${backdropTheme(bg)}>
     <${HubBackdrop} bg=${bg} />
     <header class="topbar hub-topbar">
@@ -1041,7 +1046,7 @@ export function LobbyScreen() {
             <div class="matchmaking-hud__info">
               <${Spinner} size="sm" />
               <span class="matchmaking-hud__text">${t('正在匹配同盟 (')}${mm?.matched || 1}/${mm?.target || 4})...</span>
-              <span class="matchmaking-hud__time num">${String(Math.floor((mm?.elapsed || 0) / 60)).padStart(2, '0')}:${String((mm?.elapsed || 0) % 60).padStart(2, '0')}</span>
+              <span class="matchmaking-hud__time num">${String(Math.floor(queueElapsed / 60)).padStart(2, '0')}:${String(queueElapsed % 60).padStart(2, '0')}</span>
             </div>
             <${Button} variant="danger" size="md" loading=${busy === 'cancel'} onClick=${cancelMatch}>${t('取消匹配')}<//>
           </div>` : null}
@@ -1055,7 +1060,6 @@ export function LobbyScreen() {
           <${HubEntry} group=${{ icon: 'users', label: t('同盟模拟') }} name=${t('同盟模拟')} en="ALLIANCE" icon="users" count=${matchmakingCounts?.total} onClick=${() => openMode('coop')} />
           ${CAN_LIST ? html`<${HubEntry} group=${{ icon: 'users', label: t('同盟大厅') }} name=${t('同盟大厅')} en="ALLIANCE LOBBY" icon="users" testId="public-room-lobby" title=${t('浏览公开房间，加入或观战')} onClick=${() => setModalOpen(true)} />` : null}
           ${CAN_FIREPOWER ? html`<${HubEntry} name=${t('无限火力')} en="FIREPOWER" icon="dice" badge="1.1" tone="gold" onClick=${() => openMode('firepower')} />` : null}
-          ${CAN_QUEUE ? html`<${HubEntry} name=${t('搜寻队友')} en="FIND ALLIES" icon="search" tone="bright" onClick=${openSearch} />` : null}
         </div>
       </section>
     </main>

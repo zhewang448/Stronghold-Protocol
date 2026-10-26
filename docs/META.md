@@ -1219,3 +1219,9 @@ shared/roomConvenience.js normalizes five room booleans. Lobby snapshots them in
 `room.list` 返回在原 rid/ok 信封内，复用 Network 的重请求限流；`room.join`、`room.spectate` 仍由原处理器裁决。
 公开合作房默认可发现，私密开关只控制目录可见性，不能替代密钥/邀请。私密属性经 `server/recovery.js` 保存和恢复。
 四个玩法版本、扩展容量及插件的既有内容加载不变。完整约定、NeoPecos 来源与验收见 [公开房间大厅](PUBLIC-ROOM-LOBBY.md)。
+
+## 本服真人匹配（扩展，2026-10-26）
+
+`Lobby.matchmaking` 由 `server/matchmaking.js` 管理临时散人与主动招募房队列。使用原 `create` / `join`，
+不复制房间或 Match 状态机。凑人后留在等待室，原 ready/start 决定开局；不自动启动或填 AI。
+`Room.matching` 是临时展示状态，不进入重启恢复。生命周期、兼容边界和完整协议见 [真人匹配](MATCHMAKING.md)。

@@ -251,6 +251,7 @@ const CLOSE_REASON = {
 function wireNet() {
   installSocial();
   net.on('status', (snap) => {
+    if (snap.status !== 'online') store.set({ matchmaking: { status: 'idle' }, matchmakingCounts: null });
     const cur = store.get().connection;
     store.set({
       connection: {
@@ -268,6 +269,9 @@ function wireNet() {
   net.on('replaced', () => toast(t('该身份已在其他页面登录，本页已断开'), 'warn', { ttl: 6000 }));
   net.on('unhandledError', (err) => toastError(err));
   net.on('room.state', onRoomState);
+  net.on('match.state', msg => { store.set({ matchmaking: payload(msg) }); if (msg.error) toastError({ code: msg.error }); });
+  net.on('match.found', msg => store.set({ matchmaking: { ...payload(msg), status: 'found' } }));
+  net.on('match.counts', msg => store.set({ matchmakingCounts: msg.byVersion ?? null }));
   net.on('site.announcement', (message) => store.set({ announcement: announcementFromMessage(message) }));
   net.on('site.settings', (message) => pwaInstall.setEnabled(message.showPwaInstall));
   net.on('room.closed', (msg) => {

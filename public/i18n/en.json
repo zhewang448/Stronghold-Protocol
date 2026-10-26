@@ -3508,5 +3508,7 @@
   "玩法插件": "Gameplay plugins",
   "观战 {n}/{max}": "Spectators {n}/{max}",
   "同盟大厅": "Alliance Lobby",
-  "浏览公开房间，加入或观战": "Browse public rooms to join or spectate"
+  "浏览公开房间，加入或观战": "Browse public rooms to join or spectate",
+  "只匹配相同版本和难度的真人队友；进入等待室后准备，由房主开始。": "Match human teammates on the same version and difficulty. Ready up in the room; the host starts the game.",
+  "停止搜寻后，可沿用准备流程开始模拟": "Stop searching, then ready up and start as usual."
 }

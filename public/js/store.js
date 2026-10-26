@@ -91,6 +91,8 @@ export const initialState = Object.freeze({
   room: null,
   announcement: null,
   social: null,
+  matchmaking: { status: 'idle' },
+  matchmakingCounts: null,
   // welcome.testMode (DESIGN §34.8). The server omits the key when the switch is off; the client cannot set it.
   testMode: false,
 

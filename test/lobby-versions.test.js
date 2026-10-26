@@ -91,6 +91,30 @@ const refused = (r, code, detail) => {
   if (detail) assert.equal(r.detail, detail);
 };
 
+test('matching separates official versions and switches invalidate room recruitment', () => {
+  const h = harness();
+  try {
+    const people = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(h.player);
+    const request = { t: 'match.queue', mode: 'coop', difficulty: 'NORMAL' };
+    for (let i = 0; i < 3; i++) ok(h.lobby.handleMessage(people[i], { ...request, version: DEFAULT_VERSION }));
+    for (let i = 3; i < 6; i++) ok(h.lobby.handleMessage(people[i], { ...request, version: 'act1autochess' }));
+    assert.equal(h.lobby.rooms.size, 0);
+    ok(h.lobby.handleMessage(people[6], { ...request, version: 'act1autochess' }));
+    const first = h.lobby.roomOf(people[6]);
+    assert.equal(first.version, 'act1autochess');
+    assert.ok(people.slice(0, 3).every(p => !p.roomCode));
+    ok(h.lobby.handleMessage(people[7], { ...request, version: DEFAULT_VERSION }));
+    assert.equal(h.lobby.rooms.size, 2);
+    assert.notEqual(first.code, people[7].roomCode);
+    const host = h.player('Switcher');
+    ok(h.lobby.create(host, { mode: 'coop', difficulty: 'NORMAL' }));
+    ok(h.lobby.handleMessage(host, { ...request, version: DEFAULT_VERSION }));
+    assert.ok(h.lobby.roomOf(host).matching);
+    ok(h.lobby.proposeVersion(host, { version: 'act1autochess' }));
+    assert.equal(h.lobby.roomOf(host).matching, undefined);
+  } finally { h.lobby.shutdown(); }
+});
+
 test('room.create frees the sole-held old room set for default plugins at maxSets (without a socket)', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-version-content-limit-'));
   let contents;
