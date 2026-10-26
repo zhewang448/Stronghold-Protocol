@@ -1095,6 +1095,10 @@ The title, lobby and shared settings expose a permanent release-notes button. Th
 
 沿用公告栏的界面文字比例、窗口宽度与安全区边距，更新内容弹窗改为自适应动态视口；窄屏/矮横屏自动单栏，上游与扩展切换按钮可换行，标题和关闭栏固定、正文独立触屏纵向滚动。大字号和界面缩放下不挤出关闭按钮；手动历史、自动更新提醒与主机更新确认共享基础样式，控制台无游戏主题时保留独立字号回退。真实触屏用例覆盖 844×390、640×360、大字/75%布局、390×844 和模拟安全区，测试实际滑动、来源切换和关闭。
 
+### 标题页框外信息行（2026-10-26）
+
+公告与更新内容位于登录框下方的独立信息行。框内连接栏固定为上下两行：第一行连接状态与延迟，第二行玩法说明、设置、全屏三个工具；不再根据 online 状态临时增加控件。延迟徽标首次进入即保留，无测量值显示 --，有测量值显示实际延迟；数字预留四位宽度，连接文字不逐字折行。触屏按钮在布局内保留至少 44px 热区，较矮桌面窗口收紧徽标高度，为信息行与页脚留出空间。test/ui/title-return.e2e.test.js 比较两次大厅往返前后的面板高度和控件相对坐标，并覆盖空延迟及 9/31/99/999/9999ms；同时验证独立信息行、工具同排、按钮边界与点击命中。
+
 ### Console player access label (2026-10-26)
 
 The local console room overview, waiting-room names and active player rows show a small secondary line below each human name: 接入：host while connected, 上次接入：host while offline, 未知 for unavailable metadata. AI names have no line. Long hosts wrap within the name cell. There is no extra column, detail section, link, domain summary or player-facing display.
@@ -1151,6 +1155,12 @@ EXE 占用或暂不可写时保留已验签载荷和受保护备份，控制台�
 目录关系：控制台更新总能处理游戏根目录启动器；实例外启动器只有在新版实际运行并将自身绝对路径/哈希登记到实例logs/launcher-location.json后才可由该实例控制台同步更新。同目录不是必要条件。独立自更新直接以当前运行EXE为目标，放在其他文件夹也可用，不依赖任何实例位置。
 
 旧版1.1.0不具备自更新和位置登记能力，需首次手动换用包含此功能的新版本；之后使用启动器自更新。现有已发布v0.3.3-extended.1和1.1.0附件不覆盖。本轮功能随 v0.3.3-extended.2 和启动器1.2.0发布；旧版本附件不覆盖。
+
+
+### Title connection controls (2026-10-26)
+
+The title keeps its connection dot, status text and optional online ping together; whole controls wrap inside the login panel instead of shrinking their labels. Returning from the lobby keeps the online session and adds the ping without vertical status text or overlapping controls. Touch buttons reserve at least the existing 44 px target in layout. [ASSUMED] Responsive presentation only; no session, matchmaking or gameplay changes. Regression: test/ui/title-return.e2e.test.js.
+
 
 ### Match avatar messages and phase actions (2026-10-26)
 
