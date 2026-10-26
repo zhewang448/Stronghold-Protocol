@@ -37,6 +37,43 @@ test('public directory: join, running spectator, privacy, retry, shared polling 
     return page;
   };
   const page = await pageIn();
+  assert.equal(await page.$('.hub-recruit'), null, 'home keeps room details inside the directory');
+  assert.equal(await page.$('.hub-topbar [data-testid="public-room-lobby"]'), null);
+  assert.equal(await page.$('.hub-topbar .lobby-notice, .hub-topbar .lobby-updates'), null);
+  assert.equal(await page.$eval('.hub-entries [data-testid="public-room-lobby"]', e => e.textContent.includes('同盟大厅')), true);
+  assert.equal(await page.$$eval('.hub-ach-news button', buttons => buttons.length), 2);
+  const layoutOut = path.resolve('.cache/room-directory'); fs.mkdirSync(layoutOut, { recursive: true });
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 844, height: 390, isMobile: true, hasTouch: true, isLandscape: true }, { width: 640, height: 360, isMobile: true, hasTouch: true, isLandscape: true }]) {
+    await page.setViewport(viewport);
+    await page.waitForFunction(() => globalThis.__SP__?.store.get().connection.status === 'online' && document.querySelector('.lobby-screen'));
+    await page.evaluate(async () => { const { updateSettings } = await import('/js/ui/settings.js'); updateSettings({ textSize: 'xl' }); });
+    await page.evaluate(async () => { await Promise.allSettled(document.getAnimations().filter(a => Number.isFinite(a.effect?.getComputedTiming().endTime)).map(a => a.finished)); });
+    const placement = await page.evaluate(() => {
+      const rect = el => { const r = el.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height }; };
+      const card = rect(document.querySelector('.hub-ach'));
+      const news = rect(document.querySelector('.hub-ach-news'));
+      const elements = [...document.querySelectorAll('.hub-entries .hub-entry, .hub-ach-news button')];
+      return { card, news, width: innerWidth, height: innerHeight, buttons: elements.map(el => { const r = rect(el); const center = document.elementFromPoint((r.left + r.right) / 2, (r.top + r.bottom) / 2); return { ...r, hit: !!center && (center === el || el.contains(center)), text: el.textContent }; }) };
+    });
+    assert.equal(placement.buttons.length, 5, 'three main entries and two news buttons');
+    const main = placement.buttons.slice(-3);
+    assert.ok(Math.max(...main.map(r => r.bottom)) - Math.min(...main.map(r => r.bottom)) <= 1, 'main entry bottoms align');
+    assert.ok(placement.buttons.every(r => r.width > 0 && r.height >= 32 && r.left >= -1 && r.top >= -1 && r.right <= placement.width + 1 && r.bottom <= placement.height + 1 && r.hit), JSON.stringify(placement));
+    if (viewport.width > 1100) assert.ok(placement.news.left >= placement.card.right, 'desktop news stays beside the achievement card');
+    else assert.ok(placement.news.top >= placement.card.bottom - 1, 'short screens reflow news below achievement');
+    await page.screenshot({ path: path.join(layoutOut, 'home-layout-' + viewport.width + '.png') });
+  }
+  await page.setViewport({ width: 1280, height: 720 });
+  await page.waitForFunction(() => globalThis.__SP__?.store.get().connection.status === 'online' && document.querySelector('.lobby-screen'));
+  await page.evaluate(async () => { const { updateSettings } = await import('/js/ui/settings.js'); updateSettings({ textSize: 'sm' }); });
+  await page.click('.hub-ach-news .lobby-notice');
+  await page.waitForSelector('.announcement-modal');
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.announcement-modal', { hidden: true });
+  await page.click('.hub-ach-news [data-testid="release-history-button"]');
+  await page.waitForSelector('dialog[data-release-history][open]');
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('dialog[data-release-history]', { hidden: true });
   const open = async p => { await p.click('[data-testid="public-room-lobby"]'); await p.waitForSelector('[data-room-code="OPEN"]'); };
   await open(page);
   await page.waitForFunction(() => document.activeElement?.closest('.mm-modal'));

@@ -3,13 +3,13 @@ import { lobbyVersion, isDefaultVersion, versionLabel, shownVersion, offeredDiff
 import { LobbyMusicButton } from '../ui/lobbyMusic.js';
 import { AccountMeChip } from '../ui/accounts.js';
 import { OnlinePlayersButton, PresenceSelector } from '../ui/social.js';
-import { isOwnerName, decorateOwnerName } from '../ui/ownerName.js';
 import { MatchmakingCount } from '../ui/matchmaking.js';
 import { Emblem } from './title.js';
 import { useHubBackdrop, HubBackdrop, HubRadar, BackdropSettings, BackdropGlyph, backdropTheme } from '../ui/hubBackdrop.js';
 // Lobby screen — a hub (owner's request, 2026-10-13): an original backdrop (ui/hubBackdrop.js: generated night scenes or
 // the player's own picture) with the game's dot-matrix emblem in the middle, a left column (密钥加入 · tips), a right
-// column (缺人同盟 card · S.W.E.E.P.报告 (screens/sweep.js) · 干员调配) and four big entries at the bottom right:
+// column (S.W.E.E.P.报告 (screens/sweep.js) · 干员调配 · local data tools) and three main entries at the bottom right:
+// 独立模拟 / 同盟模拟 / 同盟大厅. Announcements and release history sit beside achievements, below them on small screens.
 // 独立模拟 / 无限火力 open their difficulty picker; 同盟模拟 goes through 选择同盟方式 → difficulty picker → room.
 // The existing start sheet also holds the mode settings (无限火力's variant, private room,
 // 快速匹配, create), 搜寻队友 opens the room list. The 密钥加入 dialog joins with a 同盟密钥 (recent codes remembered) —
@@ -380,44 +380,6 @@ function useRoomDirectory(online, interval) {
   return { data, loading, error, refresh: () => refresh.current?.() };
 }
 
-function RecruitCard({ rooms, online, onJoin, onAll, onCreate }) {
-  const open = recruitingRooms(rooms);
-  return html`<section class="hub-recruit" aria-label=${t('缺人同盟')}>
-    <header class="hub-recruit__head">
-      <span class=${`hub-recruit__pulse${open.length ? ' is-live' : ''}`} aria-hidden="true"></span>
-      <span class="hub-recruit__title">${t('缺人同盟')}</span>
-      <span class="hub-recruit__en">RECRUITING</span>
-      <span class="hub-recruit__n num">${open.length}</span>
-      <button type="button" class="hub-recruit__all" onClick=${onAll}>${t('全部')}<${Icon} name="chevronRight" /></button>
-    </header>
-    <div class="hub-recruit__list">
-      ${open.length ? open.slice(0, 3).map((r) => {
-        const { capacity: max, occupied, free } = directoryRoomFacts(r);
-        const name = r.hostName || r.name || t('同盟 #{code}', { code: r.code });
-        return html`<div key=${`${r.node || ''}:${r.code}`} class="hub-recruit__row" style=${`--d-color:${DIFFICULTY_COLORS[r.difficulty] || 'var(--mint-500)'}`}>
-          <span class="hub-recruit__info">
-            <span class=${`hub-recruit__name${isOwnerName(r.hostName || r.name) ? ' sp-owner-name' : ''}`}>${name}</span>
-            <span class="hub-recruit__meta">
-              <${DifficultyIcon} difficulty=${r.difficulty} class="diff-glyph" />
-              <span>${DIFFICULTY_NAMES[r.difficulty] ? t(DIFFICULTY_NAMES[r.difficulty]) : r.difficulty}</span>
-              ${r.random ? html`<span class="hub-recruit__fp">${t('无限火力')}</span>` : null}
-              ${r.nodeName ? html`<span class="t-dim">${r.nodeName}</span>` : null}
-            </span>
-          </span>
-          <span class="hub-recruit__seats">
-            <span class="hub-recruit__pips" aria-hidden="true">${Array.from({ length: max }, (_, i) => html`<i key=${i} class=${i < occupied ? 'is-on' : ''}></i>`)}</span>
-            <span class="hub-recruit__need">${t('缺')}<b class="num">${free}</b>${t('人')}</span>
-          </span>
-          <button type="button" class="hub-recruit__join" disabled=${!online} onClick=${() => onJoin(r.code, r.node)}>${t('加入')}</button>
-        </div>`;
-      }) : html`<div class="hub-recruit__empty">
-        <span>${t('暂时没有缺人的同盟')}</span>
-        <button type="button" class="hub-recruit__create" onClick=${onCreate}>${t('创建同盟')}<${Icon} name="chevronRight" /></button>
-      </div>`}
-    </div>
-  </section>`;
-}
-
 /** 全屏 / 退出全屏 in the top bar, styled like its neighbours (hidden where the browser has no element fullscreen). */
 function HubFullscreenButton() {
   const [on, setOn] = useState(() => fullscreen.active());
@@ -452,11 +414,11 @@ function SweepPlate({ onClick }) {
   </button>`;
 }
 
-/** One of the four big entries at the bottom right. */
-export function HubEntry({ group, name, en, icon, badge, tone = 'mint', count = null, onClick, disabled = false }) {
+/** Main action at the bottom right; optional capability entries reuse the same component. */
+export function HubEntry({ group, name, en, icon, badge, tone = 'mint', count = null, onClick, disabled = false, testId, title }) {
   return html`<div class="hub-entry-wrap">
     ${group ? html`<span class="hub-entry__group"><${Icon} name=${group.icon} />${group.label}</span>` : html`<span class="hub-entry__group hub-entry__group--blank"></span>`}
-    <button type="button" aria-label=${en} class=${`hub-entry hub-entry--${tone}`} onClick=${onClick} disabled=${disabled}>
+    <button type="button" aria-label=${name} data-testid=${testId} title=${title} class=${`hub-entry hub-entry--${tone}`} onClick=${onClick} disabled=${disabled}>
       <span class="hub-entry__icon"><${Icon} name=${icon} /></span>
       <span class="hub-entry__en">${en}</span>
       <span class="hub-entry__name">${name}${badge ? html`<span class="mode-beta">${badge}</span>` : null}</span>
@@ -734,11 +696,11 @@ function MatchmakingModal({ open, onClose, onJoin, onSpectate, directory, online
 
   return html`<div class="modal mm-modal" role="presentation"
       onMouseDown=${(e) => { if (e.target === e.currentTarget && onClose) onClose(); }}>
-    <div ref=${boxRef} class="modal__box mm-modal__box brackets" role="dialog" aria-modal="true" aria-label=${t('联机大厅')} tabindex="-1">
+    <div ref=${boxRef} class="modal__box mm-modal__box brackets" role="dialog" aria-modal="true" aria-label=${t('同盟大厅')} tabindex="-1">
       <div class="modal__stripe" aria-hidden="true"></div>
       <header class="modal__head mm-modal__head">
         <div class="mm-modal__title-row">
-          <h2 class="modal__title mm-modal__title">${t('联机大厅')}</h2>
+          <h2 class="modal__title mm-modal__title">${t('同盟大厅')}</h2>
           <button type="button" class="mm-modal__close" onClick=${onClose} aria-label=${t('关闭')}>
             <${Icon} name="close" />
           </button>
@@ -1023,11 +985,8 @@ export function LobbyScreen() {
         <span class="topbar__sep" aria-hidden="true"></span>
         <div class="topbar__tools">
           <${VersionSwitch} />
-          ${CAN_LIST ? html`<${Button} variant="secondary" size="sm" icon="users" data-testid="public-room-lobby" onClick=${() => setModalOpen(true)}>${t('联机大厅')}<//>` : null}
           <${NoticesButton} />
           <${SettingsButton} class="lobby-settings" variant="secondary" square=${true} />
-          <${AnnouncementButton} class="lobby-notice" />
-          <${ReleaseHistoryButton} class="lobby-updates" variant="secondary" />
           <${GuideButton} class="lobby-guide" variant="secondary" square=${true} />
           <${Button} variant="secondary" size="sm" square=${true} class="hub-bg-btn" onClick=${() => setBgOpen(true)}
             title=${t('大厅背景')} aria-label=${t('大厅背景')}><${BackdropGlyph} /><//>
@@ -1053,7 +1012,13 @@ export function LobbyScreen() {
       </div>
 
       <aside class="hub-side">
-        <${AchievementEntry} key=${achOpen ? 'open' : 'shut'} onOpen=${() => setAchOpen(true)} />
+        <div class="hub-ach-group">
+          <${AchievementEntry} key=${achOpen ? 'open' : 'shut'} onOpen=${() => setAchOpen(true)} />
+          <div class="hub-ach-news">
+            <${AnnouncementButton} class="hub-news-btn lobby-notice" />
+            <${ReleaseHistoryButton} class="hub-news-btn lobby-updates" variant="secondary" />
+          </div>
+        </div>
         <${HubTile} icon="key" label=${t('密钥加入')} en="JOIN WITH KEY" onClick=${() => setJoinOpen(true)} />
         <${FriendsTile} />
 
@@ -1061,7 +1026,6 @@ export function LobbyScreen() {
       </aside>
 
       <aside class="hub-right">
-        ${CAN_LIST ? html`<${RecruitCard} rooms=${rooms} online=${online} onJoin=${join} onAll=${() => setModalOpen(true)} onCreate=${() => openMode('coop')} />` : null}
         <div class="hub-right__plates">
           <${SweepPlate} onClick=${() => setSweepOpen(true)} />
           <${LoadoutButton} from="lobby" size="lg" class="hub-plate hub-plate--loadout" label=${t('干员调配')} />
@@ -1089,6 +1053,7 @@ export function LobbyScreen() {
         <div class="hub-entries__row">
           <${HubEntry} group=${{ icon: 'user', label: t('独立模拟') }} name=${t('独立模拟')} en="SOLO" icon="user" onClick=${() => openMode('solo')} />
           <${HubEntry} group=${{ icon: 'users', label: t('同盟模拟') }} name=${t('同盟模拟')} en="ALLIANCE" icon="users" count=${matchmakingCounts?.total} onClick=${() => openMode('coop')} />
+          ${CAN_LIST ? html`<${HubEntry} name=${t('同盟大厅')} en="ALLIANCE LOBBY" icon="users" testId="public-room-lobby" title=${t('浏览公开房间，加入或观战')} onClick=${() => setModalOpen(true)} />` : null}
           ${CAN_FIREPOWER ? html`<${HubEntry} name=${t('无限火力')} en="FIREPOWER" icon="dice" badge="1.1" tone="gold" onClick=${() => openMode('firepower')} />` : null}
           ${CAN_QUEUE ? html`<${HubEntry} name=${t('搜寻队友')} en="FIND ALLIES" icon="search" tone="bright" onClick=${openSearch} />` : null}
         </div>

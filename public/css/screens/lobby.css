@@ -1059,7 +1059,8 @@
 .hub-entries { grid-column: 2 / -1; grid-row: 2; display: flex; flex-direction: column; align-items: flex-end; gap: .12rem; }
 .hub-searching, .hub-maint { width: min(100%, 8.6rem); }
 .hub-maint { padding: .08rem .16rem; border: 1px solid var(--amber); color: var(--amber); background: rgba(40, 24, 6, .7); font-size:calc(.15 * var(--t)); }
-.hub-entries__row { display: flex; align-items: flex-end; gap: var(--hub-gap); }
+.hub-entries__row { display: flex; align-items: stretch; gap: var(--hub-gap); }
+.hub-entries__row .hub-entry-wrap { justify-content: flex-end; }
 .hub-entry-wrap { display: flex; flex-direction: column; gap: .05rem; }
 .hub-entry__group { display: flex; align-items: center; gap: .06rem; height: .2rem; padding-left: .04rem; font-size:calc(.13 * var(--t)); color: rgba(223, 230, 226, .7); }
 .hub-entry {
@@ -2236,6 +2237,28 @@ button.ally-card:disabled { filter: grayscale(.7) brightness(.7); cursor: defaul
 /* a guest: the achievements are the account's (2026-10-14) */
 .hub-ach__login { color: #b9c2bf; }
 .hub-ach.is-guest .hub-ach__scene { filter: saturate(.55) brightness(.8); }
+
+/* News supports the achievement card; game entry actions stay together at bottom right. */
+.hub-ach-group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max(1.6rem, 120px);
+  gap: .12rem;
+  width: calc(100% + max(1.6rem, 120px) + .12rem);
+  margin-bottom: .1rem;
+}
+.hub-ach-group > .hub-ach { margin-bottom: 0; min-width: 0; }
+.hub-ach-news { display: grid; grid-template-rows: repeat(2, minmax(44px, 1fr)); gap: .1rem; min-width: 0; }
+.hub-ach-news .hub-news-btn {
+  width: 100%; height: auto; min-height: 44px; min-width: 0;
+  padding: .08rem .1rem; justify-content: flex-start;
+  background: rgba(8, 14, 13, .72);
+}
+.hub-ach-news .hub-news-btn .btn__label { white-space: normal; overflow-wrap: anywhere; text-align: left; }
+.hub-ach-news .hub-news-btn .btn__icon { flex: none; }
+@media (max-width: 1100px), (max-height: 560px) {
+  .hub-ach-group { width: 100%; grid-template-columns: minmax(0, 1fr); gap: .08rem; }
+  .hub-ach-news { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto; gap: .08rem; }
+}
 
 /* ---- the panel ---- */
 /* the reference clip's order: the lobby blurs at once, a diamond loader while the data comes, then the panel fades in */

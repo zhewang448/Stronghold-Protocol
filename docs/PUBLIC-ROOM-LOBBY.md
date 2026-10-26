@@ -9,14 +9,15 @@
 以及 `public/js/screens/lobby.js` 的房间目录。源地址：
 <https://github.com/NeoPecos/Stronghold-Protocol/tree/2cadc6183c133fb22f5853c15db945bbaf4ce700>。
 
-保留本库已有 Hub、`MatchmakingModal`、`RecruitCard`、`ProtocolSelect`、`RoomOptions`、
+保留本库已有 Hub、`HubEntry`、`MatchmakingModal`、`ProtocolSelect`、`RoomOptions`、
 `useDialogFocus`、`room.join`、`room.spectate`、请求关联回复、重限流桶和重启恢复。
 不合并来源分支，不移入账号、战绩服务、机器人或游戏素材。公开目录及其排序为维护者请求的
 `[ASSUMED]` 复刻便利功能，不改变战斗规则或 golden。
 
 ## 玩家行为
 
-- 主大厅工具栏的「联机大厅」、缺人同盟的「全部」和同盟选择的「模拟邀约」打开同一个列表。
+- 主大厅右下角按「独立模拟、同盟模拟、同盟大厅」并排排列；「同盟大厅」复用原公开列表弹窗，同盟选择的「模拟邀约」仍通向同一列表。顶部不重复放大厅入口，首页不再常驻「缺人同盟」列表。
+- 公告、更新内容复用原按钮和弹窗，从顶部移到成就卡片右侧，上下排列；宽度不超过 1100px 或高度不超过 560px 时放到卡片下方横排，保持可点和大字换行。原成就卡片宽度不缩小。
 - 新合作房默认公开；创建协议页可选「私密房间」，房主也能在同盟设置修改。私密房仍可凭密钥或邀请加入。
 - 只列出仍有真人的公开合作房；独立模拟、测试房、私密房和已销毁房不列出。
 - 等待中有空位才能加入，AI 和掉线保留位占用容量；进行中和满员房仍能观战，观战席满后按钮禁用。

@@ -3506,5 +3506,7 @@
   "公开大厅可见，可直接加入或观战": "Visible in the public lobby; others can join or spectate.",
   "已满员": "Full",
   "玩法插件": "Gameplay plugins",
-  "观战 {n}/{max}": "Spectators {n}/{max}"
+  "观战 {n}/{max}": "Spectators {n}/{max}",
+  "同盟大厅": "Alliance Lobby",
+  "浏览公开房间，加入或观战": "Browse public rooms to join or spectate"
 }

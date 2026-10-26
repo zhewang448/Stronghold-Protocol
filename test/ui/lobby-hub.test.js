@@ -28,6 +28,22 @@ test('directory and recruiting share AI occupancy and server reservation rules',
   assert.ok(source.includes('useRoomDirectory(online, modalOpen ? 4000 : 10000)'));
   assert.equal(source.split("net.request('room.list')").length - 1, 1, 'one directory request path');
 });
+
+test('three main entries and achievement news reuse existing actions without duplicate home discovery', () => {
+  const top = source.slice(source.indexOf('<header class="topbar hub-topbar">'), source.indexOf('<main class="hub-stage">'));
+  const entries = source.slice(source.indexOf('<div class="hub-entries__row">'), source.indexOf('</main>'));
+  assert.ok(entries.includes('testId="public-room-lobby"'));
+  assert.ok(entries.includes("t('同盟大厅')"));
+  assert.equal(source.includes('<' + '$' + '{RecruitCard}'), false);
+  assert.equal(top.includes('public-room-lobby'), false);
+  assert.equal(top.includes('AnnouncementButton'), false);
+  assert.equal(top.includes('ReleaseHistoryButton'), false);
+  const card = HubEntry({ name: '同盟大厅', en: 'ALLIANCE LOBBY', icon: 'users', testId: 'public-room-lobby', onClick() {} });
+  const button = [...walk(card)].find(v => v.type === 'button');
+  assert.equal(button.props['aria-label'], '同盟大厅');
+  assert.equal(button.props['data-testid'], 'public-room-lobby');
+  assert.ok(source.includes('hub-ach-news'));
+});
 test('create alliance opens protocol first; failure returns to key setup',()=>{const body=source.slice(source.indexOf('const openCoopCreate ='),source.indexOf('const closeProtocol ='));assert.match(body,/setSheetPurpose\('create'\)/);assert.match(body,/setAllyOpen\(false\).*setSheetOpen\(true\)/);assert.match(source,/result === false.*closeProtocol\(\)/);assert.match(source,/customCode.*code: customCode/s);});
 test('version control and create payload follow current version; unavailable difficulties are filtered',()=>{assert.match(source,/VersionSwitch/);assert.match(source,/version: selectedVersion/);assert.match(source,/offeredDifficulties\(getConfig\(\), roomMode\)/);assert.match(source,/allowedDifficulties\.map/);assert.match(source,/data-testid="solo-unlimited"/);assert.match(source,/roomMode === 'solo' \? \{ soloUnlimited \}/);});
 test('local social, records and personal-data recovery remain reachable',()=>{for(const name of ['OnlinePlayersButton','PresenceSelector','openStats','openPersonalData','openRecovery','PersonalDataReminder'])assert.ok(source.includes(name),name);assert.match(source,/AchievementEntry/);assert.match(source,/setSweepOpen\(true\)/);});
