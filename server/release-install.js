@@ -1,4 +1,5 @@
 // Transactional program and changed-art replacement. Unlisted art/settings/packs are retained.
+// i18n-ignore-file: host-only update diagnostics, never player-facing protocol messages.
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseManifest, verifyFiles, digestFile, removalProblem, isSetupArt } from './update.js';

@@ -46,7 +46,7 @@ v0.3.3 整合候选及验证边界见 [整合说明](UPSTREAM-V0.3.3-INTEGRATION
 - 合并上游新版本时从 `main` 开功能分支，完成适配与测试后再合并回 `main`。
 - 同步上游：`git fetch upstream` → `git merge upstream/master` → `npm install` → `npm run setup`（上游常会加素材）→ `node --test`。
 - 素材 `public/assets/`、`.cache/`、`.claude/` 都在 `.gitignore` 里，不进仓库。新机器 clone 后要先 `npm install && npm run setup`。
-- 当前版本为 `v0.3.3-extended.2`，基于上游 `v0.3.3`；本轮发布版本。已发布的 `v0.3.1-extended.11` 资源下载与在线状态修复仍保留在下方历史记录。扩展保留多人大厅、启动器、签名增量更新与恢复流程。
+- 当前版本为 `v0.3.3-extended.3`，基于上游 `v0.3.3`；本轮发布版本。已发布的 `v0.3.1-extended.11` 资源下载与在线状态修复仍保留在下方历史记录。扩展保留多人大厅、启动器、签名增量更新与恢复流程。
 
 当前源码已整合上游 `v0.3.3`；`package.json` / APP_VERSION 为基础版本 0.3.3；`server/release-version.js` 单独记录扩展标签。发布附件与公开状态以 Releases 为准。
 
@@ -253,7 +253,7 @@ Ctrl / ⌘ 点击、中键及浏览器菜单仍可另开页面。预览无法复
 
 保留 `ui/skins.js`、`ui/skinPicker.js` 的真实实现与 `room.skins` 同步；皮肤先 `cleanSkins` 校验再合并导入，卡片和列表均提供随机皮肤与恢复默认。新同盟创建页保留自定义密钥；等待室重新接入已有 `room.addBot` / `room.removeBot`。聊天位置记忆、标点、联动干员和回放暂停逻辑不变。
 
-不支持的匹配、公开房间列表、好友、私密房间、无限火力和名片同步入口按真实协议能力隐藏。没有新增虚假 C2S，也没有玩家端开发者控制台。修复来源包的昵称正则和部署特效变量错误；新界面文字保留字号设置，不用局部 `--t` 覆盖屏蔽设置。
+本节为历史移植记录；v0.3.3-extended.3已接入本服公开合作房目录、私密房和真人匹配，当前范围见MATCHMAKING.md与PUBLIC-ROOM-LOBBY.md。其余未实现入口按真实能力隐藏。没有新增虚假 C2S，也没有玩家端开发者控制台。修复来源包的昵称正则和部署特效变量错误；新界面文字保留字号设置，不用局部 `--t` 覆盖屏蔽设置。
 
 四个 `public/i18n/{en,ja,ko,zh-TW}.json` 补充译文，已有译文优先，来源和授权见 NOTICE。`test/e2e/client.mjs` 新增真实 Hub 创建和密钥加入助手；原浏览器用例只调整新页面流程、选择器和异步加载等待，不删行为断言。验证记录见 LOCAL-CHANGELOG；后续范围与约束仍以 UI-HUB-PORT 为准。
 

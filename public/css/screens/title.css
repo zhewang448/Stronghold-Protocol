@@ -309,8 +309,8 @@
 .title-information { display: flex; align-items: center; justify-content: center; gap: .16rem; max-width: calc(100vw - 32px); margin-top: .16rem; }
 .title-information > .btn { flex: none; white-space: nowrap; }
 /* Keep the invisible touch targets in their own layout space too. */
-.sp-coarse .title-conn, .sp-coarse .title-conn__tools { gap: max(.1rem, 10px); }
-.sp-coarse .title-information { gap: max(.16rem, 10px); }
+.sp-coarse .title-conn, .sp-coarse .title-conn__tools { gap: max(.1rem, calc(10px * var(--sp-ui, 1))); }
+.sp-coarse .title-information { gap: max(.16rem, calc(10px * var(--sp-ui, 1))); }
 .sp-coarse .title-conn__tools > :is(.btn, .fsbtn), .sp-coarse .title-information > .btn { min-width: var(--tap-min); min-height: var(--tap-min); }
 /* 统计 (the local stats page) beside the language menu in the top-right corner */
 .title-corner__tools { display: flex; align-items: center; justify-content: flex-end; gap: .1rem; margin-bottom: .1rem; }

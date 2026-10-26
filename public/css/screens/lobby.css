@@ -2230,9 +2230,9 @@ button.ally-card:disabled { filter: grayscale(.7) brightness(.7); cursor: defaul
 /* News supports the achievement card; game entry actions stay together at bottom right. */
 .hub-ach-group {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) max(1.6rem, 120px);
+  grid-template-columns: minmax(0, 1fr) max(1.6rem, calc(120px * var(--sp-ui, 1)), 32px);
   gap: .12rem;
-  width: calc(100% + max(1.6rem, 120px) + .12rem);
+  width: calc(100% + max(1.6rem, calc(120px * var(--sp-ui, 1)), 32px) + .12rem);
   margin-bottom: .1rem;
 }
 .hub-ach-group > .hub-ach { margin-bottom: 0; min-width: 0; }

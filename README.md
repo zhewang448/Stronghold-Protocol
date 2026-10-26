@@ -1,6 +1,6 @@
 # 卫戍协议：盟约 · Stronghold Protocol: Alliance
 
-![扩展版本](https://img.shields.io/badge/version-0.3.3--extended.2-blue)
+![扩展版本](https://img.shields.io/badge/version-0.3.3--extended.3-blue)
 ![上游基础版本](https://img.shields.io/badge/version-0.3.3-2ea44f)
 ![许可](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
 
@@ -12,7 +12,7 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 [下载正式版](https://github.com/zhewang448/Stronghold-Protocol/releases/latest) · [开始运行](#开始运行) · [本库特色](#本库特色) · [和朋友一起玩](#和朋友一起玩) · [更新记录](docs/LOCAL-CHANGELOG.md) · [反馈问题](https://github.com/zhewang448/Stronghold-Protocol/issues)
 
-> 当前版本为 **`v0.3.3-extended.2`**，基于上游 0.3.3。默认开放四版，新增完整更新历史、224 套可选皮肤与多实例 Windows 启动器；外部 LLM 不随发行包启用。详情见[扩展更新记录](docs/LOCAL-CHANGELOG.md)。
+> 当前版本为 **`v0.3.3-extended.3`**，基于上游 0.3.3。新增同盟大厅与不限版本／难度匹配，修复四版本控制台、回放和实时观察；保留224套皮肤与多实例启动器，外部LLM不随发行包启用。详情见[扩展更新记录](docs/LOCAL-CHANGELOG.md)。
 >
 > 非官方、非商业同人项目，与《明日方舟》官方无隶属或授权关系。游戏素材与数据的权利归原权利人；代码、素材及截图的许可边界见 [NOTICE.md](NOTICE.md)。
 
