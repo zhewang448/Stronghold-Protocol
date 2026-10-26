@@ -26,6 +26,12 @@ function fixture(t, options = {}) {
 
 test('queue and cancellation validate exact scope and reuse heavy rate limits', () => {
   assert.equal(validateC2S(request), null);
+  assert.equal(validateC2S({ ...request, anyVersion: true }), null);
+  assert.equal(validateC2S({ ...request, anyVersion: false }), null);
+  assert.equal(validateC2S({ ...request, anyDifficulty: true }), null);
+  assert.equal(validateC2S({ ...request, anyDifficulty: false }), null);
+  assert.ok(validateC2S({ ...request, anyDifficulty: 'any' }));
+  assert.ok(validateC2S({ ...request, anyVersion: 'any' }));
   assert.equal(validateC2S({ t: 'match.cancel' }), null);
   for (const extra of [{ mode: 'solo' }, { random: true }, { fillBots: true }, { difficulty: 'bad' }, { version: '../x' }]) assert.ok(validateC2S({ ...request, ...extra }));
   assert.ok(HEAVY_TYPES.has('match.queue'));
@@ -125,6 +131,8 @@ test('counts do not disclose invisible singles; count policy and reconnect snaps
   assert.equal(visible.frames.filter(x => x.t === 'match.state').at(-1).status, 'searching');
   setSocialSettings({ counts: false }); f.tick();
   assert.equal(visible.frames.filter(x => x.t === 'match.counts').at(-1).byVersion, null);
+  assert.equal(visible.frames.filter(x => x.t === 'match.counts').at(-1).anyVersion, null);
+  assert.ok(visible.frames.filter(x => x.t === 'match.counts').at(-1).offered.act2autochess.includes('NORMAL'));
 });
 
 test('allocation failures do not fabricate found rooms or corrupt queue identities', t => {

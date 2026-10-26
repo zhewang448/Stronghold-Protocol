@@ -89,4 +89,21 @@ describe('FxSystem.pop: the bond icon is 46 px whenever its image loads (user pl
     assert.doesNotThrow(() => icon.load());
     assert.ok(sp.destroyed);
   });
+
+  test('five concurrent gains fit a narrow viewport and respond to resize', () => {
+    const f = fx();
+    let width = 240;
+    f.ctx.screenSize = () => ({ width, height: 320 });
+    for (let i = 0; i < 5; i++) f.pop(null, '+999', 0xffffff, i);
+    f._updatePops(0.3);
+    assert.equal(new Set(f.pops.map(p => p.c.position.x)).size, 5);
+    for (const p of f.pops) {
+      assert.ok(p.c.position.x > 0 && p.c.position.x < width);
+      assert.ok(p.c.scale.x < 0.3, 'the five slots scale together');
+      assert.ok(p.c.position.y > 80, 'the rise leaves room below the HUD');
+    }
+    width = 1920;
+    f._updatePops(0.1);
+    assert.ok(f.pops.every(p => p.c.position.x > 500 && p.c.scale.x >= 1));
+  });
 });

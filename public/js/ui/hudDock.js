@@ -25,13 +25,41 @@ export function useHudMeasure(ref, measure, deps) {
     }
     measure();
     window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
     viewport?.addEventListener('resize', update);
     viewport?.addEventListener('scroll', update);
     return () => {
       cancelAnimationFrame(frame); observer.disconnect(); window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
       viewport?.removeEventListener('resize', update); viewport?.removeEventListener('scroll', update);
     };
   }, deps);
+}
+
+/** Message geometry belongs to the avatar, outside the member list's scrolling clip. */
+export function useAvatarMessageDock(ref, playerId, messageKey) {
+  useHudMeasure(ref, () => {
+    const el = ref.current, team = el?.closest('.team');
+    if (!el || !team) return;
+    const row = [...team.querySelectorAll('.team__row')].find(node => node.dataset.playerId === playerId);
+    const avatar = row?.querySelector('.team__btn');
+    if (!avatar) return;
+    const frame = hudFrame(el), origin = team.getBoundingClientRect();
+    const a = avatar.getBoundingClientRect(), card = row.getBoundingClientRect();
+    const list = team.querySelector('.team__list').getBoundingClientRect();
+    const offscreen = a.bottom <= list.top || a.top >= list.bottom;
+    el.toggleAttribute('data-offscreen', offscreen);
+    const shop = team.closest('.gm__hud').querySelector('.shopbar, .shopbar-tab');
+    const upperEdge = Math.max(frame.top, list.top);
+    const lowerEdge = Math.min(frame.bottom, list.bottom, shop?.getBoundingClientRect().top || frame.bottom);
+    const box = el.getBoundingClientRect();
+    const top = Math.max(upperEdge, Math.min(a.top + a.height / 2 - box.height / 2, lowerEdge - box.height - 8));
+    // The whole player card includes the name and LP tower to the avatar's right.
+    // Anchor outside that card, not inside its information column.
+    const left = Math.max(frame.left, Math.min(card.right + 8, frame.right - box.width));
+    el.style.left = String(left - origin.left) + 'px';
+    el.style.top = String(top - origin.top) + 'px';
+  }, [playerId, messageKey]);
 }
 
 const BLOCKERS = '.gtop__left, .gtop__center, .gtop__right, .readywrap, .team__row, .bslot, .bonds-toggle, .effect, .shopbar__row, .shopbar__tools, .shopbar-tab, .gm__corner, .chud, .gm__watching';

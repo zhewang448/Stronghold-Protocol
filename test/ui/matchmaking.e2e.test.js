@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { startServer } from '../../server/index.js';
 import { StubMatch } from '../../server/match/StubMatch.js';
+import { TestClient } from '../helpers/wsClient.js';
 
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const enabled = process.env.SP_E2E === '1' && fs.existsSync(CHROME);
@@ -18,7 +19,7 @@ test('matching UI: solo cancel, four waiting players, host recruitment, original
     const context = await browser.createBrowserContext(), page = await context.newPage();
     page.on('pageerror', e => errors.push(e.message));
     await page.setViewport({ width: 1280, height: 720 });
-    await page.evaluateOnNewDocument(name => { localStorage.setItem('sp.name', name); sessionStorage.setItem('sp.entered', '1'); localStorage.setItem('sp.pref.settings', JSON.stringify({ upstreamReleaseNotes: false, extensionReleaseNotes: false })); }, name);
+    await page.evaluateOnNewDocument(name => { localStorage.setItem('sp.name', name); localStorage.setItem('sp.pref.lobby.difficulty', JSON.stringify('NORMAL')); sessionStorage.setItem('sp.entered', '1'); localStorage.setItem('sp.pref.settings', JSON.stringify({ upstreamReleaseNotes: false, extensionReleaseNotes: false })); }, name);
     await page.goto(base, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => globalThis.__SP__?.store.get().connection.status === 'online' && document.querySelector('.lobby-screen'));
     return page;
@@ -26,22 +27,41 @@ test('matching UI: solo cancel, four waiting players, host recruitment, original
   const search = async page => {
     await page.evaluate(() => [...document.querySelectorAll('.hub-entry')].find(e => e.textContent.includes('同盟模拟')).click());
     await page.click('[data-testid="matchmaking-open"]');
-    await page.waitForSelector('.proto-start');
+    await page.waitForSelector('.mm-search');
     await page.evaluate(async () => { await Promise.allSettled(document.getAnimations().filter(a => Number.isFinite(a.effect?.getComputedTiming().endTime)).map(a => a.finished)); });
-    await page.waitForFunction(() => { const b = document.querySelector('.proto-start'); return b && !b.disabled; });
-    await page.click('.proto-start');
+    await page.waitForFunction(() => { const b = document.querySelector('.mm-search'); return b && !b.disabled; });
+    assert.equal(await page.$eval('[data-testid="match-version"]', e => e.value), 'any');
+    await page.select('[data-testid="match-difficulty"]', 'any');
+    await page.click('.mm-search');
   };
+  const manualHost = await TestClient.connect('ws://127.0.0.1:' + server.port + '/ws');
+  t.after(() => manualHost.terminate());
+  await manualHost.hello('列表房主');
+  assert.equal((await manualHost.request({ t: 'room.create', mode: 'coop', difficulty: 'NORMAL', code: 'LIST', capacity: 8 })).t, 'ok');
   const waitSearch = page => page.waitForFunction(() => globalThis.__SP__.store.get().matchmaking.status === 'searching', { timeout: 15000 });
   const first = await pageIn('匹配一');
   assert.equal(await first.$$eval('.hub-entries .hub-entry', e => e.length), 3);
   await search(first); await waitSearch(first);
-  await first.waitForSelector('.mf-stop');
-  await first.click('.mf-stop');
+  assert.equal(await first.$eval('[data-testid="match-difficulty"]', e => e.value), 'any');
+  assert.equal(await first.evaluate(() => globalThis.__SP__.store.get().matchmaking.anyDifficulty), true);
+  await first.waitForSelector('.mm-cancel');
+  await first.click('.mm-cancel');
   await first.waitForFunction(() => globalThis.__SP__.store.get().matchmaking.status === 'idle');
   assert.equal(server.lobby.matchmaking.solo.size, 0);
-  await first.waitForFunction(() => { const b = document.querySelector('.proto:not(.proto--searching) .proto-start'); return b && !b.disabled; });
+  await first.evaluate(() => { const s = globalThis.__SP__.store; globalThis.queueFeatures = s.get().matchmakingFeatures; s.set({ matchmakingFeatures: {} }); });
+  await first.waitForFunction(() => document.querySelector('.mm-search')?.disabled && document.querySelector('.mm-search-note')?.textContent.includes('重启测试服务'));
+  await first.evaluate(() => globalThis.__SP__.store.set({ matchmakingFeatures: globalThis.queueFeatures }));
+  await first.waitForFunction(() => { const b = document.querySelector('.mm-search'); return b && !b.disabled; });
   await first.evaluate(async () => { await Promise.allSettled(document.getAnimations().filter(a => Number.isFinite(a.effect?.getComputedTiming().endTime)).map(a => a.finished)); });
-  await first.click('.proto-start'); await waitSearch(first);
+  await first.click('.mm-search'); await waitSearch(first);
+  await first.waitForSelector('[data-room-code="LIST"]');
+  await first.click('.mm-refresh-btn');
+  assert.ok(await first.$('.mm-cancel'), 'room refresh preserves queue controls');
+  await first.keyboard.press('Escape');
+  await first.waitForSelector('.mm-modal', { hidden: true });
+  await first.click('.hub-search-status');
+  await first.waitForSelector('.mm-cancel');
+  assert.equal(await first.$eval('[data-testid="match-difficulty"]', e => e.value), 'any');
   for (const viewport of [{ width: 844, height: 390, isMobile: true, hasTouch: true, isLandscape: true }, { width: 640, height: 360, isMobile: true, hasTouch: true, isLandscape: true }]) {
     // Use the same touch surface without reloading an active queue: emulation mode is set once on a fresh page.
     const touch = await pageIn('触屏匹配');
@@ -49,10 +69,10 @@ test('matching UI: solo cancel, four waiting players, host recruitment, original
     await touch.waitForSelector('.lobby-screen');
     await search(touch); await waitSearch(touch);
     await touch.evaluate(async () => { const { updateSettings } = await import('/js/ui/settings.js'); updateSettings({ textSize: 'xl' }); await Promise.allSettled(document.getAnimations().filter(a => Number.isFinite(a.effect?.getComputedTiming().endTime)).map(a => a.finished)); });
-    const bounds = await touch.$eval('.mf-stop', el => { const r = el.getBoundingClientRect(); const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, w: innerWidth, h: innerHeight, hit: !!hit && (hit === el || el.contains(hit)) }; });
+    const bounds = await touch.$eval('.mm-cancel', el => { const r = el.getBoundingClientRect(); const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, w: innerWidth, h: innerHeight, hit: !!hit && (hit === el || el.contains(hit)) }; });
     assert.ok(bounds.left >= -1 && bounds.top >= -1 && bounds.right <= bounds.w + 1 && bounds.bottom <= bounds.h + 1 && bounds.hit, JSON.stringify(bounds));
     await touch.screenshot({ path: path.join(out, 'search-' + viewport.width + '.png') });
-    await touch.click('.mf-stop');
+    await touch.click('.mm-cancel');
     await touch.waitForFunction(() => globalThis.__SP__.store.get().matchmaking.status === 'idle');
     await touch.close();
   }
@@ -85,5 +105,11 @@ test('matching UI: solo cancel, four waiting players, host recruitment, original
   await host.waitForFunction(() => !document.querySelector('.mf-search'));
   await host.evaluate(async () => { await Promise.allSettled(document.getAnimations().filter(a => Number.isFinite(a.effect?.getComputedTiming().endTime)).map(a => a.finished)); });
   await host.screenshot({ path: path.join(out, 'recruitment-waiting.png') });
+  const manual = await pageIn('手动入房');
+  await search(manual); await waitSearch(manual);
+  await manual.waitForSelector('[data-room-code="LIST"]');
+  await manual.click('[data-room-code="LIST"] .mm-btn-join');
+  await manual.waitForFunction(() => globalThis.__SP__.store.get().room?.code === 'LIST');
+  assert.equal(server.lobby.matchmaking.solo.size, 0, 'manual join cancels solo queue');
   assert.deepEqual(errors, []);
 });

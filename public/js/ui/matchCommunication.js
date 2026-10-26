@@ -7,6 +7,7 @@ import { net } from '../net.js';
 import { chatFacts, sendChat } from './chat.js';
 import { useSettings } from './settings.js';
 import { describeError } from './toasts.js';
+import { useAvatarMessageDock } from './hudDock.js';
 
 export const TEXT_BUBBLE_MS = 3000;
 export function avatarMessage(messages, playerId, now, enabled = true) {
@@ -20,7 +21,7 @@ export function avatarMessage(messages, playerId, now, enabled = true) {
 }
 
 /** New player messages share the reference site's EmoteBubble geometry and timeline. */
-export function AvatarMessage({ playerId, emote }) {
+export function AvatarMessage({ playerId, name, emote }) {
   const chat = useStore(s => s.chat);
   const settings = useSettings();
   const [, tick] = useState(0);
@@ -33,8 +34,13 @@ export function AvatarMessage({ playerId, emote }) {
   // Disabling notifications discards the current batch, so reenabling never replays old messages.
   const discarded = useStore(s => s.chat?.bubbleDiscardedThrough || 0);
   const text = message && message.id > discarded && (!emote?.at || message.receivedAt >= emote.at) ? message : null;
-  return text ? html`<${EmoteBubble} key=${`chat:${chat.code}:${text.id}`} text=${text.text} at=${text.receivedAt} ttl=${TEXT_BUBBLE_MS} class="team__bubble" />`
-    : emote ? html`<${EmoteBubble} key=${`emote:${emote.seq}`} id=${emote.id} at=${emote.at} class="team__bubble" />` : null;
+  const dock = useRef(null);
+  useAvatarMessageDock(dock, playerId, text ? `chat:${text.id}` : emote?.seq);
+  if (!text && !emote) return null;
+  return html`<div class="team__message" ref=${dock} data-player-id=${playerId} data-author=${name || ''}>
+    ${text ? html`<${EmoteBubble} key=${`chat:${chat.code}:${text.id}`} text=${text.text} at=${text.receivedAt} ttl=${TEXT_BUBBLE_MS} class="team__bubble" />`
+      : html`<${EmoteBubble} key=${`emote:${emote.seq}`} id=${emote.id} at=${emote.at} class="team__bubble" />`}
+  </div>`;
 }
 
 export function MatchCommunication({ open, onToggle, onSend, disabled }) {

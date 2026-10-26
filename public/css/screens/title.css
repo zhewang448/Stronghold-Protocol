@@ -237,6 +237,12 @@
 .title-data-actions .btn__icon { flex-shrink: 0; }
 .title-data-actions .title-data-recover { color: var(--mint-400); border-color: var(--mint-a35); }
 .title-data-actions .title-personal-data { color: var(--text-md); border: 1px solid var(--line-2); background: var(--bg-0); }
+/* Leave room for the information row and footer on shorter desktop windows. */
+@media (min-height: 561px) and (max-height: 800px) {
+  .title-main .emblem { margin-bottom: .12rem; }
+  .title-main .emblem__svg { height: 1rem; }
+  .title-main .emblem__bracket { height: 1.1rem; }
+}
 @media (max-height: 560px) {
   .title-main { margin-top: 0; max-width: calc(100vw - 32px); }
   .title-main .emblem, .title-main .title-en { display: none; }
@@ -245,7 +251,6 @@
   .title-main .title-tag { max-width: min(460px, calc(100vw - 40px)); font-size: 12px; line-height: 1.4; letter-spacing: normal; text-align: center; }
   .title-login { width: min(440px, calc(100vw - 40px)); margin-top: 12px; gap: 8px; padding: 12px 16px; }
   .title-data-actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 8px; }
-  .title-conn { flex-wrap: wrap; }
   .title-corner--tl { display: none; }
   .title-screen .title-preload { left: 12px; top: 12px; right: auto; bottom: auto; }
   .title-preload .res-pill { width: auto; max-width: 160px; }
@@ -292,7 +297,21 @@
 }
 .title-invite .icon { width: .2rem; height: .2rem; }
 .title-invite b { font-size: calc(.2 * var(--t)); letter-spacing: .2em; color: #ffd08a; }
-.title-conn { display: flex; align-items: center; justify-content: center; gap: .1rem; min-height: .32rem; font-size: calc(.14 * var(--t)); color: var(--text-lo); }
+/* Reserve the latency badge from the first visit; status and tools have stable separate rows. */
+.title-conn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .1rem; min-height: .32rem; font-size: calc(.14 * var(--t)); color: var(--text-lo); }
+.title-conn > * { flex: none; }
+.title-conn__status { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .1rem; max-width: 100%; }
+.title-conn__status > * { flex: none; white-space: nowrap; }
+.title-conn__tools { display: inline-flex; align-items: center; justify-content: center; gap: .1rem; white-space: nowrap; }
+.title-conn__tools > * { flex: none; }
+.title-conn .ping__value { min-width: 4ch; text-align: right; }
+/* Informational actions stay on their own row below the login panel, before and after login. */
+.title-information { display: flex; align-items: center; justify-content: center; gap: .16rem; max-width: calc(100vw - 32px); margin-top: .16rem; }
+.title-information > .btn { flex: none; white-space: nowrap; }
+/* Keep the invisible touch targets in their own layout space too. */
+.sp-coarse .title-conn, .sp-coarse .title-conn__tools { gap: max(.1rem, 10px); }
+.sp-coarse .title-information { gap: max(.16rem, 10px); }
+.sp-coarse .title-conn__tools > :is(.btn, .fsbtn), .sp-coarse .title-information > .btn { min-width: var(--tap-min); min-height: var(--tap-min); }
 /* 统计 (the local stats page) beside the language menu in the top-right corner */
 .title-corner__tools { display: flex; align-items: center; justify-content: flex-end; gap: .1rem; margin-bottom: .1rem; }
 .title-corner__tools .title-lang { margin-bottom: 0; }

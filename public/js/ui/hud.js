@@ -486,7 +486,7 @@ export function PauseButton({ paused, busy = false, onToggle }) {
  *   held: the HUD waits hidden under 协议启动！ — a phase change's capsule scene waits for it (useCapsuleFx)
  */
 export function TopBar({ pub, priv, conn, hud, total, drawer, onExit, onDrawer, onReady, readyBusy, readyCount, playerCount, pen = false, penAvail = false, onPen = () => {},
-  config = null, frozenAt = null, pause = null, live = null, spectator = false,
+  config = null, frozenAt = null, pause = null, live = null, spectator = false, prepAction = null,
   spectators = null, myId = null, isHost = false, onRemoveSpectator = null, onUniteSkipVote = () => {}, room = null, held = false, view = null }) {
   const phase = pub?.phase;
   const boss = isBossPhase(phase);
@@ -572,8 +572,9 @@ export function TopBar({ pub, priv, conn, hud, total, drawer, onExit, onDrawer, 
       </div>
       <${OvertimeWarning} ot=${ot} />
       ${showReady ? html`<${ReadyToggle} priv=${priv} onToggle=${onReady} busy=${readyBusy} readyCount=${readyCount} total=${playerCount} />` : null}
+      ${prepAction}
+      <${UniteSkipVote} pub=${pub} myId=${myId} onVote=${onUniteSkipVote} />
     </div>
-    <${UniteSkipVote} pub=${pub} myId=${myId} onVote=${onUniteSkipVote} />
   </header>`;
 }
 

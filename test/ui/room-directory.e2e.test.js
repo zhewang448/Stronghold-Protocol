@@ -31,7 +31,7 @@ test('public directory: join, running spectator, privacy, retry, shared polling 
     const page = await ctx.newPage();
     page.on('pageerror', error => errors.push(error.message));
     await page.setViewport({ width: 1280, height: 720 });
-    await page.evaluateOnNewDocument(() => { localStorage.setItem('sp.name', '大厅测试'); sessionStorage.setItem('sp.entered', '1'); });
+    await page.evaluateOnNewDocument(() => { localStorage.setItem('sp.name', '大厅测试'); localStorage.setItem('sp.pref.lobby.difficulty', JSON.stringify('NORMAL')); sessionStorage.setItem('sp.entered', '1'); });
     await page.goto('http://127.0.0.1:' + server.port, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => globalThis.__SP__?.store.get().connection.status === 'online' && document.querySelector('.lobby-screen'));
     return page;
@@ -168,6 +168,6 @@ test('public directory: join, running spectator, privacy, retry, shared polling 
   await empty.click('[data-testid="public-room-lobby"]');
   for (const code of ['OPEN', 'FULL']) server.lobby.rooms.get(code).private = true;
   await empty.click('.mm-refresh-btn');
-  await empty.waitForFunction(() => document.querySelector('.mm-room-empty')?.textContent.includes('暂无公开同盟房间'));
+  await empty.waitForFunction(() => document.querySelector('.mm-room-empty')?.textContent.includes('暂无符合条件的公开同盟'));
   assert.deepEqual(errors, []);
 });

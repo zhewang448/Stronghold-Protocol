@@ -82,7 +82,7 @@ test('reference communication: exact compact proportions, drafts, IME, history, 
       assert.ok(await page.$eval('.ebubble--chat', el => {
         const style = getComputedStyle(el);
         return style.borderRadius === '6px' && style.backgroundColor === 'rgb(23, 36, 30)'
-          && getComputedStyle(el, '::after').content === 'none' && el.closest('.team__row');
+          && getComputedStyle(el, '::after').content === 'none' && el.closest('.team__messages') && !el.closest('.team__list');
       }));
       await page.click('.ewheel__btn');
       await page.type('.echat__input', 'fail'); await page.click('.echat__send');

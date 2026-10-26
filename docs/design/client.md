@@ -1095,6 +1095,10 @@ The title, lobby and shared settings expose a permanent release-notes button. Th
 
 沿用公告栏的界面文字比例、窗口宽度与安全区边距，更新内容弹窗改为自适应动态视口；窄屏/矮横屏自动单栏，上游与扩展切换按钮可换行，标题和关闭栏固定、正文独立触屏纵向滚动。大字号和界面缩放下不挤出关闭按钮；手动历史、自动更新提醒与主机更新确认共享基础样式，控制台无游戏主题时保留独立字号回退。真实触屏用例覆盖 844×390、640×360、大字/75%布局、390×844 和模拟安全区，测试实际滑动、来源切换和关闭。
 
+### 标题页框外信息行（2026-10-26）
+
+公告与更新内容位于登录框下方的独立信息行。框内连接栏固定为上下两行：第一行连接状态与延迟，第二行玩法说明、设置、全屏三个工具；不再根据 online 状态临时增加控件。延迟徽标首次进入即保留，无测量值显示 --，有测量值显示实际延迟；数字预留四位宽度，连接文字不逐字折行。触屏按钮在布局内保留至少 44px 热区，较矮桌面窗口收紧徽标高度，为信息行与页脚留出空间。test/ui/title-return.e2e.test.js 比较两次大厅往返前后的面板高度和控件相对坐标，并覆盖空延迟及 9/31/99/999/9999ms；同时验证独立信息行、工具同排、按钮边界与点击命中。
+
 ### Console player access label (2026-10-26)
 
 The local console room overview, waiting-room names and active player rows show a small secondary line below each human name: 接入：host while connected, 上次接入：host while offline, 未知 for unavailable metadata. AI names have no line. Long hosts wrap within the name cell. There is no extra column, detail section, link, domain summary or player-facing display.
@@ -1152,6 +1156,17 @@ EXE 占用或暂不可写时保留已验签载荷和受保护备份，控制台�
 
 旧版1.1.0不具备自更新和位置登记能力，需首次手动换用包含此功能的新版本；之后使用启动器自更新。现有已发布v0.3.3-extended.1和1.1.0附件不覆盖。本轮功能随 v0.3.3-extended.2 和启动器1.2.0发布；旧版本附件不覆盖。
 
+### Title connection controls (2026-10-26)
+
+The title keeps its connection dot, status text and optional online ping together; whole controls wrap inside the login panel instead of shrinking their labels. Returning from the lobby keeps the online session and adds the ping without vertical status text or overlapping controls. Touch buttons reserve at least the existing 44 px target in layout. [ASSUMED] Responsive presentation only; no session, matchmaking or gameplay changes. Regression: test/ui/title-return.e2e.test.js.
+
+
+### Match avatar messages and phase actions (2026-10-26)
+
+Avatar messages render in a sibling layer outside the scrolling team list. Position follows the full player card with an 8 CSS px gap outside its right edge, keeping the name and LP unobscured, bounded by the visible HUD/member area and above the shop. Scroll and resize remeasure it; an offscreen sender keeps a visible bounded message with a name. Expiry, notification settings and emote precedence stay unchanged. Prep-only loadout belongs below Ready in the top-right phase controls, retaining its readiness/spectator/rule gates. The unite-skip vote belongs below the clock in the same column, with count/status and unchanged eligibility/majority/settlement rules. [ASSUMED] Dock and gap are remake presentation choices. Regression: test/ui/match-layout.e2e.test.js (1920x1080 and 1366x768, normal text).
+
+Bond-layer pops retain five responsive screen-space slots below the actual top HUD and bond strip. They reserve room for their rise, scale and glow, and fit their bounds on each frame including resize. Loaded icons retain their 46 px local size. [ASSUMED] Presentation only; no layer gain, sound or simulation changes. Regression: test/render/fxpop.test.js.
+
 ### 公开房间大厅（扩展 #12，2026-10-26）
 
 主大厅右下角按「独立模拟、同盟模拟、同盟大厅」排列；「同盟大厅」和同盟选择「模拟邀约」复用原房间浏览弹窗。
@@ -1171,6 +1186,20 @@ Hub 卡片和弹窗共用一条目录轮询，平时 10 秒、打开弹窗 4 秒
 控制，删除原每十秒重排的浏览器计时。取消按钮小屏保持可见；返回后首页显示可取消的队列状态。
 四版本按相同难度隔离，人数徽标只取当前版本可见散人队列数。详见 [真人匹配](../MATCHMAKING.md)。
 
+### 同盟大厅统一搜寻（2026-10-26）
+
+大厅的版本、难度筛选与搜寻/取消共用一行操作区，默认「不限版本」，难度沿用上次。搜寻时显示服务器时间
+差与取消，禁用条件编辑，列表继续可浏览、刷新、加入和观战。关闭大厅不中断搜寻，首页简短状态按钮可返回。
+统计数字缩为底部一行，保留自动刷新和手动刷新。首页仍三入口；同盟模拟搜寻捷径直达同一大厅，创建协议页
+保留创建与大厅跳转，移除快速匹配与模拟邀约的重复命名。现有房主仍在等待室按实际版本和难度招募。
+详见 [真人匹配](../MATCHMAKING.md)，属于 `[ASSUMED]` 用户指定便利。
+
+### 大厅不限难度（2026-10-27）
+
+大厅难度下拉框新增不限难度，与不限版本独立组合；指定条件保留，入房后显示实际设置。
+不限难度记忆于 lobby.matchDifficulty，不污染原创建流程的 lobby.difficulty 枚举。列表同条件过滤。
+旧服务未声明对应匹配能力时禁用不限搜寻并提示重启测试服务/刷新；零房间仍可正常搜寻。
+匹配不兼容提示版本/难度筛选问题，不再误称房间插件导致。沿用原横屏控件、列表及准备开始。
 
 ### 控制台四版本回放与观察（2026-10-27）
 

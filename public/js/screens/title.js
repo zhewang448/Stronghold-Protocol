@@ -268,16 +268,22 @@ export function TitleScreen() {
           <${Button} variant="ghost" icon="download" class="title-personal-data" onClick=${openPersonalData}>${t('导出 / 导入个人数据')}<//>
         </nav>
         <div class="title-conn">
-          <span class=${`status-dot ${dotClass}`}></span>
-          <span>${STATUS_TEXT[conn.status] ? t(STATUS_TEXT[conn.status]) : conn.status}</span>
-          ${conn.status === 'online' ? html`<${PingPill} ms=${conn.ping} />` : null}
-          <${GuideButton} class="title-guide" label=${t('玩法说明')} />
-          <${AnnouncementButton} class="title-notice" />
-          <${ReleaseHistoryButton} class="title-updates" />
-          <button type="button" class="title-settings fsbtn tapx" aria-label=${t('设置')} title=${t('设置')}
-            onClick=${() => setSettingsOpen(true)}><${GIcon} name="gear" /></button>
-          <${FullscreenButton} class="title-fs" />
+          <div class="title-conn__status">
+            <span class=${`status-dot ${dotClass}`}></span>
+            <span>${STATUS_TEXT[conn.status] ? t(STATUS_TEXT[conn.status]) : conn.status}</span>
+            <${PingPill} ms=${conn.ping} online=${online} />
+          </div>
+          <div class="title-conn__tools">
+            <${GuideButton} class="title-guide" label=${t('玩法说明')} />
+            <button type="button" class="title-settings fsbtn tapx" aria-label=${t('设置')} title=${t('设置')}
+              onClick=${() => setSettingsOpen(true)}><${GIcon} name="gear" /></button>
+            <${FullscreenButton} class="title-fs" />
+          </div>
         </div>
+      </div>
+      <div class="title-information">
+        <${AnnouncementButton} class="title-notice" />
+        <${ReleaseHistoryButton} class="title-updates" />
       </div>
     </main>
 
