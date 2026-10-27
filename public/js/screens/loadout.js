@@ -49,17 +49,16 @@ import { ruleOption } from '../../../shared/plugins/rules.js';
 import { effectiveRoomRules } from '../../../shared/roomConvenience.js';
 import {
   MODULE_NONE, PROF_NAME, rosterOf, filterRoster, recordsOf, chessOptions, effectiveChoice, setChoice, resetChoice,
-  changedCount, skillLabel, moduleBadge, quickSkillTags, serializeExport, parseImport, LOADOUT_IMPORT_MAX_BYTES,
-  setOps, resetOps,
+  changedCount, skillLabel, moduleBadge, quickSkillTags, LOADOUT_IMPORT_MAX_BYTES,
+  setOps, resetOps, exportPayload, entriesToChar,
 } from '../ui/loadoutModel.js';
-import { loadoutStore, openLoadout, closeLoadout, setEntries, setOpsMap, applyLoadoutEntries, setNotOwned, applyOwnershipImport, setDiyPicks, applyDiyImport, importedEntries, importedNotOwned } from '../ui/loadoutSync.js';
+import { loadoutStore, openLoadout, closeLoadout, setEntries, setOpsMap, setNotOwned, applyOwnershipImport, setDiyPicks, applyDiyImport, importedEntries, importedNotOwned } from '../ui/loadoutSync.js';
 import { OperatorVoice } from '../ui/operatorVoice.js';
 // 皮肤 (docs/SKINS.md): a self-contained section — everything it does lives in ui/skinPicker.js, so this screen keeps
 // one import and one line in its detail body
 import { SkinSection, SkinRandomControls } from '../ui/skinPicker.js';
-import { skinsStore, setSkin, setSkins, clearUnlockedSkins, skinRandomStore, updateSkinRandom } from '../ui/skins.js';
+import { skinsStore, setSkin, clearUnlockedSkins, skinRandomStore } from '../ui/skins.js';
 import { CultivationSelects, CultivationSection, cultivationView, potentialEditable } from './cultivation.js';
-import { cultivationCharIds } from '../../../shared/protocol.js';
 import { setOwned, notOwnedCount, serializeOwnership, parseOwnershipImport, OWNERSHIP_IMPORT_MAX_BYTES } from '../ui/ownershipModel.js';
 import { OwnershipPanel, useOwnershipRoster } from './ownership.js';
 import { DiyPanel, diyData } from './diy.js';
@@ -73,6 +72,12 @@ import { diyCount, sanitizeDiyPicks, setPick, serializeDiy, parseDiyImport, DIY_
 import { t, tParts, N_ } from '../../../shared/i18n.js';
 import { copyText } from '../ui/clipboard.js';
 import { toast } from '../ui/toasts.js';
+import { useLoadoutPresets } from '../ui/loadoutPresets.js';
+import { loadPresetRosters, applyTransferredSnapshot, presetPermissions, validateTransferChoices } from '../ui/loadoutPresetsState.js';
+import { operatorScope } from '../ui/loadoutPresetsModel.js';
+import { transferPayload, parseTransfer, transferParts, restrictTransferScope } from '../ui/loadoutTransferModel.js';
+import { VERSIONS } from '../../../shared/versions.js';
+import { pageVersion } from '../content.js';
 import { reducedMotion } from '../ui/device.js';
 
 export { openLoadout, closeLoadout };
@@ -87,7 +92,7 @@ const EXPORT_PARTS = [
 // ---- export / import (干员调配 presets) -----------------------------------------------------------------------------
 //
 // The payload is the versioned envelope of ui/loadoutModel.js (exportPayload / parseImport): a downloaded file and a
-// pasted string are the SAME object, so 导出 and 导入 both funnel through applyLoadoutEntries
+// pasted string are the SAME object; validated canonical snapshots commit atomically
 // (sanitise → persist → room.loadout). The dialog is a shared Modal rendered next to the overlay, not inside it.
 
 /** Save `text` as a download. Silent no-op when the browser refuses downloads — 复制 stays available. */
@@ -283,8 +288,10 @@ function Detail({ m, chess, golden, entries, ops = {}, onChange, onOps, onReset,
 // ---- filters -------------------------------------------------------------------------------------------------------------
 
 /** The roster's filters; `onDeck` (the list view): a button at the end that switches to the 卡片视图. */
-function Filters({ m, filters, onFilters, bonds, onDeck = null }) {
+function Filters({ m, filters, onFilters, bonds, onDeck = null, versionRosters = null, versionError = false, onRetry = null, roster = [] }) {
   const set = (patch) => onFilters({ ...filters, ...patch });
+  const operatorMode = filters.operatorMode || 'all';
+  const selectedVersions = filters.operatorVersions || [];
   return html`<div class="lo-filters">
     <div class="lo-frow">
       <div class="lo-chips" role="group" aria-label=${t('阶级')}>
@@ -308,6 +315,24 @@ function Filters({ m, filters, onFilters, bonds, onDeck = null }) {
         onClick=${() => set({ changedOnly: !filters.changedOnly })}><i class="lo-toggle__box"><${Icon} name="check" /></i>${t('仅看已调整')}</button>
       ${onDeck ? html`<button type="button" class="lo-tbtn lo-viewbtn" data-testid="loadout-view-deck" onClick=${onDeck}
         title=${t('切换为卡片视图（物资调配处）')}><${Icon} name="expand" /><span class="lo-tbtn__l">${t('卡片视图')}</span></button>` : null}
+    </div>
+    <div class="lo-version-filter" data-testid="loadout-version-filter">
+      <label class="lo-select"><span class="lo-select__k">${t('干员范围')}</span>
+        <select aria-label=${t('按版本干员范围筛选')} data-testid="loadout-operator-mode" value=${operatorMode}
+          onChange=${e => set({ operatorMode: e.currentTarget.value, operatorVersions: selectedVersions.length ? selectedVersions : [pageVersion()] })}>
+          <option value="all">${t('当前版本全部干员')}</option><option value="roster">${t('所选版本的全部干员')}</option><option value="exclusive">${t('所选版本的独有干员')}</option>
+        </select>
+      </label>
+      ${operatorMode !== 'all' ? html`<div class="lo-version-filter__choices" role="group" aria-label=${t('筛选版本')}>${VERSIONS.map(v => {
+        const ids = versionRosters ? new Set(operatorScope(operatorMode, [v.id], versionRosters).charIds) : null;
+        const count = ids ? roster.filter(c => ids.has(c.charId)).length : null;
+        return html`<label><input type="checkbox" data-filter-version=${v.id} checked=${selectedVersions.includes(v.id)}
+          onChange=${() => set({ operatorVersions: selectedVersions.includes(v.id) ? selectedVersions.filter(id => id !== v.id) : [...selectedVersions, v.id] })} />
+          <span>${t(v.label)}${count === null ? '' : html` · ${t('{n} 名干员', { n: count })}`}</span></label>`;
+      })}</div><p class="lo-version-filter__hint">${t('仅筛选当前页面已有干员，不切换玩法版本；独有指其他三个版本都没有。')}</p>
+        ${!versionRosters ? html`<p role="status" class="lo-version-filter__hint">${versionError ? t('版本名单加载失败，请重试。') : t('正在读取版本干员名单…')}
+          ${versionError ? html`<button type="button" class="lp-textbtn" onClick=${onRetry}>${t('重试')}</button>` : null}</p>` : null}
+        ${!selectedVersions.length ? html`<p class="lo-version-filter__hint">${t('请至少选择一个干员名单版本。')}</p>` : null}` : null}
     </div>
   </div>`;
 }
@@ -687,6 +712,7 @@ export function DataMissing({ files }) {
 /** The overlay screen. */
 function LoadoutScreen({ st }) {
   const ready = useData('chess', 'bonds', 'assets', 'local', 'backups', 'garrisons', 'effects');
+  const presets = useLoadoutPresets(ready);
   const phase = useStore((s) => s.match?.public?.phase || null);
   const inMatch = useStore((s) => !!s.room?.inMatch);
   // co-op briefing (INFO_CHECK, 25 s): the overlay covers the briefing's own countdown, so it shows the time left — the
@@ -701,8 +727,20 @@ function LoadoutScreen({ st }) {
     return (data.list('bonds') || []).filter((b) => b && used.has(b.bondId))
       .sort((a, b) => (b.isCore ? 1 : 0) - (a.isCore ? 1 : 0) || (a.bondOrder ?? 0) - (b.bondOrder ?? 0) || String(a.name).localeCompare(String(b.name), 'zh'));
   }, [ready, roster]);
-  const list = filterRoster(roster, st.filters, st.entries, getChess, getBond, st.ops, potentialEditable);
-  const selId = st.sel && roster.some((c) => c.chessId === st.sel) ? st.sel : list[0]?.chessId || roster[0]?.chessId || null;
+  const [versionRosters, setVersionRosters] = useState(null);
+  const [versionError, setVersionError] = useState(false);
+  const operatorMode = st.filters.operatorMode || 'all';
+  const operatorVersions = st.filters.operatorVersions || [];
+  useEffect(() => {
+    if (operatorMode === 'all' || versionRosters || versionError) return;
+    let live = true;
+    loadPresetRosters().then(value => { if (live) setVersionRosters(value); }, () => { if (live) setVersionError(true); });
+    return () => { live = false; };
+  }, [operatorMode, versionRosters, versionError]);
+  const allowedChars = useMemo(() => operatorMode === 'all' ? null : new Set(versionRosters && operatorVersions.length
+    ? operatorScope(operatorMode, operatorVersions, versionRosters).charIds : []), [operatorMode, operatorVersions, versionRosters]);
+  const list = filterRoster(roster, st.filters, st.entries, getChess, getBond, st.ops, potentialEditable, allowedChars);
+  const selId = st.sel && (allowedChars ? list : roster).some((c) => c.chessId === st.sel) ? st.sel : list[0]?.chessId || (allowedChars ? null : roster[0]?.chessId) || null;
   const { base, golden } = selId ? recordsOf(selId, getChess) : { base: null, golden: null };
   const nChanged = changedCount(st.entries, getChess, st.ops, roster, potentialEditable);
   const rules = useStore((s) => effectiveRoomRules(s.room));
@@ -716,6 +754,14 @@ function LoadoutScreen({ st }) {
   // the detail's 普通 / 精锐 skill toggle: one preview for its skills, its 特质 and the rows' skill details (display only)
   const [previewLevel, setPreviewLevel] = useState('normal');
   const [io, setIo] = useState(null);                      // 导出 / 导入 dialog: { mode, text } | null
+  const ioRef = useRef(io);
+  ioRef.current = io;
+  useEffect(() => {
+    if (!io || !io.scopeMode || io.scopeMode === 'all' || versionRosters || versionError) return;
+    let live = true;
+    loadPresetRosters().then(value => { if (live) setVersionRosters(value); }, () => { if (live) setVersionError(true); });
+    return () => { live = false; };
+  }, [io?.scopeMode, versionRosters, versionError]);
   // 卡片视图: the view, 快速配置, the detail drawer, the 筛选 / 更多 popovers, ⓘ, the tier at the deck's left edge
   const [view, setViewState] = useState(loadoutViewPref);
   const [quick, setQuick] = useState(null);                // null | 'skill' | 'module' | 'cult'
@@ -731,7 +777,7 @@ function LoadoutScreen({ st }) {
   useData('items', 'skins');
   const codex = codexItems(data.get('items'));
   const ui = useRef({});
-  ui.current = { drawer, menu, quick, setDrawer, setMenu, setQuick };
+  ui.current = { drawer, menu, quick, setDrawer, setMenu, setQuick, allowedChars };
   const diySlots = ready ? diySlotList(diyData()) : [];
 
   const tab = st.tab === 'ownership' || st.tab === 'diy' ? st.tab : 'loadout';
@@ -800,27 +846,42 @@ function LoadoutScreen({ st }) {
   const ioOwn = io?.kind === 'ownership';
   const ioDiy = io?.kind === 'diy';
   const selectiveExport = io?.mode === 'export' && !ioOwn && !ioDiy;
+  const selectiveImport = io?.mode === 'import' && !ioOwn && !ioDiy;
   const exportParts = io?.parts || {};
   const upstreamExport = io?.format === 'upstream';
-  const ioText = selectiveExport ? serializeExport(io.snapshot.byChar, { now: io.now, ops: io.snapshot.ops, skins: io.snapshot.skins,
-    sections: exportParts, upstream: upstreamExport, random: io.snapshot.random, locks: io.snapshot.locks }) : io?.text ?? '';
-  const exportData = selectiveExport ? JSON.parse(ioText) : null;
+  let transferScope = null;
+  if ((selectiveExport || selectiveImport) && io.scopeMode && io.scopeMode !== 'all' && versionRosters && io.scopeVersions?.length) {
+    transferScope = operatorScope(io.scopeMode, io.scopeVersions, versionRosters);
+  }
+  const scopeReady = !io?.scopeMode || io.scopeMode === 'all' || !!transferScope;
+  const ioText = selectiveExport ? scopeReady ? JSON.stringify(transferPayload({ ...io.snapshot, random: { ...io.snapshot.random, locked: io.snapshot.locks } }, exportParts, transferScope,
+    { now: io.now, upstream: upstreamExport }), null, 2) : '' : io?.text ?? '';
+  const importData = selectiveImport ? parseTransfer(ioText) : null;
+  let importEnvelope = null;
+  if (selectiveImport && importData.ok) { try { importEnvelope = JSON.parse(ioText); } catch { /* already reported by parser */ } }
+  const availableImportParts = transferParts(importData);
+  const importParts = selectiveImport ? Object.fromEntries(EXPORT_PARTS.map(([key]) => [key, !!availableImportParts[key] && (io.parts?.[key] ?? true)])) : {};
+  const importScope = importData?.ok ? restrictTransferScope(importData.scope || null, transferScope) : null;
+  const importLocked = !presetPermissions().loadout && ['skills', 'modules', 'potential', 'cultivate'].some(key => importParts[key]);
+  const canImport = !selectiveImport || (importData.ok && Object.values(importParts).some(Boolean) && scopeReady && !importLocked
+    && (!importScope || importScope.charIds.length > 0));
+  const exportData = selectiveExport && ioText ? JSON.parse(ioText) : null;
   // Upstream refuses a payload containing only extension fields or no non-default gameplay settings.
-  const canExport = !selectiveExport || (upstreamExport
+  const canExport = !selectiveExport || (scopeReady && (!transferScope || transferScope.charIds.length > 0) && (upstreamExport
     ? Object.keys(exportData.byChar || {}).length + Object.keys(exportData.ops || {}).length > 0
-    : Object.values(exportParts).some(Boolean));
+    : Object.values(exportParts).some(Boolean)));
   const changeExportPart = (key, on) => setIo({ ...io, parts: { ...exportParts, [key]: on } });
   const changeExportFormat = (format) => setIo({ ...io, format, parts: format === 'upstream'
-    ? { ...exportParts, skins: false, skinRandom: false, skinLocks: false } : exportParts });
+    ? { ...exportParts, skins: false, skinRandom: false, skinLocks: false } : exportParts, ...(format === 'upstream' ? { scopeMode: 'all' } : {}) });
   const openExport = () => setIo(tab === 'ownership'
     // (by operator, every version's — DESIGN §35.23; a v1 store still migrating exports what it has)
     ? { mode: 'export', kind: 'ownership', text: serializeOwnership(loadoutStore.get().notOwnedChars || []) }
     : tab === 'diy' ? { mode: 'export', kind: 'diy', text: serializeDiy(loadoutStore.get().diy, { version: loadoutStore.get().diyVersion }) }
-      : { mode: 'export', kind: 'loadout', format: 'native', now: Date.now(),
+      : { mode: 'export', kind: 'loadout', format: 'native', now: Date.now(), scopeMode: 'all', scopeVersions: [pageVersion()],
         parts: { skills: true, modules: true, potential: true, cultivate: true, skins: true, skinRandom: false, skinLocks: false },
         snapshot: { byChar: loadoutStore.get().byChar || {}, ops: loadoutStore.get().ops || {}, skins: skinsStore.get().skins,
           random: { scope: skinRandomStore.get().scope, auto: skinRandomStore.get().auto }, locks: skinRandomStore.get().locked } });
-  const openImport = () => setIo({ mode: 'import', kind: tab, text: '' });
+  const openImport = () => setIo({ mode: 'import', kind: tab, text: '', scopeMode: 'all', scopeVersions: [pageVersion()] });
   const ioCopy = async () => {
     if (!canExport) return;
     const ok = await copyText(ioText);
@@ -835,9 +896,10 @@ function LoadoutScreen({ st }) {
     // refuse a huge pick before reading it into memory (a real payload is a few KB)
     if (ioDiy && f.size > DIY_IMPORT_MAX_BYTES) { toast(t('文件过大，请选择「导出」下载的自选编队文件'), 'error'); return; }
     if (f.size > (ioOwn ? OWNERSHIP_IMPORT_MAX_BYTES : LOADOUT_IMPORT_MAX_BYTES)) { toast(ioOwn ? t('文件过大，请选择「导出」下载的干员持有文件') : t('文件过大，请选择「导出」下载的调配文件'), 'error'); return; }
-    try { setIo({ ...io, mode: 'import', text: await readFileText(f) }); } catch { toast(t('读取文件失败'), 'error'); }
+    try { setIo({ ...io, mode: 'import', text: await readFileText(f), parts: undefined, error: null }); } catch { toast(t('读取文件失败'), 'error'); }
   };
-  const ioApply = () => {
+  const ioApply = async () => {
+    if (io.busy) return;
     // an import before chess.json is loaded, or when it never arrived, would sanitise every entry away — refuse instead
     // of wiping the loadout
     const refused = importRefusal(io.kind, ready);
@@ -859,37 +921,55 @@ function LoadoutScreen({ st }) {
         : t('已导入：全部持有'), dropped ? 'warn' : 'success');
       return;
     }
-    const res = parseImport(ioText);
+    const res = parseTransfer(ioText);
     if (!res.ok) { toast(t('导入失败：{error}', { error: res.error }), 'error'); return; }
-    // ops replaces 潜能 / 练度, including 自选 operators that only backups.json names. Missing data used to drop
-    // them and still save, clearing a 练度 the file did not mean to erase (GitHub #538).
-    const opsRefused = loadoutOpsImportRefusal(res.ops, ready);
-    if (opsRefused) { toast(opsRefused.text, opsRefused.tone); return; }
-    // 0.2.2: a payload with `ops` replaces the 潜能 / 练度 too (an older export leaves them alone)
-    const opIds = res.ops ? cultivationCharIds(data.get('chess'), data.get('backups')) : null;
-    const imported = importedEntries(res);
-    if (res.sections && (res.sections.skills || res.sections.modules)
-      && Object.keys(res.byChar || res.entries || {}).length && !Object.keys(imported).length) {
-      toast(t('导入失败：这份数据在当前版本没有可用的调配，未做任何改动'), 'error'); return;
+    if (selectiveImport) {
+      if (!canImport) return;
+      const opsRefused = (importParts.potential || importParts.cultivate) ? loadoutOpsImportRefusal(res.ops, ready) : null;
+      if (opsRefused) { setIo({ ...io, error: opsRefused.text }); return; }
+      const byChar = res.byChar || entriesToChar(importedEntries(res), id => getChess(id)?.charId);
+      if (!res.byChar && Object.keys(res.entries || {}).length && !Object.keys(byChar).length && (importParts.skills || importParts.modules)) {
+        setIo({ ...io, error: t('导入失败：这份数据在当前版本没有可用的调配，未做任何改动') }); return;
+      }
+      const loadout = exportPayload(byChar, { now: 0, ops: res.ops || {}, skins: res.skins || {}, sections: importParts,
+        random: res.skinRandom, locks: res.skinLocks });
+      const snapshot = { loadout, diy: {}, ...(importScope ? { scope: importScope } : {}) };
+      const request = { ...io, busy: true, error: null };
+      ioRef.current = request; setIo(request);
+      try {
+        await validateTransferChoices(snapshot, importParts, res.sourceOps || []);
+        if (ioRef.current !== request || !loadoutStore.get().open) return;
+        applyTransferredSnapshot(snapshot, importParts);
+        setIo(null); toast(t('已导入勾选的配置，未包含的部分保持不变'), 'success');
+      } catch (e) { if (ioRef.current !== request) return; setIo({ ...io, busy: false, error: e.code === 'choice' ? t('调配文件包含不可用技能、模组或干员，未导入任何配置。')
+        : e.code === 'data' ? t('无法读取所选版本的数据，请检查网络后重试。')
+        : e.code === 'locked' ? t('当前阶段已锁定所选配置，请取消锁定部分后重试。')
+        : e.code === 'storage' ? t('保存失败，请释放浏览器存储空间或允许本地存储后重试；当前配置未改变。')
+          : e.code === 'scopeEmpty' ? t('所选版本没有符合范围的干员，请更换版本或保存范围。') : t('导入失败：这份数据在当前版本没有可用的调配，未做任何改动') }); }
+      return;
     }
-    // (v2 by operator, v1 by 第二期下半's chess ids: as entries of the data on screen — DESIGN §35.23)
-    const r = applyLoadoutEntries(imported, getChess, { ...(res.ops ? { ops: res.ops, isOperator: (id) => opIds.has(id) } : {}),
-      ...(res.sections ? { sections: res.sections } : {}) });
-    if (r.refused) { toast(t('导入失败：这份数据在当前版本没有可用的调配，未做任何改动'), 'error'); return; }
-    const { applied, dropped } = r;
-    const nOps = r.ops ?? 0;
-    const hasSkins = res.skins !== undefined && (!res.sections || res.sections.skins);
-    if (hasSkins) setSkins(res.skins);
-    if (res.skinRandom) updateSkinRandom(res.skinRandom);
-    if (res.skinLocks) updateSkinRandom({ locked: res.skinLocks });
-    if (res.sections) { setIo(null); toast(t('已导入勾选的配置，未包含的部分保持不变'), 'success'); return; }
-    // nothing survived sanitising (unknown chess, or every choice already the default): keep the current loadout
-    if (!applied && !nOps && !hasSkins) { toast(t('导入失败：这份数据在当前版本没有可用的调配，未做任何改动'), 'error'); return; }
-    setIo(null);
-    toast(!applied ? t('已导入 {n} 名干员的潜能与练度', { n: nOps })
-      : dropped ? t('已导入 {applied} 名干员（另有 {dropped} 项未导入）', { applied, dropped })
-        : t('已导入 {applied} 名干员的调配', { applied }), dropped ? 'warn' : 'success');
+
   };
+
+  const transferScopeControls = (selectiveExport || selectiveImport) ? html`<fieldset class="lo-transfer-scope" data-testid="loadout-transfer-scope">
+    <legend>${t('干员范围')}</legend>
+    <label class="lo-export__format"><select aria-label=${t('调配文件干员范围')} data-testid="loadout-transfer-mode" value=${io.scopeMode || 'all'} disabled=${upstreamExport}
+      onChange=${e => setIo({ ...io, scopeMode: e.currentTarget.value, error: null })}>
+      <option value="all">${t(selectiveImport ? '文件记录的全部干员' : '全部已保存配置')}</option>
+      <option value="roster">${t('所选版本的全部干员')}</option><option value="exclusive">${t('所选版本的独有干员')}</option>
+    </select></label>
+    ${io.scopeMode && io.scopeMode !== 'all' ? html`<div class="lo-version-filter__choices">${VERSIONS.map(v => {
+      const count = versionRosters ? operatorScope(io.scopeMode, [v.id], versionRosters).charIds.length : null;
+      return html`<label><input type="checkbox" data-transfer-version=${v.id} checked=${io.scopeVersions?.includes(v.id)} onChange=${() => setIo({ ...io, error: null,
+        scopeVersions: io.scopeVersions.includes(v.id) ? io.scopeVersions.filter(id => id !== v.id) : [...io.scopeVersions, v.id] })} />
+        <span>${t(v.label)}${count === null ? '' : html` · ${t('{n} 名干员', { n: count })}`}</span></label>`;
+    })}</div>${!versionRosters ? html`<p role="status" class="lo-io__hint">${versionError ? t('版本名单加载失败，请重试。') : t('正在读取版本干员名单…')}
+      ${versionError ? html`<button type="button" class="lp-textbtn" onClick=${() => setVersionError(false)}>${t('重试')}</button>` : null}</p>` : null}
+      ${!io.scopeVersions?.length ? html`<p class="lo-io__hint">${t('请至少选择一个干员名单版本。')}</p>` : null}
+      ${transferScope && !transferScope.charIds.length ? html`<p class="lo-io__hint">${t('所选版本没有符合范围的干员，请更换版本或保存范围。')}</p>` : null}` : null}
+    <p class="lo-io__hint">${upstreamExport ? t('上游兼容格式不支持干员范围；请选择本库格式以保留范围保护。')
+      : t('范围只作用于干员配置，自选编队单独导入导出；名单外设置保持不变。')}</p>
+  </fieldset>` : null;
 
   // Esc closes; ←/→ browse the filtered roster (not while typing in the search field)
   useEffect(() => {
@@ -913,7 +993,7 @@ function LoadoutScreen({ st }) {
       // (a row's quick choices: ←/→ stay with the focused group, PR #301)
       if (e.target?.closest?.('.lo-quick') && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) return;
       if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && loadoutStore.get().tab !== 'ownership' && loadoutStore.get().tab !== 'diy') {
-        const ids = filterRoster(rosterOf(data.list('chess')), loadoutStore.get().filters, loadoutStore.get().entries, getChess, getBond, loadoutStore.get().ops, potentialEditable).map((c) => c.chessId);
+        const ids = filterRoster(rosterOf(data.list('chess')), loadoutStore.get().filters, loadoutStore.get().entries, getChess, getBond, loadoutStore.get().ops, potentialEditable, ui.current.allowedChars).map((c) => c.chessId);
         if (!ids.length) return;
         const cur = Math.max(0, ids.indexOf(loadoutStore.get().sel));
         const next = ids[(cur + (e.key === 'ArrowRight' ? 1 : -1) + ids.length) % ids.length];
@@ -960,10 +1040,10 @@ function LoadoutScreen({ st }) {
     deck.scrollTo({ left: Math.max(0, sec.offsetLeft - (drawer ? deck.clientWidth * 0.4 : 0)), behavior: reducedMotion() ? 'auto' : 'smooth' });
     setActiveTier(tier);
   };
-  const nFilters = ['tier', 'prof', 'bond', 'changedOnly'].filter((k) => !!st.filters?.[k]).length + (String(st.filters?.query || '').trim() ? 1 : 0);
+  const nFilters = ['tier', 'prof', 'bond', 'changedOnly'].filter((k) => !!st.filters?.[k]).length + (String(st.filters?.query || '').trim() ? 1 : 0) + (operatorMode !== 'all' ? 1 : 0);
   const tierCounts = deckTab === 'items' ? Object.fromEntries(DECK_TIERS.map(tier => [tier, codex.filter(x => x.tier === tier).length])) : Object.fromEntries(DECK_TIERS.map((tier) => [tier, list.filter((c) => c.tier === tier).length + (nFilters ? 0 : diySlots.filter((s) => s.tier === tier).length)]));
   const diyOpen = Object.fromEntries(DECK_TIERS.map((tier) => [tier, diySlots.filter((s) => s.tier === tier && !diyLegal[s.slotId]).length]));
-  const clearFilters = () => loadoutStore.set({ filters: { ...st.filters, tier: null, prof: null, bond: null, query: '', changedOnly: false } });
+  const clearFilters = () => loadoutStore.set({ filters: { ...st.filters, tier: null, prof: null, bond: null, query: '', changedOnly: false, operatorMode: 'all', operatorVersions: [] } });
 
   const [syncText, syncCls] = tab === 'ownership' ? OWN_SYNC_TEXT[st.ownSync] || OWN_SYNC_TEXT.idle
     : tab === 'diy' ? DIY_SYNC_TEXT[st.diySync] || DIY_SYNC_TEXT.idle : SYNC_TEXT[st.sync] || SYNC_TEXT.idle;
@@ -989,6 +1069,7 @@ function LoadoutScreen({ st }) {
   return html`<${Fragment}>
   <div class=${cx('lo', deck && 'lo--deck')} role="dialog" aria-modal="true" aria-label=${t('干员调配')}>
     <div class="lo__bg" aria-hidden="true"></div>
+    <div class=${cx('lo-header-layout', tab === 'loadout' && 'lo-header-layout--presets')}>
     <header class=${cx('lo-top', deck && 'lo-top--deck')}>
       <div class="lo-top__left">
         ${deck && tab !== 'loadout'
@@ -1038,7 +1119,8 @@ function LoadoutScreen({ st }) {
                 data-testid="loadout-filter" onClick=${() => setMenu(menu === 'filter' ? null : 'filter')} title=${t('筛选干员 · 切换列表视图')}>
               <${Icon} name="search" /><span class="lo-tbtn__l">${t('筛选')}</span>${nFilters ? html`<b class="lo-tbtn__n num">${nFilters}</b>` : null}</button>
             ${menu === 'filter' ? html`<div class="lo-pop lo-pop--filter">
-              <${Filters} m=${m} filters=${st.filters} bonds=${bonds} onFilters=${(filters) => loadoutStore.set({ filters })} />
+              <${Filters} m=${m} filters=${st.filters} bonds=${bonds} onFilters=${(filters) => loadoutStore.set({ filters })}
+                versionRosters=${versionRosters} versionError=${versionError} onRetry=${() => setVersionError(false)} roster=${roster} />
               <div class="lo-pop__row">
                 <span class="lo-pop__k">${t('显示方式')}</span>
                 <div class="lo-seg" role="tablist">
@@ -1081,6 +1163,8 @@ function LoadoutScreen({ st }) {
         <${Button} variant="secondary" size="sm" icon="refresh" disabled=${!nChanged} onClick=${resetAll}>${t('全部恢复默认')}<//>
       </div>`}
     </header>
+    ${tab === 'loadout' ? presets.toolbar : null}
+    </div>
     ${tab === 'diy'
       ? html`<p class=${cx('lo-note', ownLocked && 'is-locked')}><${Icon} name="info" />${diyText}</p>`
       : tab === 'ownership'
@@ -1105,7 +1189,8 @@ function LoadoutScreen({ st }) {
         locked=${locked ? lockedText : null} />`
       : html`<main class=${cx('lo-body', narrowDetail && 'is-detail')}>
       <section class="lo-roster">
-        <${Filters} m=${m} filters=${st.filters} bonds=${bonds} onFilters=${(filters) => loadoutStore.set({ filters })} onDeck=${() => setView('deck')} />
+        <${Filters} m=${m} filters=${st.filters} bonds=${bonds} onFilters=${(filters) => loadoutStore.set({ filters })} onDeck=${() => setView('deck')}
+          versionRosters=${versionRosters} versionError=${versionError} onRetry=${() => setVersionError(false)} roster=${roster} />
         <div class="lo-list" ref=${gridRef}>
           <${RosterHead} />
           <div class="lo-list__rows" role="list" aria-label=${t('干员列表')}>
@@ -1121,8 +1206,9 @@ function LoadoutScreen({ st }) {
       </div>
     </main>`}
   </div>
+  ${presets.dialogs}
   ${help ? html`<${DeckHelp} onClose=${() => setHelp(false)} />` : null}
-  ${io ? html`<${Modal} open=${true} onClose=${() => setIo(null)}
+  ${io ? html`<${Modal} open=${true} class="lo-transfer-dialog" onClose=${() => setIo(null)}
       title=${ioDiy ? (io.mode === 'export' ? t('导出自选编队') : t('导入自选编队'))
         : io.mode === 'export' ? (ioOwn ? t('导出干员持有') : t('导出干员调配')) : (ioOwn ? t('导入干员持有') : t('导入干员调配'))}
       micro=${ioOwn ? 'OPERATOR ROSTER' : ioDiy ? 'SELF-SELECT SQUAD' : 'OPERATOR LOADOUT'}
@@ -1132,7 +1218,7 @@ function LoadoutScreen({ st }) {
             <${Button} variant="primary" data-testid="loadout-io-download" disabled=${!canExport} onClick=${ioDownload}>${t('下载文件')}<//>`
         : html`<${Button} variant="ghost" onClick=${() => setIo(null)}>${t('取消')}<//>
             <${Button} variant="secondary" data-testid="loadout-io-pick" onClick=${ioPick}>${t('选择文件')}<//>
-            <${Button} variant="primary" icon="check" data-testid="loadout-io-apply" disabled=${!ioText.trim() || !ready} onClick=${ioApply}>${t('导入')}<//>`}>
+            <${Button} variant="primary" icon="check" data-testid="loadout-io-apply" disabled=${!!io.busy || !ioText.trim() || !ready || !canImport} onClick=${ioApply}>${io.busy ? t('正在校验…') : t('导入')}<//>`}>
       <p class="lo-io__hint">${ioDiy
         ? (io.mode === 'export'
           ? t('共 {n} 个自选名额已选择。复制或下载这份数据，即可在别的设备或浏览器上导入。', { n: nDiy })
@@ -1143,7 +1229,20 @@ function LoadoutScreen({ st }) {
           : html`${tParts('把导出的干员持有数据粘贴到下方，或点「选择文件」。导入会{overwrite}当前的干员持有设置。', { overwrite: html`<strong>${t('覆盖')}</strong>` })}`)
         : io.mode === 'export'
           ? html`${tParts('共 {n} 名干员已调整。复制或下载这份数据，即可在别的设备或浏览器上导入。', { n: html`<b class="num">${nChanged}</b>`, count: nChanged })}`
-          : html`${t('把导出的内容粘贴到下方，或点「选择文件」。')}${nChanged ? html`${tParts('导入会{overwrite}当前的 {nChanged} 名干员调配。', { overwrite: html`<strong>${t('覆盖')}</strong>`, nChanged })}` : null}`}</p>
+          : html`${t('把导出的内容粘贴到下方，或点「选择文件」。')}`}</p>
+      ${transferScopeControls}
+      ${selectiveImport ? html`<fieldset class="lo-export" data-testid="loadout-import-options"><legend>${t('选择导入内容')}</legend>
+        ${importData.ok ? html`<p class="lo-io__hint">${t('文件已识别：{n} 名干员包含自定义配置。', { n: new Set([...Object.keys(importData.byChar || importData.entries || {}), ...Object.keys(importData.ops || {}), ...Object.keys(importData.skins || {})]).size })}</p>
+          <p class="lo-io__hint">${t('文件格式：{format}', { format: importEnvelope?.v === 3 ? t('本库范围格式（v3）') : importEnvelope?.extension ? t('本库格式（含扩展配置）') : t('上游兼容或旧版格式') })}</p>
+          ${importData.scope ? html`<p class="lo-io__hint">${t('来源版本：{versions}', { versions: importData.scope.versions.map(id => t(VERSIONS.find(v => v.id === id)?.label)).join(' / ') })}</p>` : null}
+          <p class="lo-io__hint">${importData.scope ? t('文件限定 {n} 名干员；新增筛选只会缩小范围，不会扩大。', { n: importData.scope.charIds.length }) : t('文件未限定干员范围，可选择版本进一步筛选。')}</p>`
+          : html`<p class="lo-io__hint" role="status">${ioText.trim() ? importData.error : t('粘贴或选择文件后，将显示可导入内容与范围。')}</p>`}
+        <div class="lo-export__parts">${EXPORT_PARTS.map(([key, label]) => html`<label class=${!availableImportParts[key] ? 'is-disabled' : ''}>
+          <input type="checkbox" data-import-part=${key} checked=${!!importParts[key]} disabled=${!availableImportParts[key]}
+            onChange=${e => setIo({ ...io, parts: { ...importParts, [key]: e.currentTarget.checked }, error: null })} />${t(label)}</label>`)}</div>
+        <p class="lo-io__hint">${t('仅导入勾选内容；未勾选和文件未包含的部分保持不变。')}</p>
+        ${importLocked ? html`<p class="lo-io__hint" role="status">${t('当前阶段已锁定所选配置，请取消锁定部分后重试。')}</p>` : null}
+        ${io.error ? html`<p class="lp-error" role="alert">${io.error}</p>` : null}</fieldset>` : null}
       ${selectiveExport ? html`<fieldset class="lo-export" data-testid="loadout-export-options">
         <legend>${t('选择导出内容')}</legend>
         <label class="lo-export__format">${t('导出格式')}
@@ -1166,7 +1265,7 @@ function LoadoutScreen({ st }) {
       </fieldset>` : null}
       <textarea class="lo-io__text" data-testid="loadout-io-text" spellcheck=${false} readOnly=${io.mode === 'export'} value=${ioText}
         placeholder=${io.mode === 'export' ? '' : ioDiy ? t('在此粘贴导出的自选编队内容…') : ioOwn ? t('在此粘贴导出的干员持有内容…') : t('在此粘贴导出的调配内容…')}
-        onInput=${(e) => setIo({ ...io, text: e.currentTarget.value })}></textarea>
+        onInput=${(e) => setIo({ ...io, text: e.currentTarget.value, parts: undefined, error: null })}></textarea>
       <input type="file" accept=".json,application/json,text/plain" class="lo-io__file" ref=${fileRef} onChange=${ioFile} />
     <//>` : null}
 <//>`;

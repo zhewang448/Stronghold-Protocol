@@ -90,7 +90,7 @@ export const loadoutStore = createStore({
   from: null,          // 'lobby' | 'room' | 'briefing' | 'prep'
   tab: 'loadout',      // 'loadout' (干员调配) | 'ownership' (干员持有) | 'diy' (自选编队)
   sel: null,           // selected base chess id
-  filters: { tier: null, prof: null, bond: null, query: '', changedOnly: false },
+  filters: { tier: null, prof: null, bond: null, query: '', changedOnly: false, operatorMode: 'all', operatorVersions: [] },
   sync: 'idle',
   ownSync: 'idle',
   diySync: 'idle',
@@ -266,6 +266,18 @@ export function setOpsMap(ops) {
   const next = ops && typeof ops === 'object' ? ops : {};
   persistLoadout({ ...loadoutStore.get(), ops: next });
   loadoutStore.set({ ops: next });
+}
+
+/** Presets commit the complete charId snapshot, including operators outside the displayed version.
+ * The caller persists all keys transactionally before calling publish; never use current-view imports here. */
+export function preparePresetLoadout(byChar, ops) {
+  return toStored(byChar, ops, legacyCopy(LOADOUT_PREF, 'entries', (m) => entriesView(byChar, m)));
+}
+export function publishPresetLoadout(byChar, ops, diy = undefined) {
+  const map = shownCharMap();
+  const entries = map ? entriesView(byChar, map) : {};
+  if (map) viewMaps.set(entries, map);
+  loadoutStore.set({ byChar, ops, entries, ...(diy === undefined ? {} : { diy }) });
 }
 
 /**

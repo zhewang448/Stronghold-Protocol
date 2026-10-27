@@ -33,16 +33,17 @@ test('a loadout ops payload is refused with the DIY data check; entries-only is 
   assert.equal(loadoutOpsImportRefusal(null, false, noBackups), null, 'entries-only does not wait on backups');
 });
 
-test('ioApply asks loadoutOpsImportRefusal after parseImport and before cultivationCharIds or applyLoadoutEntries', () => {
+test('ioApply checks data and semantic choices before atomic application', () => {
   const src = readFileSync(path.join(ROOT, 'public/js/screens/loadout.js'), 'utf8');
-  const at = src.indexOf('const ioApply = () => {');
-  assert.ok(at > 0, 'ioApply');
-  const body = src.slice(at, src.indexOf('\n  };\n', at));
+  const at = src.indexOf('const ioApply = async () => {');
+  assert.ok(at > 0);
+  const body = src.slice(at, src.indexOf('const transferScopeControls', at));
   const parsed = body.indexOf('if (!res.ok)');
   const guard = body.indexOf('loadoutOpsImportRefusal(res.ops, ready)');
-  const ids = body.indexOf('cultivationCharIds(');
-  const apply = body.indexOf('applyLoadoutEntries(');
-  assert.ok(parsed > 0 && guard > parsed, 'refuse only a payload that parsed');
-  assert.ok(ids > guard && apply > guard, 'no write and no DIY id list until the refusal returns null');
-  assert.match(body.slice(guard), /^loadoutOpsImportRefusal\(res\.ops, ready\);\s*if \(opsRefused\) \{ toast\(opsRefused\.text, opsRefused\.tone\); return; \}/);
+  const validate = body.indexOf('await validateTransferChoices(');
+  const stale = body.indexOf('if (ioRef.current !== request');
+  const apply = body.indexOf('applyTransferredSnapshot(');
+  assert.ok(parsed > 0 && guard > parsed);
+  assert.ok(validate > guard && stale > validate && apply > stale);
+  assert.ok(body.slice(guard, validate).includes('if (opsRefused)'));
 });

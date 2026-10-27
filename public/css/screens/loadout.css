@@ -97,6 +97,14 @@
 /* ---- filters ----------------------------------------------------------------------------------------------------------- */
 .lo-filters { flex: none; display: flex; flex-direction: column; gap: .08rem; }
 .lo-frow { display: flex; align-items: center; gap: .12rem; flex-wrap: wrap; min-width: 0; }
+.lo-version-filter { border-top: 1px solid var(--line); padding-top: 8px; min-width: 0; }
+.lo-version-filter__choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; margin-top: 8px; }
+.lo-version-filter__choices label { display: flex; align-items: center; gap: 8px; min-height: 44px; color: var(--text-md); font-size: max(calc(.15 * var(--t)), 12px); cursor: pointer; }
+.lo-version-filter__choices input { flex: none; width: 18px; height: 18px; accent-color: var(--mint-500); }
+.lo-version-filter__hint { margin: 6px 0; color: var(--text-md); font-size: max(calc(.14 * var(--t)), 12px); line-height: 1.5; }
+.lo-version-filter .lo-select { max-width: 100%; }
+.lo-version-filter .lo-select select { min-width: 0; }
+@media (max-height: 520px) { .lo-filters { flex-shrink: 0; } .lo-roster > .lo-filters { max-height: 45dvh; overflow-y: auto; } }
 .lo-chips { display: flex; align-items: center; gap: .05rem; flex-wrap: wrap; }
 .lo-chip {
   display: inline-flex; align-items: center; justify-content: center; gap: .05rem;
@@ -639,6 +647,15 @@
 .lo-io__text:focus { border-color: var(--mint-700); }
 .lo-io__text::placeholder { color: var(--text-lo); }
 .lo-io__file { display: none; }
+.lo-transfer-scope { border: 0; border-top: 1px solid var(--line); margin: 12px 0; padding: 8px 0; }
+.lo-transfer-scope legend { font-weight: 700; padding-right: 8px; }
+.lo-transfer-dialog { max-height: calc(100dvh - 24px); }
+.lo-transfer-dialog .modal__head { flex: none; }
+.lo-transfer-dialog .modal__body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+.lo-transfer-dialog .modal__actions { flex-wrap: wrap; }
+.lo-transfer-dialog .modal__actions .btn { min-height: 44px; }
+.lo-transfer-dialog .lo-export__parts label { min-height: 44px; }
+.lo-transfer-dialog .lo-export__format select { min-width: 0; max-width: 100%; }
 
 /* Per-operator voice, a browser-local preference in roster and DIY details. */
 .lo-voice { display: flex; flex-wrap: wrap; align-items: center; gap: .12rem; padding: .14rem 0; font-size: calc(.18 * var(--t)); }
@@ -729,6 +746,68 @@
 /* above the deck: while a 转场 runs (a transform), the top-right block is its own stacking context, and its 筛选 / ⋯
    popovers fell behind the tier groups drawn after it (a quick 筛选 right after coming back from 干员持有) */
 .lo-top--deck { z-index: 6; }
+/* Named presets share one control across list/deck. The narrow row never overlays the roster. */
+.lo-header-layout { flex: none; position: relative; z-index: 6; }
+.lp-toolbar { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.lp-selector { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 200px; min-width: 0; min-height: 44px;
+  padding: 8px 12px; border: 1px solid var(--line-2); background: var(--bg-1, #141a17); color: var(--text-hi); font: inherit; font-size: max(calc(.15 * var(--t)), 12px); cursor: pointer; }
+.lp-selector > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lp-selector .icon { flex: none; width: 16px; height: 16px; transform: rotate(90deg); }
+.lp-toolbar .btn { min-height: 44px; flex: none; }
+.lp-selector:hover { border-color: var(--mint-500); }
+.lp-selector:focus-visible, .lp-dialog :is(button, input):focus-visible { outline: 2px solid var(--mint-400); outline-offset: 2px; }
+@media (min-width: 1101px) {
+  .lo-header-layout--presets { display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content max-content; align-items: center; gap: .14rem; padding: .12rem .3rem; border-bottom: 1px solid var(--line); }
+  .lo-header-layout--presets .lo-top { display: contents; }
+  .lo-header-layout--presets .lo-top::after { display: none; }
+  .lo-header-layout--presets .lo-top__left { grid-column: 1; grid-row: 1; }
+  .lo-header-layout--presets .lo-top__center { grid-column: 2; grid-row: 1; }
+  .lo-header-layout--presets .lo-top__right { grid-column: 4; grid-row: 1; gap: .08rem; }
+  .lo-header-layout .lp-toolbar { grid-column: 3; grid-row: 1; }
+  .lo-header-layout--presets .lo-sync, .lo-header-layout--presets .lo-count { display: none; }
+}
+@media (max-width: 1100px) {
+  .lp-toolbar { padding: 6px 12px; border-bottom: 1px solid var(--line); }
+  .lp-selector { flex: 1; width: auto; }
+}
+.lp-dialog { color: var(--text-hi); font-size: max(calc(.17 * var(--t)), 14px); }
+.lp-dialog .modal__body { min-height: 0; overflow-x: hidden; overscroll-behavior: contain; touch-action: pan-y; }
+.lp-dialog .modal__actions { flex-wrap: wrap; }
+.lp-dialog .modal__head { flex: none; }
+.lp-dialog { max-height: calc(100dvh - 24px); }
+.lp-dialog :is(button, .btn) { min-height: 44px; }
+.lp-dialog input { accent-color: var(--mint-500); caret-color: var(--mint-400); }
+.lp-dialog input[type=checkbox] { flex: none; width: 18px; height: 18px; }
+.lp-dialog ::selection { color: #04140f; background: var(--mint-400); }
+.lp-name { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.lp-name input { width: 100%; min-height: 44px; box-sizing: border-box; border: 1px solid var(--line-2); background: var(--bg-0); color: var(--text-hi); padding: 8px 12px; font: inherit; }
+.lp-scope { border: 0; border-top: 1px solid var(--line); padding: 8px 0; margin: 16px 0; }
+.lp-scope legend { padding-right: 8px; font-weight: 700; }
+.lp-scope input[type=radio] { width: 18px; height: 18px; flex: none; }
+.lp-scope-versions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; margin-top: 8px; }
+@media (max-width: 420px) { .lp-scope-versions { grid-template-columns: 1fr; } }
+.lp-parts, .lp-versions { margin: 16px 0; padding: 8px 0; border: 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 16px; }
+.lp-parts legend, .lp-versions legend { padding: 0 8px 0 0; font-weight: 700; }
+.lp-parts label, .lp-versions label, .lp-check { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; }
+.lp-versions small, .lp-choice small { display: block; color: var(--text-md); font-size: max(calc(.15 * var(--t)), 12px); margin-top: 4px; }
+.lp-hint { color: var(--text-md); line-height: 1.6; font-size: max(calc(.15 * var(--t)), 12px); }
+.lp-textbtn { background: none; color: var(--mint-400); border: 0; font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.lp-picker { display: flex; flex-direction: column; max-height: min(50vh, 420px); overflow-y: auto; scrollbar-color: var(--mint-700) var(--bg-0); }
+.lp-choice { flex: none; padding: 12px; text-align: left; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--text-hi); font: inherit; cursor: pointer; overflow-wrap: anywhere; }
+.lp-choice:hover, .lp-manager nav button:hover, .lp-manager nav button.is-on { background: rgba(78, 216, 175, .1); }
+.lp-manager { display: grid; grid-template-columns: minmax(160px, 1fr) minmax(0, 2fr); gap: 20px; min-height: 200px; }
+.lp-manager nav { display: flex; flex-direction: column; max-height: 350px; overflow-y: auto; border-right: 1px solid var(--line); padding-right: 12px; }
+.lp-manager nav button { flex: none; text-align: left; background: none; color: var(--text-hi); border: 0; font: inherit; padding: 8px; cursor: pointer; overflow-wrap: anywhere; }
+.lp-selected-name { overflow-wrap: anywhere; margin: 0 0 12px; font-size: max(calc(.2 * var(--t)), 16px); }
+.lp-manage-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.lp-error { color: #ffb4b4; background: #351c21; padding: 12px; line-height: 1.5; }
+.lp-warning { color: #f8d58a; line-height: 1.5; }
+@media (max-width: 700px) {
+  .lp-manager { display: block; }
+  .lp-manager nav { max-height: 140px; border-right: 0; border-bottom: 1px solid var(--line); margin-bottom: 16px; padding: 0 0 8px; }
+  .lp-dialog .modal__body { padding: 12px; }
+}
+@media (max-width: 420px) { .lp-parts, .lp-versions { grid-template-columns: 1fr; } }
 .lo-info { display: grid; place-items: center; width: max(.5rem, 32px); height: max(.5rem, 32px); padding: 0; color: var(--text-hi);
   background: rgba(255, 255, 255, .06); border: 1px solid var(--line-2); cursor: pointer; }
 .lo-info:hover { border-color: var(--mint-500); color: var(--mint-400); }
@@ -747,7 +826,7 @@
 .lo-popwrap { position: relative; }
 .lo-pop { position: absolute; top: calc(100% + .08rem); right: 0; z-index: 20; padding: .14rem; background: linear-gradient(180deg, #1d2321, #121615);
   border: 1px solid var(--line-2); box-shadow: 0 .14rem .4rem rgba(0, 0, 0, .6); animation: lo-in 140ms var(--ease-out) backwards; }
-.lo-pop--filter { width: min(9.4rem, calc(100vw - 24px)); display: flex; flex-direction: column; gap: .12rem; }
+.lo-pop--filter { width: min(9.4rem, calc(100vw - 24px)); max-height: calc(100dvh - 100px); overflow-y: auto; display: flex; flex-direction: column; gap: .12rem; }
 .lo-pop__row { display: flex; align-items: center; gap: .12rem; padding-top: .1rem; border-top: 1px solid var(--line); }
 .lo-pop__k { font-size: max(calc(.14 * var(--t)), 10px); color: var(--text-dim); }
 .lo-pop__row .lo-seg { margin: 0; }
@@ -949,6 +1028,8 @@
 @keyframes lo-tr-rise { from { opacity: 0; transform: translateY(.22rem); } }
 .lo--deck .lo__bg { animation: lo-tr-fade 340ms ease-out 140ms backwards; }
 .lo--deck .lo-top { animation: lo-tr-fade 260ms ease-out 170ms backwards; }
+.lo--deck .lo-header-layout { animation: lo-tr-fade 260ms ease-out 170ms backwards; }
+.lo--deck .lp-toolbar { animation: lo-tr-right 420ms var(--tr-ease) 250ms backwards; }
 .lo--deck .lo-top__center { animation: lo-tr-right 400ms var(--tr-ease) 200ms backwards; }
 .lo--deck .lo-top__right { animation: lo-tr-right 420ms var(--tr-ease) 250ms backwards; }
 .lo--deck .lo-note { animation: lo-tr-fade 300ms ease-out 230ms backwards; }
@@ -963,7 +1044,7 @@
 .lo--deck .own, .lo--deck .diy { animation: lo-tr-fade 300ms ease-out 150ms backwards; }
 @media (prefers-reduced-motion: reduce) {
   .lo--deck .lo__bg, .lo--deck .lo-top, .lo--deck .lo-top__center, .lo--deck .lo-top__right, .lo--deck .lo-note, .lo--deck .lo-tgroup,
-  .lo--deck .lo-bbar, .lo--deck .own, .lo--deck .diy { animation: none; }
+  .lo--deck .lo-bbar, .lo--deck .own, .lo--deck .diy, .lo--deck .lo-header-layout, .lo--deck .lp-toolbar { animation: none; }
 }
 
 /* ---- 道具: the equipment codex ---- */

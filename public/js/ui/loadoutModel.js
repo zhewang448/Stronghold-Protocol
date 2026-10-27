@@ -537,9 +537,10 @@ function opsVisibleChange(ops, charId, potentialCounts) {
  * @param {(charId: string) => boolean} [potentialCounts] false hides a potential-only change (no curve)
  */
 
-export function filterRoster(roster, f = {}, entries = {}, getChess = () => null, getBond = () => null, ops = null, potentialCounts = null) {
+export function filterRoster(roster, f = {}, entries = {}, getChess = () => null, getBond = () => null, ops = null, potentialCounts = null, allowedChars = null) {
   const q = String(f.query || '').trim().toLowerCase();
   return roster.filter((c) => {
+    if (allowedChars && !allowedChars.has(c.charId)) return false;
     if (f.tier && c.tier !== f.tier) return false;
     if (f.prof && c.profession !== f.prof) return false;
     if (f.bond && !(Array.isArray(c.bonds) && c.bonds.includes(f.bond))) return false;

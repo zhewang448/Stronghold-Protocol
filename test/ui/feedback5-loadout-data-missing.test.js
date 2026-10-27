@@ -67,13 +67,13 @@ test('every import is refused while the files load or when the game data did not
 
 test('the screen: the import asks importRefusal before parsing or applying anything; a tab without its data shows DataMissing', () => {
   const src = readFileSync(path.join(ROOT, 'public/js/screens/loadout.js'), 'utf8');
-  const at = src.indexOf('const ioApply = () => {');
+  const at = src.indexOf('const ioApply = async () => {');
   assert.ok(at > 0, 'ioApply');
   const body = src.slice(at, src.indexOf('\n  };\n', at));
   const guard = body.indexOf('const refused = importRefusal(io.kind, ready);');
   assert.ok(guard > 0, 'the guard');
   assert.match(body.slice(guard), /^const refused = importRefusal\(io\.kind, ready\);\s*if \(refused\) \{ toast\(refused\.text, refused\.tone\); return; \}/);
-  for (const call of ['parseDiyImport(', 'applyDiyImport(', 'parseOwnershipImport(', 'applyOwnershipImport(', 'parseImport(', 'applyLoadoutEntries(']) {
+  for (const call of ['parseDiyImport(', 'applyDiyImport(', 'parseOwnershipImport(', 'applyOwnershipImport(', 'validateTransferChoices(', 'applyTransferredSnapshot(']) {
     assert.ok(body.indexOf(call) > guard, `${call} only after the guard`);
   }
   assert.ok(!/if \(!ready\)/.test(body), 'one guard for both cases');
