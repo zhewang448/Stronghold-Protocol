@@ -509,6 +509,10 @@ export function TopBar({ pub, priv, conn, hud, total, drawer, onExit, onDrawer, 
   const btn = checkButtons({ pen, penAvail, infoOpen: !!drawer });
   const fx = useCapsuleFx(phase, pub?.round, held);
   useEffect(() => { preloadCapsuleArt(); }, []);
+  const hpMultiplier = pub?.enemyHpMultiplier;
+  const showHpMultiplier = Number.isFinite(hpMultiplier) && hpMultiplier > 0 && hpMultiplier !== 1;
+  const hpMultiplierText = showHpMultiplier ? t('敌人血量 ×{n}', { n: hpMultiplier }) : null;
+  const difficultyTag = pub?.difficulty ? html`<${DifficultyTag} difficulty=${pub.difficulty} size="sm" />` : null;
   const onLeft = () => (pen ? onPen(false) : onDrawer('info'));
   const onRight = () => (pen ? onPen(false) : penAvail ? onPen(true) : null);
   return html`<header class=${cx('gtop', pen && 'is-pen')}>
@@ -520,7 +524,7 @@ export function TopBar({ pub, priv, conn, hud, total, drawer, onExit, onDrawer, 
           <${FrameRatePill} view=${view} />
           <${SpectatorPill} spectators=${spectators} myId=${myId} isHost=${isHost} onRemove=${onRemoveSpectator} />
         </div>
-        ${pub?.difficulty ? html`<${DifficultyTag} difficulty=${pub.difficulty} size="sm" />` : null}
+        ${showHpMultiplier ? html`<div class="gtop__difficulty">${difficultyTag}<span class="gtop__hp-multiplier" data-testid="enemy-hp-multiplier" title=${`${hpMultiplierText} · ${t('与难度及回合倍率相乘，也影响领袖血池；范围 0.1–100 倍')}`}>${hpMultiplierText}</span></div>` : difficultyTag}
         ${pub?.test ? html`<${TestMark} class="gtop__test" />` : null}
         <${UnofficialMark} room=${room} compact=${true} class="gtop__mod" />
         ${ruleLine(effectiveRoomRules(room)) ? html`<span class="gtop__rules" data-testid="plugin-rules">${ruleLine(effectiveRoomRules(room))}</span>` : null}

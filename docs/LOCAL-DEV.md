@@ -46,7 +46,7 @@ v0.3.3 整合候选及验证边界见 [整合说明](UPSTREAM-V0.3.3-INTEGRATION
 - 合并上游新版本时从 `main` 开功能分支，完成适配与测试后再合并回 `main`。
 - 同步上游：`git fetch upstream` → `git merge upstream/master` → `npm install` → `npm run setup`（上游常会加素材）→ `node --test`。
 - 素材 `public/assets/`、`.cache/`、`.claude/` 都在 `.gitignore` 里，不进仓库。新机器 clone 后要先 `npm install && npm run setup`。
-- 当前版本为 `v0.3.3-extended.4`，基于上游 `v0.3.3`；本轮发布版本。已发布的 `v0.3.1-extended.11` 资源下载与在线状态修复仍保留在下方历史记录。扩展保留多人大厅、启动器、签名增量更新与恢复流程。
+- 当前版本为 `v0.3.3-extended.5`，基于上游 `v0.3.3`；本轮发布版本。已发布的 `v0.3.1-extended.11` 资源下载与在线状态修复仍保留在下方历史记录。扩展保留多人大厅、启动器、签名增量更新与恢复流程。
 
 当前源码已整合上游 `v0.3.3`；`package.json` / APP_VERSION 为基础版本 0.3.3；`server/release-version.js` 单独记录扩展标签。发布附件与公开状态以 Releases 为准。
 

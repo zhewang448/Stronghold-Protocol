@@ -176,6 +176,7 @@ export class MatchSettle {
       if (this.testReplayable === false) result.testReplayable = false;
     }
     if (this.convenience) result.convenience = this.convenience;
+    if (this.gd.enemyHpMultiplier !== 1) result.enemyHpMultiplier = this.gd.enemyHpMultiplier;
     this.lastResultMsg = result;
     this.markPublic();
     try { this.flush(true); } catch (e) { this.reportError('flush', e); }

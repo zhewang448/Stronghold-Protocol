@@ -108,7 +108,7 @@ export function createRecovery({ lobby, root, dir = path.join(root, 'logs', 'rec
         .map(s => lobby.registry.byId(s.playerId)).filter(Boolean)
         .map(s => Object.fromEntries(['playerId', 'token', 'name', 'loadout', 'ops', 'skins', 'card', 'cardSkin', 'notOwned', 'diy', 'resumeWindowMs', 'presenceStatus'].map(k => [k, s[k]])));
       const record = { ...payload, format: 1, identity, matchNo: room.matchCount, sessions,
-        room: { ...(room.private ? { private: true } : {}), code: room.code, mode: room.mode, difficulty: room.difficulty, capacity: room.capacity, version: room.version, soloUnlimited: room.soloUnlimited, convenience: room.convenience, hostId: room.hostId, seats: room.seats, spectators: room.spectators, aiPicksLast: room.aiPicksLast, uniteLayerGains: room.uniteLayerGains, createdAt: room.createdAt } };
+        room: { ...(room.private ? { private: true } : {}), code: room.code, mode: room.mode, difficulty: room.difficulty, capacity: room.capacity, version: room.version, soloUnlimited: room.soloUnlimited, convenience: room.convenience, enemyHpMultiplier: room.enemyHpMultiplier, hostId: room.hostId, seats: room.seats, spectators: room.spectators, aiPicksLast: room.aiPicksLast, uniteLayerGains: room.uniteLayerGains, createdAt: room.createdAt } };
       fs.mkdirSync(dir, { recursive: true });
       const file = path.join(dir, `room-${room.code}.bin`);
       fs.writeFileSync(file + '.tmp', serialize(record), { mode: 0o600 }); fs.renameSync(file + '.tmp', file);

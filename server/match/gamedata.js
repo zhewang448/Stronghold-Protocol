@@ -140,12 +140,10 @@ export class GameData {
   }
 
   /**
-   * Leader HP pool multiplier — always 1 (no custom balance). Kept for callers written against the old tuning layer
-   * (finalAssault.bossPoolHp); use `bossPoolHp` / `bossPoolShare` for the official pool.
-   * @deprecated
+   * Room multiplier applied to leader HP pools; defaults to 1.
    */
   bossHpMul(bossId) { // eslint-disable-line no-unused-vars
-    return 1;
+    return this.enemyHpMultiplier ?? 1;
   }
 
   /**
@@ -165,7 +163,7 @@ export class GameData {
     let base = boss && boss.bloodPoint && Number.isFinite(boss.bloodPoint[diff]) ? boss.bloodPoint[diff] : null;
     if (base == null && boss && boss.bloodPoint) base = Object.values(boss.bloodPoint).find((v) => Number.isFinite(v)) ?? null;
     if (base == null) base = 500000;
-    return Math.max(1, Math.round(base * this.bossPoolShare(aliveCount)));
+    return Math.max(1, Math.round(base * this.bossPoolShare(aliveCount) * this.bossHpMul(bossId)));
   }
 
   /**
@@ -460,7 +458,8 @@ export class GameData {
 
   /** Enemy multipliers of round r = the official table (baseEnemyScale; no custom multiplier). */
   enemyScale(r) {
-    return this.baseEnemyScale(r);
+    const scale = this.baseEnemyScale(r);
+    return { ...scale, hpMul: scale.hpMul * (this.enemyHpMultiplier ?? 1) };
   }
 
   timer(key) {

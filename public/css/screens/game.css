@@ -112,6 +112,9 @@
 .gtop > * { pointer-events: auto; }
 .gtop__left { display: flex; align-items: center; gap: .16rem; }
 .gtop__meta { display: flex; flex-direction: column; align-items: flex-start; gap: .06rem; }
+.gtop__difficulty { display: flex; align-items: center; gap: .08rem; min-width: 0; }
+.gtop__hp-multiplier { color: #eef2f2; font-size: max(calc(.12 * var(--t)), 10px); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: max(9em, 2.4rem); }
+@media (max-width: 767px) { .gtop__difficulty { flex-direction: column; align-items: flex-start; gap: 0; } }
 /* a match with gameplay plugins (DESIGN §32.6): the HUD corner's MOD mark */
 .gtop__mod { pointer-events: auto; }
 .gtop__rules { max-width: 3.4rem; font-size: calc(.11 * var(--t)); line-height: 1.4; color: var(--text-md); overflow-wrap: anywhere; }

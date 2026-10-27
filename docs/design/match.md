@@ -370,3 +370,5 @@ Default legacy rules remain the baseline. See [BOT_STRATEGIES](../BOT_STRATEGIES
 ### Room convenience settings (2026-10-25)
 
 Maintainer-approved deviations: new rooms default benchEquip, soloUnlimited and prepLoadout on; unequip and morphPairing off. Bench equipment overrides only the first-period restriction. SoloUnlimited applies only to timed solo phases, never co-op or battle clocks. Prep loadout remains locked after ready. Unequip and morphPairing reuse the existing optional plugin mechanics. A declared plugin rule wins over the corresponding room setting. Direct Match callers without convenience retain historical behavior; no generated data or golden changes are required.
+
+The room's custom enemy HP multiplier defaults to 1 and ranges from 0.1 to 100. It multiplies the selected mode and round's ordinary enemy HP multiplier, and independently multiplies the leader's shared HP pool. The setting is fixed when the match starts and does not alter attack, defense or official generated data. A non-default value marks the resulting local record unofficial for achievement and aggregate filtering.

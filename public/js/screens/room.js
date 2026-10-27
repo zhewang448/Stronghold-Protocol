@@ -333,9 +333,11 @@ function RoomProtocol({ room, variant, onClose, onPick, busy, leaving = false })
 }
 
 /** ⚙ of the bottom pill: 私密房间, 人数上限, AI 队友最后选择, room-local 联防叠层, 无限火力 branch. */
-function RoomOptions({ room, facts, myId, busy, online, variant, onPrivate, onMaxSeats, onAiLast, onAiTakeover, onUniteLayerGains, onConvenience, onVariant, onClose, leaving = false }) {
+function RoomOptions({ room, facts, myId, busy, online, variant, onPrivate, onMaxSeats, onAiLast, onAiTakeover, onUniteLayerGains, onConvenience, onEnemyHpMultiplier, onVariant, onClose, leaving = false }) {
   const coop = room.mode !== 'solo';
   const host = facts.isHost;
+  const [hpMultiplier, setHpMultiplier] = useState(String(room.enemyHpMultiplier ?? 1));
+  useEffect(() => setHpMultiplier(String(room.enemyHpMultiplier ?? 1)), [room.enemyHpMultiplier]);
   const choices = roomConvenience(room.convenience);
   const conveniences = [
     ['benchEquip', t('允许整备区装备'), t('第一期也可直接给整备区干员配发装备；第二期原本支持')],
@@ -365,6 +367,11 @@ function RoomOptions({ room, facts, myId, busy, online, variant, onPrivate, onMa
       <span>${t('允许联防叠层')}<small>${room.canSetUniteLayerGains === true ? t('仅本房间生效，开局后不可修改；最终攻势和隐秘核心不叠层') : t('主机未允许房主修改联防叠层规则')}</small></span></label>` : null}
     <fieldset class="rs-convenience"><legend>${t('便利设置')}</legend>
       <small>${t('仅本房间生效，开局后不可修改；修改后其他博士需要重新准备')}</small>
+      <form class="rs-opt rs-opt--hp" onSubmit=${e => { e.preventDefault(); const value = Number(hpMultiplier); if (Number.isFinite(value) && value >= 0.1 && value <= 100) onEnemyHpMultiplier(value); }}>
+        <label for="enemy-hp-multiplier">${t('敌人血量倍率')}<small>${t('与难度及回合倍率相乘，也影响领袖血池；范围 0.1–100 倍')}</small></label>
+        <input id="enemy-hp-multiplier" name="enemy-hp-multiplier" type="number" min="0.1" max="100" step="any" required value=${hpMultiplier} disabled=${!host || !!busy || !online || room.inMatch === true} onInput=${e => setHpMultiplier(e.currentTarget.value)} />
+        <button type="submit" disabled=${!host || !!busy || !online || room.inMatch === true}>${t('确认')}</button>
+      </form>
       ${conveniences.map(([key, label, hint]) => {
         const plugin = room.content?.rules && Object.hasOwn(room.content.rules, key);
         const pluginOn = key === 'prepLoadout' ? room.content?.rules?.[key] === 'prep' : key === 'unequip' ? room.content?.rules?.[key] === 'allow' : room.content?.rules?.[key] === 'plus';
@@ -426,7 +433,7 @@ export function RoomScreen() {
   const facts = room ? roomFacts(room, me.playerId) : null;
   const vote = room?.versionVote;
   const versionWhy = isModdedRoom(room) ? t('请先关闭改变玩法的插件') : null;
-  const searchable = CAN_QUEUE && !!room && coop && facts.isHost && room.private !== true && !room.test && !isModdedRoom(room) && !room.versionVote && room.aiPicksLast === true && !room.aiTakeoverEnabled && !room.uniteLayerGains && Object.entries(CONVENIENCE_DEFAULTS).every(([key, value]) => room.convenience?.[key] === value) && facts.seats.length === DEFAULT_SEATS && facts.humans.every(s => s.connected) && !room.inMatch;
+  const searchable = CAN_QUEUE && !!room && coop && facts.isHost && room.private !== true && !room.test && !isModdedRoom(room) && !room.versionVote && room.aiPicksLast === true && !room.aiTakeoverEnabled && !room.uniteLayerGains && (room.enemyHpMultiplier ?? 1) === 1 && Object.entries(CONVENIENCE_DEFAULTS).every(([key, value]) => room.convenience?.[key] === value) && facts.seats.length === DEFAULT_SEATS && facts.humans.every(s => s.connected) && !room.inMatch;
   const firepower = room?.random === true;
   const variant = room?.variant === 'endurance' || room?.variant === 'marathon' ? room.variant : 'blitz';
 
@@ -478,6 +485,7 @@ export function RoomScreen() {
   const setAiLast = (on) => run('ailast', () => net.request('room.setAiPicksLast', { on }));
   const setUniteLayerGains = (on) => run('unite-layers', () => net.request('room.setUniteLayerGains', { on }));
   const setConvenience = (key, on) => run(`convenience-${key}`, () => net.request('room.setConvenience', { key, on }));
+  const setEnemyHpMultiplier = (multiplier) => run('enemy-hp-multiplier', () => net.request('room.setEnemyHpMultiplier', { multiplier }));
   // spectator seats: the host frees one; a spectator takes a free player seat with room.join of this room
   const removeSpectator = (playerId) => run(`rs${playerId}`, () => net.request('room.removeSpectator', { playerId }));
   const sit = () => run('sit', () => net.request('room.join', { code: room.code, ...(room.test ? { testAck: true } : {}) }));
@@ -601,7 +609,7 @@ export function RoomScreen() {
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 2h3.4l.5 2.6 1.9.8 2.2-1.5 2.4 2.4-1.5 2.2.8 1.9 2.6.5v3.4l-2.6.5-.8 1.9 1.5 2.2-2.4 2.4-2.2-1.5-1.9.8-.5 2.6h-3.4l-.5-2.6-1.9-.8-2.2 1.5-2.4-2.4 1.5-2.2-.8-1.9L2 13.7v-3.4l2.6-.5.8-1.9-1.5-2.2 2.4-2.4 2.2 1.5 1.9-.8zM12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" fill-rule="evenodd" /></svg>
           </button>
           ${optsShown ? html`<${RoomOptions} room=${room} facts=${facts} myId=${me.playerId} busy=${busy} online=${online} variant=${variant}
-            onPrivate=${setPrivate} onMaxSeats=${setMaxSeats} onAiLast=${setAiLast} onAiTakeover=${setAiTakeover} onUniteLayerGains=${setUniteLayerGains} onConvenience=${setConvenience} onVariant=${setVariant} onClose=${() => setOpts(false)} leaving=${optsLeaving} />` : null}
+            onPrivate=${setPrivate} onMaxSeats=${setMaxSeats} onAiLast=${setAiLast} onAiTakeover=${setAiTakeover} onUniteLayerGains=${setUniteLayerGains} onConvenience=${setConvenience} onEnemyHpMultiplier=${setEnemyHpMultiplier} onVariant=${setVariant} onClose=${() => setOpts(false)} leaving=${optsLeaving} />` : null}
         </div>
       </div>
       <div class="rs-foot__right">

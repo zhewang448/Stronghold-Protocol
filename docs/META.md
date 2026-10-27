@@ -1241,3 +1241,5 @@ shared/roomConvenience.js normalizes five room booleans. Lobby snapshots them in
 实时观察保留房间便利规则及插件覆盖优先级，补齐四项既有普通动作，保留阶段与席位限制。
 历史回放传递原版本的数据标记与 bounds；默认约定仅用于无版本旧记录。
 实现及实际测试边界见 [控制台修复记录](CONSOLE-NEXT-RELEASE-FIXES.md)。
+
+房间可设置敌人血量倍率 0.1–100，默认 1；普通敌人与难度／回合倍率乘算，领袖血池也乘算。非默认值的房间不参与公开匹配，对局记录按非官方过滤。

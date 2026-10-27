@@ -1940,6 +1940,9 @@ button.ally-card:disabled { filter: grayscale(.7) brightness(.7); cursor: defaul
 .rs-opt > span { display: flex; flex: 1; min-width: 0; flex-direction: column; }
 .rs-opt small { font-size: .8em; color: #8d9391; }
 .rs-opt input { order: 2; flex: none; width: max(.24rem, 16px); height: max(.24rem, 16px); accent-color: var(--mint-500); }
+.rs-opt--hp label { display: flex; flex: 1; min-width: 0; flex-direction: column; }
+.rs-opt--hp input { order: 0; width: 5em; height: auto; font: inherit; color: #eef0ef; background: #111313; border: 1px solid rgba(255, 255, 255, .2); padding: 3px 5px; }
+.rs-opt--hp button { font: inherit; color: #eef0ef; background: #111313; border: 1px solid rgba(255, 255, 255, .2); padding: 3px 6px; }
 .rs-opt select { font: inherit; color: #eef0ef; background: #111313; border: 1px solid rgba(255, 255, 255, .2); padding: 2px 6px; }
 .rs-opt--variant { flex-direction: column; align-items: stretch; }
 .rs-opts .ailast { display: flex; align-items: center; gap: .1rem; }

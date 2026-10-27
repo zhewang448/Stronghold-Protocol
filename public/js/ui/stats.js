@@ -93,7 +93,7 @@ export function contentOf(c) {
   return { cs: c.cs, plugins: list };
 }
 /** Did the record's match play gameplay plugins (unofficial)? @param {any} rec */
-export const isModdedRecord = (rec) => !!(isObj(rec) && rec.content);
+export const isModdedRecord = (rec) => !!(isObj(rec) && (rec.content || (typeof rec.enemyHpMultiplier === 'number' && rec.enemyHpMultiplier !== 1)));
 
 /** A record's official version field (see the header): a registry id other than 第二期下半, else null. @param {unknown} v */
 export const versionOf = (v) => (typeof v === 'string' && v !== DEFAULT_VERSION && versionById(v) ? v : null);
@@ -311,6 +311,7 @@ export function normalizeRecord(raw) {
     // the official version it played (see the header): a registry id other than 第二期下半, else left out
     ...(versionOf(r.version) ? { version: versionOf(r.version) } : {}),
     ...(isObj(r.convenience) ? { convenience: roomConvenience(r.convenience) } : {}),
+    ...(typeof r.enemyHpMultiplier === 'number' && Number.isFinite(r.enemyHpMultiplier) && r.enemyHpMultiplier >= 0.1 && r.enemyHpMultiplier <= 100 && r.enemyHpMultiplier !== 1 ? { enemyHpMultiplier: r.enemyHpMultiplier } : {}),
     players,
     roundHistory: normalizeRoundHistory(r.roundHistory),
   };
@@ -422,7 +423,7 @@ export function peekStatsRecords() {
 // ---- compaction + the storage budget ---------------------------------------------------------------------------
 
 const COMPACT_FRAME = ['id', 'v', 't', 'end', 'victory', 'roundsPassed', 'lastRound', 'hiddenReached', 'hiddenCleared', 'reason', 'modeId',
-  'difficulty', 'roomMode', 'durationMs', 'selfId', 'vs', 'content', 'version', 'test', 'testActions', 'convenience'];
+  'difficulty', 'roomMode', 'durationMs', 'selfId', 'vs', 'content', 'version', 'test', 'testActions', 'convenience', 'enemyHpMultiplier'];
 
 /**
  * The compact form of a record: the frame and the player's OWN row without lineup, bonds and name — everything the
@@ -560,6 +561,7 @@ export function buildRecord(res, ctx = {}) {
     content: contentOf(ctx.content),
     version: ctx.version ?? null,
     convenience: r.convenience,
+    enemyHpMultiplier: r.enemyHpMultiplier,
     players: r.players,
     roundHistory: r.roundHistory,
   });
@@ -669,6 +671,7 @@ export function buildQuitRecord(state, ctx = {}) {
     // the room's version, else the frames' (m.public `version`; absent = 第二期下半, as versions.js matchFrameVersion)
     version: state.room ? state.room.version ?? null : str(pub.version) ?? null,
     convenience: state.room?.convenience ?? pub.convenience,
+    enemyHpMultiplier: pub.enemyHpMultiplier ?? state.room?.enemyHpMultiplier,
     players: [{
       playerId: myId, seat: row.seat, name: row.name, isBot: false, left: true, alive, victory: false, roundsPassed,
       ...(Number.isInteger(row.aiTakeoverRound) ? { aiTakeoverRound: row.aiTakeoverRound } : {}),
@@ -708,6 +711,7 @@ export function recordToResult(rec) {
   if (Number.isFinite(r.lastRound)) res.lastRound = r.lastRound;
   if (r.test === true) res.test = true;
   if (Number.isInteger(r.testActions)) res.testActions = r.testActions;
+  if (r.enemyHpMultiplier != null) res.enemyHpMultiplier = r.enemyHpMultiplier;
   return res;
 }
 

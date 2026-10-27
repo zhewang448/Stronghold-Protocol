@@ -19,6 +19,13 @@ test('peak alliance belongs to the self settlement, excluding inactive bonds and
   assert.equal(peak.bond.bondId, 'yanShip');
 });
 
+test('custom enemy HP matches retain their multiplier and do not count as official achievements', () => {
+  const custom = buildRecord({ victory: true, enemyHpMultiplier: 0.5, players: [{ playerId: 'self', alive: true, victory: true }] }, { myId: 'self' });
+  assert.equal(custom.enemyHpMultiplier, 0.5);
+  assert.equal(isModdedRecord(custom), true);
+  assert.equal(achievementRecords([custom]).length, 0);
+});
+
 test('compaction retains the peak lineup and equipment past the full-history window, releasing it for a new peak', () => {
   const peak = record(1, 400);
   const recent = Array.from({ length: FULL_KEEP }, (_, i) => record(100 - i, 100));

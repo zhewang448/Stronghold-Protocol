@@ -85,6 +85,7 @@ export class MatchViews {
       serverNow: this.sched.now(),
       modeId: this.modeId,
       ...(this.convenience ? { convenience: this.convenience } : {}),
+      ...(this.gd.enemyHpMultiplier !== 1 ? { enemyHpMultiplier: this.gd.enemyHpMultiplier } : {}),
       difficulty: this.difficulty,
       stageId: this.stageId,
       // a non-default official version's match (DESIGN §35.23): its registry id, so a page that never saw the room (a

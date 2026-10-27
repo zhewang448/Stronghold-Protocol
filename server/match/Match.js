@@ -340,6 +340,7 @@ export class Match {
     // Rewind restores draw order while wire identities remain monotonic for stale client requests.
     this.offerDrawSeq = 0;
     this.gd = new GameData(this.data, this.modeId);
+    this.gd.enemyHpMultiplier = typeof opts.enemyHpMultiplier === 'number' && Number.isFinite(opts.enemyHpMultiplier) && opts.enemyHpMultiplier >= 0.1 && opts.enemyHpMultiplier <= 100 ? opts.enemyHpMultiplier : 1;
     if (!this.difficulty) this.difficulty = this.gd.difficulty;
     this.isSolo = this.mode === 'solo' || this.gd.isSolo;
     /** 「AI 队友最后选择」 (opts.aiPicksLast, GitHub #338): humans draft before AI seats (MatchPhases.humansFirst) */

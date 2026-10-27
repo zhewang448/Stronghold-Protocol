@@ -470,6 +470,8 @@ The internal welcome preserves the socket’s negotiated delta version and clear
 
 room.state.convenience contains five booleans: benchEquip, soloUnlimited, prepLoadout, unequip, morphPairing. room.setConvenience {key,on} is host-only before start, clears other human readiness, and broadcasts to players and spectators. Choices remain across version changes and subsequent matches and are copied through version/gameplay hosts, PREP recovery, test journals, public state and results. Plugin-declared switches cannot be overridden by the room.
 
+`room.state.enemyHpMultiplier` is omitted at its default of 1. The host may set it before a match with `room.setEnemyHpMultiplier { multiplier }`, a finite number from 0.1 through 100. Changes clear other humans' readiness, stop public matchmaking and broadcast the room state. A non-default multiplier makes a room ineligible for public matchmaking. The value persists across room version changes, worker hosts, recovery and test journals.
+
 ### Host AI takeover permission (2026-10-26)
 
 The authenticated local console settings API persists boolean allowAiTakeover in logs/admin-settings.json. The host permission defaults on. A saved boolean takes precedence over an explicit SP_AI_TAKEOVER environment override (0/false/no/off disables it, 1 enables it); with no saved choice or override the checkbox is checked. The per-room opt-in remains off. Validation and atomic disk replacement complete before runtime state changes. The console switch lives under 主机设置 → 对局设置 → 观战接替 AI.

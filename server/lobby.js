@@ -310,6 +310,7 @@ export class Room {
     this.version = version;
     this.versionVote = null; this.versionVoteSeq = 0; this.versionProposeAt = -Infinity; this.versionRetryAt = -Infinity; this.soloUnlimited = false;
     this.convenience = roomConvenience();
+    this.enemyHpMultiplier = 1;
     // Capture the host default once; later changes belong to this room alone.
     this.uniteLayerGains = getUniteLayerGains();
     /** @type {string | null} */
@@ -394,6 +395,7 @@ export class Room {
       aiPicksLast: this.aiPicksLast,
       uniteLayerGains: this.uniteLayerGains,
       convenience: { ...this.convenience },
+      ...(this.enemyHpMultiplier !== 1 ? { enemyHpMultiplier: this.enemyHpMultiplier } : {}),
       canSetUniteLayerGains: getAllowRoomUniteLayerGains(),
       inMatch: !!this.match,
       ...(this.matching ? { matching: { startedAt: this.matching.startedAt, target: DEFAULT_SEATS } } : {}),
@@ -719,6 +721,7 @@ export class Lobby {
       case 'social.respond': return this.social.respond(session, msg);
       case 'room.setSoloUnlimited': return this.setSoloUnlimited(session, msg);
       case 'room.setConvenience': return this.setConvenience(session, msg);
+      case 'room.setEnemyHpMultiplier': return this.setEnemyHpMultiplier(session, msg);
       case 'room.proposeVersion': return this.proposeVersion(session, msg);
       case 'room.versionVote': return this.versionVote(session, msg);
       case 'room.cancelVersionVote': return this.cancelVersionVote(session, msg);
@@ -1674,6 +1677,7 @@ export class Lobby {
         aiPicksLast: room.mode !== 'solo' && room.aiPicksLast === true,
         uniteLayerGains: room.uniteLayerGains,
         convenience: { ...room.convenience },
+        ...(room.enemyHpMultiplier !== 1 ? { enemyHpMultiplier: room.enemyHpMultiplier } : {}),
         ...(!modded && !versioned && this.simPool ? { simPool: this.simPool } : {}),
         seats: restored?.seats || seats,
         // the spectator seats (header): watched like eliminated players, never players
@@ -2231,6 +2235,22 @@ export class Lobby {
     const session = this.registry.byId(playerId);
     if (!session || session.roomCode !== room.code) return false;
     return sendSession(session, msg, encoded);
+  }
+
+  setEnemyHpMultiplier(session, { multiplier }) {
+    const room = this.roomOf(session);
+    if (!room) return fail(ERR.NOT_IN_ROOM);
+    if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
+    if (room.match) return fail(ERR.ROOM_STARTED);
+    if (typeof multiplier !== 'number' || !Number.isFinite(multiplier) || multiplier < 0.1 || multiplier > 100) return fail(ERR.BAD_MSG);
+    if (room.enemyHpMultiplier !== multiplier) {
+      this.dropReplay(room, session.playerId);
+      room.enemyHpMultiplier = multiplier;
+      for (const seat of room.seats) if (seat && !seat.isBot && seat.playerId !== room.hostId) seat.ready = false;
+      this.matchmaking.leave(session);
+      this.broadcastState(room);
+    }
+    return OK;
   }
 
   setConvenience(session, { key, on }) {

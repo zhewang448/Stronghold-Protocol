@@ -1,4 +1,9 @@
 {
+  "敌人血量 ×{n}": "Enemy HP ×{n}",
+  "含非官方对局": "Include unofficial matches",
+  "使用玩法插件或自定义敌人血量倍率的对局为非官方对局，默认不计入总览。": "Matches using gameplay plugins or a custom enemy HP multiplier are unofficial and excluded by default.",
+  "敌人血量倍率": "Enemy HP multiplier",
+  "与难度及回合倍率相乘，也影响领袖血池；范围 0.1–100 倍": "Multiplies the difficulty and round scaling and leader HP pools; range: 0.1–100×",
   "离线导入（不下载官方数据表）": "Import offline (do not download official data tables)",
   "_meta": {
     "type": "lang",

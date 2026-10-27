@@ -517,6 +517,7 @@ export const C2S = {
   // string cannot sneak in as "not a test". The server still refuses it unless SP_TEST_MODE is on.
   'room.setSoloUnlimited': { on: isBool },
   'room.setConvenience': { key: v => ['benchEquip', 'soloUnlimited', 'prepLoadout', 'unequip', 'morphPairing'].includes(v), on: isBool },
+  'room.setEnemyHpMultiplier': { multiplier: v => isNum(v, 0.1, 100) },
   'room.proposeVersion': { version: isVersionId },
   'room.versionVote': { voteId: (v) => isInt(v, 1, 2 ** 31), agree: isBool },
   'room.cancelVersionVote': { voteId: (v) => isInt(v, 1, 2 ** 31) },

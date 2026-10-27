@@ -18,8 +18,12 @@ test('room convenience: five defaults, host/guest sync, all versions and actual 
     assert.ok(!(await req(host,'room.create',{mode:'coop',difficulty:'NORMAL'})).error);
     const code=await host.evaluate(()=>globalThis.__SP__.store.get().room.code);assert.ok(!(await req(guest,'room.join',{code})).error);
     await host.waitForSelector('.rs-pill__gear');await guest.waitForSelector('.rs-pill__gear');await host.click('.rs-pill__gear');await guest.click('.rs-pill__gear');
-    assert.deepEqual(await host.$$eval('.rs-convenience input',es=>es.map(e=>e.checked)),[true,true,true,false,false]);
+    assert.deepEqual(await host.$$eval('.rs-convenience input[type="checkbox"]',es=>es.map(e=>e.checked)),[true,true,true,false,false]);
     assert.ok(await guest.$$eval('.rs-convenience input',es=>es.every(e=>e.disabled)));
+    await host.$eval('#enemy-hp-multiplier', e => { e.value = '2.5'; e.dispatchEvent(new Event('input', { bubbles: true })); });
+    await host.click('.rs-opt--hp button');
+    await guest.waitForFunction(() => globalThis.__SP__.store.get().room.enemyHpMultiplier === 2.5);
+    assert.equal(await guest.$eval('#enemy-hp-multiplier', e => e.value), '2.5');
     await host.click('[name="convenience-unequip"]');await guest.waitForFunction(()=>document.querySelector('[name="convenience-unequip"]').checked);
     for(const [width,height]of [[1280,720],[844,390],[640,360]]){await host.setViewport({width,height});await new Promise(r=>setTimeout(r,250));const r=await host.$eval('.rs-opts',e=>{const r=e.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,w:innerWidth,h:innerHeight};});assert.ok(r.left>=-1&&r.right<=r.w+1&&r.top>=-1&&r.bottom<=r.h+1,JSON.stringify(r));await host.screenshot({path:'.cache/room-checkbox-20261025/CONVENIENCE-'+width+'x'+height+'.png'});}
     await hc.close();await gc.close();
@@ -28,7 +32,8 @@ test('room convenience: five defaults, host/guest sync, all versions and actual 
       assert.ok(!(await req(page,'room.create',{mode:'solo',difficulty:'NORMAL',test:true,version})).error);
       await page.waitForFunction(version=>(globalThis.__SP__.data.get('config')?.version?.id||'act2autochess')===version&&(!version.startsWith('act1')&&version==='act2autochess'||globalThis.__SP_CONTENT__?.state()?.status==='ready'),{},version);
       await page.waitForSelector('.rs-pill__gear');await page.click('.rs-pill__gear');
-      assert.deepEqual(await page.$$eval('.rs-convenience input',es=>es.map(e=>e.checked)),[true,true,true,false,false]);
+      assert.deepEqual(await page.$$eval('.rs-convenience input[type="checkbox"]',es=>es.map(e=>e.checked)),[true,true,true,false,false]);
+      assert.ok(!(await req(page,'room.setEnemyHpMultiplier',{multiplier:2.5})).error);
       for(const key of ['benchEquip','soloUnlimited','prepLoadout','unequip','morphPairing']){
         const selector='[name="convenience-'+key+'"]';await page.$eval(selector,e=>e.scrollIntoView({block:'center'}));await page.click(selector);
         const want=!['benchEquip','soloUnlimited','prepLoadout'].includes(key);await page.waitForFunction((key,want)=>globalThis.__SP__.store.get().room.convenience[key]===want,{},key,want);
@@ -36,6 +41,28 @@ test('room convenience: five defaults, host/guest sync, all versions and actual 
       }
       await page.keyboard.press('Escape');await req(page,'room.start');await phase(page,'INFO_CHECK');await req(page,'g.infoReady');await phase(page,'BAND_DRAFT');assert.ok(!(await req(page,'g.band',{bandId:'band_bldsk'})).error);await phase(page,'PREP');
       assert.deepEqual(await page.evaluate(()=>globalThis.__SP__.store.get().match.public.convenience),{benchEquip:true,soloUnlimited:true,prepLoadout:true,unequip:true,morphPairing:true});
+      assert.equal(await page.evaluate(()=>globalThis.__SP__.store.get().match.public.enemyHpMultiplier),2.5);
+      await page.waitForSelector('[data-testid="enemy-hp-multiplier"]', { visible: true });
+      assert.equal(await page.$eval('[data-testid="enemy-hp-multiplier"]', element => element.textContent.trim()), '敌人血量 ×2.5');
+      assert.ok((await page.$eval('[data-testid="enemy-hp-multiplier"]', element => element.title)).includes('敌人血量 ×2.5'));
+      await page.evaluate(() => { const store = globalThis.__SP__.store; store.patch('match', { public: { ...store.get().match.public, enemyHpMultiplier: 1 } }); });
+      await page.waitForFunction(() => !document.querySelector('[data-testid="enemy-hp-multiplier"]'));
+      await page.evaluate(() => { const store = globalThis.__SP__.store; store.patch('match', { public: { ...store.get().match.public, enemyHpMultiplier: 2.5 } }); });
+      await page.waitForSelector('[data-testid="enemy-hp-multiplier"]', { visible: true });
+      if (version === 'act2autochess') for (const [width, height] of [[1280, 720], [844, 390], [640, 360]]) {
+        await page.setViewport({ width, height });
+        await new Promise(resolve => setTimeout(resolve, 300));
+        const bounds = await page.evaluate(() => { const element = document.querySelector('[data-testid="enemy-hp-multiplier"]'); const badge = element.getBoundingClientRect(); const center = document.querySelector('.gtop__center').getBoundingClientRect(); return { left: badge.left, right: badge.right, top: badge.top, bottom: badge.bottom, centerLeft: center.left, width: innerWidth, height: innerHeight, clipped: element.scrollWidth > element.clientWidth }; });
+        assert.ok(!bounds.clipped && bounds.left >= 0 && bounds.right <= bounds.width && bounds.top >= 0 && bounds.bottom <= bounds.height && bounds.right <= bounds.centerLeft, JSON.stringify(bounds));
+        await page.screenshot({ path: `.cache/room-checkbox-20261025/HP-HUD-${width}x${height}.png` });
+      }
+      if (version === 'act2autochess') {
+        await page.evaluate(async () => (await import('/js/ui/lang.js')).switchLang('en'));
+        await page.waitForFunction(() => document.querySelector('[data-testid="enemy-hp-multiplier"]')?.textContent.trim() === 'Enemy HP ×2.5');
+        const english = await page.evaluate(() => { const element = document.querySelector('[data-testid="enemy-hp-multiplier"]'); return { clipped: element.scrollWidth > element.clientWidth, right: element.getBoundingClientRect().right, centerLeft: document.querySelector('.gtop__center').getBoundingClientRect().left }; });
+        assert.ok(!english.clipped && english.right <= english.centerLeft, JSON.stringify(english));
+        await page.evaluate(async () => (await import('/js/ui/lang.js')).switchLang('zh'));
+      }
       assert.equal(await page.evaluate(()=>globalThis.__SP__.store.get().match.public.deadline),0);
       assert.equal((await req(page,'room.setConvenience',{key:'unequip',on:false})).error,'ROOM_STARTED');
       const ids=await page.evaluate(()=>{const d=globalThis.__SP__.data;return{chess:Object.keys(d.get('chess')).find(id=>d.get('chess')[id].visible&&!d.get('chess')[id].isGolden),item:Object.keys(d.get('items')).find(id=>d.get('items')[id].effectId==='eff_acarm055')};});
