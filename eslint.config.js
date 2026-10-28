@@ -62,6 +62,7 @@ export default [
       'public/assets/**',
       'public/fonts/**',
       'public/dev/**',
+      'dist/ui-preview/**',
       '.cache/**',
       'coverage/**',
     ],

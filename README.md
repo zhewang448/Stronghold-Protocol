@@ -10,11 +10,19 @@
 
 A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance*, with online invitations, host tools, round statistics, replays, personal-data backups and optional cosmetics.
 
-[下载正式版](https://github.com/zhewang448/Stronghold-Protocol/releases/latest) · [开始运行](#开始运行) · [本库特色](#本库特色) · [和朋友一起玩](#和朋友一起玩) · [更新记录](docs/LOCAL-CHANGELOG.md) · [反馈问题](https://github.com/zhewang448/Stronghold-Protocol/issues)
+[在线预览 UI](https://zhewang448.github.io/Stronghold-Protocol/) · [下载正式版](https://github.com/zhewang448/Stronghold-Protocol/releases/latest) · [开始运行](#开始运行) · [本库特色](#本库特色) · [和朋友一起玩](#和朋友一起玩) · [更新记录](docs/LOCAL-CHANGELOG.md) · [反馈问题](https://github.com/zhewang448/Stronghold-Protocol/issues)
 
 > 当前版本为 **`v0.3.3-extended.5`**，基于上游 0.3.3。新增房间敌人血量倍率与局内显示；保留命名调配预设、同盟大厅、四版本和主机工具。详情见[扩展更新记录](docs/LOCAL-CHANGELOG.md)。
 >
 > 非官方、非商业同人项目，与《明日方舟》官方无隶属或授权关系。游戏素材与数据的权利归原权利人；代码、素材及截图的许可边界见 [NOTICE.md](NOTICE.md)。
+
+## 在线界面预览
+
+![查看多人分组轮选、局内界面和其他功能截图](docs/img/features/expanded-coop-groups.webp)
+
+在线预览：https://zhewang448.github.io/Stronghold-Protocol/
+
+无需安装或启动本地服务器，可浏览现有界面截图，并用模拟数据体验局内界面。互动部分不连接真实房间、不保存正式对局，干员形象和部分图标使用占位画面；正式联机仍需运行游戏服务器。预览站首次部署后可访问。
 
 ## 启动器有新版本：1.2.0
 
