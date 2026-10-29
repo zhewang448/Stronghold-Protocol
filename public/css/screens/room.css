@@ -231,6 +231,8 @@
   flex: none;
   display: flex;
   flex-wrap: wrap;
+  max-height: 20vh;
+  overflow-y: auto;
   align-items: center;
   justify-content: center;
   gap: .14rem;

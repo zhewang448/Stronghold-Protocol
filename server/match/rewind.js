@@ -79,6 +79,7 @@ export function rewindToPrep(m, round) {
     m.fields = [];
     m.watchers.clear();
     m.unitePlan = null;
+    m.rescueWindow = null;
     m._uniteLeftKey = null;
     m._finalEnding = null;
     m.overtimeAt = 0;

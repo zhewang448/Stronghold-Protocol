@@ -4,6 +4,7 @@ import { snapshotOf, stable } from './loadoutPresetsModel.js';
 import { versionById } from '../../../shared/versions.js';
 import { N_ } from '../../../shared/i18n.js';
 import { cleanSkins } from '../../../shared/skins.js';
+import { cleanIds } from './ownershipModel.js';
 
 function withSource(parsed, raw) {
   if (!parsed.ok) return parsed;
@@ -44,6 +45,8 @@ export function transferPayload(current, parts, scope = null, { now = Date.now()
   const p = exportPayload(snapshot.loadout.byChar, { now, ops: snapshot.loadout.ops, skins: snapshot.loadout.skins, sections: parts,
     random: current.random, locks: snapshot.loadout.extension.skinLocks, upstream });
   if (scope && upstream) throw new Error('scope');
+  if (parts.ownership && !upstream) return { ...p, v: 4, extension: { ...p.extension, v: 3,
+    ...(scope ? { scope } : {}), ownership: snapshot.ownership } };
   return scope ? { ...p, v: 3, extension: { ...p.extension, v: 2, scope } } : p;
 }
 export function parseTransfer(input) {
@@ -52,6 +55,23 @@ export function parseTransfer(input) {
     // Let the original parser handle invalid and oversized text, preserving its existing messages.
     if (input.length > 256 * 1024) return parseImport(input);
     try { raw = JSON.parse(input); } catch { return parseImport(input); }
+  }
+  if (raw?.v === 4) {
+    const fail = () => ({ ok: false, error: N_('调配文件包含无效配置，未导入任何内容。') });
+    const ext = raw.extension;
+    if (raw.kind !== 'stronghold.loadout' || ext?.v !== 3 || !Array.isArray(ext.ownership)
+      || stable(cleanIds(ext.ownership)) !== stable(ext.ownership)) return fail();
+    const originalSections = ext.sections;
+    if (!originalSections || typeof originalSections !== 'object' || Array.isArray(originalSections)
+      || Object.keys(originalSections).some(key => !LOADOUT_EXPORT_PARTS.includes(key))
+      || LOADOUT_EXPORT_PARTS.some(key => typeof originalSections[key] !== 'boolean')) return fail();
+    const onlyOwnership = !LOADOUT_EXPORT_PARTS.some(key => originalSections[key] === true);
+    const sections = onlyOwnership ? { ...originalSections, skills: true } : originalSections;
+    const legacyExtension = { ...ext, v: ext.scope ? 2 : 1, sections };
+    delete legacyExtension.ownership;
+    const parsed = parseTransfer({ ...raw, v: ext.scope ? 3 : 2, extension: legacyExtension });
+    if (!parsed.ok || ext.scope && ext.ownership.some(id => !ext.scope.charIds.includes(id))) return fail();
+    return { ...parsed, sections: { ...parsed.sections, ...(onlyOwnership ? { skills: false } : {}), ownership: true }, ownership: ext.ownership };
   }
   if (raw?.v !== 3) return withSource(parseImport(raw), raw);
   const fail = () => ({ ok: false, error: N_('干员范围数据无效，未导入任何配置。') });

@@ -164,7 +164,7 @@
 import { randomBytes, randomInt } from 'node:crypto';
 import { DEFAULT_VERSION } from '../shared/versions.js';
 import { aiTakeover, resetAiTakeover, reconcileAiTakeover } from './aiTakeover.js';
-import { DIFFICULTIES, ERR, DEFAULT_SEATS, MAX_SEATS, ROOM_CAPACITIES, MAX_SPECTATORS, ROOM_CODE_LEN, modeIdFor } from '../shared/constants.js';
+import { DIFFICULTIES, ERR, DEFAULT_SEATS, MAX_SEATS, ROOM_CAPACITIES, MAX_SPECTATORS, SPECTATOR_LIMIT_MAX, ROOM_CODE_LEN, modeIdFor } from '../shared/constants.js';
 import { checkLoadout, checkLoadoutOps, cultivationCharIds, checkNotOwned, checkDiyPicks, charPotentialChanges, checkSkinSelection, operatorCharIds } from '../shared/protocol.js';
 import { encode, isDroppable, isErrCode, sendRaw, sendSession, sendSessionFrame } from './net.js';
 import { isStateKind } from '../shared/stateDelta.js';
@@ -173,6 +173,7 @@ import { RoomChat, cleanChatText, getChatSettings } from './chat.js';
 
 import { getData as defaultGetData, lookup } from './data.js';
 import { Match as DefaultMatch } from './match/Match.js';
+import { GameData } from './match/gamedata.js';
 import { getUniteLayerGains, getAllowRoomUniteLayerGains, getSocialSettings } from './match/hostSettings.js';
 import { getShowPwaInstall, getAllowAiTakeover } from './match/hostSettings.js';
 import { ServerSocial } from './social.js';
@@ -199,6 +200,7 @@ export const LOBBY_DEFAULTS = Object.freeze({
   maxRooms: 1000,
   maxRoomsPerAddr: 16,    // rooms created from one client network that may exist at once (0 = unlimited)
   maxMatchesPerAddr: 8,   // matches started from one client network that may run at once (0 = unlimited)
+  maxSpectators: MAX_SPECTATORS,
   resyncMinGapMs: 1000,   // heavy resyncs (match state / result replay) per session at most this often on repeated hellos
   versionVoteMs: 60_000, versionRetryMs: 5_000, versionProposeGapMs: 300,
   soloReconnectWindowMs: null, // a dropped solo run stays resumable this long (null = data singleReconnectTime, 24 h)
@@ -312,6 +314,8 @@ export class Room {
     this.convenience = roomConvenience();
     this.enemyHpMultiplier = 1;
     this.independentPools = false;
+    this.rescueEnabled = false;
+    this.spectatorLimit = MAX_SPECTATORS;
     // Capture the host default once; later changes belong to this room alone.
     this.uniteLayerGains = getUniteLayerGains();
     /** @type {string | null} */
@@ -398,6 +402,7 @@ export class Room {
       convenience: { ...this.convenience },
       ...(this.enemyHpMultiplier !== 1 ? { enemyHpMultiplier: this.enemyHpMultiplier } : {}),
       ...(this.independentPools ? { independentPools: true } : {}),
+      ...(this.rescueEnabled ? { rescueEnabled: true } : {}),
       canSetUniteLayerGains: getAllowRoomUniteLayerGains(),
       inMatch: !!this.match,
       ...(this.matching ? { matching: { startedAt: this.matching.startedAt, target: DEFAULT_SEATS } } : {}),
@@ -405,12 +410,14 @@ export class Room {
       textChat: true,
       seats: this.seats.map((s) => (s
         ? { seat: s.seat, playerId: s.playerId, name: s.name, isBot: s.isBot, ready: s.ready, connected: s.connected && !s.left, bondPlan: s.bondPlan || null,
+          ...(s.isBot && s.botBand ? { botBand: s.botBand } : {}),
           ...(!s.isBot && Object.hasOwn(s, 'card') ? { card: s.card || null, cardSkin: s.cardSkin || null } : {}),
           ...(s.skins && Object.keys(s.skins).length ? { skins: s.skins } : {}),
           // a room with gameplay plugins (header "Gameplay plugins"): has this player's page loaded and checked its content?
           ...(this.needsContent && !s.isBot ? { content: s.content || 'loading' } : {}) }
         : null)),
       spectators: this.spectators.map((s) => ({ playerId: s.playerId, name: s.name, connected: s.connected, ...(this.needsContent ? { content: s.content || 'loading' } : {}) })),
+      ...(this.spectatorLimit !== MAX_SPECTATORS ? { spectatorLimit: this.spectatorLimit } : {}),
       ...(this.content ? { content: this.content.trusted ? {...this.content, trusted:{...this.content.trusted, consent:Object.fromEntries(this.seats.filter(x => x && !x.isBot).map(x => [x.seat,x.consentCs === this.content.cs]))}} : this.content } : {}),
       // omitted when false so a normal room.state stays identical
       ...(this.test ? { test: true } : {}),
@@ -465,6 +472,7 @@ export class Lobby {
       delete options.testHost;
     }
     this.opts = { ...LOBBY_DEFAULTS, ...options };
+    if (!Number.isInteger(this.opts.maxSpectators) || this.opts.maxSpectators < MAX_SPECTATORS || this.opts.maxSpectators > SPECTATOR_LIMIT_MAX) this.opts.maxSpectators = MAX_SPECTATORS;
     // Test rooms stay off until the bound address is known (setTestHost). An empty host fails closed, so a
     // server that is about to bind 0.0.0.0 does not briefly accept test rooms on the default. [ASSUMED] the
     // env words are parsed in server/testMode.js.
@@ -725,6 +733,7 @@ export class Lobby {
       case 'room.setConvenience': return this.setConvenience(session, msg);
       case 'room.setEnemyHpMultiplier': return this.setEnemyHpMultiplier(session, msg);
       case 'room.setIndependentPools': return this.setIndependentPools(session, msg);
+      case 'room.setRescue': return this.setRescue(session, msg);
       case 'room.proposeVersion': return this.proposeVersion(session, msg);
       case 'room.versionVote': return this.versionVote(session, msg);
       case 'room.cancelVersionVote': return this.cancelVersionVote(session, msg);
@@ -742,6 +751,7 @@ export class Lobby {
       case 'room.aiRequest':
       case 'room.aiVote': return aiTakeover(this, session, msg);
       case 'room.setAiPicksLast': return this.setAiPicksLast(session, msg);
+      case 'room.setBotBand': return this.setBotBand(session, msg);
       case 'room.setUniteLayerGains': return this.setUniteLayerGains(session, msg);
       case 'room.addBot': return this.addBot(session);
       case 'room.removeBot': return this.removeBot(session, msg);
@@ -852,9 +862,10 @@ export class Lobby {
           bots: room.seats.filter(seat => seat?.isBot).length,
           maxSeats: room.capacity,
           spectators: room.spectators.length,
+          ...(room.spectatorLimit !== MAX_SPECTATORS ? { spectatorLimit: room.spectatorLimit } : {}),
           inMatch: !!room.match,
           joinable: !room.match && room.freeSeat() >= 0,
-          watchable: room.spectators.length < MAX_SPECTATORS,
+          watchable: room.spectators.length < room.spectatorLimit,
           occupied,
           modded: room.modded,
         };
@@ -909,6 +920,7 @@ export class Lobby {
     if (!code && this.opts.roomCode) return fail(ERR.ROOM_CODE_TAKEN);
     if (!code) return fail(ERR.INTERNAL, 'no room code available');
     const room = new Room(code, mode, difficulty, this.now(), capacity, version);
+    room.spectatorLimit = this.opts.maxSpectators;
     room.test = test === true;
     room.private = mode === 'coop' && isPrivate === true;
     room.content = this.baseContent(version);
@@ -1006,7 +1018,7 @@ export class Lobby {
     }
     if (cur && cur.match) return fail(ERR.ROOM_STARTED, 'leave your running match first');
     if (room.mode === 'solo') return fail(ERR.ROOM_FULL, 'solo room');
-    if (room.spectators.length >= MAX_SPECTATORS) return fail(ERR.ROOM_FULL, 'no free spectator seat');
+    if (room.spectators.length >= room.spectatorLimit) return fail(ERR.ROOM_FULL, 'no free spectator seat');
     if (cur) this.removeMember(cur, session.playerId);
     room.spectators.push({ playerId: session.playerId, name: session.name, connected: session.connected });
     session.roomCode = room.code;
@@ -1332,6 +1344,29 @@ export class Lobby {
     return OK;
   }
 
+  validBotBand(room, bandId) {
+    const modeId = room.content?.modeId || modeIdFor(room.mode, room.difficulty);
+    return new GameData(this.dataFor(room), modeId).bandAllowed(bandId);
+  }
+
+  setBotBand(session, { seat, bandId = null }) {
+    const room = this.roomOf(session);
+    if (!room) return fail(ERR.NOT_IN_ROOM);
+    if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
+    if (room.match) return fail(ERR.ROOM_STARTED);
+    const target = room.seats[seat];
+    if (room.mode === 'solo' || !target?.isBot) return fail(ERR.BAD_TARGET);
+    if (bandId != null && (typeof bandId !== 'string' || !this.validBotBand(room, bandId))) return fail(ERR.BAD_TARGET);
+    if ((target.botBand || null) !== bandId) {
+      this.dropReplay(room, session.playerId);
+      target.botBand = bandId;
+      for (const other of room.seats) if (other && !other.isBot && other.playerId !== room.hostId) other.ready = false;
+      this.matchmaking.leave(session);
+      this.broadcastState(room);
+    }
+    return OK;
+  }
+
   removeBot(session, { seat }) {
     const room = this.roomOf(session);
     if (!room) return fail(ERR.NOT_IN_ROOM);
@@ -1648,6 +1683,7 @@ export class Lobby {
       const own = s.isBot ? null : this.seatSettings(room, s, data);
       return {
         seat: s.seat, playerId: s.playerId, name: s.name, isBot: s.isBot, connected: s.connected,
+        ...(s.isBot && s.botBand && this.validBotBand(room, s.botBand) ? { botBand: s.botBand } : {}),
         // DESIGN §16: the human's checked operator loadout and (0.2.2) per-operator 潜能 / 练度 (bots fight with the defaults)
         card: s.card || null, cardSkin: s.cardSkin || null,
         bondPlan: s.isBot ? null : s.bondPlan || null,
@@ -1682,6 +1718,7 @@ export class Lobby {
         convenience: { ...room.convenience },
         ...(room.enemyHpMultiplier !== 1 ? { enemyHpMultiplier: room.enemyHpMultiplier } : {}),
         ...(room.independentPools ? { independentPools: true } : {}),
+        ...(room.rescueEnabled ? { rescueEnabled: true } : {}),
         ...(!modded && !versioned && this.simPool ? { simPool: this.simPool } : {}),
         seats: restored?.seats || seats,
         // the spectator seats (header): watched like eliminated players, never players
@@ -2196,6 +2233,9 @@ export class Lobby {
 
   broadcastState(room) {
     if (room.disposed) return;
+    if (!room.match) for (const seat of room.seats) {
+      if (seat?.isBot && seat.botBand && !this.validBotBand(room, seat.botBand)) seat.botBand = null;
+    }
     this.matchmaking.reconcile(room);
     reconcileAiTakeover(this, room);
     if (this.trustedRuntime) {
@@ -2239,6 +2279,23 @@ export class Lobby {
     const session = this.registry.byId(playerId);
     if (!session || session.roomCode !== room.code) return false;
     return sendSession(session, msg, encoded);
+  }
+
+  setRescue(session, { on }) {
+    const room = this.roomOf(session);
+    if (!room) return fail(ERR.NOT_IN_ROOM);
+    if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
+    if (room.match) return fail(ERR.ROOM_STARTED);
+    if (room.mode !== 'coop') return fail(ERR.BAD_TARGET);
+    if (typeof on !== 'boolean') return fail(ERR.BAD_MSG);
+    if (room.rescueEnabled !== on) {
+      this.dropReplay(room, session.playerId);
+      room.rescueEnabled = on;
+      for (const seat of room.seats) if (seat && !seat.isBot && seat.playerId !== room.hostId) seat.ready = false;
+      this.matchmaking.leave(session);
+      this.broadcastState(room);
+    }
+    return OK;
   }
 
   setIndependentPools(session, { on }) {

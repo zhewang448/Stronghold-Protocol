@@ -3,10 +3,11 @@
 import { exportPayload, parseImport, LOADOUT_EXPORT_PARTS } from './loadoutModel.js';
 import { cleanPicks, diyPrefKey, toStoredDiy } from './diyModel.js';
 import { versionById } from '../../../shared/versions.js';
+import { cleanIds } from './ownershipModel.js';
 
 export const PRESETS_KEY = 'sp.pref.loadoutPresets';
 export const PRESETS_LIMIT = 20;
-export const DEFAULT_PARTS = Object.freeze({ skills: true, modules: true, potential: true, cultivate: true, skins: true, skinRandom: false, skinLocks: false });
+export const DEFAULT_PARTS = Object.freeze({ skills: true, modules: true, potential: true, cultivate: true, skins: true, skinRandom: false, skinLocks: false, ownership: false });
 const obj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 export function stable(value) {
   if (Array.isArray(value)) return JSON.stringify(value.map(v => JSON.parse(stable(v))));
@@ -34,6 +35,7 @@ export function operatorScope(mode, versions, rosters) {
   return { mode, versions: [...new Set(versions)].sort(), charIds: [...selected].sort() };
 }
 export function snapshotOf(current, parts = DEFAULT_PARTS, versions = [], scope = null) {
+  if (parts.ownership && !Array.isArray(current.notOwnedChars)) throw presetError('loading');
   const allowed = scope ? new Set(scope.charIds) : null;
   const filter = value => allowed ? Object.fromEntries(Object.entries(value || {}).filter(([id]) => allowed.has(id))) : value;
   const loadout = exportPayload(filter(current.byChar), { now: 0, ops: filter(current.ops), skins: filter(current.skins), sections: parts, random: current.random, locks: filter(current.random?.locked) });
@@ -42,7 +44,8 @@ export function snapshotOf(current, parts = DEFAULT_PARTS, versions = [], scope 
     if (!versionById(id)) throw presetError('invalid');
     diy[id] = cleanPicks(current.diy?.[id] || {});
   }
-  return { loadout, diy, ...(scope ? { scope: structuredClone(scope) } : {}) };
+  const ownership = parts.ownership ? cleanIds(current.notOwnedChars).filter(id => !allowed || allowed.has(id)) : undefined;
+  return { loadout, diy, ...(ownership ? { ownership } : {}), ...(scope ? { scope: structuredClone(scope) } : {}) };
 }
 export function snapshotEqual(a, b) { return stable(a) === stable(b); }
 // A local preset may contain DIY alone. File imports intentionally reject an empty loadout;
@@ -60,8 +63,8 @@ export function readLibrary(storage = globalThis.localStorage) {
     const raw = storage?.getItem(PRESETS_KEY);
     if (raw == null) return { v: 1, activeId: null, items: [] };
     const value = JSON.parse(raw);
-    if (value?.v > 2) throw presetError('newer');
-    if (![1, 2].includes(value?.v) || !Array.isArray(value.items) || value.items.length > PRESETS_LIMIT) throw presetError('invalid');
+    if (value?.v > 3) throw presetError('newer');
+    if (![1, 2, 3].includes(value?.v) || !Array.isArray(value.items) || value.items.length > PRESETS_LIMIT) throw presetError('invalid');
     const ids = new Set(), names = new Set();
     for (const p of value.items) {
       const parsed = parsePresetLoadout(p?.snapshot?.loadout);
@@ -69,7 +72,8 @@ export function readLibrary(storage = globalThis.localStorage) {
         || presetName(p.name) !== p.name || names.has(p.name) || !Number.isFinite(p.createdAt) || !Number.isFinite(p.updatedAt)
         || !parsed.ok || !parsed.sections || !obj(p.snapshot.diy)) throw presetError('invalid');
       const selected = LOADOUT_EXPORT_PARTS.some(k => parsed.sections[k]);
-      if (!selected && !Object.keys(p.snapshot.diy).length) throw presetError('empty');
+      if (p.snapshot.ownership !== undefined && (!Array.isArray(p.snapshot.ownership) || stable(cleanIds(p.snapshot.ownership)) !== stable(p.snapshot.ownership) || value.v < 3)) throw presetError('invalid');
+      if (!selected && !Object.keys(p.snapshot.diy).length && p.snapshot.ownership === undefined) throw presetError('empty');
       for (const [v, picks] of Object.entries(p.snapshot.diy)) {
         if (!versionById(v) || !obj(picks) || stable(cleanPicks(picks)) !== stable(picks)) throw presetError('invalid');
       }
@@ -86,6 +90,7 @@ export function readLibrary(storage = globalThis.localStorage) {
         for (const map of [p.snapshot.loadout.byChar, p.snapshot.loadout.ops, p.snapshot.loadout.skins, p.snapshot.loadout.extension.skinLocks]) {
           if (map && Object.keys(map).some(id => !ids.has(id))) throw presetError('invalid');
         }
+        if (p.snapshot.ownership?.some(id => !ids.has(id))) throw presetError('invalid');
       }
       ids.add(p.id); names.add(p.name);
     }
@@ -96,7 +101,7 @@ export function readLibrary(storage = globalThis.localStorage) {
 export function putPreset(library, { id = null, name, snapshot, overwrite = false, now = Date.now(),
   newId = () => globalThis.crypto?.randomUUID?.() || `preset-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}` }) {
   name = presetName(name);
-  if (!LOADOUT_EXPORT_PARTS.some(k => snapshot.loadout.extension.sections[k]) && !Object.keys(snapshot.diy).length) throw presetError('empty');
+  if (!LOADOUT_EXPORT_PARTS.some(k => snapshot.loadout.extension.sections[k]) && !Object.keys(snapshot.diy).length && snapshot.ownership === undefined) throw presetError('empty');
   const sameName = library.items.find(p => p.name === name && p.id !== id);
   if (sameName && !overwrite) throw presetError('duplicate');
   if (sameName) id = sameName.id;
@@ -105,7 +110,7 @@ export function putPreset(library, { id = null, name, snapshot, overwrite = fals
   if (!previous && library.items.length >= PRESETS_LIMIT) throw presetError('limit');
   const item = { id: previous?.id || newId(), name, createdAt: previous?.createdAt ?? now, updatedAt: now, snapshot: structuredClone(snapshot) };
   // A pre-scope browser must refuse the library instead of treating a scoped preset as a global reset.
-  return { ...library, v: snapshot.scope ? 2 : library.v, activeId: item.id, items: [...library.items.filter(p => p.id !== item.id), item] };
+  return { ...library, v: snapshot.ownership !== undefined ? 3 : snapshot.scope ? Math.max(2, library.v) : library.v, activeId: item.id, items: [...library.items.filter(p => p.id !== item.id), item] };
 }
 export function renamePreset(library, id, name) {
   name = presetName(name);
@@ -157,6 +162,8 @@ export function mergeSnapshot(current, snapshot, parts) {
     ops: merge(current.ops, incoming.ops, [['potential', 'potential'], ['cultivate', 'cultivate']]),
     skins: parts.skins ? scopedMap(current.skins, incoming.skins) : current.skins,
     random: { ...current.random, ...(parts.skinRandom ? incoming.skinRandom : {}), ...(parts.skinLocks ? { locked: scopedMap(current.random?.locked, incoming.skinLocks) } : {}) },
+    notOwnedChars: parts.ownership && snapshot.ownership !== undefined ? cleanIds(scope
+      ? [...(current.notOwnedChars || []).filter(id => !scope.has(id)), ...snapshot.ownership.filter(id => scope.has(id))] : snapshot.ownership) : current.notOwnedChars,
   };
 }
 export function diyWrites(diy) { return Object.entries(diy).map(([id, picks]) => ['sp.pref.' + diyPrefKey(id), JSON.stringify(toStoredDiy(picks))]); }

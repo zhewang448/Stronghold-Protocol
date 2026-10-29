@@ -6,12 +6,13 @@ import { PHASE } from '../../../shared/constants.js';
 import { VERSIONS } from '../../../shared/versions.js';
 import { ruleOption } from '../../../shared/plugins/rules.js';
 import { effectiveRoomRules } from '../../../shared/roomConvenience.js';
-import { loadoutStore, preparePresetLoadout, publishPresetLoadout } from './loadoutSync.js';
+import { loadoutStore, preparePresetLoadout, publishPresetLoadout, preparePresetOwnership, publishPresetOwnership } from './loadoutSync.js';
 import { skinsStore, skinRandomStore } from './skins.js';
 import { cleanPicks, parseStoredDiy, diyPrefKey, sanitizeDiyPicks } from './diyModel.js';
 import { PRESETS_KEY, readLibrary, atomicWrite, snapshotOf, snapshotEqual, mergeSnapshot, diyWrites, presetError, stable } from './loadoutPresetsModel.js';
 import { rosterOf } from './loadoutModel.js';
 import { checkLoadout, cultivationCharIds } from '../../../shared/protocol.js';
+import { isDroppableChess } from '../../../shared/standIn.js';
 
 function initial() {
   try { return { library: readLibrary(), error: null }; } catch (e) { return { library: null, error: e.code }; }
@@ -30,7 +31,7 @@ export function currentPresetState(storage = globalThis.localStorage, versions =
       try { diy[v.id] = raw === null ? {} : parseStoredDiy(JSON.parse(raw)); } catch { throw presetError('invalid'); }
     }
   }
-  return { byChar: s.byChar || {}, ops: s.ops, skins: skinsStore.get().skins, random: skinRandomStore.get(), diy };
+  return { byChar: s.byChar || {}, ops: s.ops, skins: skinsStore.get().skins, random: skinRandomStore.get(), notOwnedChars: s.notOwnedChars, diy };
 }
 export function saveLibrary(library, storage = globalThis.localStorage) {
   atomicWrite([[PRESETS_KEY, JSON.stringify(library)]], storage);
@@ -41,14 +42,14 @@ export function capturePreset(parts, versions, scope = null) {
   return snapshotOf(currentPresetState(globalThis.localStorage, versions), parts, versions, scope);
 }
 export function presetDirty(item) {
-  try { return !snapshotEqual(capturePreset(item.snapshot.loadout.extension.sections, Object.keys(item.snapshot.diy), item.snapshot.scope || null), item.snapshot); } catch { return true; }
+  try { return !snapshotEqual(capturePreset({ ...item.snapshot.loadout.extension.sections, ownership: item.snapshot.ownership !== undefined }, Object.keys(item.snapshot.diy), item.snapshot.scope || null), item.snapshot); } catch { return true; }
 }
 export function presetPermissions(app = store.get(), ls = loadoutStore.get()) {
   const phase = app.match?.public?.phase;
   const playing = !!app.room?.inMatch;
   const prep = phase === PHASE.PREP && ruleOption(effectiveRoomRules(app.room), 'prepLoadout') === 'prep' && !app.match?.private?.ready;
   return { loadout: !((playing && phase && phase !== PHASE.INFO_CHECK && phase !== PHASE.LOBBY && !prep) || ls.sync === 'locked'),
-    diy: !playing && ls.diySync !== 'locked' };
+    diy: !playing && ls.diySync !== 'locked', ownership: !playing && ls.ownSync !== 'locked' && ls.notOwnedChars != null };
 }
 const versionData = new Map();
 let operatorRosters = null;
@@ -108,24 +109,27 @@ export async function inspectPreset(item, versions) {
 /** Rechecks phases after asynchronous validation, before any persistent or observable mutation. */
 export async function applyPreset(item, parts, versions, { skipInvalid = false, storage = globalThis.localStorage } = {}) {
   if (!loadoutStore.get().byChar) throw presetError('loading');
+  if (parts.ownership && item.snapshot.ownership === undefined) throw presetError('invalid');
   const shownVersion = pageVersion(), contentId = data.contentId();
   const inspected = await inspectPreset(item, versions);
+  if (parts.ownership && item.snapshot.ownership !== undefined) await validateOwnership(item.snapshot);
   if (shownVersion !== pageVersion() || contentId !== data.contentId()) throw presetError('stale');
   if (inspected.dropped.length && !skipInvalid) return { needsConfirmation: inspected.dropped };
   const allowed = presetPermissions();
   if ((!allowed.loadout && ['skills', 'modules', 'potential', 'cultivate'].some(k => parts[k]))
-    || (!allowed.diy && versions.length)) throw presetError('locked');
+    || (!allowed.diy && versions.length) || (!allowed.ownership && parts.ownership)) throw presetError('locked');
   if (!Object.values(parts).some(Boolean) && !versions.length) throw presetError('empty');
   const library = readLibrary(storage);
   if (!library.items.some(p => p.id === item.id && stable(p) === stable(item))) throw presetError('stale');
   const next = mergeSnapshot(currentPresetState(storage, []), item.snapshot, parts);
-  const selected = item.snapshot.loadout.extension.sections;
+  const selected = { ...item.snapshot.loadout.extension.sections, ownership: item.snapshot.ownership !== undefined };
   const full = stable(selected) === stable(parts) && stable(Object.keys(item.snapshot.diy).sort()) === stable([...versions].sort()) && !inspected.dropped.length;
   const nextLibrary = { ...library, activeId: full ? item.id : null };
   const changesLoadout = ['skills', 'modules', 'potential', 'cultivate'].some(k => parts[k]);
   const writes = [...(changesLoadout ? [['sp.pref.loadout', JSON.stringify(preparePresetLoadout(next.byChar, next.ops))]] : []),
     ...(parts.skins ? [['sp.pref.skins', JSON.stringify(next.skins)]] : []),
     ...(parts.skinRandom || parts.skinLocks ? [['sp.pref.skinRandom', JSON.stringify(next.random)]] : []),
+    ...(parts.ownership && item.snapshot.ownership !== undefined ? [['sp.pref.ownership', JSON.stringify(preparePresetOwnership(next.notOwnedChars))]] : []),
     ...diyWrites(inspected.diy), [PRESETS_KEY, JSON.stringify(nextLibrary)]];
   atomicWrite(writes, storage);
   // All writes succeeded: publish complete snapshots. Existing sync debounces the resulting requests.
@@ -134,6 +138,7 @@ export async function applyPreset(item, parts, versions, { skipInvalid = false, 
   else if (currentDiy !== undefined) loadoutStore.set({ diy: currentDiy });
   if (parts.skins) skinsStore.set({ skins: next.skins });
   if (parts.skinRandom || parts.skinLocks) skinRandomStore.set(next.random);
+  if (parts.ownership && item.snapshot.ownership !== undefined) publishPresetOwnership(next.notOwnedChars);
   presetsStore.set({ library: nextLibrary, error: null });
   return { applied: true, skipped: inspected.dropped };
 }
@@ -141,18 +146,22 @@ export async function applyPreset(item, parts, versions, { skipInvalid = false, 
 /** File imports share snapshot replacement, phase guards and transaction semantics without creating a preset. */
 export function applyTransferredSnapshot(snapshot, parts, storage = globalThis.localStorage) {
   if (!loadoutStore.get().byChar) throw presetError('loading');
+  if (parts.ownership && snapshot.ownership === undefined) throw presetError('invalid');
   const changesLoadout = ['skills', 'modules', 'potential', 'cultivate'].some(k => parts[k]);
   if (changesLoadout && !presetPermissions().loadout) throw presetError('locked');
+  if (parts.ownership && !presetPermissions().ownership) throw presetError('locked');
   if (!Object.values(parts).some(Boolean)) throw presetError('empty');
   if (snapshot.scope && !snapshot.scope.charIds.length && Object.entries(parts).some(([key, on]) => on && key !== 'skinRandom')) throw presetError('scopeEmpty');
   const next = mergeSnapshot(currentPresetState(storage, []), snapshot, parts);
   const writes = [...(changesLoadout ? [['sp.pref.loadout', JSON.stringify(preparePresetLoadout(next.byChar, next.ops))]] : []),
     ...(parts.skins ? [['sp.pref.skins', JSON.stringify(next.skins)]] : []),
-    ...(parts.skinRandom || parts.skinLocks ? [['sp.pref.skinRandom', JSON.stringify(next.random)]] : [])];
+    ...(parts.skinRandom || parts.skinLocks ? [['sp.pref.skinRandom', JSON.stringify(next.random)]] : []),
+    ...(parts.ownership && snapshot.ownership !== undefined ? [['sp.pref.ownership', JSON.stringify(preparePresetOwnership(next.notOwnedChars))]] : [])];
   atomicWrite(writes, storage);
   if (changesLoadout) publishPresetLoadout(next.byChar, next.ops);
   if (parts.skins) skinsStore.set({ skins: next.skins });
   if (parts.skinRandom || parts.skinLocks) skinRandomStore.set(next.random);
+  if (parts.ownership && snapshot.ownership !== undefined) publishPresetOwnership(next.notOwnedChars);
 }
 
 /** Keep valid explicit defaults, but never turn rejected choices into an empty replacement.
@@ -161,6 +170,7 @@ export async function validateTransferChoices(snapshot, parts, sourceOps = []) {
   const initialVersion = pageVersion(), initialContent = data.contentId();
   const shown = { chess: data.get('chess'), backups: data.get('backups') };
   if (!shown.chess || !shown.backups) throw presetError('loading');
+  if (parts.ownership && snapshot.ownership !== undefined) await validateOwnership(snapshot);
   const tables = [shown];
   let historical = false;
   const allowed = snapshot.scope ? new Set(snapshot.scope.charIds) : null;
@@ -191,4 +201,13 @@ export async function validateTransferChoices(snapshot, parts, sourceOps = []) {
     if (!tables.some(table => cultivationCharIds(table.chess, table.backups).has(id))) throw presetError('choice');
   }
   if (pageVersion() !== initialVersion || data.contentId() !== initialContent) throw presetError('stale');
+}
+
+async function validateOwnership(snapshot) {
+  if (!snapshot.ownership.length) return;
+  const tables = await Promise.all(VERSIONS.map(version => getDiyData(version.id)));
+  const known = new Set(tables.flatMap(table => Object.values(table.chess || {}).filter(isDroppableChess).map(char => char.charId)));
+  for (const char of Object.values(data.get('chess') || {})) if (isDroppableChess(char)) known.add(char.charId);
+  const scope = snapshot.scope ? new Set(snapshot.scope.charIds) : null;
+  if (snapshot.ownership.some(id => (!scope || scope.has(id)) && !known.has(id))) throw presetError('choice');
 }

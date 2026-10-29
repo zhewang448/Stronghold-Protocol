@@ -12,7 +12,7 @@ import { presetsStore, saveLibrary, capturePreset, presetDirty, presetPermission
 import { toast } from "./toasts.js";
 
 const PARTS = [["skills", N_("技能选择")], ["modules", N_("模组选择")], ["potential", N_("潜能设置")], ["cultivate", N_("练度设置")],
-  ["skins", N_("皮肤装扮")], ["skinRandom", N_("皮肤随机设置")], ["skinLocks", N_("皮肤锁定")]];
+  ["skins", N_("皮肤装扮")], ["skinRandom", N_("皮肤随机设置")], ["skinLocks", N_("皮肤锁定")], ["ownership", N_("干员持有")]];
 const gameplay = ["skills", "modules", "potential", "cultivate"];
 function errorText(code) {
   switch (code) {
@@ -33,7 +33,7 @@ function errorText(code) {
   }
 }
 const versionsOf = p => Object.keys(p.snapshot.diy);
-const partsOf = p => p.snapshot.loadout.extension.sections;
+const partsOf = p => ({ ...p.snapshot.loadout.extension.sections, ownership: p.snapshot.ownership !== undefined });
 function moveFocus(e) {
   if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) return;
   const choices = [...e.currentTarget.querySelectorAll("button:not(:disabled)")];
@@ -94,7 +94,7 @@ export function useLoadoutPresets(ready) {
       const versions = dialog.includeDiy ? dialog.versions : [];
       const scope = dialog.source?.scope || operatorScope(dialog.scopeMode, dialog.scopeVersions, rosters || {});
       if (scope && !scope.charIds.length && Object.entries(dialog.parts).some(([key, on]) => on && key !== "skinRandom")) throw presetError("scopeEmpty");
-      const snapshot = dialog.source ? snapshotOf({ ...mergeSnapshot({ byChar: {}, ops: {}, skins: {}, random: {} }, dialog.source, dialog.parts), diy: dialog.source.diy }, dialog.parts, versions, scope)
+      const snapshot = dialog.source ? snapshotOf({ ...mergeSnapshot({ byChar: {}, ops: {}, skins: {}, random: {}, notOwnedChars: [] }, dialog.source, dialog.parts), diy: dialog.source.diy }, dialog.parts, versions, scope)
         : capturePreset(dialog.parts, versions, scope);
       const next = putPreset(readLibrary(), { id: dialog.id, name: dialog.name, overwrite: dialog.overwrite,
         snapshot });
@@ -127,8 +127,8 @@ export function useLoadoutPresets(ready) {
   };
   const permissions = presetPermissions();
   const partChoices = (values, onChange, applying = false) => html`<fieldset class="lp-parts"><legend>${t(applying ? "应用内容" : "保存内容")}</legend>
-    ${PARTS.filter(([k]) => applying ? partsOf(dialog.item)[k] : !dialog.source || dialog.source.loadout.extension.sections[k]).map(([key, label]) => {
-      const locked = applying && gameplay.includes(key) && !permissions.loadout;
+    ${PARTS.filter(([k]) => applying ? partsOf(dialog.item)[k] : !dialog.source || (k === 'ownership' ? dialog.source.ownership !== undefined : dialog.source.loadout.extension.sections[k])).map(([key, label]) => {
+      const locked = applying && (gameplay.includes(key) && !permissions.loadout || key === 'ownership' && !permissions.ownership);
       return html`<label key=${key}><input type="checkbox" data-preset-part=${key} checked=${!!values[key]}
         onChange=${e => onChange(key, e.currentTarget.checked)} /><span>${t(label)}${locked ? html` · ${t("本局已锁定")}` : ""}</span></label>`;
     })}</fieldset>`;
@@ -168,6 +168,7 @@ export function useLoadoutPresets(ready) {
         <p class="lp-hint">${t("独有指其他三个版本都没有的可调配干员；不包含自选专用干员。应用仅覆盖保存时的名单，名单外设置保持不变。")}</p>` : null}
       </fieldset>
       ${partChoices(dialog.parts, (key, on) => setDialog({ ...dialog, parts: { ...dialog.parts, [key]: on } }))}
+      ${dialog.parts.ownership ? html`<p class="lp-hint">${t("持有状态按干员保存，空列表表示全部持有；应用时只覆盖所选范围。")}</p>` : null}
       ${dialog.parts.skinRandom ? html`<p class="lp-hint">${t("随机皮肤策略是全局设置，不按干员名单拆分。")}</p>` : null}
       <label class="lp-check"><input type="checkbox" data-testid="preset-include-diy" checked=${dialog.includeDiy}
         disabled=${!!dialog.source && !Object.keys(dialog.source.diy).length}
@@ -185,13 +186,14 @@ export function useLoadoutPresets(ready) {
     title = t("应用调配预设");
     body = html`<h3 class="lp-selected-name">${dialog.item.name}</h3><p class="lp-hint">${t("勾选部分将恢复为预设快照，未勾选部分保持不变。")}</p>
       ${dialog.item.snapshot.scope ? html`<p class="lp-hint">${t("仅应用保存名单中的 {n} 名干员，名单外设置保持不变。", { n: dialog.item.snapshot.scope.charIds.length })}</p>` : null}
+      ${dialog.item.snapshot.ownership !== undefined ? html`<p class="lp-hint">${t("预设记录 {n} 名未持有干员", { n: dialog.item.snapshot.ownership.length })}</p>` : null}
       ${partChoices(dialog.parts, (key, on) => setDialog({ ...dialog, parts: { ...dialog.parts, [key]: on }, dropped: null, skip: false }), true)}
       ${versionsOf(dialog.item).length ? versionChoices(dialog.versions, true) : null}
       ${(!permissions.loadout || (!permissions.diy && dialog.versions.length)) ? html`<p class="lp-warning">${t("当前对局已锁定部分配置。请取消相应勾选后应用；自选编队只能在局外切换。")}</p>` : null}
       ${dialog.dropped ? html`<div class="lp-warning"><p>${t("以下自选项在目标版本不可用：")}</p>
         <ul>${dialog.dropped.map(d => html`<li>${t(VERSIONS.find(v => v.id === d.version)?.label)} · ${d.name} · ${d.slot}</li>`)}</ul>
         <label class="lp-check"><input type="checkbox" data-testid="preset-skip-invalid" checked=${dialog.skip} onChange=${e => setDialog({ ...dialog, skip: e.currentTarget.checked })} />${t("确认跳过以上自选项")}</label></div>` : null}`;
-    const blocked = (!permissions.loadout && gameplay.some(k => dialog.parts[k])) || (!permissions.diy && dialog.versions.length);
+    const blocked = (!permissions.loadout && gameplay.some(k => dialog.parts[k])) || (!permissions.diy && dialog.versions.length) || (!permissions.ownership && dialog.parts.ownership);
     actions = html`${cancel}<${Button} variant="primary" data-testid="preset-apply-confirm" disabled=${busy || !ready || blocked || (!!dialog.dropped && !dialog.skip)} onClick=${apply}>${busy ? t("正在校验…") : t("应用预设")}<//>`;
   } else if (dialog?.mode === "manage") {
     title = t("管理调配预设");

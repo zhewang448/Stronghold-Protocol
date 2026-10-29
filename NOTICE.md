@@ -111,3 +111,10 @@ under GPL-3.0-or-later. Adaptation keeps the current room API, four-player rules
 公开目录筛选、邀请制可见性和加入/观战状态参考 NeoPecos/Stronghold-Protocol（GPL-3.0-or-later），
 固定提交 `2cadc6183c133fb22f5853c15db945bbaf4ce700`，`server/lobby.js` 与 `public/js/screens/lobby.js`。
 本库保留既有组件与消息机制并适配版本、插件和扩展人数，未复制游戏素材；详细来源与差异见 `docs/PUBLIC-ROOM-LOBBY.md`。
+
+## Stardust 分支功能参考（2026-10-29）
+
+独立卡池、AI 策略预选、持有预设、观战扩容和队友救援参考
+[Stardust-minus/Stronghold-Protocol](https://github.com/Stardust-minus/Stronghold-Protocol/tree/3dbdbc25c9cf372b31d95e48546e23ad907e8ebb)
+提交 `3dbdbc25c9cf372b31d95e48546e23ad907e8ebb` 的公开实现及测试，代码许可 GPL-3.0-or-later。
+本库按 0.3.3 的分组轮选、版本数据、个人预设和恢复机制重新适配；不引入参考仓库素材。

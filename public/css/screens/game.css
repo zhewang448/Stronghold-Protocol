@@ -1677,3 +1677,6 @@
 .team__feed-name { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-md); font-size: calc(.12 * var(--t)); }
 .team__feed-bubble { position: relative; display: block; flex: none; width: .68rem; height: .55rem; }
 .team__feed-bubble .ebubble { position: absolute; left: 0; top: -.04rem; transform: scale(.58); transform-origin: top left; }
+.gm-rescue { position: absolute; z-index: 90; right: 1rem; top: 22%; max-width: min(320px, 42vw); padding: 12px; color: #fff; background: #172724; border: 1px solid #6dc6aa; }
+.gm-rescue p { margin: 6px 0; }
+.gm-rescue button { display: block; margin-top: 4px; min-height: 32px; color: #101d1a; background: #8fe2c7; border: 0; padding: 4px 10px; }

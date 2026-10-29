@@ -519,6 +519,7 @@ export const C2S = {
   'room.setConvenience': { key: v => ['benchEquip', 'soloUnlimited', 'prepLoadout', 'unequip', 'morphPairing'].includes(v), on: isBool },
   'room.setEnemyHpMultiplier': { multiplier: v => isNum(v, 0.1, 100) },
   'room.setIndependentPools': { on: isBool },
+  'room.setRescue': { on: isBool },
   'room.proposeVersion': { version: isVersionId },
   'room.versionVote': { voteId: (v) => isInt(v, 1, 2 ** 31), agree: isBool },
   'room.cancelVersionVote': { voteId: (v) => isInt(v, 1, 2 ** 31) },
@@ -541,6 +542,7 @@ export const C2S = {
   'room.aiRequest': { botId: isId },
   'room.aiVote': { voteId: (v) => typeof v === 'string' && v.length <= 16, approve: isBool },
   'room.setAiPicksLast': { on: isBool },
+  'room.setBotBand': { seat: v => isInt(v, 0, MAX_SEATS - 1), bandId: v => v == null || isId(v), $optional: ['bandId'] },
   'room.setUniteLayerGains': { on: isBool },
   'room.addBot': {},
   'room.removeBot': { seat: (v) => isInt(v, 0, MAX_SEATS - 1) },
@@ -629,6 +631,7 @@ export const C2S = {
   // browser's local runner) — solo matches only (co-op ⇒ WRONG_PHASE), only while a battle runs; m.public.paused
   'g.pause': { on: isBool },
   'g.uniteSkipVote': { voteId: isId, $optional: ['voteId'] },
+  'g.rescue': { playerId: isId, matchId: v => isStr(v, 128), round: v => isInt(v, 1, 1000) },
   // the stats the own board's units start their next battle with (user playtest #4 item 7; prep phases): answered by
   // the push m.unitStats { seq, round, units: [unitStatsEntry] }; `seq` is echoed so the client keeps the newest answer
   'g.unitStats': { seq: (v) => isInt(v, 0, 2 ** 31), $optional: ['seq'] },

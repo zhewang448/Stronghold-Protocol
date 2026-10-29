@@ -45,6 +45,7 @@ function randomIntent(rng, m, ps) {
       row: rng.int(GEO.ROWS), col: rng.int(GEO.COLS), kind: rng.pick(PING_KINDS),
     };
     case 'g.watch': return { t, fieldId: rng.pick(['n:p_0', 'n:p_1', 'n:ai_0', 'u', 'b1', 'b2', 'zz', '']) };
+    case 'g.rescue': return { t, playerId: rng.pick(['p_0', 'p_1', 'ai_0']), matchId: `${m.roomCode || 'TEST'}:${m.battlePrefix || 'fuzz'}`, round: Math.max(1, m.round || 1) };
     case 'g.autoplay': return { t, on: rng() < 0.05 };
     case 'g.pause': return { t, on: rng() < 0.5 };
     // the plugin interaction windows (PLUGIN API v2, docs/PLUGINS.md §10b): random ids and slots — no window of a

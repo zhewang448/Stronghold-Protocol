@@ -17,6 +17,7 @@ function recording(m) {
     format: 1, made: { app: APP_VERSION, release: config.release, specVersion: SPEC_VERSION, identity: config.identity },
     ...(m.version ? { version: m.version, cs: m.cs } : {}),
     seed: m.seed, mode: m.modeId, difficulty: m.difficulty, clientCombat: m.clientCombat,
+    ...(m.rescueEnabled ? { rescueEnabled: true } : {}),
     players: m.order.map((p) => ({ playerId: p.playerId, name: p.name, isBot: p.isBot })), rounds: [],
   };
 }
@@ -73,6 +74,13 @@ export function recordReplayAdmin(m, event) {
   safely(m, () => {
     const round = roundOf(m, 'ADMIN');
     if (round) round.admin.push(jsonClone(event));
+  });
+}
+
+export function recordReplayRescue(m, donorId, targetId) {
+  safely(m, () => {
+    const round = roundOf(m, 'SETTLE');
+    if (round) (round.rescues ||= []).push({ donorId, targetId, cost: 10 });
   });
 }
 

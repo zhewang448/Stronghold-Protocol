@@ -87,6 +87,7 @@ export class MatchViews {
       ...(this.convenience ? { convenience: this.convenience } : {}),
       ...(this.gd.enemyHpMultiplier !== 1 ? { enemyHpMultiplier: this.gd.enemyHpMultiplier } : {}),
       ...(this.independentPools ? { independentPools: true } : {}),
+      ...(this.rescueEnabled ? { rescueEnabled: true } : {}),
       difficulty: this.difficulty,
       stageId: this.stageId,
       // a non-default official version's match (DESIGN §35.23): its registry id, so a page that never saw the room (a
@@ -126,6 +127,7 @@ export class MatchViews {
         ...(Number.isInteger(ps.aiTakeoverRound) ? { aiTakeoverRound: ps.aiTakeoverRound } : {}),
         connected: ps.isBot || (ps.connected && !ps.left),
         alive: ps.alive,
+        ...(ps.pendingRescue ? { pendingRescue: true } : {}),
         lp: Math.max(0, ps.lp),
         bandId: ps.bandId,
         shopLevel: ps.shop.level,
@@ -163,6 +165,8 @@ export class MatchViews {
       v.emergencyReason = this.emergencyReason;
     }
     if (this.offers.length) v.offers = this.offerViews();
+    if (this.rescueWindow) v.rescue = { round: this.rescueWindow.round, deadline: this.rescueWindow.deadline,
+      eligible: this.rescueWindow.eligible.slice(), targets: this.rescueWindow.targets.filter(id => this.players.get(id)?.pendingRescue && !this.players.get(id)?.left) };
     if (this.teamLp != null) v.teamLp = Math.max(0, Math.round(this.teamLp));
     // 最终攻势 / 隐秘核心: when the overtime drain starts (ms epoch; `deadline` is the level's 120 s countdown)
     if ((this.phase === PHASE.FINAL_ASSAULT || this.phase === PHASE.HIDDEN_CORE) && this.overtimeAt) v.overtimeAt = this.overtimeAt;

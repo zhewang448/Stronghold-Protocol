@@ -32,6 +32,7 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 | [原项目 · sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) | 本库的玩法、确定性模拟、官方数据适配与插件体系基础；感谢 **sganggs 及上游贡献者**的原始实现与持续维护 |
 | [多人扩容方案 · LongQianChen/Stronghold-Protocol](https://github.com/LongQianChen/Stronghold-Protocol/tree/feat/IncreasePlayerCapacity) | 本库采用解除四人限制、固定分组卡池与并行轮选的核心方案，感谢 **LongQianChen** 的多人扩容实现 |
 | [多人扩容 0.3.1 适配 · SiderLock/Stronghold-Protocol](https://github.com/SiderLock/Stronghold-Protocol) | 本库迁移采用其 0.3.1 适配，感谢 **SiderLock** 的整合工作；具体提交及本库兼容调整见 [扩展联机说明](docs/EXPANDED-COOP.md#来源) |
+| [Stardust-minus/Stronghold-Protocol](https://github.com/Stardust-minus/Stronghold-Protocol) | 独立卡池、AI 开局策略、持有预设、扩展观战和队友救援的参考，感谢 **Stardust-minus**；本库按现有分组、版本与恢复机制适配 |
 | [原始社区 UI · isomerpoi/Stronghold-Protocol](https://github.com/isomerpoi/Stronghold-Protocol) | 本库大厅、同盟等待室、物资调配、对局 HUD 与结算界面的原始社区实现来源；感谢 **isomerpoi（雨千代chiyo）** 的界面设计与实现 |
 | [UI 后续适配参考 · xinhai-ai/Stronghold-Protocol](https://github.com/xinhai-ai/Stronghold-Protocol) | 本库交流布局、快捷键、资源展示、公告 Markdown 和手机界面的后续适配参考；感谢 **xinhai-ai 及参考站贡献者**的公开实现，移植范围见 [源码对照文档](docs/REFERENCE-UI-REVIEW.md) |
 | [参考站前端归档 · stronghold-ui-site-archive（私有）](https://github.com/zhewang448/stronghold-ui-site-archive) | 保存参考站公开前端快照、来源和哈希，供后续跟进 UI 变化；需仓库访问权限，更新方法见 [源码对照文档](docs/REFERENCE-UI-REVIEW.md#后续跟进与私有归档) |
@@ -180,6 +181,10 @@ winget install Cloudflare.cloudflared
 房间还可自定义敌人血量倍率，范围 **0.1–100 倍**、默认 **1 倍**。普通敌人的血量在原有难度及回合倍率基础上再乘此值，领袖共享血池也乘此值。例如原倍率为 1.728、房间设为 2 倍时，普通敌人的最终倍率为 3.456。非 1 倍房间不参与公开匹配；玩家本机对局记录标记为非官方，默认不计入统计总览和成就统计。修改倍率同样会使其他真人玩家重新准备。**控制台跨局汇总目前仍会混入自定义倍率对局，回放页面也不单独显示房间倍率**；请勿将控制台汇总当作纯默认倍率数据。
 
 同盟房主还可开启默认关闭的「独立卡池」：每名玩家和 AI 分别持有完整的同盟干员与装备库存，互不占用；自选编队仍使用个人库存。策略和机变轮选及联防分组保持原规则，已显示的卡仍遵循原有超额购买规则。此选项为非官方玩法，房间不参加公开匹配，对局默认不计入本机官方统计与成就；改变设置后其他真人玩家须重新准备。
+
+房主可为每个 AI 席位预设开局策略，保留「自动选择」时沿用原 AI 行为；轮到 AI 时若策略已被队友选走则自动改选并提示房主。等待室还可开启默认关闭的「队友救援」：联防结束后，参与联防且本轮无漏怪的在线真人可在 15 秒内支付 10 生命，把本轮待淘汰队友救回 1 生命；救援者至少有 11 生命，每位目标每局最多获救一次，AI 不自动救援。此规则为非官方，不参与公开匹配和默认官方统计。
+
+观战席默认两名；服主可通过环境变量 `SP_MAX_SPECTATORS` 设置 2–20 名，每个房间采用服务器设置。命名调配预设和本库调配文件可选择保存持有状态；仅覆盖勾选范围，空未持有列表表示全部持有，旧预设不会改变现有持有状态。
 
 ### 在线玩家、状态与房间邀请
 

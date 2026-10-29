@@ -122,11 +122,12 @@ test('a historical version host receives the independent-pool room rule', { time
     const output = frames();
     const seats = [{ seat: 0, playerId: 'human', name: 'Human', isBot: false, connected: true },
       { seat: 1, playerId: 'bot', name: 'Bot', isBot: true, connected: true }];
-    const match = hosts.create(cs, matchOpts(cs, 'act1autochess', seats, output, { independentPools: true }));
+    const match = hosts.create(cs, matchOpts(cs, 'act1autochess', seats, output, { independentPools: true, rescueEnabled: true }));
     match.start();
     const diagnostics = await match.diag();
     assert.equal(diagnostics.errorCount, 0);
     assert.ok(output.broadcast.some((frame) => frame.t === 'm.public' && frame.independentPools === true));
+    assert.ok(output.broadcast.some((frame) => frame.t === 'm.public' && frame.rescueEnabled === true));
     match.dispose();
   } finally { hosts.close(); }
 });
