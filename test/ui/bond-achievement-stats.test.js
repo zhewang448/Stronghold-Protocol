@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildRecord, highestBondRecord, fitToBudget, FULL_KEEP, achievementRecords, isModdedRecord } from '../../public/js/ui/stats.js';
+import { buildRecord, highestBondRecord, fitToBudget, FULL_KEEP, achievementRecords, isModdedRecord, recordToResult } from '../../public/js/ui/stats.js';
 
 function record(seed, layers) {
   return buildRecord({ seed, victory: true, roundsPassed: 14, players: [
@@ -24,6 +24,14 @@ test('custom enemy HP matches retain their multiplier and do not count as offici
   assert.equal(custom.enemyHpMultiplier, 0.5);
   assert.equal(isModdedRecord(custom), true);
   assert.equal(achievementRecords([custom]).length, 0);
+});
+
+test('independent-pool matches retain their rule and do not count as official achievements', () => {
+  const custom = buildRecord({ victory: true, independentPools: true, players: [{ playerId: 'self', alive: true, victory: true }] }, { myId: 'self' });
+  assert.equal(custom.independentPools, true);
+  assert.equal(isModdedRecord(custom), true);
+  assert.equal(achievementRecords([custom]).length, 0);
+  assert.equal(recordToResult(custom).independentPools, true);
 });
 
 test('compaction retains the peak lineup and equipment past the full-history window, releasing it for a new peak', () => {

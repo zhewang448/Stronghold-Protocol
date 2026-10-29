@@ -26,8 +26,10 @@ import { poolGroupSizes, poolCopyScale } from '../../shared/playerCapacity.js';
 /** Groups are assigned by occupied seat order at match start and never reshuffled after eliminations. */
 export function createPoolGroups(gd, players, opts = {}) {
   const sorted = players.slice().sort((a, b) => a.seat - b.seat);
+  const groupedSizes = poolGroupSizes(sorted.length);
+  const sizes = opts.independent === true ? sorted.map(() => 1) : groupedSizes;
   let offset = 0;
-  return poolGroupSizes(sorted.length).map((size, i) => {
+  return sizes.map((size, i) => {
     const members = sorted.slice(offset, offset + size);
     const playerIds = members.map((p) => p.playerId);
     offset += size;

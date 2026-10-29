@@ -343,6 +343,7 @@ export class Match {
     this.gd.enemyHpMultiplier = typeof opts.enemyHpMultiplier === 'number' && Number.isFinite(opts.enemyHpMultiplier) && opts.enemyHpMultiplier >= 0.1 && opts.enemyHpMultiplier <= 100 ? opts.enemyHpMultiplier : 1;
     if (!this.difficulty) this.difficulty = this.gd.difficulty;
     this.isSolo = this.mode === 'solo' || this.gd.isSolo;
+    this.independentPools = !this.isSolo && opts.independentPools === true;
     /** 「AI 队友最后选择」 (opts.aiPicksLast, GitHub #338): humans draft before AI seats (MatchPhases.humansFirst) */
     this.aiPicksLast = !this.isSolo && opts.aiPicksLast === true;
     /** Room rule fixed for this match; direct callers without it retain the host-setting fallback. */
@@ -491,7 +492,8 @@ export class Match {
     this.disabledBonds = bans.drawn;
     this.staticInactiveBonds = bans.staticOff;
     this.bannedChess = bans.banned;
-    this.poolGroups = createPoolGroups(this.gd, this.order, { banned: bans.banned });
+    this.poolGroups = createPoolGroups(this.gd, this.order, { banned: bans.banned, independent: this.independentPools });
+    this.draftGroups = this.independentPools ? createPoolGroups(this.gd, this.order, { banned: bans.banned }) : this.poolGroups;
     this.playerPools = new Map(this.poolGroups.flatMap((g) => g.playerIds.map((id) => [id, g.pool])));
     // Compatibility for single-pool diagnostics; player transactions use poolFor / ps.pool / ps.poolOf.
     this.pool = this.poolGroups[0].pool;

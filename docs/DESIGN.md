@@ -8,6 +8,8 @@ Versions: the first public release was **0.1.0** (2026-10-02, the state of §0�
 
 ---
 
+独立卡池试验（#13）的可选规则和迁移来源见 [0.3.3 扩展记录](history/0.3.3.md#独立卡池试验13未发布)；当前约定见 [对局规则](design/match.md)。
+
 The 0.3.1 Forge integration/browser polish is [§34.27](history/0.3.1.md#3427-plugin-polish-after-the-end-to-end-checks):
 companion cosmetic hints, accurate import reports, record DSL permission checks and usable result panels (§32.8/§32.12).
 

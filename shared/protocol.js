@@ -518,6 +518,7 @@ export const C2S = {
   'room.setSoloUnlimited': { on: isBool },
   'room.setConvenience': { key: v => ['benchEquip', 'soloUnlimited', 'prepLoadout', 'unequip', 'morphPairing'].includes(v), on: isBool },
   'room.setEnemyHpMultiplier': { multiplier: v => isNum(v, 0.1, 100) },
+  'room.setIndependentPools': { on: isBool },
   'room.proposeVersion': { version: isVersionId },
   'room.versionVote': { voteId: (v) => isInt(v, 1, 2 ** 31), agree: isBool },
   'room.cancelVersionVote': { voteId: (v) => isInt(v, 1, 2 ** 31) },

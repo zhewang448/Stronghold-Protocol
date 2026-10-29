@@ -97,9 +97,9 @@ export function attachAudit(m, { invariants = true, limit = 200 } = {}) {
     if (JSON.stringify(ordered) !== JSON.stringify(want)) fail(`${label}: group orders ${ordered} != living seats ${want}`);
     if (!stage.groups) return;
     if (new Set(groups.map((g) => g.id)).size !== groups.length) fail(`${label}: duplicate group id`);
-    if (groups.length !== m.poolGroups.length) fail(`${label}: ${groups.length} groups != ${m.poolGroups.length} fixed pool groups`);
+    if (groups.length !== m.draftGroups.length) fail(`${label}: ${groups.length} groups != ${m.draftGroups.length} fixed draft groups`);
     for (const g of groups) {
-      const pool = m.poolGroups.find((p) => p.id === g.id);
+      const pool = m.draftGroups.find((p) => p.id === g.id);
       if (!pool || JSON.stringify(g.playerIds) !== JSON.stringify(pool.playerIds)) fail(`${label} group ${g.id}: fixed membership changed`);
       if (new Set(g.order).size !== g.order.length) fail(`${label} group ${g.id}: duplicate turn`);
       for (const pid of g.order) if (!g.playerIds.includes(pid)) fail(`${label} group ${g.id}: outsider ${pid} in order`);
@@ -433,7 +433,7 @@ export function attachAudit(m, { invariants = true, limit = 200 } = {}) {
         if (cards.size !== g.cards.length) fail(`机变 group ${g.id ?? 1}: duplicate card index`);
         for (const pid of alive.filter((p) => !g.playerIds || g.playerIds.includes(p))) {
           const idx = g.picks[pid];
-          if (idx == null) fail(`${pid} ends 机变 without a card`);
+          if (idx == null) { if (!g.skipped?.includes(pid)) fail(`${pid} ends 机变 without a card`); }
           else if (!cards.has(idx) || g.taken[idx] !== pid) fail(`${pid} picked card ${idx} held by ${g.taken[idx]} in group ${g.id ?? 1}`);
         }
         for (const [pid, idx] of Object.entries(g.picks)) {
@@ -496,7 +496,7 @@ export function attachAudit(m, { invariants = true, limit = 200 } = {}) {
       const perfect = alive.filter((p) => res.has(p.playerId) && res.get(p.playerId).perfect !== false && counted(p.playerId) === 0);
       const helpers = helperOrder(m, perfect, res).map((p) => p.playerId);
       const perRound = Math.max(1, Math.min(2, gd.unite.maxHelpers));
-      const roundsLimit = uniteRoundLimit(m.poolGroups?.length || 1);
+      const roundsLimit = uniteRoundLimit(m.draftGroups?.length || 1);
       if (!Number.isInteger(plan.round) || plan.round < 1 || plan.round > roundsLimit
         || !Number.isInteger(plan.roundsMax) || plan.roundsMax < plan.round || plan.roundsMax > roundsLimit)
         fail(`联防 wave ${plan.round}/${plan.roundsMax} exceeds the fixed-group limit ${roundsLimit}`);

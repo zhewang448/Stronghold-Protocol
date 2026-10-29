@@ -21,7 +21,7 @@ export class MatchSpDraft {
     const active = groups.filter((g) => g.order.length).map((g) => ({ id: g.id, playerIds: g.order.slice() }));
     const pages = generateGroupDrafts(this.gd, this.rngDraft, this.round, active, {
       stageId: this.stageId, bondAvailable: (bondId, group) => this.bondLive(bondId, group.playerIds[0]),
-      itemAvailable: (id, group) => this.itemPoolFor(group.playerIds[0]).canGain(id),
+      itemAvailable: (id, group) => group.playerIds.some((playerId) => this.itemPoolFor(playerId).canGain(id)),
     });
     if (!pages || !pages.length) { this.beforePrepOffers(); return; }
     for (const g of groups) {
@@ -50,7 +50,7 @@ export class MatchSpDraft {
 
   spCardAvailable(card, group = this.spGroup()) {
     return !!card && !!group && group.taken[card.idx] == null &&
-      (card.kind !== 'item' || this.itemPoolFor(group.playerIds[0]).canGain(card.id));
+      (card.kind !== 'item' || this.itemPoolFor(group.order[group.idx] ?? group.playerIds[0]).canGain(card.id));
   }
 
   startSpTurn(group = this.spGroup()) {
@@ -66,7 +66,18 @@ export class MatchSpDraft {
       g.idx++;
     }
     this.prioritizeDraftOrder(g.order, g.idx);
-    const available = g.cards.filter((c) => this.spCardAvailable(c, g)).map((c) => c.idx);
+    let available = g.cards.filter((c) => this.spCardAvailable(c, g)).map((c) => c.idx);
+    while (this.independentPools && g.idx < g.order.length && !available.length) {
+      (g.skipped ||= []).push(g.order[g.idx]);
+      g.idx++;
+      while (g.idx < g.order.length) {
+        const player = this.players.get(g.order[g.idx]);
+        if (player && player.alive && !player.left && s.picks[player.playerId] == null) break;
+        g.idx++;
+      }
+      this.prioritizeDraftOrder(g.order, g.idx);
+      available = g.cards.filter((c) => this.spCardAvailable(c, g)).map((c) => c.idx);
+    }
     g.done = g.idx >= g.order.length || !available.length;
     if (g.done) {
       this.syncDraftDeadline(s);

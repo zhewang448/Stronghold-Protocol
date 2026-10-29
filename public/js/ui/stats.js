@@ -93,7 +93,7 @@ export function contentOf(c) {
   return { cs: c.cs, plugins: list };
 }
 /** Did the record's match play gameplay plugins (unofficial)? @param {any} rec */
-export const isModdedRecord = (rec) => !!(isObj(rec) && (rec.content || (typeof rec.enemyHpMultiplier === 'number' && rec.enemyHpMultiplier !== 1)));
+export const isModdedRecord = (rec) => !!(isObj(rec) && (rec.content || rec.independentPools === true || (typeof rec.enemyHpMultiplier === 'number' && rec.enemyHpMultiplier !== 1)));
 
 /** A record's official version field (see the header): a registry id other than 第二期下半, else null. @param {unknown} v */
 export const versionOf = (v) => (typeof v === 'string' && v !== DEFAULT_VERSION && versionById(v) ? v : null);
@@ -313,6 +313,7 @@ export function normalizeRecord(raw) {
     ...(versionOf(r.version) ? { version: versionOf(r.version) } : {}),
     ...(isObj(r.convenience) ? { convenience: roomConvenience(r.convenience) } : {}),
     ...(typeof r.enemyHpMultiplier === 'number' && Number.isFinite(r.enemyHpMultiplier) && r.enemyHpMultiplier >= 0.1 && r.enemyHpMultiplier <= 100 && r.enemyHpMultiplier !== 1 ? { enemyHpMultiplier: r.enemyHpMultiplier } : {}),
+    ...(r.independentPools === true ? { independentPools: true } : {}),
     players,
     roundHistory: normalizeRoundHistory(r.roundHistory),
   };
@@ -424,7 +425,7 @@ export function peekStatsRecords() {
 // ---- compaction + the storage budget ---------------------------------------------------------------------------
 
 const COMPACT_FRAME = ['id', 'v', 't', 'end', 'victory', 'roundsPassed', 'lastRound', 'hiddenReached', 'hiddenCleared', 'reason', 'modeId',
-  'difficulty', 'roomMode', 'durationMs', 'selfId', 'vs', 'content', 'version', 'test', 'testActions', 'convenience', 'enemyHpMultiplier'];
+  'difficulty', 'roomMode', 'durationMs', 'selfId', 'vs', 'content', 'version', 'test', 'testActions', 'convenience', 'enemyHpMultiplier', 'independentPools'];
 
 /**
  * The compact form of a record: the frame and the player's OWN row without lineup, bonds and name — everything the
@@ -563,6 +564,7 @@ export function buildRecord(res, ctx = {}) {
     version: ctx.version ?? null,
     convenience: r.convenience,
     enemyHpMultiplier: r.enemyHpMultiplier,
+    independentPools: r.independentPools,
     players: r.players,
     roundHistory: r.roundHistory,
   });
@@ -673,6 +675,7 @@ export function buildQuitRecord(state, ctx = {}) {
     version: state.room ? state.room.version ?? null : str(pub.version) ?? null,
     convenience: state.room?.convenience ?? pub.convenience,
     enemyHpMultiplier: pub.enemyHpMultiplier ?? state.room?.enemyHpMultiplier,
+    independentPools: pub.independentPools ?? state.room?.independentPools,
     players: [{
       playerId: myId, seat: row.seat, name: row.name, isBot: false, left: true, alive, victory: false, roundsPassed,
       ...(Number.isInteger(row.aiTakeoverRound) ? { aiTakeoverRound: row.aiTakeoverRound } : {}),
@@ -713,6 +716,7 @@ export function recordToResult(rec) {
   if (r.test === true) res.test = true;
   if (Number.isInteger(r.testActions)) res.testActions = r.testActions;
   if (r.enemyHpMultiplier != null) res.enemyHpMultiplier = r.enemyHpMultiplier;
+  if (r.independentPools === true) res.independentPools = true;
   return res;
 }
 

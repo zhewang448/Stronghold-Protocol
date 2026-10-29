@@ -31,7 +31,7 @@ export class MatchPhases {
 
   /** The fixed pool membership persists; only the living, present seats have a turn in this stage. */
   makeDraftGroups({ shuffle = true, includeDeparted = false } = {}) {
-    return this.poolGroups.map(({ id, playerIds }) => {
+    return this.draftGroups.map(({ id, playerIds }) => {
       const order = playerIds.filter((pid) => {
         const ps = this.players.get(pid);
         return ps && (includeDeparted || ps.alive && !ps.left);
@@ -73,7 +73,7 @@ export class MatchPhases {
 
   /** Stable partition after one shuffle, preserving the random order within each priority group. */
   prioritizeDraftOrder(order, from = 0, initial = false) {
-    const single = this.poolGroups.length === 1;
+    const single = this.draftGroups.length === 1;
     if (single && (!initial || !this.aiPicksLast)) return false;
     const pending = order.slice(from);
     const manual = [];
@@ -136,7 +136,7 @@ export class MatchPhases {
     this.phase = PHASE.BAND_DRAFT;
     const skips = this.isSolo ? 0 : this.gd.bandDraft.skipsPerPlayer;
     const untimed = this.soloUntimed;
-    const groups = this.makeDraftGroups({ includeDeparted: this.poolGroups.length === 1 });
+    const groups = this.makeDraftGroups({ includeDeparted: this.draftGroups.length === 1 });
     for (const g of groups) g.skipsLeft = Object.fromEntries(g.order.map((pid) => [pid, skips]));
     this.draft = installDraftFacade({
       id: this.nextDraftId('band'), groups, picks: {}, untimed,

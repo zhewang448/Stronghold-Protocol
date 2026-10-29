@@ -242,7 +242,7 @@ function Overview({ agg, gd, nickname, records }) {
     </table></div>` : null}
     <p class="st-rule"><${Icon} name="info" />${t('计入统计：打到结算的对局，以及中途退出前至少清完 1 个回合的对局；更早退出的对局只留在对局记录里。')}${agg.excluded
       ? html` <b>${t('另有 {n} 局未计入统计', { n: agg.excluded })}</b>` : null}${agg.modded
-      ? html` ${t('使用玩法插件或自定义敌人血量倍率的对局为非官方对局，默认不计入总览。')}` : null}</p>
+      ? html` ${t('使用玩法插件、独立卡池或自定义敌人血量倍率的对局为非官方对局，默认不计入总览。')}` : null}</p>
   <//>`;
 }
 
@@ -535,7 +535,7 @@ function HistoryRow({ rec, gd, onOpen }) {
     <td><span class="st-band">${band ? html`<${BandIcon} bandId=${band.bandId} size="xs" />${band.name}` : self?.bandId || '—'}</span></td>
     <td class="st-res">${quit ? html`<span class="t-quit">${t('中途退出')}</span>` : html`<span class=${won ? 't-win' : 't-lose'}>${won ? t('胜') : t('负')}</span>`}
       ${!counted ? html`<em class="st-chip">${t('不计入统计')}</em>` : null}
-      ${isModdedRecord(rec) ? html`<em class="st-chip is-modded" title=${[...(rec.content?.plugins || []), ...(rec.enemyHpMultiplier != null ? [`${t('敌人血量倍率')} ×${rec.enemyHpMultiplier}`] : [])].join(', ')}>${t('非官方')}</em>` : null}
+      ${isModdedRecord(rec) ? html`<em class="st-chip is-modded" title=${[...(rec.content?.plugins || []), ...(rec.independentPools ? [t('独立卡池')] : []), ...(rec.enemyHpMultiplier != null ? [`${t('敌人血量倍率')} ×${rec.enemyHpMultiplier}`] : [])].join(', ')}>${t('非官方')}</em>` : null}
       <${VersionTag} version=${rec.version ?? null} compact=${true} class="st-chip" /></td>
     <td class="num">${known ? fmtNum(rounds) : '—'}</td>
     <td class="st-go" aria-hidden="true">${view ? html`<${Icon} name="chevronRight" />` : null}</td>

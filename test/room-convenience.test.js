@@ -15,6 +15,30 @@ import { DataSource } from '../server/sim/simdata.js';
 import { bossPoolHp } from '../server/match/finalAssault.js';
 
 const quiet = { info() {}, warn() {}, error() {}, debug() {} };
+test('independent pools are a host-only room option locked during a match', () => {
+  assert.equal(validateC2S({ t: 'room.setIndependentPools', on: true }), null);
+  assert.notEqual(validateC2S({ t: 'room.setIndependentPools', on: 'true' }), null);
+  const { lobby, player } = lobbyHarness();
+  const host = player('Host'), guest = player('Guest');
+  assert.deepEqual(lobby.create(host, { mode: 'coop' }), { ok: true });
+  const room = lobby.roomOf(host);
+  assert.deepEqual(lobby.join(guest, { code: room.code }), { ok: true });
+  room.seatOf(guest.playerId).ready = true;
+  assert.equal(lobby.setIndependentPools(guest, { on: true }).error, 'NOT_HOST');
+  assert.deepEqual(lobby.setIndependentPools(host, { on: true }), { ok: true });
+  assert.equal(room.toState().independentPools, true);
+  assert.equal(room.seatOf(guest.playerId).ready, false);
+  assert.equal(lobby.matchmaking.eligible(room), false);
+  assert.equal(wireOptions({ independentPools: true }).independentPools, true);
+  room.match = {};
+  assert.equal(lobby.setIndependentPools(host, { on: false }).error, 'ROOM_STARTED');
+  room.match = null;
+  room.seatOf(guest.playerId).ready = true;
+  assert.deepEqual(lobby.start(host), { ok: true });
+  assert.equal(room.match.independentPools, true);
+  assert.notEqual(room.match.poolFor(host.playerId), room.match.poolFor(guest.playerId));
+  lobby.shutdown();
+});
 test('enemy HP multiplier validates and is host-only, synchronized, and locked during a match', () => {
   for (const multiplier of [0.1, 1, 3.5, 100]) assert.equal(validateC2S({ t: 'room.setEnemyHpMultiplier', multiplier }), null);
   for (const multiplier of [0, 101, Infinity, '2']) assert.notEqual(validateC2S({ t: 'room.setEnemyHpMultiplier', multiplier }), null);

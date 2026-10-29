@@ -1,7 +1,10 @@
 {
   "敌人血量 ×{n}": "Enemy HP ×{n}",
   "含非官方对局": "Include unofficial matches",
-  "使用玩法插件或自定义敌人血量倍率的对局为非官方对局，默认不计入总览。": "Matches using gameplay plugins or a custom enemy HP multiplier are unofficial and excluded by default.",
+  "使用玩法插件、独立卡池或自定义敌人血量倍率的对局为非官方对局，默认不计入总览。": "Matches using gameplay plugins, independent pools, or a custom enemy HP multiplier are unofficial and excluded by default.",
+  "独立卡池": "Independent pools",
+  "每位博士和 AI 使用独立的干员与装备库存；本局不计入官方统计": "Each player and AI has independent operator and equipment stock; this match is excluded from official statistics.",
+  "独立卡池对局不计入官方统计": "Independent-pool matches are excluded from official statistics.",
   "敌人血量倍率": "Enemy HP multiplier",
   "与难度及回合倍率相乘，也影响领袖血池；范围 0.1–100 倍": "Multiplies the difficulty and round scaling and leader HP pools; range: 0.1–100×",
   "离线导入（不下载官方数据表）": "Import offline (do not download official data tables)",

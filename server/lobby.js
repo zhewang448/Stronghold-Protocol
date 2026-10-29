@@ -311,6 +311,7 @@ export class Room {
     this.versionVote = null; this.versionVoteSeq = 0; this.versionProposeAt = -Infinity; this.versionRetryAt = -Infinity; this.soloUnlimited = false;
     this.convenience = roomConvenience();
     this.enemyHpMultiplier = 1;
+    this.independentPools = false;
     // Capture the host default once; later changes belong to this room alone.
     this.uniteLayerGains = getUniteLayerGains();
     /** @type {string | null} */
@@ -396,6 +397,7 @@ export class Room {
       uniteLayerGains: this.uniteLayerGains,
       convenience: { ...this.convenience },
       ...(this.enemyHpMultiplier !== 1 ? { enemyHpMultiplier: this.enemyHpMultiplier } : {}),
+      ...(this.independentPools ? { independentPools: true } : {}),
       canSetUniteLayerGains: getAllowRoomUniteLayerGains(),
       inMatch: !!this.match,
       ...(this.matching ? { matching: { startedAt: this.matching.startedAt, target: DEFAULT_SEATS } } : {}),
@@ -722,6 +724,7 @@ export class Lobby {
       case 'room.setSoloUnlimited': return this.setSoloUnlimited(session, msg);
       case 'room.setConvenience': return this.setConvenience(session, msg);
       case 'room.setEnemyHpMultiplier': return this.setEnemyHpMultiplier(session, msg);
+      case 'room.setIndependentPools': return this.setIndependentPools(session, msg);
       case 'room.proposeVersion': return this.proposeVersion(session, msg);
       case 'room.versionVote': return this.versionVote(session, msg);
       case 'room.cancelVersionVote': return this.cancelVersionVote(session, msg);
@@ -1678,6 +1681,7 @@ export class Lobby {
         uniteLayerGains: room.uniteLayerGains,
         convenience: { ...room.convenience },
         ...(room.enemyHpMultiplier !== 1 ? { enemyHpMultiplier: room.enemyHpMultiplier } : {}),
+        ...(room.independentPools ? { independentPools: true } : {}),
         ...(!modded && !versioned && this.simPool ? { simPool: this.simPool } : {}),
         seats: restored?.seats || seats,
         // the spectator seats (header): watched like eliminated players, never players
@@ -2235,6 +2239,23 @@ export class Lobby {
     const session = this.registry.byId(playerId);
     if (!session || session.roomCode !== room.code) return false;
     return sendSession(session, msg, encoded);
+  }
+
+  setIndependentPools(session, { on }) {
+    const room = this.roomOf(session);
+    if (!room) return fail(ERR.NOT_IN_ROOM);
+    if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
+    if (room.match) return fail(ERR.ROOM_STARTED);
+    if (room.mode !== 'coop') return fail(ERR.BAD_TARGET);
+    if (typeof on !== 'boolean') return fail(ERR.BAD_MSG);
+    if (room.independentPools !== on) {
+      this.dropReplay(room, session.playerId);
+      room.independentPools = on;
+      for (const seat of room.seats) if (seat && !seat.isBot && seat.playerId !== room.hostId) seat.ready = false;
+      this.matchmaking.leave(session);
+      this.broadcastState(room);
+    }
+    return OK;
   }
 
   setEnemyHpMultiplier(session, { multiplier }) {

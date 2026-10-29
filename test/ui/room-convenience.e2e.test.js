@@ -18,14 +18,26 @@ test('room convenience: five defaults, host/guest sync, all versions and actual 
     assert.ok(!(await req(host,'room.create',{mode:'coop',difficulty:'NORMAL'})).error);
     const code=await host.evaluate(()=>globalThis.__SP__.store.get().room.code);assert.ok(!(await req(guest,'room.join',{code})).error);
     await host.waitForSelector('.rs-pill__gear');await guest.waitForSelector('.rs-pill__gear');await host.click('.rs-pill__gear');await guest.click('.rs-pill__gear');
-    assert.deepEqual(await host.$$eval('.rs-convenience input[type="checkbox"]',es=>es.map(e=>e.checked)),[true,true,true,false,false]);
+    assert.deepEqual(await host.$$eval('.rs-convenience input[name^="convenience-"]',es=>es.map(e=>e.checked)),[true,true,true,false,false]);
     assert.ok(await guest.$$eval('.rs-convenience input',es=>es.every(e=>e.disabled)));
+    await host.click('[name="independent-pools"]');
+    await guest.waitForFunction(() => document.querySelector('[name="independent-pools"]').checked);
+    assert.equal(await guest.evaluate(() => globalThis.__SP__.store.get().room.independentPools), true);
+    await host.click('[name="independent-pools"]');
+    await guest.waitForFunction(() => !document.querySelector('[name="independent-pools"]').checked);
     await host.$eval('#enemy-hp-multiplier', e => { e.value = '2.5'; e.dispatchEvent(new Event('input', { bubbles: true })); });
     await host.click('.rs-opt--hp button');
     await guest.waitForFunction(() => globalThis.__SP__.store.get().room.enemyHpMultiplier === 2.5);
     assert.equal(await guest.$eval('#enemy-hp-multiplier', e => e.value), '2.5');
     await host.click('[name="convenience-unequip"]');await guest.waitForFunction(()=>document.querySelector('[name="convenience-unequip"]').checked);
     for(const [width,height]of [[1280,720],[844,390],[640,360]]){await host.setViewport({width,height});await new Promise(r=>setTimeout(r,250));const r=await host.$eval('.rs-opts',e=>{const r=e.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,w:innerWidth,h:innerHeight};});assert.ok(r.left>=-1&&r.right<=r.w+1&&r.top>=-1&&r.bottom<=r.h+1,JSON.stringify(r));await host.screenshot({path:'.cache/room-checkbox-20261025/CONVENIENCE-'+width+'x'+height+'.png'});}
+    await host.click('[name="independent-pools"]');
+    await guest.waitForFunction(() => globalThis.__SP__.store.get().room.independentPools === true);
+    assert.ok(!(await req(guest,'room.ready',{ready:true})).error);
+    assert.ok(!(await req(host,'room.start')).error);
+    await host.waitForFunction(() => globalThis.__SP__.store.get().match.public?.independentPools === true);
+    await guest.waitForFunction(() => globalThis.__SP__.store.get().match.public?.independentPools === true);
+    assert.equal((await req(host,'room.setIndependentPools',{on:false})).error,'ROOM_STARTED');
     await hc.close();await gc.close();
     for(const version of ['act2autochess','act2autochess@V2_1','act1autochess','act1autochess@V1_1']){
       const {page,context}=await newPage(version);

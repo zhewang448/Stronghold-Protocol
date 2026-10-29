@@ -115,6 +115,22 @@ test('(b) a two-seat co-op 险境 match of 第二期上半 ends', { timeout: 240
   } finally { hosts.close(); }
 });
 
+test('a historical version host receives the independent-pool room rule', { timeout: 60_000 }, async () => {
+  const cs = versions.csOf('act1autochess');
+  const hosts = createMatchHosts({ contents: versions, log: quiet, options: { kind: 'version', virtualTime: true, matchOptions: { botRehearsal: 0 } } });
+  try {
+    const output = frames();
+    const seats = [{ seat: 0, playerId: 'human', name: 'Human', isBot: false, connected: true },
+      { seat: 1, playerId: 'bot', name: 'Bot', isBot: true, connected: true }];
+    const match = hosts.create(cs, matchOpts(cs, 'act1autochess', seats, output, { independentPools: true }));
+    match.start();
+    const diagnostics = await match.diag();
+    assert.equal(diagnostics.errorCount, 0);
+    assert.ok(output.broadcast.some((frame) => frame.t === 'm.public' && frame.independentPools === true));
+    match.dispose();
+  } finally { hosts.close(); }
+});
+
 test('(c) data bytes that do not hash to the version\'s cs: \'version-start\', the version msgid; another version\'s match is refused', { timeout: 60_000 }, async () => {
   const cs = versions.csOf('act1autochess@V1_1');
   const tampered = { ...versions, get: (x) => versions.get(x), dataBytes: (x) => ({ ...versions.dataBytes(x), chess: Buffer.from('{}') }) };

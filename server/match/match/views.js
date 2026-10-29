@@ -86,6 +86,7 @@ export class MatchViews {
       modeId: this.modeId,
       ...(this.convenience ? { convenience: this.convenience } : {}),
       ...(this.gd.enemyHpMultiplier !== 1 ? { enemyHpMultiplier: this.gd.enemyHpMultiplier } : {}),
+      ...(this.independentPools ? { independentPools: true } : {}),
       difficulty: this.difficulty,
       stageId: this.stageId,
       // a non-default official version's match (DESIGN §35.23): its registry id, so a page that never saw the room (a
@@ -110,7 +111,7 @@ export class MatchViews {
       bossPairs: this.bossWaves ? this.bossWaves.map(w => w.players.slice()) : this.bossPairs ? this.bossPairs.map(ids => ids.slice()) : null,
       spRound: this.gd.spRounds().includes(this.round),
       playerCount: this.order.length,
-      poolGroups: this.poolGroups.map(({ id, playerIds, scale }) => ({ id, playerIds: playerIds.slice(), scale })),
+      poolGroups: this.draftGroups.map(({ id, playerIds, scale }) => ({ id, playerIds: playerIds.slice(), scale })),
       // DESIGN §14: 'client' = battles are simulated by the browsers (b.start specs), 'server' = legacy streaming
       combatMode: this.clientCombat ? 'client' : 'server',
       // solo pause (g.pause, DESIGN §14): the battle, its field clock and every deadline are frozen while true
@@ -187,13 +188,13 @@ export class MatchViews {
         groups: s.groups.map((g) => ({
           id: g.id, playerIds: g.playerIds.slice(), order: g.order.slice(),
           family: g.family, name: g.name, desc: g.desc, eventId: g.eventId,
-          cards: g.cards.map((c) => ({ ...cardView(c), soldOut: c.kind === 'item' && !this.itemPoolFor(g.playerIds[0]).canGain(c.id) })),
+          cards: g.cards.map((c) => ({ ...cardView(c), soldOut: c.kind === 'item' && !this.itemPoolFor(g.order[g.idx] ?? g.playerIds[0]).canGain(c.id) })),
           turn: g.done ? null : g.order[g.idx] ?? null,
           picks: { ...g.picks }, taken: { ...g.taken }, turnDeadline: g.turnDeadline || 0,
           turnSeconds: g.turnSeconds || 0, untimed: !!g.untimed, done: !!g.done,
         })),
         family: s.family, name: s.name, desc: s.desc, eventId: s.eventId,
-        cards: s.cards.map(c => ({ ...cardView(c), soldOut: c.kind === 'item' && !this.itemPool.canGain(c.id) })), order: s.order.slice(),
+        cards: s.cards.map(c => ({ ...cardView(c), soldOut: c.kind === 'item' && !this.itemPoolFor(s.order[s.idx] ?? this.spGroup()?.playerIds[0]).canGain(c.id) })), order: s.order.slice(),
         turn: this.spTurn(), picks: { ...s.picks }, taken: { ...s.taken }, untimed: !!s.untimed,
         turnDeadline: s.turnDeadline || 0, turnSeconds: s.turnSeconds || 0,
       };

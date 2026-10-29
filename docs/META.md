@@ -1243,3 +1243,5 @@ shared/roomConvenience.js normalizes five room booleans. Lobby snapshots them in
 实现及实际测试边界见 [控制台修复记录](CONSOLE-NEXT-RELEASE-FIXES.md)。
 
 房间可设置敌人血量倍率 0.1–100，默认 1；普通敌人与难度／回合倍率乘算，领袖血池也乘算。非默认值的房间不参与公开匹配，对局记录按非官方过滤。
+
+独立卡池（#13）由房主在同盟开局前选择，默认关闭。`Match.independentPools` 使 `poolGroups` 每席一个干员池和装备池；`draftGroups` 保留原固定分组，供策略、机变、联防和客户端分组展示。`poolFor` / `itemPoolFor` 按接收席位路由；机变装备按当前选择者库存判断。开局重抽、休整期回档、重启恢复及隔离宿主保留该设置与库存。此规则为非官方，退出公开匹配和默认官方统计。

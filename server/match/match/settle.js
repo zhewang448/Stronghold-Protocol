@@ -177,6 +177,7 @@ export class MatchSettle {
     }
     if (this.convenience) result.convenience = this.convenience;
     if (this.gd.enemyHpMultiplier !== 1) result.enemyHpMultiplier = this.gd.enemyHpMultiplier;
+    if (this.independentPools) result.independentPools = true;
     this.lastResultMsg = result;
     this.markPublic();
     try { this.flush(true); } catch (e) { this.reportError('flush', e); }

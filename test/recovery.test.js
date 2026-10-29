@@ -40,6 +40,29 @@ function fixture(t, mode = 'coop', options = {}) {
   return { dir, h, recovery, lobby, room, host, file: path.join(dir, 'recovery', `room-${room.code}.bin`) };
 }
 
+test('disk recovery restores independent player pools and their stock', context => {
+  const source = fixture(context, 'coop', { independentPools: true });
+  source.room.independentPools = true;
+  const player = source.h.m.order[0], other = source.h.m.order[1];
+  const id = [...player.pool.entries.keys()][0];
+  assert.ok(player.acquireChess(id));
+  const before = [player.pool.left(id), other.pool.left(id)];
+  source.recovery.save(source.room, source.h.m, capturePrep(source.h.m));
+  class RestoredMatch extends Match {
+    constructor(opts) { super({ ...opts, scheduler: new VirtualScheduler(), BattleClass: FakeBattle, botRehearsal: 0, clientCombat: false }); }
+  }
+  const lobby = new Lobby({ registry: new SessionRegistry(), MatchClass: RestoredMatch, getData: () => DATA, log });
+  const recovery = createRecovery({ lobby, root: process.cwd(), dir: path.dirname(source.file), identity: 'test', log });
+  context.after(() => { recovery.prepareShutdown(); lobby.shutdown(); });
+  recovery.restore();
+  const restored = lobby.rooms.get(source.room.code);
+  assert.equal(restored.independentPools, true);
+  assert.equal(restored.match.independentPools, true);
+  assert.notEqual(restored.match.order[0].pool, restored.match.order[1].pool);
+  assert.deepEqual(restored.match.order.map((seat) => seat.pool.left(id)), before);
+  assert.deepEqual(recovery.status().issues, []);
+});
+
 test('disk recovery preserves all room convenience choices and effective match rules', t => {
   const f = fixture(t);
   const choices = { benchEquip: false, soloUnlimited: false, prepLoadout: false, unequip: true, morphPairing: true };

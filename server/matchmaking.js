@@ -23,7 +23,7 @@ export class Matchmaking {
     return !!room && !room.disposed && room.mode === 'coop' && room.capacity === DEFAULT_SEATS
       && !room.match && !room.private && !room.test && !room.modded && !room.content?.modeId && !room.versionVote
       && !!host?.connected && room.freeSeat() >= 0 && room.activeHumans().every(s => s.connected)
-      && room.aiPicksLast === true && !room.aiTakeoverEnabled && !room.uniteLayerGains && room.enemyHpMultiplier === 1
+      && room.aiPicksLast === true && !room.aiTakeoverEnabled && !room.uniteLayerGains && room.enemyHpMultiplier === 1 && !room.independentPools
       && Object.entries(CONVENIENCE_DEFAULTS).every(([key, value]) => room.convenience[key] === value);
   }
   same(a, b) { return a.version === b.version && a.difficulty === b.difficulty; }

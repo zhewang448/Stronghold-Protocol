@@ -87,7 +87,7 @@ export function planUnite(m, results) {
     }
   }
   return { helpers, reserveHelpers, leakers, leaked, notReentered, round: 1, perRound,
-    roundsMax: Math.min(uniteRoundLimit(m.poolGroups?.length), Math.ceil(ordered.length / perRound)), history: [], usedHelpers: [],
+    roundsMax: Math.min(uniteRoundLimit((m.draftGroups ?? m.poolGroups)?.length), Math.ceil(ordered.length / perRound)), history: [], usedHelpers: [],
     skipVotes: new Set(), skipRemaining: false };
 }
 
@@ -130,7 +130,7 @@ export function helperOrder(m, perfects, results) {
   const st = new Map(perfects.map((ps) => [ps.playerId, helperStats(m, ps, results)]));
   const S = (ps) => st.get(ps.playerId);
   const perRound = Math.max(1, Math.min(2, Math.trunc(m.gd.unite.maxHelpers)));
-  const limit = Math.min(MAX_UNITE_HELPERS, perRound * uniteRoundLimit(m.poolGroups?.length));
+  const limit = Math.min(MAX_UNITE_HELPERS, perRound * uniteRoundLimit((m.draftGroups ?? m.poolGroups)?.length));
   const selected = perfects.slice().sort((a, b) => S(b).units - S(a).units || (S(b).active - S(a).active) || S(b).standing - S(a).standing || a.seat - b.seat)
     .slice(0, limit);
   const ordered = [];

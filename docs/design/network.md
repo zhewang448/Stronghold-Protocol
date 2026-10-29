@@ -476,6 +476,8 @@ room.state.convenience contains five booleans: benchEquip, soloUnlimited, prepLo
 
 `room.state.enemyHpMultiplier` is omitted at its default of 1. The host may set it before a match with `room.setEnemyHpMultiplier { multiplier }`, a finite number from 0.1 through 100. Changes clear other humans' readiness, stop public matchmaking and broadcast the room state. A non-default multiplier makes a room ineligible for public matchmaking. The value persists across room version changes, worker hosts, recovery and test journals.
 
+`room.setIndependentPools { on }` is a co-op host-only, pre-match boolean setting. Changes clear other humans' readiness and leave public matchmaking. `room.state`, `m.public` and `m.result` carry `independentPools: true` when enabled and omit it otherwise. The setting follows version and gameplay hosts, recovery and test journals; local records treat it as unofficial.
+
 ### Host AI takeover permission (2026-10-26)
 
 The authenticated local console settings API persists boolean allowAiTakeover in logs/admin-settings.json. The host permission defaults on. A saved boolean takes precedence over an explicit SP_AI_TAKEOVER environment override (0/false/no/off disables it, 1 enables it); with no saved choice or override the checkbox is checked. The per-room opt-in remains off. Validation and atomic disk replacement complete before runtime state changes. The console switch lives under 主机设置 → 对局设置 → 观战接替 AI.

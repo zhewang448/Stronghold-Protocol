@@ -53,7 +53,7 @@ export function wireOptions(opts) {
   const out = {};
   if (opts.captureRecovery === true) out.captureRecovery = true;
   if (opts.restoreRecord) out.restoreBytes = serialize(opts.restoreRecord).toString('base64');
-  for (const k of ['roomCode', 'mode', 'difficulty', 'modeId', 'aiPicksLast', 'soloUnlimited', 'enemyHpMultiplier', 'seats', 'spectators', 'seed', 'matchNo', 'cs', 'vs', 'requireCs', 'kitted', 'hostId', 'prepOverride', 'version']) {
+  for (const k of ['roomCode', 'mode', 'difficulty', 'modeId', 'aiPicksLast', 'soloUnlimited', 'enemyHpMultiplier', 'independentPools', 'seats', 'spectators', 'seed', 'matchNo', 'cs', 'vs', 'requireCs', 'kitted', 'hostId', 'prepOverride', 'version']) {
     if (opts[k] !== undefined) out[k] = opts[k];
   }
   if (typeof opts.uniteLayerGains === 'boolean') out.uniteLayerGains = opts.uniteLayerGains;
