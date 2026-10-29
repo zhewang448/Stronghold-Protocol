@@ -344,6 +344,8 @@ export class Match {
     if (!this.difficulty) this.difficulty = this.gd.difficulty;
     this.isSolo = this.mode === 'solo' || this.gd.isSolo;
     this.independentPools = !this.isSolo && opts.independentPools === true;
+    this.rescueEnabled = !this.isSolo && opts.rescueEnabled === true;
+    this.rescueWindow = null;
     /** 「AI 队友最后选择」 (opts.aiPicksLast, GitHub #338): humans draft before AI seats (MatchPhases.humansFirst) */
     this.aiPicksLast = !this.isSolo && opts.aiPicksLast === true;
     /** Room rule fixed for this match; direct callers without it retain the host-setting fallback. */

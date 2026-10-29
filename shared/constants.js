@@ -31,6 +31,7 @@ export const MAX_DRAFT_CARDS = 6;
  * server/match/match/watch.js addSpectator).
  */
 export const MAX_SPECTATORS = 2;
+export const SPECTATOR_LIMIT_MAX = 20;
 /** Per-seat cooldown between requests to reroll the setup (server/match/match/setupVote.js). */
 export const SETUP_REROLL_COOLDOWN_MS = 30_000;
 export const ROOM_CODE_LEN = 4;

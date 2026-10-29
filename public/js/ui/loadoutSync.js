@@ -273,6 +273,13 @@ export function setOpsMap(ops) {
 export function preparePresetLoadout(byChar, ops) {
   return toStored(byChar, ops, legacyCopy(LOADOUT_PREF, 'entries', (m) => entriesView(byChar, m)));
 }
+export function preparePresetOwnership(chars) {
+  return toStoredOwnership(chars, legacyCopy(OWNERSHIP_PREF, 'notOwned', (map) => notOwnedView(chars, map)));
+}
+export function publishPresetOwnership(chars) {
+  loadoutStore.set({ notOwnedChars: chars });
+  refreshViews();
+}
 export function publishPresetLoadout(byChar, ops, diy = undefined) {
   const map = shownCharMap();
   const entries = map ? entriesView(byChar, map) : {};

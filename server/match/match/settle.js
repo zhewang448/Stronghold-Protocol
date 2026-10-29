@@ -4,14 +4,15 @@ import { normalLeakHistory } from '../leak-history.js';
 // view carries) and RESULT (finish: m.result to every human still here, onEnd).
 // Installed on Match.prototype by server/match/Match.js (a method container: never instantiated; `this` is the match).
 
-import { PHASE, layerGainRoom } from '../../../shared/constants.js';
+import { PHASE, ERR, layerGainRoom } from '../../../shared/constants.js';
 import { uniteSurvivors, plannedUniteSurvivors } from '../unite.js';
 import { buildResult } from '../results.js';
 import { recordRound } from '../history.js';
-import { FLOW_TICKER_PRIORITY, DELAYS } from './common.js';
+import { FLOW_TICKER_PRIORITY, DELAYS, OK, fail } from './common.js';
 import { msg } from '../../../shared/i18n.js';
 import { onSettle, resetRoundCounters } from '../botEmotes.js';
 import { creditedKillsOf } from '../../sim/spec.js';
+import { recordReplayRescue } from '../replay.js';
 
 export class MatchSettle {
   settle(plan, uniteResult) {
@@ -87,15 +88,33 @@ export class MatchSettle {
       this.dispatch(ps, 'onBattleResult', { result: r, lpLoss: loss, perfect: counted === 0 && r.perfect !== false, unite: uniteResult || null, uniteResults });
       ps.recompute();
     }
+    const helpers = uniteRan ? [...plan.usedHelpers, ...(uniteResult && !uniteResult.synthetic ? plan.helpers : [])] : [];
+    const eligible = helpers.filter((helper) => {
+      const result = this.lastResults.get(helper.playerId);
+      return result && result.perfect !== false && !(result.leaked || []).some((leak) => leak && leak.counted !== false);
+    }).map((helper) => helper.playerId);
+    const canRescue = this.rescueEnabled && this.teamLp == null && eligible.some((id) => {
+      const helper = this.players.get(id);
+      return helper?.alive && !helper.left && !helper.isBot && helper.connected && !helper.autoplay && helper.lp >= 11;
+    });
+    const targets = canRescue ? alive.filter((player) => player.lp <= 0 && !player.rescued && !player.left) : [];
+    for (const player of targets) {
+      player.lp = 0;
+      player.alive = false;
+      player.pendingRescue = true;
+      player.dirty();
+    }
     this.eliminateBroken();
     // local console: the round's LP / funds / battle record (history.js)
-    try { recordRound(this, { uniteResults }); } catch (e) { this.reportError('recordRound', e); }
+    if (!targets.length) try { recordRound(this, { uniteResults }); } catch (e) { this.reportError('recordRound', e); }
 
     this.fields = [];
     this.watchers.clear();
     this.markPublic();
     onSettle(this); // one emote per alive AI per round (enabled by default; SP_BOT_EMOTES=0 silences it)
-    this.setDeadline(DELAYS.SETTLE / 1000, () => this.afterSettle(), { silent: this.soloUntimed });
+    this.rescueWindow = targets.length ? { round: this.round, eligible, targets: targets.map(player => player.playerId), uniteResults } : null;
+    this.setDeadline(targets.length ? 15 : DELAYS.SETTLE / 1000, () => this.afterSettle(), { silent: !targets.length && this.soloUntimed });
+    if (this.rescueWindow) this.rescueWindow.deadline = this.deadline;
   }
 
   /**
@@ -137,7 +156,43 @@ export class MatchSettle {
     }
   }
 
+  rescuePlayer(donor, { playerId, matchId, round }) {
+    const window = this.rescueWindow;
+    if (this.phase !== PHASE.SETTLE || !window || round !== window.round || matchId !== `${this.roomCode}:${this.battlePrefix}`
+      || window.deadline > 0 && this.sched.gameNow() >= window.deadline) return fail(ERR.WRONG_PHASE);
+    const target = this.players.get(playerId);
+    if (!window.eligible.includes(donor.playerId) || !donor.alive || donor.left || donor.isBot || donor.autoplay || !donor.connected || donor.lp < 11
+      || !window.targets.includes(playerId) || !target?.pendingRescue || target.left || target.rescued) return fail(ERR.BAD_TARGET);
+    donor.lp -= 10;
+    donor.stats.lpLost += 10;
+    target.lp = 1;
+    target.alive = true;
+    target.pendingRescue = false;
+    target.rescued = true;
+    recordReplayRescue(this, donor.playerId, target.playerId);
+    donor.dirty();
+    target.dirty();
+    this.markPublic();
+    return OK;
+  }
+
+  closeRescueWindow() {
+    const window = this.rescueWindow;
+    if (!window) return;
+    this.rescueWindow = null;
+    for (const id of window.targets) {
+      const player = this.players.get(id);
+      if (!player?.pendingRescue) continue;
+      player.pendingRescue = false;
+      player.eliminate(this.round);
+      this.toast(player, 'error', '你的目标生命值耗尽，已被淘汰');
+      this.tickerText(msg('{name}博士的目标生命值已耗尽', { name: player.name }), FLOW_TICKER_PRIORITY);
+    }
+    try { recordRound(this, { uniteResults: window.uniteResults }); } catch (e) { this.reportError('recordRound', e); }
+  }
+
   afterSettle() {
+    this.closeRescueWindow();
     if (!this.alivePlayers().length) { this.finish({ victory: false, reason: 'eliminated' }); return; }
     resetRoundCounters(this); // AI bot merge-counter resets each round (server/match/botEmotes.js)
     this.startRound(this.round + 1);
@@ -147,6 +202,7 @@ export class MatchSettle {
     // A command that ends a test match must be audited/counted before publishing its result.
     if (this.test && this._testApplying) { this._testOutcome = { victory, hiddenCleared, reason }; return; }
     if (this.ended || this.disposed) return;
+    this.closeRescueWindow();
     const settledBattle = [PHASE.SETTLE, PHASE.FINAL_ASSAULT, PHASE.HIDDEN_CORE].includes(this.phase);
     this.offersDispose();
 
@@ -178,6 +234,7 @@ export class MatchSettle {
     if (this.convenience) result.convenience = this.convenience;
     if (this.gd.enemyHpMultiplier !== 1) result.enemyHpMultiplier = this.gd.enemyHpMultiplier;
     if (this.independentPools) result.independentPools = true;
+    if (this.rescueEnabled) result.rescueEnabled = true;
     this.lastResultMsg = result;
     this.markPublic();
     try { this.flush(true); } catch (e) { this.reportError('flush', e); }

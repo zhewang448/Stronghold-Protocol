@@ -206,7 +206,7 @@ function CardPicker({ current, currentSkin, list, m, onPick, onClose }) {
   <//>`;
 }
 
-function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvite, onAddBot, onRemoveBot, searching, portraits, onPickCard = null }) {
+function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvite, onAddBot, onRemoveBot, onBotBand, searching, portraits, onPickCard = null }) {
   const seatAccount = useAccount(seat && !seat.isBot ? seat.playerId : null);
   const [bad, setBad] = useState(null);
   const flash = useRise(!!seat && (seat.ready || seat.isBot || seat.playerId === room.hostId));
@@ -271,14 +271,20 @@ function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvi
       </span>
       <small class="rseat__doc">${seat.isBot ? 'AUTONOMOUS UNIT' : `DOCTOR #${doctorNo(seat.playerId)}`}</small>
     </div>
+    ${seat.isBot ? html`<label class="rseat__bot-band"><span>${t('AI 开局策略')}</span>
+      <select aria-label=${t('AI 开局策略')} value=${seat.botBand || ''} disabled=${!facts.isHost || !!busy || !online || room.inMatch === true}
+        onChange=${event => onBotBand(index, event.currentTarget.value || null)}>
+        <option value="">${t('自动选择')}</option>
+        ${Object.values(data.get('bands') || {}).filter(band => !band.modeTypeList || band.modeTypeList.includes('MULTI')).sort((first, second) => (first.sortId || 0) - (second.sortId || 0)).map(band => html`<option key=${band.bandId} value=${band.bandId}>${data.lookup('bands', band.bandId)?.name || band.name}</option>`)}
+      </select></label>` : null}
   </article>`;
 }
 
 /** 观战席: the room's spectators (host: ✕ frees a seat), and 入座 for a spectator while a player seat is free. */
-function SpectatorBar({ facts, myId, busy, onRemove, onSit }) {
+function SpectatorBar({ room, facts, myId, busy, onRemove, onSit }) {
   if (!facts.spectators.length) return null;
   return html`<section class="specbar" aria-label=${t('观战席')}>
-    <span class="specbar__label"><${Icon} name="eye" />${t('观战席')}<b class="num">${facts.spectators.length}</b><span class="num t-dim">/${MAX_SPECTATORS}</span></span>
+    <span class="specbar__label"><${Icon} name="eye" />${t('观战席')}<b class="num">${facts.spectators.length}</b><span class="num t-dim">/${room.spectatorLimit ?? MAX_SPECTATORS}</span></span>
     ${facts.spectators.map((s) => html`<span key=${s.playerId} class=${`specbar__who${s.playerId === myId ? ' is-me' : ''}${s.connected === false ? ' is-offline' : ''}`}>
       ${s.connected === false ? html`<${Icon} name="wifiOff" />` : null}${s.name || t('博士')}${s.playerId === myId ? html`<span class="seat__you">${t('你')}</span>` : null}
       ${facts.isHost ? html`<${Button} variant="ghost" size="sm" square=${true} icon="close" loading=${busy === `rs${s.playerId}`}
@@ -333,7 +339,7 @@ function RoomProtocol({ room, variant, onClose, onPick, busy, leaving = false })
 }
 
 /** ⚙ of the bottom pill: 私密房间, 人数上限, AI 队友最后选择, room-local 联防叠层, 无限火力 branch. */
-function RoomOptions({ room, facts, myId, busy, online, variant, onPrivate, onMaxSeats, onAiLast, onAiTakeover, onUniteLayerGains, onConvenience, onEnemyHpMultiplier, onIndependentPools, onVariant, onClose, leaving = false }) {
+function RoomOptions({ room, facts, myId, busy, online, variant, onPrivate, onMaxSeats, onAiLast, onAiTakeover, onUniteLayerGains, onConvenience, onEnemyHpMultiplier, onIndependentPools, onRescue, onVariant, onClose, leaving = false }) {
   const coop = room.mode !== 'solo';
   const host = facts.isHost;
   const [hpMultiplier, setHpMultiplier] = useState(String(room.enemyHpMultiplier ?? 1));
@@ -374,6 +380,8 @@ function RoomOptions({ room, facts, myId, busy, online, variant, onPrivate, onMa
       </form>
       ${coop ? html`<label class="rs-opt"><input name="independent-pools" type="checkbox" checked=${room.independentPools === true} disabled=${!host || !!busy || !online || room.inMatch === true} onChange=${event => onIndependentPools(event.currentTarget.checked)} />
         <span>${t('独立卡池')}<small>${t('每位博士和 AI 使用独立的干员与装备库存；本局不计入官方统计')}</small></span></label>` : null}
+      ${coop ? html`<label class="rs-opt"><input name="rescue-enabled" type="checkbox" checked=${room.rescueEnabled === true} disabled=${!host || !!busy || !online || room.inMatch === true} onChange=${event => onRescue(event.currentTarget.checked)} />
+        <span>${t('队友救援')}<small>${t('联防后符合条件的博士可消耗 10 生命救援队友；本局不计入官方统计')}</small></span></label>` : null}
       ${conveniences.map(([key, label, hint]) => {
         const plugin = room.content?.rules && Object.hasOwn(room.content.rules, key);
         const pluginOn = key === 'prepLoadout' ? room.content?.rules?.[key] === 'prep' : key === 'unequip' ? room.content?.rules?.[key] === 'allow' : room.content?.rules?.[key] === 'plus';
@@ -407,7 +415,7 @@ export function RoomScreen() {
   const inFlight = useRef(false); // synchronous guard against double clicks (state updates are async)
   const [, tick] = useState(0);
   useEffect(() => { const id = setInterval(() => tick((x) => x + 1), 1000); return () => { clearInterval(id); alive.current = false; }; }, []);
-  useData('chess', 'assets', 'seat-art');
+  useData('chess', 'assets', 'seat-art', 'bands');
   const m = data.get('assets');
   // 名片干员: the pickable operators, the default pool (5★/6★ by charId, the same order on every client), one's pick
   const cardList = useMemo(() => cardOperators(data.list('chess'), data.get('seat-art')), [data.get('chess'), data.get('seat-art')]);
@@ -435,7 +443,7 @@ export function RoomScreen() {
   const facts = room ? roomFacts(room, me.playerId) : null;
   const vote = room?.versionVote;
   const versionWhy = isModdedRoom(room) ? t('请先关闭改变玩法的插件') : null;
-  const searchable = CAN_QUEUE && !!room && coop && facts.isHost && room.private !== true && !room.test && !isModdedRoom(room) && !room.versionVote && room.aiPicksLast === true && !room.aiTakeoverEnabled && !room.uniteLayerGains && !room.independentPools && (room.enemyHpMultiplier ?? 1) === 1 && Object.entries(CONVENIENCE_DEFAULTS).every(([key, value]) => room.convenience?.[key] === value) && facts.seats.length === DEFAULT_SEATS && facts.humans.every(s => s.connected) && !room.inMatch;
+  const searchable = CAN_QUEUE && !!room && coop && facts.isHost && room.private !== true && !room.test && !isModdedRoom(room) && !room.versionVote && room.aiPicksLast === true && !room.aiTakeoverEnabled && !room.uniteLayerGains && !room.independentPools && !room.rescueEnabled && (room.enemyHpMultiplier ?? 1) === 1 && Object.entries(CONVENIENCE_DEFAULTS).every(([key, value]) => room.convenience?.[key] === value) && facts.seats.length === DEFAULT_SEATS && facts.humans.every(s => s.connected) && !room.inMatch;
   const firepower = room?.random === true;
   const variant = room?.variant === 'endurance' || room?.variant === 'marathon' ? room.variant : 'blitz';
 
@@ -485,10 +493,12 @@ export function RoomScreen() {
   const setDifficulty = (difficulty) => run('diff', async () => { const pluginMode = room.content?.modeId ? (room.content.modes || []).find(mode => mode.id === room.content.modeId)?.name || room.content.modeId : null; await net.request('room.setDifficulty', { difficulty }); savePref('lobby.difficulty', difficulty); setPicker(false); if (pluginMode) toast(t('已退出插件模式「{name}」', { name: pluginMode }), 'info'); });
   const setAiTakeover = (on) => run('ai-takeover', () => net.request('room.setAiTakeover', { on }));
   const setAiLast = (on) => run('ailast', () => net.request('room.setAiPicksLast', { on }));
+  const setBotBand = (seat, bandId) => run(`bot-band-${seat}`, () => net.request('room.setBotBand', { seat, bandId }));
   const setUniteLayerGains = (on) => run('unite-layers', () => net.request('room.setUniteLayerGains', { on }));
   const setConvenience = (key, on) => run(`convenience-${key}`, () => net.request('room.setConvenience', { key, on }));
   const setEnemyHpMultiplier = (multiplier) => run('enemy-hp-multiplier', () => net.request('room.setEnemyHpMultiplier', { multiplier }));
   const setIndependentPools = (on) => run('independent-pools', () => net.request('room.setIndependentPools', { on }));
+  const setRescue = (on) => run('rescue', () => net.request('room.setRescue', { on }));
   // spectator seats: the host frees one; a spectator takes a free player seat with room.join of this room
   const removeSpectator = (playerId) => run(`rs${playerId}`, () => net.request('room.removeSpectator', { playerId }));
   const sit = () => run('sit', () => net.request('room.join', { code: room.code, ...(room.test ? { testAck: true } : {}) }));
@@ -583,7 +593,7 @@ export function RoomScreen() {
 
     <main class="rs-seats">
       ${facts.seats.map((s, i) => html`<${SeatCard} key=${s ? `p${s.playerId}` : `e${i}`} seat=${s} index=${i} room=${room} facts=${facts}
-        myId=${me.playerId} busy=${busy} online=${online} onKick=${kick} onInvite=${() => copy('code')} onAddBot=${addBot} onRemoveBot=${removeBot} searching=${searching} portraits=${portraits}
+        myId=${me.playerId} busy=${busy} online=${online} onKick=${kick} onInvite=${() => copy('code')} onAddBot=${addBot} onRemoveBot=${removeBot} onBotBand=${setBotBand} searching=${searching} portraits=${portraits}
         onPickCard=${CARD_SYNC && cardList.length ? () => setPicking(true) : null} />`)}
       ${coop ? null : html`<aside class="solo-brief rs-brief brackets">
         <${MicroLabel} tone="mint">BRIEFING<//>
@@ -596,7 +606,7 @@ export function RoomScreen() {
         </ul>
       </aside>`}
     </main>
-    <${SpectatorBar} facts=${facts} myId=${me.playerId} busy=${busy} onRemove=${removeSpectator} onSit=${sit} />
+    <${SpectatorBar} room=${room} facts=${facts} myId=${me.playerId} busy=${busy} onRemove=${removeSpectator} onSit=${sit} />
     <${VersionVote} room=${room} />
 
     <footer class=${optsShown ? 'rs-foot rs-foot--options' : 'rs-foot'}>
@@ -612,7 +622,7 @@ export function RoomScreen() {
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 2h3.4l.5 2.6 1.9.8 2.2-1.5 2.4 2.4-1.5 2.2.8 1.9 2.6.5v3.4l-2.6.5-.8 1.9 1.5 2.2-2.4 2.4-2.2-1.5-1.9.8-.5 2.6h-3.4l-.5-2.6-1.9-.8-2.2 1.5-2.4-2.4 1.5-2.2-.8-1.9L2 13.7v-3.4l2.6-.5.8-1.9-1.5-2.2 2.4-2.4 2.2 1.5 1.9-.8zM12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" fill-rule="evenodd" /></svg>
           </button>
           ${optsShown ? html`<${RoomOptions} room=${room} facts=${facts} myId=${me.playerId} busy=${busy} online=${online} variant=${variant}
-            onPrivate=${setPrivate} onMaxSeats=${setMaxSeats} onAiLast=${setAiLast} onAiTakeover=${setAiTakeover} onUniteLayerGains=${setUniteLayerGains} onConvenience=${setConvenience} onEnemyHpMultiplier=${setEnemyHpMultiplier} onIndependentPools=${setIndependentPools} onVariant=${setVariant} onClose=${() => setOpts(false)} leaving=${optsLeaving} />` : null}
+            onPrivate=${setPrivate} onMaxSeats=${setMaxSeats} onAiLast=${setAiLast} onAiTakeover=${setAiTakeover} onUniteLayerGains=${setUniteLayerGains} onConvenience=${setConvenience} onEnemyHpMultiplier=${setEnemyHpMultiplier} onIndependentPools=${setIndependentPools} onRescue=${setRescue} onVariant=${setVariant} onClose=${() => setOpts(false)} leaving=${optsLeaving} />` : null}
         </div>
       </div>
       <div class="rs-foot__right">

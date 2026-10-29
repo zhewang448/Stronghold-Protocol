@@ -67,13 +67,12 @@ export class MatchSpDraft {
     }
     this.prioritizeDraftOrder(g.order, g.idx);
     let available = g.cards.filter((c) => this.spCardAvailable(c, g)).map((c) => c.idx);
-    while (this.independentPools && g.idx < g.order.length && !available.length) {
+    for (; this.independentPools && g.idx < g.order.length && !available.length;) {
       (g.skipped ||= []).push(g.order[g.idx]);
       g.idx++;
-      while (g.idx < g.order.length) {
+      for (; g.idx < g.order.length; g.idx++) {
         const player = this.players.get(g.order[g.idx]);
         if (player && player.alive && !player.left && s.picks[player.playerId] == null) break;
-        g.idx++;
       }
       this.prioritizeDraftOrder(g.order, g.idx);
       available = g.cards.filter((c) => this.spCardAvailable(c, g)).map((c) => c.idx);

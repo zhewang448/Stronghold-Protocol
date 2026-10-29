@@ -1810,6 +1810,8 @@ button.ally-card:disabled { filter: grayscale(.7) brightness(.7); cursor: defaul
 .rs--solo .rseat { --w: min(2.7rem, 34vw); }
 .rseat__clip { position: absolute; left: 50%; top: -.14rem; width: .16rem; height: .2rem; transform: translateX(-50%); background: #3a3e3d; border: 2px solid #1a1c1c; z-index: 2; }
 .rseat.is-ready .rseat__clip { background: #4fe8c0; }
+.rseat__bot-band { display: flex; flex-direction: column; gap: 3px; padding: 4px; font-size: max(calc(.14 * var(--t)), 11px); color: #e4eae8; }
+.rseat__bot-band select { width: 100%; min-width: 0; min-height: 28px; color: #eff5f3; background: #25302f; border: 1px solid #718682; }
 .rseat__strip { position: relative; display: flex; align-items: center; justify-content: space-between; height: max(.26rem, 16px); padding: 0 .08rem; background: #2b2e2e; }
 .rseat__strip i { width: .5rem; height: 4px; background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .45) 0 3px, transparent 3px 5px); }
 .rseat__strip span { font-size:max(calc(.12 * var(--t)), 9px); color: #8d9391; }

@@ -86,7 +86,7 @@ const cx = (...p) => p.flat().filter(Boolean).join(' ');
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI'];
 const EXPORT_PARTS = [
   ['skills', N_('技能选择')], ['modules', N_('模组选择')], ['potential', N_('潜能设置')], ['cultivate', N_('练度设置')],
-  ['skins', N_('皮肤装扮')], ['skinRandom', N_('皮肤随机设置')], ['skinLocks', N_('皮肤锁定')],
+  ['skins', N_('皮肤装扮')], ['skinRandom', N_('皮肤随机设置')], ['skinLocks', N_('皮肤锁定')], ['ownership', N_('干员持有')],
 ];
 
 // ---- export / import (干员调配 presets) -----------------------------------------------------------------------------
@@ -862,7 +862,7 @@ function LoadoutScreen({ st }) {
   const availableImportParts = transferParts(importData);
   const importParts = selectiveImport ? Object.fromEntries(EXPORT_PARTS.map(([key]) => [key, !!availableImportParts[key] && (io.parts?.[key] ?? true)])) : {};
   const importScope = importData?.ok ? restrictTransferScope(importData.scope || null, transferScope) : null;
-  const importLocked = !presetPermissions().loadout && ['skills', 'modules', 'potential', 'cultivate'].some(key => importParts[key]);
+  const importLocked = !presetPermissions().loadout && ['skills', 'modules', 'potential', 'cultivate'].some(key => importParts[key]) || !presetPermissions().ownership && importParts.ownership;
   const canImport = !selectiveImport || (importData.ok && Object.values(importParts).some(Boolean) && scopeReady && !importLocked
     && (!importScope || importScope.charIds.length > 0));
   const exportData = selectiveExport && ioText ? JSON.parse(ioText) : null;
@@ -872,7 +872,7 @@ function LoadoutScreen({ st }) {
     : Object.values(exportParts).some(Boolean)));
   const changeExportPart = (key, on) => setIo({ ...io, parts: { ...exportParts, [key]: on } });
   const changeExportFormat = (format) => setIo({ ...io, format, parts: format === 'upstream'
-    ? { ...exportParts, skins: false, skinRandom: false, skinLocks: false } : exportParts, ...(format === 'upstream' ? { scopeMode: 'all' } : {}) });
+    ? { ...exportParts, skins: false, skinRandom: false, skinLocks: false, ownership: false } : exportParts, ...(format === 'upstream' ? { scopeMode: 'all' } : {}) });
   const openExport = () => setIo(tab === 'ownership'
     // (by operator, every version's — DESIGN §35.23; a v1 store still migrating exports what it has)
     ? { mode: 'export', kind: 'ownership', text: serializeOwnership(loadoutStore.get().notOwnedChars || []) }
@@ -880,7 +880,7 @@ function LoadoutScreen({ st }) {
       : { mode: 'export', kind: 'loadout', format: 'native', now: Date.now(), scopeMode: 'all', scopeVersions: [pageVersion()],
         parts: { skills: true, modules: true, potential: true, cultivate: true, skins: true, skinRandom: false, skinLocks: false },
         snapshot: { byChar: loadoutStore.get().byChar || {}, ops: loadoutStore.get().ops || {}, skins: skinsStore.get().skins,
-          random: { scope: skinRandomStore.get().scope, auto: skinRandomStore.get().auto }, locks: skinRandomStore.get().locked } });
+          random: { scope: skinRandomStore.get().scope, auto: skinRandomStore.get().auto }, locks: skinRandomStore.get().locked, notOwnedChars: loadoutStore.get().notOwnedChars || [] } });
   const openImport = () => setIo({ mode: 'import', kind: tab, text: '', scopeMode: 'all', scopeVersions: [pageVersion()] });
   const ioCopy = async () => {
     if (!canExport) return;
@@ -933,7 +933,7 @@ function LoadoutScreen({ st }) {
       }
       const loadout = exportPayload(byChar, { now: 0, ops: res.ops || {}, skins: res.skins || {}, sections: importParts,
         random: res.skinRandom, locks: res.skinLocks });
-      const snapshot = { loadout, diy: {}, ...(importScope ? { scope: importScope } : {}) };
+      const snapshot = { loadout, diy: {}, ...(importParts.ownership ? { ownership: res.ownership } : {}), ...(importScope ? { scope: importScope } : {}) };
       const request = { ...io, busy: true, error: null };
       ioRef.current = request; setIo(request);
       try {
@@ -1234,6 +1234,7 @@ function LoadoutScreen({ st }) {
       ${selectiveImport ? html`<fieldset class="lo-export" data-testid="loadout-import-options"><legend>${t('选择导入内容')}</legend>
         ${importData.ok ? html`<p class="lo-io__hint">${t('文件已识别：{n} 名干员包含自定义配置。', { n: new Set([...Object.keys(importData.byChar || importData.entries || {}), ...Object.keys(importData.ops || {}), ...Object.keys(importData.skins || {})]).size })}</p>
           <p class="lo-io__hint">${t('文件格式：{format}', { format: importEnvelope?.v === 3 ? t('本库范围格式（v3）') : importEnvelope?.extension ? t('本库格式（含扩展配置）') : t('上游兼容或旧版格式') })}</p>
+          ${importData.ownership ? html`<p class="lo-io__hint">${t('文件记录 {n} 名未持有干员', { n: importData.ownership.length })}</p>` : null}
           ${importData.scope ? html`<p class="lo-io__hint">${t('来源版本：{versions}', { versions: importData.scope.versions.map(id => t(VERSIONS.find(v => v.id === id)?.label)).join(' / ') })}</p>` : null}
           <p class="lo-io__hint">${importData.scope ? t('文件限定 {n} 名干员；新增筛选只会缩小范围，不会扩大。', { n: importData.scope.charIds.length }) : t('文件未限定干员范围，可选择版本进一步筛选。')}</p>`
           : html`<p class="lo-io__hint" role="status">${ioText.trim() ? importData.error : t('粘贴或选择文件后，将显示可导入内容与范围。')}</p>`}

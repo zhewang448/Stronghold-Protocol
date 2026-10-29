@@ -23,6 +23,31 @@ describe("named loadout presets (real browser)", { skip: !(process.env.SP_E2E ==
     await c.page.waitForSelector(".lp-dialog");
     await c.page.evaluate(() => Promise.all([...document.querySelectorAll(".lp-veil, .lp-dialog")].flatMap(e => e.getAnimations()).map(a => a.finished.catch(() => {}))));
   }
+  test("ownership can be saved and restored with a named preset", { timeout: 120000 }, async () => {
+    const client = new Client(P, srv.base, "preset-ownership", { prefix: "preset-ownership", w: 1280, h: 720 });
+    try {
+      await client.open(); await client.enter("持有预设");
+      await client.click(".lobby-screen [data-testid=loadout-open]");
+      await client.click(button("loadout-filter")); await client.click(button("loadout-view-list"));
+      await client.click("[data-tab=ownership]"); await client.page.waitForSelector(".own-card");
+      await client.click(".own-card");
+      const before = await client.page.evaluate(() => JSON.parse(localStorage.getItem("sp.pref.ownership")).notOwnedChars);
+      assert.equal(before.length, 1);
+      await client.click("[data-tab=loadout]");
+      await client.click(button("preset-save")); await input(client, "持有方案");
+      await client.page.$eval("[data-preset-part=ownership]", element => element.scrollIntoView({ block: "center" }));
+      await client.click("[data-preset-part=ownership]"); await client.click(button("preset-save-confirm"));
+      await client.page.waitForSelector(".lp-dialog", { hidden: true });
+      const saved = (await library(client)).items[0];
+      assert.deepEqual(saved.snapshot.ownership, before);
+      await client.click("[data-tab=ownership]"); await client.click(".own-card"); await client.click("[data-tab=loadout]");
+      await client.click(button("preset-selector")); await client.click(`[data-preset-id="${saved.id}"]`);
+      await client.click(button("preset-discard")); await client.click(button("preset-apply-confirm"));
+      await client.page.waitForSelector(".lp-dialog", { hidden: true });
+      assert.deepEqual(await client.page.evaluate(() => JSON.parse(localStorage.getItem("sp.pref.ownership")).notOwnedChars), before);
+      assert.deepEqual(client.problems, []);
+    } finally { await client.close(); }
+  });
   test("invalid imports preserve settings and legacy empty ops restores defaults", { timeout: 120000 }, async () => {
     const c = new Client(P, srv.base, "invalid-import", { prefix: "loadout-invalid-import", w: 1280, h: 720 });
     try {

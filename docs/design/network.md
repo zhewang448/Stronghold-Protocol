@@ -478,6 +478,8 @@ room.state.convenience contains five booleans: benchEquip, soloUnlimited, prepLo
 
 `room.setIndependentPools { on }` is a co-op host-only, pre-match boolean setting. Changes clear other humans' readiness and leave public matchmaking. `room.state`, `m.public` and `m.result` carry `independentPools: true` when enabled and omit it otherwise. The setting follows version and gameplay hosts, recovery and test journals; local records treat it as unofficial.
 
+`room.setBotBand { seat, bandId? }` sets or clears an AI seat's starting strategy; the server validates the room's version and mode. `room.setRescue { on }` is host-only before a co-op match. Enabled rooms omit public matchmaking; `rescueEnabled: true` travels in room, match, result, recovery, worker and journal state. During SETTLE, `m.public.rescue` names the current round, deadline, eligible helpers and pending targets. `g.rescue { playerId, matchId, round }` rechecks the deadline, helper, target and LP before an atomic mutation; stale requests fail. `SP_MAX_SPECTATORS` configures a server-wide per-room cap from 2 to 20; room state and directory publish a non-default `spectatorLimit`.
+
 ### Host AI takeover permission (2026-10-26)
 
 The authenticated local console settings API persists boolean allowAiTakeover in logs/admin-settings.json. The host permission defaults on. A saved boolean takes precedence over an explicit SP_AI_TAKEOVER environment override (0/false/no/off disables it, 1 enables it); with no saved choice or override the checkbox is checked. The per-room opt-in remains off. Validation and atomic disk replacement complete before runtime state changes. The console switch lives under 主机设置 → 对局设置 → 观战接替 AI.

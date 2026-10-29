@@ -71,10 +71,10 @@ export const isModdedRoom = (room) => !!room?.content && room.content.vanilla ==
  * the original game. @param {{ room: any, compact?: boolean, class?: string }} props
  */
 export function UnofficialMark({ room, compact = false, class: cls = '' }) {
-  if (!isModdedRoom(room) && room?.independentPools !== true) return null;
+  if (!isModdedRoom(room) && room?.independentPools !== true && room?.rescueEnabled !== true) return null;
   // the gameplay plugins only (a cosmetic one beside them changes no battle)
   const n = roomPluginFacts(room, null).plugins.filter((p) => p.class === 'content').length;
-  const tip = room?.independentPools === true ? t('独立卡池对局不计入官方统计') : t('非官方：本局使用了改变玩法的插件（{n} 个），不计入统计总览', { n });
+  const tip = room?.rescueEnabled === true ? t('队友救援对局不计入官方统计') : room?.independentPools === true ? t('独立卡池对局不计入官方统计') : t('非官方：本局使用了改变玩法的插件（{n} 个），不计入统计总览', { n });
   return html`<span class=${cx('modmark', compact && 'modmark--compact', cls)} title=${tip} aria-label=${tip} data-testid="unofficial-mark">
     ${compact ? 'MOD' : t('非官方')}
   </span>`;

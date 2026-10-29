@@ -345,7 +345,7 @@ export function directoryRoomFacts(room) {
   const occupied = room.occupied ?? ((room.humans || 0) + (room.bots || 0));
   return { capacity, occupied, free: capacity - occupied,
     joinable: !room.inMatch && (room.joinable ?? occupied < capacity),
-    watchable: room.watchable ?? (room.spectators || 0) < MAX_SPECTATORS };
+    watchable: room.watchable ?? (room.spectators || 0) < (room.spectatorLimit ?? MAX_SPECTATORS) };
 }
 
 /** One directory poll shared by the hub card and dialog; hidden/offline pages do not poll. */
@@ -640,7 +640,7 @@ export function AllianceSelect({ customCode, onCustomCode, customCodeOk, onClose
             <input type="text" value=${code} placeholder=${t('输入同盟密钥')} maxlength="64" autocomplete="off" spellcheck="false"
               onInput=${(e) => onCode(e.currentTarget.value)} onKeyDown=${(e) => { if (e.key === 'Enter' && !e.isComposing) onJoin(); }} />
             ${codeOk ? html`<button type="button" class="ally-key__spec" disabled=${!online || busy === 'spectate'} onClick=${onSpectate}
-              title=${t('以观战者身份进入：不占博士席位，只能观看（每个同盟最多 {MAX_SPECTATORS} 名，模拟进行中也可进入）', { MAX_SPECTATORS })}><${Icon} name="eye" />${t('观战')}</button>` : null}
+              title=${t('以观战者身份进入：不占博士席位，只能观看，模拟进行中也可进入')}><${Icon} name="eye" />${t('观战')}</button>` : null}
           </label>
           ${recent.length ? html`<span class="ally-recent">${recent.map((c) => html`<button key=${c} type="button" class="code-chip num" title=${t('填入密钥（不会直接加入）')} onClick=${() => onCode(c)}>${c}</button>`)}</span>` : null}
           <button type="button" class="ally-card__bar ally-card__bar--join" disabled=${!codeOk || !online || busy === 'join'} onClick=${() => onJoin()}>
@@ -738,7 +738,7 @@ export function MatchmakingModal({ open, onClose, onJoin, onSpectate, directory,
                     </span>
                     <span>${versionLabel(r.version)}</span>
                     ${r.modded ? html`<span>${t('玩法插件')}</span>` : null}
-                    <span>${t('观战 {n}/{max}', { n: r.spectators || 0, max: MAX_SPECTATORS })}</span>
+                    <span>${t('观战 {n}/{max}', { n: r.spectators || 0, max: r.spectatorLimit ?? MAX_SPECTATORS })}</span>
                   </div>
                 </div>
                 <div class="mm-room-actions">
@@ -1062,7 +1062,7 @@ export function LobbyScreen() {
       </div>
       <div class="join-row hub-join__buttons">
         <${Button} variant="amber" size="lg" icon="users" loading=${busy === 'join'} disabled=${!codeOk || !online} onClick=${() => join()}>${t('加入同盟')}<//>
-        <${Tooltip} text=${t('以观战者身份进入：不占博士席位，只能观看（每个同盟最多 {MAX_SPECTATORS} 名，模拟进行中也可进入）', { MAX_SPECTATORS })}>
+        <${Tooltip} text=${t('以观战者身份进入：不占博士席位，只能观看，模拟进行中也可进入')}>
           <${Button} variant="secondary" size="lg" icon="eye" class="join-spectate" loading=${busy === 'spectate'} disabled=${!codeOk || !online} onClick=${spectate}>${t('观战')}<//>
         <//>
       </div>

@@ -542,11 +542,11 @@ export function attachAudit(m, { invariants = true, limit = 200 } = {}) {
         } else {
           // eliminated: LP is clamped to 0, so the loss was ≥ lp0 and still ≤ min(cap, counted)
           if (lp0 > max) fail(`${ps.playerId}: eliminated from ${lp0} LP with only ${counted} counted leaks`);
-          if (ps.eliminatedRound !== m.round) fail(`${ps.playerId}: eliminated round ${ps.eliminatedRound} != ${m.round}`);
+          if (!ps.pendingRescue && ps.eliminatedRound !== m.round) fail(`${ps.playerId}: eliminated round ${ps.eliminatedRound} != ${m.round}`);
           if (ps.lp !== 0) fail(`${ps.playerId}: eliminated with LP ${ps.lp}`);
         }
       }
-      expectDeadline(3, 'SETTLE', { silentSolo: true });
+      expectDeadline(m.rescueWindow ? 15 : 3, 'SETTLE', { silentSolo: !m.rescueWindow });
     });
     runInvariants();
     return res;

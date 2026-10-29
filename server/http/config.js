@@ -20,7 +20,7 @@
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ROOM_CODE_LEN } from '../../shared/constants.js';
+import { ROOM_CODE_LEN, MAX_SPECTATORS, SPECTATOR_LIMIT_MAX } from '../../shared/constants.js';
 
 import { DEFAULT_VERSION, VERSIONS, versionById } from '../../shared/versions.js';
 
@@ -32,7 +32,7 @@ export const noopLog = { info() {}, warn() {}, error() {}, debug() {} };
 /** startServer() options handed on to net.js Network / lobby.js Lobby (an absent one keeps that module's default). */
 const NET_OPTION_KEYS = ['reconnectWindowMs', 'heartbeatMs', 'helloTimeoutMs', 'ratePerSec', 'rateBurst', 'maxConnections', 'maxOnline', 'abuseDropsPerSec',
   'maxConnectionsPerAddr', 'heavyPerSec', 'heavyBurst', 'trustProxy'];
-const LOBBY_OPTION_KEYS = ['lobbyGraceMs', 'maxRooms', 'maxRoomsPerAddr', 'maxMatchesPerAddr', 'resyncMinGapMs', 'soloReconnectWindowMs', 'versionVoteMs', 'versionRetryMs'];
+const LOBBY_OPTION_KEYS = ['lobbyGraceMs', 'maxRooms', 'maxRoomsPerAddr', 'maxMatchesPerAddr', 'maxSpectators', 'resyncMinGapMs', 'soloReconnectWindowMs', 'versionVoteMs', 'versionRetryMs'];
 
 /**
  * Bind address used when neither the `host` option nor `HOST` says otherwise: one dual-stack socket, so the server
@@ -145,6 +145,11 @@ export function lobbyOptionsFrom(opts, log = null) {
     if (opts[k] != null) lobbyOptions[k] = opts[k];
   }
   applyEnvLimits(lobbyOptions, LOBBY_LIMIT_ENV, log);
+  if (lobbyOptions.maxSpectators == null && process.env.SP_MAX_SPECTATORS != null) lobbyOptions.maxSpectators = Number(process.env.SP_MAX_SPECTATORS);
+  if (lobbyOptions.maxSpectators != null && (!Number.isInteger(lobbyOptions.maxSpectators) || lobbyOptions.maxSpectators < MAX_SPECTATORS || lobbyOptions.maxSpectators > SPECTATOR_LIMIT_MAX)) {
+    log?.warn?.(`[http] SP_MAX_SPECTATORS ignored: expected an integer from ${MAX_SPECTATORS} to ${SPECTATOR_LIMIT_MAX}`);
+    delete lobbyOptions.maxSpectators;
+  }
   // Per instance only: startServer({ roomCode }) or the --room-code argument parsed by server/index.js. No environment
   // variable is read here, so a stop / restart without the argument is random again.
   const roomCode = parseRoomCode(opts.roomCode);

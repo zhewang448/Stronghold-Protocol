@@ -6,6 +6,7 @@
 // Installed on Match.prototype by server/match/Match.js (a method container: never instantiated; `this` is the match).
 
 import { PHASE, ERR } from '../../../shared/constants.js';
+import { msg } from '../../../shared/i18n.js';
 import { buildNormalWave, buildBossWave } from '../waves.js';
 import { waveSource } from '../enemyPicks.js';
 import { bossPairSalt, pairPlayers } from '../finalAssault.js';
@@ -211,6 +212,11 @@ export class MatchPhases {
       if (this.phase !== PHASE.BAND_DRAFT || this.draft !== d || token !== g.token) return;
       const ps = this.players.get(g.order[g.idx]);
       if (!ps || !ps.botControlled) return;
+      if (ps.isBot && ps.botBand && this.gd.bandAllowed(ps.botBand) && !this.bandTaken(ps.botBand, ps.playerId)) {
+        this._applyBand(ps, ps.botBand, { dedupe: true });
+        return;
+      }
+      if (ps.isBot && ps.botBand) this.toast(this.players.get(this.hostId), 'warn', msg('AI 队友 {name} 的预设策略不可用，已自动改选', { name: ps.name }));
       const fallback = () => {
       // a strategy a teammate already took is not selectable (队友已选): the bot re-draws, else the first free one
       let id = this.bot.pickBand(this, ps);

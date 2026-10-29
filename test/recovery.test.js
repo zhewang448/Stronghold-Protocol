@@ -63,6 +63,25 @@ test('disk recovery restores independent player pools and their stock', context 
   assert.deepEqual(recovery.status().issues, []);
 });
 
+test('disk recovery keeps the rescue rule and each target rescue allowance', context => {
+  const source = fixture(context, 'coop', { rescueEnabled: true });
+  source.room.rescueEnabled = true;
+  source.h.ps('p_0').rescued = true;
+  source.recovery.save(source.room, source.h.m, capturePrep(source.h.m));
+  class RestoredMatch extends Match {
+    constructor(opts) { super({ ...opts, scheduler: new VirtualScheduler(), BattleClass: FakeBattle, botRehearsal: 0, clientCombat: false }); }
+  }
+  const lobby = new Lobby({ registry: new SessionRegistry(), MatchClass: RestoredMatch, getData: () => DATA, log });
+  const recovery = createRecovery({ lobby, root: process.cwd(), dir: path.dirname(source.file), identity: 'test', log });
+  context.after(() => { recovery.prepareShutdown(); lobby.shutdown(); });
+  recovery.restore();
+  const restored = lobby.rooms.get(source.room.code);
+  assert.equal(restored.rescueEnabled, true);
+  assert.equal(restored.match.rescueEnabled, true);
+  assert.equal(restored.match.players.get('p_0').rescued, true);
+  assert.deepEqual(recovery.status().issues, []);
+});
+
 test('disk recovery preserves all room convenience choices and effective match rules', t => {
   const f = fixture(t);
   const choices = { benchEquip: false, soloUnlimited: false, prepLoadout: false, unequip: true, morphPairing: true };

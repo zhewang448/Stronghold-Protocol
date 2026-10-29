@@ -90,6 +90,32 @@ test("atomic writes roll back exact strings and absent keys on failure", () => {
   assert.equal(storage.getItem("first"), "original bytes");
   assert.equal(storage.getItem("new"), null);
 });
+
+test('ownership snapshots support scoped replacement and old presets leave ownership untouched', () => {
+  const before = { ...current, notOwnedChars: ['char_198_blackd', 'char_199_yak'] };
+  const parts = { ...Object.fromEntries(Object.keys(DEFAULT_PARTS).map(key => [key, false])), ownership: true };
+  const scope = { mode: 'roster', versions: ['act2autochess'], charIds: ['char_198_blackd'] };
+  const owned = snapshotOf({ ...before, notOwnedChars: [] }, parts, [], scope);
+  assert.deepEqual(owned.ownership, []);
+  assert.deepEqual(mergeSnapshot(before, owned, parts).notOwnedChars, ['char_199_yak']);
+  assert.deepEqual(mergeSnapshot(before, snapshotOf(before, DEFAULT_PARTS), parts).notOwnedChars, before.notOwnedChars);
+  const library = putPreset(empty(), { name: '持有', snapshot: owned, now: 1, newId: () => 'own' });
+  assert.equal(library.v, 3);
+  const storage = new MemoryStorage(); storage.setItem(PRESETS_KEY, JSON.stringify(library));
+  assert.deepEqual(readLibrary(storage).items[0].snapshot.ownership, []);
+});
+
+test('ownership transfer v4 round trips an empty list and rejects malformed values', () => {
+  const parts = { ...Object.fromEntries(Object.keys(DEFAULT_PARTS).map(key => [key, false])), ownership: true };
+  const payload = transferPayload({ ...current, notOwnedChars: [] }, parts);
+  assert.equal(payload.v, 4);
+  assert.equal(parseImport(payload).ok, false);
+  const parsed = parseTransfer(JSON.stringify(payload));
+  assert.equal(parsed.ok, true);
+  assert.deepEqual(parsed.ownership, []);
+  assert.equal(transferParts(parsed).ownership, true);
+  assert.equal(parseTransfer({ ...payload, extension: { ...payload.extension, ownership: ['bad id'] } }).ok, false);
+});
 test("personal recovery includes named preset library and its selected versions", async () => {
   const { personalKey, capturePersonalData, encodePersonalData, decodePersonalData, restorePersonalData } = await import("../../public/js/ui/personalData.js");
   assert.equal(personalKey(PRESETS_KEY), true);
@@ -118,6 +144,21 @@ function setup() {
   store.set({ room: null, match: { public: null, private: null } });
   const lib = put(empty()); S.saveLibrary(lib); return lib.items[0];
 }
+test('ownership-only preset applies an empty list atomically and respects the match lock', async () => {
+  setup();
+  loadoutStore.set({ notOwnedChars: ['char_198_blackd'] });
+  const parts = { ...Object.fromEntries(Object.keys(DEFAULT_PARTS).map(key => [key, false])), ownership: true };
+  const saved = snapshotOf({ ...current, notOwnedChars: [] }, parts);
+  const library = putPreset(empty(), { name: '持有状态', snapshot: saved, now: 1, newId: () => 'ownership' });
+  S.saveLibrary(library);
+  store.set({ room: { inMatch: true }, match: { public: { phase: 'PREP' }, private: {} } });
+  await assert.rejects(S.applyPreset(library.items[0], parts, []), { code: 'locked' });
+  assert.deepEqual(loadoutStore.get().notOwnedChars, ['char_198_blackd']);
+  store.set({ room: null, match: { public: null, private: null } });
+  assert.equal((await S.applyPreset(library.items[0], parts, [])).applied, true);
+  assert.deepEqual(loadoutStore.get().notOwnedChars, []);
+  assert.deepEqual(JSON.parse(localStorage.getItem('sp.pref.ownership')).notOwnedChars, []);
+});
 test("cross-version apply updates canonical charIds and rebuilds the current view without switching versions", async () => {
   const item = setup();
   data.setContent({ id: "old-preset-test", values: new Map([["chess", OLD], ["backups", BACKUPS]]) });

@@ -372,6 +372,7 @@ function MatchScreen() {
   const [bossPlate, setBossPlate] = useState(null);      // ui/bossPlates.js: { kind: 'final'|'core'|'end', … , key }
 
   const [readyBusy, setReadyBusy] = useState(false);
+  const [rescueBusy, setRescueBusy] = useState(false);
   const [spBusy, setSpBusy] = useState(null);
   const [personalBusy, setPersonalBusy] = useState(null); // { choiceId, idx }: an older request cannot clear a newer pick
   const [layer, setLayer] = useState('ALL');             // 联防 / 最终攻势 camera: 'L' | 'ALL' | 'R'
@@ -2016,7 +2017,7 @@ function MatchScreen() {
         spectating=${!alive} spectator=${spectator} onWatch=${watchField}
         client=${cc ? { progress, observing: observingName ? { name: observingName } : null, onBack: alive ? backHome : null, layers, layer, onLayer: setLayer } : null} />` : null}
 
-      ${showDeadPill(alive, phase) ? (spectator
+      ${meP?.pendingRescue ? html`<div class="gm__dead" role="status">${t('等待队友救援')}</div>` : showDeadPill(alive, phase) ? (spectator
         ? html`<div class="gm__dead gm__dead--spectator" role="status"><${GIcon} name="eye" />${t('观战中 · 点击左侧成员头像切换查看')}</div>`
         : html`<div class="gm__dead" role="status"><${Icon} name="close" />${t('你已被淘汰 · 可继续观战队友')}</div>`) : null}
 
@@ -2098,6 +2099,16 @@ function MatchScreen() {
 
     ${resultBox ? html`<${ResultDialog} key=${resultBox.key} title=${resultBox.title} sub=${resultBox.sub} micro=${resultBox.micro}
       tone=${resultBox.tone} duration=${resultBox.duration} onDone=${() => setResultBox(null)} />` : null}
+
+    ${pub?.rescue?.targets?.length && pub.rescue.eligible.includes(myId) && meP?.alive && meP.lp >= 11 ? html`<aside class="gm-rescue" aria-label=${t('队友救援')}>
+      <strong>${t('队友救援')}</strong><p>${t('消耗 10 生命，让一名队友以 1 生命继续作战')}</p>
+      ${pub.rescue.targets.map(id => html`<button type="button" disabled=${rescueBusy} onClick=${async () => {
+        setRescueBusy(true);
+        try { await net.request('g.rescue', { playerId: id, matchId: pub.matchId, round: pub.rescue.round }); }
+        catch { toast(t('救援未成功，条件可能已变化'), 'warn'); }
+        finally { setRescueBusy(false); }
+      }}>${t('救援 {name}', { name: players.find(player => player.playerId === id)?.name || id })}</button>`)}
+    </aside>` : null}
 
     ${bossPlate?.kind === 'final' ? html`<${FinalAssaultPlate} key=${bossPlate.key} rows=${bossPlate.rows} total=${bossPlate.total} bossId=${pub?.bossId}
       myId=${myId} onDone=${() => setBossPlate(null)} />`

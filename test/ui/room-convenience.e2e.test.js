@@ -17,6 +17,11 @@ test('room convenience: five defaults, host/guest sync, all versions and actual 
     const {page:host,context:hc}=await newPage('Host');const {page:guest,context:gc}=await newPage('Guest');
     assert.ok(!(await req(host,'room.create',{mode:'coop',difficulty:'NORMAL'})).error);
     const code=await host.evaluate(()=>globalThis.__SP__.store.get().room.code);assert.ok(!(await req(guest,'room.join',{code})).error);
+    assert.ok(!(await req(host,'room.addBot')).error);
+    await host.waitForSelector('.rseat__bot-band select');
+    await host.select('.rseat__bot-band select', 'band_amiya');
+    await guest.waitForFunction(() => globalThis.__SP__.store.get().room.seats.some(seat => seat?.botBand === 'band_amiya'));
+    assert.equal(await guest.$eval('.rseat__bot-band select', element => element.disabled), true);
     await host.waitForSelector('.rs-pill__gear');await guest.waitForSelector('.rs-pill__gear');await host.click('.rs-pill__gear');await guest.click('.rs-pill__gear');
     assert.deepEqual(await host.$$eval('.rs-convenience input[name^="convenience-"]',es=>es.map(e=>e.checked)),[true,true,true,false,false]);
     assert.ok(await guest.$$eval('.rs-convenience input',es=>es.every(e=>e.disabled)));
@@ -33,11 +38,34 @@ test('room convenience: five defaults, host/guest sync, all versions and actual 
     for(const [width,height]of [[1280,720],[844,390],[640,360]]){await host.setViewport({width,height});await new Promise(r=>setTimeout(r,250));const r=await host.$eval('.rs-opts',e=>{const r=e.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,w:innerWidth,h:innerHeight};});assert.ok(r.left>=-1&&r.right<=r.w+1&&r.top>=-1&&r.bottom<=r.h+1,JSON.stringify(r));await host.screenshot({path:'.cache/room-checkbox-20261025/CONVENIENCE-'+width+'x'+height+'.png'});}
     await host.click('[name="independent-pools"]');
     await guest.waitForFunction(() => globalThis.__SP__.store.get().room.independentPools === true);
+    await host.click('[name="rescue-enabled"]');
+    await guest.waitForFunction(() => globalThis.__SP__.store.get().room.rescueEnabled === true);
     assert.ok(!(await req(guest,'room.ready',{ready:true})).error);
     assert.ok(!(await req(host,'room.start')).error);
     await host.waitForFunction(() => globalThis.__SP__.store.get().match.public?.independentPools === true);
     await guest.waitForFunction(() => globalThis.__SP__.store.get().match.public?.independentPools === true);
+    assert.equal(await host.evaluate(() => globalThis.__SP__.store.get().match.public.rescueEnabled), true);
     assert.equal((await req(host,'room.setIndependentPools',{on:false})).error,'ROOM_STARTED');
+    const match = srv.lobby.rooms.get(code).match;
+    const donorId = await host.evaluate(() => globalThis.__SP__.store.get().me.playerId);
+    const targetId = await guest.evaluate(() => globalThis.__SP__.store.get().me.playerId);
+    const donor = match.players.get(donorId), target = match.players.get(targetId);
+    donor.lp = 20; target.lp = 1;
+    match.round = 1;
+    match.lastResults = new Map(match.order.map(player => [player.playerId, { leaked: player === target ? [{ enemyKey: 'enemy_1007_slime', sourcePlayerId: targetId }] : [], perfect: player !== target, coins: 0, layerGains: {}, killed: 0, damageDealt: 0 }]));
+    match.settle({ leakers: [target], helpers: [donor], usedHelpers: [], history: [], notReentered: new Map([[targetId, 1]]) }, { perPlayer: {} });
+    match.flush(true);
+    await host.waitForSelector('.gm-rescue button', { visible: true });
+    await guest.waitForFunction(() => globalThis.__SP__.store.get().match.public?.players.some(player => player.playerId === globalThis.__SP__.store.get().me.playerId && player.pendingRescue));
+    for (const [width, height] of [[1280, 720], [844, 390]]) {
+      await host.setViewport({ width, height });
+      const bounds = await host.$eval('.gm-rescue', element => { const rect = element.getBoundingClientRect(); return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom }; });
+      assert.ok(bounds.left >= 0 && bounds.right <= width && bounds.top >= 0 && bounds.bottom <= height, JSON.stringify(bounds));
+    }
+    await host.click('.gm-rescue button');
+    await guest.waitForFunction(() => globalThis.__SP__.store.get().match.public?.players.some(player => player.playerId === globalThis.__SP__.store.get().me.playerId && player.alive && player.lp === 1));
+    assert.equal(donor.lp, 10);
+    assert.equal(target.rescued, true);
     await hc.close();await gc.close();
     for(const version of ['act2autochess','act2autochess@V2_1','act1autochess','act1autochess@V1_1']){
       const {page,context}=await newPage(version);
