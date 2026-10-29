@@ -478,10 +478,11 @@ function rulesText(rules) {
   if (!rules) return '规则未知';
   const hp = rules.enemyHpMultiplier == null ? '敌人血量倍率未知' : `敌人血量 ×${rules.enemyHpMultiplier}`;
   const pools = rules.independentPools == null ? '卡池规则未知' : rules.independentPools ? '独立卡池' : '分组共享卡池';
+  const rescue = rules.rescueEnabled == null ? '队友救援未知' : `队友救援${rules.rescueEnabled ? '开启' : '关闭'}`;
   const unite = rules.uniteLayerGains == null ? '联防叠层未知' : `联防叠层${rules.uniteLayerGains ? '开启' : '关闭'}`;
   const ai = rules.aiPicksLast == null ? 'AI 顺序未知' : rules.aiPicksLast ? 'AI 最后选择' : 'AI 按席位选择';
   const plugins = rules.plugins?.length ? `插件：${rules.plugins.map((plugin) => plugin.id + (plugin.version ? '@' + plugin.version : '')).join('、')}` : rules.gameplayPlugins == null ? '插件信息未知' : rules.gameplayPlugins ? '玩法插件（名称未知）' : '无插件';
-  return [hp, pools, unite, ai, rules.test ? '测试房间' : '', plugins].filter(Boolean).join(' · ');
+  return [hp, pools, rescue, unite, ai, rules.test ? '测试房间' : '', plugins].filter(Boolean).join(' · ');
 }
 function ruleOptionsText(rules) {
   if (!rules?.convenience) return '其他房间选项未知';

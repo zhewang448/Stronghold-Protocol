@@ -5,6 +5,7 @@ import { CONVENIENCE_DEFAULTS } from '../shared/roomConvenience.js';
 export function roomRules(room, match = room?.match) {
   const hp = room?.enemyHpMultiplier ?? match?.gd?.enemyHpMultiplier;
   const independent = room?.independentPools ?? match?.independentPools;
+  const rescue = room?.rescueEnabled ?? match?.rescueEnabled;
   const unite = room?.uniteLayerGains ?? match?.uniteLayerGainsEnabled;
   const content = room?.content;
   const choices = room?.convenience ?? match?.convenience;
@@ -13,6 +14,7 @@ export function roomRules(room, match = room?.match) {
   return {
     enemyHpMultiplier: Number.isFinite(hp) ? hp : null,
     independentPools: typeof independent === 'boolean' ? independent : null,
+    rescueEnabled: typeof rescue === 'boolean' ? rescue : null,
     uniteLayerGains: typeof unite === 'boolean' ? unite : null,
     aiPicksLast: (room?.mode ?? match?.mode) === 'solo' ? true : typeof room?.aiPicksLast === 'boolean' ? room.aiPicksLast : typeof match?.aiPicksLast === 'boolean' ? match.aiPicksLast : null,
     test: typeof room?.test === 'boolean' ? room.test : typeof match?.test === 'boolean' ? match.test : null,
@@ -29,8 +31,8 @@ export function resultRules(record) {
   const convenience = rules?.convenience || result.convenience;
   const modifiedConvenience = Object.keys(CONVENIENCE_DEFAULTS).some((key) => typeof convenience?.[key] === 'boolean' && convenience[key] !== CONVENIENCE_DEFAULTS[key]);
   const custom = (Number.isFinite(result.enemyHpMultiplier) && result.enemyHpMultiplier !== 1)
-    || result.independentPools === true || rules?.enemyHpMultiplier != null && rules.enemyHpMultiplier !== 1
-    || rules?.independentPools === true || rules?.uniteLayerGains === true
+    || result.independentPools === true || result.rescueEnabled === true || rules?.enemyHpMultiplier != null && rules.enemyHpMultiplier !== 1
+    || rules?.independentPools === true || rules?.rescueEnabled === true || rules?.uniteLayerGains === true
     || rules?.aiPicksLast === false
     || rules?.gameplayPlugins === true || rules?.adminModified === true || modifiedConvenience;
   if (custom) return 'custom';

@@ -392,6 +392,7 @@ function MatchScreen() {
   const meP = players.find((p) => p.playerId === myId) || null;
   // a spectator seat watches like an eliminated player (it has no m.private and no row in m.public)
   const alive = spectator ? false : priv ? priv.alive !== false : meP?.alive !== false;
+  const pendingRescue = priv?.pendingRescue === true || meP?.pendingRescue === true;
   // 协议已失效 (ui/downedPlate.js): once, when the player's own `alive` — as read from real data, never a reload's empty
   // first view — turns false while a teammate is still in; 继续观战 closes it, 离开模拟 opens the exit dialog
   const [downed, setDowned] = useState(false);
@@ -400,9 +401,10 @@ function MatchScreen() {
   useEffect(() => {
     if (!spectator && !priv && !meP) return;
     const was = wasAlive.current;
-    wasAlive.current = alive;
-    if (downedArtReady() && downedDue({ was, alive, spectator, pub, myId })) setDowned(true);
-  }, [alive, !!(priv || meP)]);
+    wasAlive.current = alive || pendingRescue;
+    if (alive || pendingRescue) setDowned(false);
+    if (downedArtReady() && downedDue({ was, alive, pendingRescue, spectator, pub, myId })) setDowned(true);
+  }, [alive, pendingRescue, !!(priv || meP)]);
   const home = homeFieldId(pub, myId);
   const watchingOther = !!watching && watching !== home && watching !== ownFieldId(myId);
   // watching a teammate's prep board: the 本局信息 drawer shows THEIR 策略 in place of one's own (user playtest #2 item 2)
@@ -2017,7 +2019,7 @@ function MatchScreen() {
         spectating=${!alive} spectator=${spectator} onWatch=${watchField}
         client=${cc ? { progress, observing: observingName ? { name: observingName } : null, onBack: alive ? backHome : null, layers, layer, onLayer: setLayer } : null} />` : null}
 
-      ${meP?.pendingRescue ? html`<div class="gm__dead" role="status">${t('等待队友救援')}</div>` : showDeadPill(alive, phase) ? (spectator
+      ${pendingRescue ? html`<div class="gm__dead" role="status">${t('等待队友救援')}</div>` : showDeadPill(alive, phase) ? (spectator
         ? html`<div class="gm__dead gm__dead--spectator" role="status"><${GIcon} name="eye" />${t('观战中 · 点击左侧成员头像切换查看')}</div>`
         : html`<div class="gm__dead" role="status"><${Icon} name="close" />${t('你已被淘汰 · 可继续观战队友')}</div>`) : null}
 

@@ -110,4 +110,43 @@ describe('协议已失效 (headless Chrome)', { skip: !ENABLED && 'set SP_E2E=1 
     assert.deepEqual(problems, []);
     await context.close();
   });
+
+  test('pending rescue waits without an elimination dialog; an expired rescue opens it', async () => {
+    const { page, problems, context } = await open();
+    try {
+      await page.evaluate(() => {
+        const mock = globalThis.__MOCK__;
+        const current = mock.store.get().match.private;
+        mock.store.patch('match', { private: { ...current, alive: false, lp: 0, pendingRescue: true } });
+      });
+      await page.waitForFunction(() => globalThis.__MOCK__.store.get().match.private.pendingRescue === true);
+      await sleep(500);
+      assert.equal(await page.$('[data-testid="downed-plate"]'), null);
+      assert.match(await page.$eval('.gm__dead', (element) => element.textContent), /等待队友救援/);
+      await page.evaluate(() => {
+        const mock = globalThis.__MOCK__;
+        mock.mutate((state) => {
+          state.priv.alive = true; state.priv.lp = 1; delete state.priv.pendingRescue;
+          state.pub.players[0].alive = true; state.pub.players[0].lp = 1; delete state.pub.players[0].pendingRescue;
+        });
+      });
+      await sleep(500);
+      assert.equal(await page.$('[data-testid="downed-plate"]'), null);
+      await page.evaluate(() => {
+        const mock = globalThis.__MOCK__;
+        mock.mutate((state) => {
+          state.priv.alive = false; state.priv.lp = 0; state.priv.pendingRescue = true;
+          state.pub.players[0].alive = false; state.pub.players[0].lp = 0; state.pub.players[0].pendingRescue = true;
+        });
+      });
+      await sleep(500);
+      assert.equal(await page.$('[data-testid="downed-plate"]'), null);
+      await page.evaluate(() => {
+        const mock = globalThis.__MOCK__;
+        mock.mutate((state) => { delete state.priv.pendingRescue; delete state.pub.players[0].pendingRescue; });
+      });
+      await page.waitForSelector('[data-testid="downed-plate"]', { timeout: 3000 });
+      assert.deepEqual(problems, []);
+    } finally { await context.close(); }
+  });
 });

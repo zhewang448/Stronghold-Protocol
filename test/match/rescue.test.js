@@ -26,6 +26,7 @@ function scenario(context, { enabled = true, independentPools = false, donorLp =
 test('rescue deducts exactly 10 LP once and preserves the target stock', (context) => {
   const { harness, match, target, donor, piece } = scenario(context, { independentPools: true });
   assert.ok(target.pendingRescue);
+  assert.equal(target.privateView().pendingRescue, true);
   assert.ok(match.rescueWindow.eligible.includes(donor.playerId));
   const before = target.pool.left(piece.id);
   const request = { t: 'g.rescue', playerId: target.playerId, matchId: match.publicView().matchId, round: match.round };
@@ -34,6 +35,7 @@ test('rescue deducts exactly 10 LP once and preserves the target stock', (contex
   assert.equal(target.lp, 1);
   assert.equal(target.alive, true);
   assert.equal(target.rescued, true);
+  assert.equal(target.privateView().pendingRescue, undefined);
   assert.equal(target.pool.left(piece.id), before);
   assert.equal(match.handle(donor.playerId, request).error, 'BAD_TARGET');
   assert.deepEqual(collectViolations(match), []);
@@ -46,6 +48,7 @@ test('unrescued targets are eliminated at the deadline and default mode eliminat
   assert.equal(target.pendingRescue, true);
   harness.sched.advance(16000);
   assert.equal(target.pendingRescue, false);
+  assert.equal(target.privateView().pendingRescue, undefined);
   assert.equal(target.alive, false);
   assert.equal(target.eliminatedRound, 1);
   assert.equal(match.handle('p_1', { t: 'g.rescue', playerId: 'p_0', matchId: match.publicView().matchId, round: 1 }).error, 'WRONG_PHASE');

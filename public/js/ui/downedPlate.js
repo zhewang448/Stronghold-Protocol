@@ -38,10 +38,10 @@ export function preloadDownedArt() {
 /**
  * Whether the dialog is due: the player's own `alive` just turned false (not a spectator seat, not a reload that finds
  * the player out already) and a teammate is still in — when the whole team falls the match ends instead.
- * @param {{ was: boolean|undefined, alive: boolean, spectator: boolean, pub: any, myId: string|null }} o
+ * @param {{ was: boolean|undefined, alive: boolean, pendingRescue?: boolean, spectator: boolean, pub: any, myId: string|null }} o
  */
-export function downedDue({ was, alive, spectator, pub, myId }) {
-  if (spectator || was !== true || alive !== false) return false;
+export function downedDue({ was, alive, pendingRescue = false, spectator, pub, myId }) {
+  if (spectator || pendingRescue || was !== true || alive !== false) return false;
   const players = Array.isArray(pub?.players) ? pub.players : [];
   return players.some((p) => p && p.playerId !== myId && p.alive !== false);
 }

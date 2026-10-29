@@ -12,7 +12,7 @@ import { CONVENIENCE_DEFAULTS } from '../shared/roomConvenience.js';
 test('waiting room reports its host, actual rules and blockers', async () => {
   const room = {
     code: 'WAIT', mode: 'coop', difficulty: 'NORMAL', hostId: 'host', enemyHpMultiplier: 2,
-    independentPools: true, uniteLayerGains: true, test: false, needsContent: true,
+    independentPools: true, rescueEnabled: true, uniteLayerGains: true, test: false, needsContent: true,
     content: { cs: 'content', vanilla: false, plugins: [{ id: 'example', version: '1', class: 'content' }], trusted: {} },
     seats: [
       { playerId: 'host', name: 'Host', connected: true, ready: false, content: 'ready', consentCs: 'content' },
@@ -23,6 +23,7 @@ test('waiting room reports its host, actual rules and blockers', async () => {
   assert.equal(view.hostId, 'host');
   assert.equal(view.rules.enemyHpMultiplier, 2);
   assert.equal(view.rules.independentPools, true);
+  assert.equal(view.rules.rescueEnabled, true);
   assert.equal(view.rules.uniteLayerGains, true);
   assert.deepEqual(view.rules.plugins, [{ id: 'example', version: '1', kind: 'content' }]);
   assert.equal(view.seats[1].ready, false);
@@ -98,11 +99,13 @@ test('summary separates custom and unknown records without guessing old defaults
     old: base,
     oldCustom: { ...base, result: { ...base.result, enemyHpMultiplier: 3 } },
     convenience: { ...base, rules: { ...standard, convenience: { ...CONVENIENCE_DEFAULTS, unequip: true } } },
+    rescue: { ...base, rules: { ...standard, rescueEnabled: true } },
+    legacyRescue: { ...base, rules: standard, result: { ...base.result, rescueEnabled: true } },
   })) fs.writeFileSync(path.join(dir, name + '.json'), JSON.stringify(record));
   const summary = createResultSummary(dir);
-  assert.deepEqual(summary().ruleCounts, { standard: 1, custom: 3, unknown: 1 });
+  assert.deepEqual(summary().ruleCounts, { standard: 1, custom: 5, unknown: 1 });
   assert.equal(summary({ rules: 'standard' }).games, 1);
-  assert.equal(summary({ rules: 'custom' }).games, 3);
+  assert.equal(summary({ rules: 'custom' }).games, 5);
   assert.equal(summary({ rules: 'unknown' }).games, 1);
 });
 

@@ -68,6 +68,7 @@ export class PlayerViews {
       ...(Number.isInteger(this.aiTakeoverRound) ? { aiTakeoverRound: this.aiTakeoverRound } : {}),
       seat: this.seat,
       alive: this.alive,
+      ...(this.pendingRescue ? { pendingRescue: true } : {}),
       lp: this.lp,
       funds: this.funds,
       bandId: this.bandId,

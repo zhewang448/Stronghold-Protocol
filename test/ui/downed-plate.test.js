@@ -20,6 +20,8 @@ test('downedDue: the own alive turning false with a teammate still in; not a rel
   assert.equal(D.downedDue({ was: true, alive: true, spectator: false, pub: pub(mate), myId: 'me' }), false);
   assert.equal(D.downedDue({ was: true, alive: false, spectator: true, pub: pub(mate), myId: 'me' }), false, 'a spectator seat');
   assert.equal(D.downedDue({ was: true, alive: false, spectator: false, pub: pub([{ playerId: 'b', alive: false }]), myId: 'me' }), false, 'nobody left: the match ends');
+  assert.equal(D.downedDue({ was: true, alive: false, pendingRescue: true, spectator: false, pub: pub(mate), myId: 'me' }), false, 'pending rescue');
+  assert.equal(D.downedDue({ was: true, alive: false, pendingRescue: false, spectator: false, pub: pub(mate), myId: 'me' }), true, 'rescue expired');
 });
 
 test('the faces: equal rows, the knocked-out one with X eyes; one path of whole pixels', () => {
@@ -42,7 +44,7 @@ test('the official map, the project\'s Modal, no drawn crest; not ready without 
 test('screens/game.js: the dialog once the own alive turns false from real data; 离开模拟 opens the exit dialog', () => {
   const g = read('public/js/screens/game.js');
   assert.match(g, /if \(!spectator && !priv && !meP\) return;/);
-  assert.match(g, /if \(downedArtReady\(\) && downedDue\(\{ was, alive, spectator, pub, myId \}\)\) setDowned\(true\);/);
+  assert.match(g, /if \(downedArtReady\(\) && downedDue\(\{ was, alive, pendingRescue, spectator, pub, myId \}\)\) setDowned\(true\);/);
   assert.match(g, /<\$\{DownedPlate\} open=\$\{downed\} onWatch=\$\{\(\) => setDowned\(false\)\} onLeave=\$\{\(\) => \{ setDowned\(false\); setExitOpen\(true\); \}\} \/>/);
 });
 
