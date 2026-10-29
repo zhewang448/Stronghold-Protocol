@@ -7,7 +7,7 @@
 ## 快速开服
 
 只需下载并解压 Windows 启动器附件，双击 EXE，在「新建实例」里选择空的安装目录，点击「下载并安装」。
-启动器使用 .NET 自行准备正式 Release。源码中的 1.3.0 会在有签名索引时比较完整包与精简包、素材分包的下载量，校验后安装；旧 Release 继续使用完整包。不需要预先下载游戏包。
+启动器使用 .NET 自行准备正式 Release。1.3.0 在有签名索引时比较完整包与精简包、素材分包的下载量，校验后安装；旧 Release 继续使用完整包。不需要预先下载游戏包。
 缺少受支持的 Node.js 时，会从 Node.js 官网下载并校验便携 Node 22 LTS，保存在当前用户目录，不需要系统安装或管理员权限。
 首次安装需要能访问 GitHub 和 nodejs.org。下载失败、校验失败或取消时不会注册半成品实例，清理临时目录后可重试。
 
@@ -103,7 +103,7 @@ Get-FileHash ./StrongholdProtocolLauncher.exe -Algorithm SHA256
 
 ## 命名与本版
 
-已发布的启动器版本为 1.2.0；此分支的源码版本为 1.3.0，需随新的 Release 发布后才能通过自更新获取。EXE 固定 StrongholdProtocolLauncher.exe，附件名随版本变化。新目录 server-01、server-02；显示名按游戏/扩展版本生成，旧自动 MODIFIED_FILE 显示名迁移，自定义名称保留，原目录和端口不移动。
+启动器版本为 1.3.0，EXE 固定 StrongholdProtocolLauncher.exe，附件名随版本变化。新目录 server-01、server-02；显示名按游戏/扩展版本生成，旧自动 MODIFIED_FILE 显示名迁移，自定义名称保留，原目录和端口不移动。
 
 ### 控制台同时更新 Windows 启动器（2026-10-26）
 

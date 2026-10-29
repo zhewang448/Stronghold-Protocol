@@ -1,6 +1,6 @@
 # 卫戍协议：盟约 · Stronghold Protocol: Alliance
 
-![扩展版本](https://img.shields.io/badge/version-0.3.3--extended.6-blue)
+![扩展版本](https://img.shields.io/badge/version-0.3.3--extended.7-blue)
 ![上游基础版本](https://img.shields.io/badge/version-0.3.3-2ea44f)
 ![许可](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
 
@@ -12,13 +12,13 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 [下载正式版](https://github.com/zhewang448/Stronghold-Protocol/releases/latest) · [开始运行](#开始运行) · [本库特色](#本库特色) · [和朋友一起玩](#和朋友一起玩) · [更新记录](docs/LOCAL-CHANGELOG.md) · [反馈问题](https://github.com/zhewang448/Stronghold-Protocol/issues)
 
-> 当前版本为 **`v0.3.3-extended.6`**，基于上游 0.3.3。修复领袖回合标点、控制台刷新中断操作及同名干员统计合并；保留房间敌人血量倍率、同盟大厅、四版本和主机工具。详情见[扩展更新记录](docs/LOCAL-CHANGELOG.md)。
+> 当前版本为 **`v0.3.3-extended.7`**，基于上游 0.3.3。新增可选独立卡池、队友救援、AI 策略预设和主机监控，并优化跨版本更新与启动器下载。详情见[扩展更新记录](docs/LOCAL-CHANGELOG.md)。
 >
 > 非官方、非商业同人项目，与《明日方舟》官方无隶属或授权关系。游戏素材与数据的权利归原权利人；代码、素材及截图的许可边界见 [NOTICE.md](NOTICE.md)。
 
-## 启动器有新版本：1.2.0
+## 启动器有新版本：1.3.0
 
-1.1.0及更早版本请先从本次 Release 下载 StrongholdProtocolLauncher-v1.2.0-win-x64.zip，关闭旧启动器，解压替换 EXE 后重新打开。关闭窗口不会停止后台游戏服务。此后可使用启动器顶部「启动器更新」独立更新，不需要与游戏实例放在同一目录。控制台同步更新需要先升级游戏更新器；实例外 EXE 需新版运行后登记位置。详见 [启动器说明](launcher/README.md)。
+1.1.0 及更早版本请从本次 Release 下载 StrongholdProtocolLauncher-v1.3.0-win-x64.zip，关闭旧启动器，解压替换 EXE 后重新打开。1.2.0 可使用顶部「启动器更新」。关闭窗口不会停止后台游戏服务；控制台同步更新需要先升级游戏更新器，实例外 EXE 需新版运行后登记位置。详见 [启动器说明](launcher/README.md)。
 
 如果本项目帮到了你，欢迎点一下仓库右上角的 Star ⭐，也欢迎反馈问题，帮助这个非商业同人项目继续改进。
 
@@ -66,7 +66,7 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 ## 开始运行
 
-Windows 服主从同版本 Release 下载 StrongholdProtocolLauncher-v1.2.0-win-x64.zip，解压后双击 StrongholdProtocolLauncher.exe。可新建空目录自动安装完整游戏包和便携 Node.js，也可导入已有根目录；EXE 可放在实例目录外。启动器支持多实例、监听端口＋索引发现、回收站删除和安全控制，不提供文件搜索。
+Windows 服主从同版本 Release 下载 StrongholdProtocolLauncher-v1.3.0-win-x64.zip，解压后双击 StrongholdProtocolLauncher.exe。可新建空目录自动安装游戏和便携 Node.js，也可导入已有根目录；EXE 可放在实例目录外。启动器支持多实例、监听端口＋索引发现、回收站删除和安全控制，不提供文件搜索。
 
 **关闭启动器窗口后服务继续运行；停服请点击「停止服务器」。** 公网隧道另需 cloudflared。使用与构建见 [启动器说明](launcher/README.md)，原脚本继续可用。
 
@@ -81,6 +81,7 @@ Windows 服主从同版本 Release 下载 StrongholdProtocolLauncher-v1.2.0-win-
 | `*-assets.zip` | 带游戏代码、运行依赖、11 个官方战场场景、官方 3D 棋盘、40 组召唤物模型、中文 / 日文语音等本地素材与 224 套可选皮肤，适合希望直接启动的玩家 |
 | `*-lite.zip` | 带同版代码与运行依赖，首次启动时联网下载默认素材；官方战场场景、棋盘等本地素材和可选皮肤需另行导入 / 安装 |
 | `*-update.zip` | 发布时若提供，为控制台升级使用的增量附件；不能当作新安装包，版本不适配时改用完整包 |
+| `*-common-art.zip`、`*-local-art.zip`、`*-fx-art.zip` | 签名素材分包，由支持分包的更新器和启动器按需下载 |
 | `SHA256SUMS.txt` | 用于核对安装包的 SHA-256 校验值 |
 | `SHA256SUMS.txt.sig` | 维护者对校验值的 Ed25519 签名，控制台更新据此确认安装包来自本库；更早的版本没有此附件 |
 
@@ -148,7 +149,7 @@ winget install Cloudflare.cloudflared
 手动修改不会自动覆盖预设，切换前可选择保存修改、直接切换或取消。宽屏入口在顶栏，小屏独立成行。
 预设跨玩法版本共用，默认保存技能、模组、潜能、练度和皮肤，可选随机皮肤策略、锁定名单及指定版本的自选编队。
 空编队会明确标注；应用只替换勾选部分，未勾选内容保持不变，自选编队仍受局外限制。
-预设仅保存在当前浏览器与站点，可随个人数据恢复码备份和迁移；不包含干员持有、棋盘站位或局内装备。
+预设仅保存在当前浏览器与站点，可随个人数据恢复码备份和迁移；可选择保存干员持有状态，不包含棋盘站位或局内装备。
 保存时可选择全部已保存配置，或勾选玩法版本后仅保存这些版本的全部／独有可调配干员。独有指其他三个版本均没有；
 名单在保存时固定，应用只覆盖名单内干员，名单外配置保留。自选专用干员可用全部配置保存，自选编队版本仍单独选择。
 同样的版本全部／独有分类也可在调配筛选、导出及导入中使用。筛选只作用于当前页面；导入会预览格式、来源范围和可选字段，
