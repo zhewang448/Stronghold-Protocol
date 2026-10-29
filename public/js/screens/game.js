@@ -114,7 +114,7 @@ import { ExitModal, AwayOverlay, awayStore } from '../ui/matchChrome.js';
 import { RoundPopup, PhasePopup, phasePopupOf, roundsToBoss, preloadPopupArt } from '../ui/matchPopups.js';
 import { openGuide } from '../ui/guide.js';
 import { actions, onRefreshBusy } from '../ui/gameActions.js';
-import { PingIcon, activePings, pingTileAt } from '../ui/fieldPings.js';
+import { PingIcon, activePings, pingTileAt, pingFieldTile, pingViewTile, pingRect } from '../ui/fieldPings.js';
 import { PingTools } from '../ui/pingTools.js';
 import { useHudMeasure } from '../ui/hudDock.js';
 import { FacingWheel, holdPiece, setPieceDir, syncPieceDirs, showRange, useTileScreen } from '../ui/facingWheel.js';
@@ -244,7 +244,7 @@ export function GameScreen() {
 /** A card of a unit of the battle on screen: a unit's, or a crate's / turret's (a device card with its `unitId`, #228). */
 const inBattleCard = (d) => d?.kind === 'unit' || (d?.kind === 'device' && d.device?.unitId != null);
 
-function PingLayer({ pings, fieldId, view }) {
+function PingLayer({ pings, fieldId, view, pingSpace }) {
   const [, redraw] = useState(0);
   const heard = useRef(pings.at(-1)?.seq ?? 0);
   useEffect(() => {
@@ -264,7 +264,8 @@ function PingLayer({ pings, fieldId, view }) {
   if (!view || typeof view.tileScreen !== 'function' || typeof fieldId !== 'string') return null;
   return html`<div class="gm__ping-layer" aria-hidden="true">
     ${activePings(pings, fieldId, now).map((p) => {
-      const pos = view.tileScreen(p.row, p.col);
+      const tile = pingViewTile(p, pingSpace);
+      const pos = view.tileScreen(tile.row, tile.col);
       if (!pos) return null;
       return html`<div key=${p.seq} class=${`gm__ping gm__ping--${p.kind}`} style=${{ left: `${pos.x}px`, top: `${pos.y}px` }}>
         <span class="gm__ping-ring"></span><span class="gm__ping-ring gm__ping-ring--echo"></span>
@@ -579,6 +580,9 @@ function MatchScreen() {
   // (last round's battle): combat only enters an m.field pushed after that (a new object), and every new m.field
   // push (watch switch, reconnect) re-enters the battle view.
   const showPrep = (mode === 'prep' || mode === 'boot') && !watchingOther;
+  const pingSpace = showPrep ? deployField : null;
+  live.current.pingSpace = pingSpace;
+  live.current.showPrep = showPrep;
 
   // public issue #602: while a piece is picked up on the own prep board — a deploy / equip / reposition drag, or the
   // direction wheel a legal drop opens — the official client folds the shop and zooms to the shop-collapsed prep
@@ -1373,9 +1377,10 @@ function MatchScreen() {
         if (e.button === 2 && !L.spectator && !L.pen && !L.drag && !L.facing) {
           const combat = isCombatPhase(L.pub?.phase);
           const fieldId = combat ? (L.field?.fieldId || L.watching || L.home) : (L.watching || ownFieldId(L.myId));
-          const tile = pingTileAt(L.view, combat ? (L.field?.rect || GEO.NORMAL_RECT) : GEO.NORMAL_RECT, e.clientX, e.clientY);
+          const tile = pingTileAt(L.view, pingRect(L.field, combat, L.showPrep, L.pingSpace, L.view), e.clientX, e.clientY);
           if (fieldId && tile) {
-            actions.ping(fieldId, tile.row, tile.col, L.pingKind);
+            const point = pingFieldTile(tile, L.pingSpace);
+            actions.ping(fieldId, point.row, point.col, L.pingKind);
             return;
           }
         }
@@ -1404,7 +1409,12 @@ function MatchScreen() {
         const L = live.current;
         const fieldId = isCombatPhase(L.pub?.phase) ? (L.field?.fieldId || L.watching || L.home) : (L.watching || ownFieldId(L.myId));
         if (t.button === 2) {
-          if (!L.spectator && !L.pen && fieldId) actions.ping(fieldId, t.row, t.col, L.pingKind);
+          const combat = isCombatPhase(L.pub?.phase);
+          const tile = pingTileAt(L.view, pingRect(L.field, combat, L.showPrep, L.pingSpace, L.view), t.clientX, t.clientY);
+          if (!L.spectator && !L.pen && !L.drag && !L.facing && fieldId && tile) {
+            const point = pingFieldTile(tile, L.pingSpace);
+            actions.ping(fieldId, point.row, point.col, L.pingKind);
+          }
           return;
         }
         const [row, col] = L.terrainTile(t.row, t.col);
@@ -1847,9 +1857,12 @@ function MatchScreen() {
   const placePing = (e) => {
     e.preventDefault();
     if (e.button !== 0 && e.button !== 2) return;
-    const rect = combat ? (field?.rect || GEO.NORMAL_RECT) : GEO.NORMAL_RECT;
+    const rect = pingRect(field, combat, showPrep, pingSpace, view);
     const tile = pingTileAt(view, rect, e.clientX, e.clientY);
-    if (tile) actions.ping(pingFieldId, tile.row, tile.col, pingKind);
+    if (tile) {
+      const point = pingFieldTile(tile, pingSpace);
+      actions.ping(pingFieldId, point.row, point.col, pingKind);
+    }
     setPingArmed(false);
   };
   useEffect(() => {
@@ -1936,7 +1949,7 @@ function MatchScreen() {
 
       data-camera=${pen ? 'pen' : camKind}>
     <div class="gm__field" ref=${hostRef} onContextMenu=${(e) => e.preventDefault()}></div>
-    <${PingLayer} pings=${pings} fieldId=${pingFieldId} view=${view} />
+    <${PingLayer} pings=${pings} fieldId=${pingFieldId} view=${view} pingSpace=${pingSpace} />
     ${pingToolsVisible && pingArmed ? html`<div class="gm__ping-target" onPointerDown=${placePing} onContextMenu=${(e) => e.preventDefault()}></div>` : null}
     ${viewKind === 'loading' ? html`<div class="gm__loading"><${Spinner} label="LOADING FIELD" /></div>` : null}
     <div class="gm__vignette" aria-hidden="true"></div>

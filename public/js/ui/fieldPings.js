@@ -2,6 +2,7 @@
 import { GEO, PING_KINDS, PING_TTL_MS } from '../../../shared/constants.js';
 import { N_ } from '../../../shared/i18n.js';
 import { html, Icon } from './components.js';
+import { BOSS_ROW_SHIFT, MAX_COL } from '../render/prepfield.js';
 
 export const PING_LABELS = Object.freeze({
   attention: N_('注意'), attack: N_('进攻'), danger: N_('危险'), retreat: N_('撤退'), question: N_('疑问'), heart: N_('爱心'),
@@ -25,6 +26,23 @@ export function validPing(p) {
 
 export function activePings(pings, fieldId, now) {
   return (pings || []).filter((p) => validPing(p) && p.fieldId === fieldId && now >= p.at && now - p.at < PING_TTL_MS);
+}
+
+export function pingFieldTile(tile, deployField) {
+  if (deployField !== 'bossL' && deployField !== 'bossR') return tile;
+  return { row: tile.row + BOSS_ROW_SHIFT, col: deployField === 'bossR' ? MAX_COL - tile.col : tile.col };
+}
+
+export function pingViewTile(tile, deployField) {
+  if (deployField !== 'bossL' && deployField !== 'bossR') return tile;
+  return { row: tile.row - BOSS_ROW_SHIFT, col: deployField === 'bossR' ? MAX_COL - tile.col : tile.col };
+}
+
+export function pingRect(field, combat, showPrep, deployField = null, view = null) {
+  if (showPrep && view?.kind === 'engine' && (deployField === 'bossL' || deployField === 'bossR')) {
+    return { r0: GEO.BOSS_RECT.r0 - BOSS_ROW_SHIFT, r1: GEO.BOSS_RECT.r1 - BOSS_ROW_SHIFT, c0: GEO.BOSS_RECT.c0, c1: GEO.BOSS_RECT.c1 };
+  }
+  return combat || (!showPrep && field?.prep) ? (field?.rect || GEO.NORMAL_RECT) : GEO.NORMAL_RECT;
 }
 
 /** Pick the tile top from tileScreen polygons, including tiles occupied by units. */

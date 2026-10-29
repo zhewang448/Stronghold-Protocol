@@ -57,10 +57,12 @@ test('console shows delta choice, full downgrade/repair choice and actual fallba
     await page.click('[data-update-install]');
     await page.waitForFunction(() => document.querySelector('[data-update-install]').disabled);
     assert.equal(typeof report, 'function');
+    await page.$eval('#auto-update', (el) => { el.checked = !el.checked; window.updateCheckbox = el; });
     const fullName = `Stronghold-Protocol-${tag}-assets.zip`;
     report({ state: 'downloading', received: 1048576, size: 104857600, asset: fullName,
       fallback: true, fallbackReason: '本机文件与增量包基线不符：server/keep.js' });
     await page.waitForFunction(() => document.querySelector('#release-update').textContent.includes('已改用完整素材包'));
+    assert.ok(await page.$eval('#auto-update', (el) => el === window.updateCheckbox && el.checked !== el.defaultChecked), 'polling preserves an unfinished setting');
     assert.match(await page.$eval('#release-update .meta[style]', el => el.textContent), /-assets\.zip.*100\.0 MB/);
     const shots = path.resolve('.impeccable/review'); fs.mkdirSync(shots, { recursive: true });
     for (const [name, width, height] of [['desktop', 1440, 900], ['mobile', 390, 844]]) {

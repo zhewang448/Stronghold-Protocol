@@ -156,6 +156,7 @@ function normalizeRoundHistory(raw) {
       playerId: str(p.playerId) || '', alive: bool(p.alive, true), lp: num(p.lp), funds: num(p.funds), spent: num(p.spent),
       dmg: num(p.dmg) || 0, roundDmg: num(p.roundDmg) || 0, level: num(p.level), income: num(p.income), expense: num(p.expense),
       units: (Array.isArray(p.units) ? p.units : []).slice(0, MAX_ROUND_UNITS).filter(isObj).map((u) => ({
+        ...(Number.isInteger(u.uid) && u.uid >= 1 && u.uid <= 2 ** 31 ? { uid: u.uid } : {}),
         defId: str(u.defId) || '', name: str(u.name, MAX_NAME) || str(u.defId) || '', dmg: num(u.dmg) || 0, kills: int(u.kills, 0),
       })).filter((u) => u.defId || u.name),
       bonds: (Array.isArray(p.bonds) ? p.bonds : []).slice(0, MAX_BONDS).filter(isObj).map((b) => ({

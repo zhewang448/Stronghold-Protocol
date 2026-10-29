@@ -111,7 +111,7 @@ test('combat observation leaves the simulation result and rendered events identi
   assert.deepEqual(tracked.h.events, control.events);
 });
 
-test('match accumulation merges the same name per owner, sorts damage descending and uses game seconds', () => {
+test('match accumulation merges the same piece per owner, sorts damage descending and uses game seconds', () => {
   const { b, u, e, read } = rig();
   b.dealDamage(u, e, { amount: 500, type: 'phys' });
   b.time = 2;
@@ -141,7 +141,7 @@ test('match accumulation merges the same name per owner, sorts damage descending
   assert.equal(first.rows[0].damage, 400, 'snapshots are detached from both collector and aggregation');
 });
 
-test('same-name copies combine damage types, healing and rates in both battle and match views without merging players', () => {
+test('same-name copies retain separate damage, healing and rates across battles and players', () => {
   const { b, u, e, read } = rig();
   b.dealDamage(u, e, { amount: 500, type: 'phys' });
   b.time = 2;
@@ -150,25 +150,28 @@ test('same-name copies combine damage types, healing and rates in both battle an
     damage: 100, healing: 60, types: { phys: 0, arts: 100, true: 0, elemental: 0 } };
   const other = { ...structuredClone(copy), key: 'other-player', ownerId: 'p2', damage: 700,
     types: { phys: 0, arts: 700, true: 0, elemental: 0 } };
-  const differentName = { ...structuredClone(copy), key: 'different-name', name: '另一位干员', damage: 200,
+  const differentName = { ...structuredClone(copy), key: 'different-name', uid: 3, name: '另一位干员', damage: 200,
     types: { phys: 0, arts: 200, true: 0, elemental: 0 } };
   battle.rows.push(copy, other, differentName);
   battle.owners.push('p2');
   const current = combineCombat([battle], u.ownerId);
-  assert.equal(current.rows.length, 2);
-  assert.equal(current.rows[0].damage, 500);
-  assert.equal(current.rows[0].healing, 60);
-  assert.deepEqual(current.rows[0].types, { phys: 400, arts: 100, true: 0, elemental: 0 });
-  assert.equal(current.rows[0].dps, 250, 'two copies share the battle duration');
-  assert.equal(current.rows[0].hps, 30);
-  assert.equal(combineCombat([battle]).rows.length, 3, 'same-name teammates remain separate');
-  assert.equal(combineCombat([battle]).rows[0].ownerId, 'p2', 'sorting uses combined damage');
-  const next = { seconds: 3, owners: [u.ownerId], rows: [{ ...copy, key: 'new-copy-next-round', uid: 3 }] };
+  assert.equal(current.rows.length, 3);
+  assert.equal(current.rows.find((r) => r.uid === 1).damage, 400);
+  const firstCopy = current.rows.find((r) => r.uid === 2);
+  assert.equal(firstCopy.damage, 100);
+  assert.equal(firstCopy.healing, 60);
+  assert.deepEqual(firstCopy.types, { phys: 0, arts: 100, true: 0, elemental: 0 });
+  assert.equal(firstCopy.dps, 50);
+  assert.equal(firstCopy.hps, 30);
+  assert.equal(combineCombat([battle]).rows.length, 4, 'same-name teammates remain separate');
+  assert.equal(combineCombat([battle]).rows[0].ownerId, 'p2', 'sorting uses individual damage');
+  const next = { seconds: 3, owners: [u.ownerId], rows: [{ ...copy, key: 'same-copy-next-round' }] };
   const match = combineCombat([battle, next], u.ownerId);
-  assert.equal(match.rows.length, 2);
-  assert.equal(match.rows[0].damage, 600);
-  assert.equal(match.rows[0].healing, 120);
-  assert.equal(match.rows[0].dps, 120);
-  assert.equal(match.rows[0].hps, 24);
+  assert.equal(match.rows.length, 3);
+  const accumulated = match.rows.find((r) => r.uid === 2);
+  assert.equal(accumulated.damage, 200);
+  assert.equal(accumulated.healing, 120);
+  assert.equal(accumulated.dps, 40);
+  assert.equal(accumulated.hps, 24);
   assert.equal(battle.rows[0].damage, 400, 'grouping never changes individual snapshots');
 });

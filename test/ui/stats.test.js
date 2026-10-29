@@ -48,6 +48,14 @@ function baseResult(over = {}) {
   };
 }
 
+test('saved round history retains distinct piece identities', () => {
+  const units = [{ uid: 17, defId: 'op', name: '同名', dmg: 12, kills: 1 },
+    { uid: 18, defId: 'op', name: '同名', dmg: 8, kills: 0 }];
+  const rec = buildRecord(baseResult({ roundHistory: [{ round: 2, players: [{ playerId: 'p1', units }] }] }),
+    { myId: 'p1', roomMode: 'solo', now: 1700000000000 });
+  assert.deepEqual(recordToResult(rec).roundHistory[0].players[0].units.map((u) => u.uid), [17, 18]);
+});
+
 /** Fake localStorage: Map-backed, with an optional byte budget that makes setItem throw like a full quota. */
 function fakeStorage({ budget = Infinity } = {}) {
   const m = new Map();

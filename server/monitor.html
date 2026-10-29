@@ -16,6 +16,7 @@ const seats=new Map();
 const pageControl=document.querySelector('#wall-page'), pageSelect=pageControl.querySelector('select');
 let wallData=null;
 pageSelect.onchange=()=>{signature='';if(wallData)drawWall(wallData);};
+pageSelect.onblur=()=>{if(wallData)drawWall(wallData);};
 function fitFrame(viewport,frame){
   if(!viewport||!frame||!viewport.clientWidth||!viewport.clientHeight)return;
   const scale=Math.min(viewport.clientWidth/1280,viewport.clientHeight/720);
@@ -30,7 +31,7 @@ window.addEventListener('pagehide',()=>{stopped=true;resize.disconnect();for(con
 function drawWall(d){
   wallData=d;
   const pages=Math.max(1,Math.ceil(d.seats.length/4)), prior=Number(pageSelect.value)||0;
-  if(pageSelect.options.length!==pages){pageSelect.replaceChildren(...Array.from({length:pages},(_,i)=>new Option(`${i*4+1}–${Math.min(d.seats.length,i*4+4)}`,String(i))));pageSelect.value=String(Math.min(prior,pages-1));}
+  if(pageSelect.options.length!==pages&&document.activeElement!==pageSelect){pageSelect.replaceChildren(...Array.from({length:pages},(_,i)=>new Option(`${i*4+1}–${Math.min(d.seats.length,i*4+4)}`,String(i))));pageSelect.value=String(Math.min(prior,pages-1));}
   pageControl.hidden=pages===1;
   const start=(Number(pageSelect.value)||0)*4;
   host.className='wall';
@@ -69,7 +70,9 @@ async function refresh(){
       drawWall(d);
     }else{
       const c=d.current, bytes=(n)=>(n/1024).toFixed(1)+' KiB/s';
-      host.innerHTML=`<p>运行 ${(c.uptime/3600).toFixed(2)} 小时 · RSS ${(c.rss/1048576).toFixed(1)} MiB · 堆 ${(c.heap/1048576).toFixed(1)} MiB · CPU ${c.cpu.toFixed(1)}%</p><p>在线会话 ${c.sessions} · 房间 ${c.rooms} · 对局 ${c.matches} · 观战 ${c.spectators}</p><p>WebSocket ↑ ${bytes(c.tx)} / ↓ ${bytes(c.rx)} · 静态素材 ↑ ${bytes(c.assets)}</p><div class="scroll"><table><caption>各房间 WebSocket</caption><tr><th>房间</th><th>发送</th><th>接收</th></tr>${c.byRoom.map((r)=>`<tr><td>${esc(r.code)}</td><td>${bytes(r.tx)}</td><td>${bytes(r.rx)}</td></tr>`).join('')}</table><table><caption>在线玩家 RTT（复用每 30 秒的协议心跳）</caption><tr><th>玩家</th><th>房间</th><th>往返延迟</th></tr>${d.players.map((p)=>`<tr><td>${esc(p.name)}</td><td>${esc(p.room||'大厅')}</td><td class="${p.rtt>300?'bad':''}">${p.rtt==null?'等待心跳':Math.round(p.rtt)+' ms'}</td></tr>`).join('')}</table></div>`;
+      if(!host.querySelector('[data-resource-summary]'))host.innerHTML='<div data-resource-summary></div><div class="scroll" data-resource-tables></div>';
+      host.querySelector('[data-resource-summary]').innerHTML=`<p>运行 ${(c.uptime/3600).toFixed(2)} 小时 · RSS ${(c.rss/1048576).toFixed(1)} MiB · 堆 ${(c.heap/1048576).toFixed(1)} MiB · CPU ${c.cpu.toFixed(1)}%</p><p>在线会话 ${c.sessions} · 房间 ${c.rooms} · 对局 ${c.matches} · 观战 ${c.spectators}</p><p>WebSocket ↑ ${bytes(c.tx)} / ↓ ${bytes(c.rx)} · 静态素材 ↑ ${bytes(c.assets)}</p>`;
+      host.querySelector('[data-resource-tables]').innerHTML=`<table><caption>各房间 WebSocket</caption><tr><th>房间</th><th>发送</th><th>接收</th></tr>${c.byRoom.map((r)=>`<tr><td>${esc(r.code)}</td><td>${bytes(r.tx)}</td><td>${bytes(r.rx)}</td></tr>`).join('')}</table><table><caption>在线玩家 RTT（复用每 30 秒的协议心跳）</caption><tr><th>玩家</th><th>房间</th><th>往返延迟</th></tr>${d.players.map((p)=>`<tr><td>${esc(p.name)}</td><td>${esc(p.room||'大厅')}</td><td class="${p.rtt>300?'bad':''}">${p.rtt==null?'等待心跳':Math.round(p.rtt)+' ms'}</td></tr>`).join('')}</table>`;
     }
   }catch(e){status.textContent='连接中断：'+e.message;}
   finally{if(!stopped)setTimeout(refresh,1000);}

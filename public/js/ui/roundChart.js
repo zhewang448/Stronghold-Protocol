@@ -2,6 +2,7 @@
 import { t, N_ } from '../../../shared/i18n.js';
 import { playerSeries, selectedSeries } from './playerSeries.js';
 import { createRoundChartTip } from './roundChartTip.js';
+import { unitStatsKey } from '../../../shared/battleDamage.js';
 const INK = { grid: '#2c2c2a', axis: '#555d58', label: '#b3bcb6', text: '#dfe6e2', surface: '#101311' };
 const METRICS = [['lp', 'LP'], ['funds', N_('剩余金币')], ['spent', N_('累计花费')], ['dmg', N_('累计伤害')], ['roundDmg', N_('本回合伤害')], ['level', N_('商店等级')], ['income', N_('本回合收入')], ['expense', N_('本回合支出')]];
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -88,17 +89,16 @@ export function drawRoundChart(host, history, nameOf, state, options = {}) {
   button.textContent = state.table ? t('看曲线') : t('看表格');
   button.setAttribute('aria-pressed', String(!!state.table));
   button.onclick = () => { state.table = !state.table; redraw(); };
-  content.replaceChildren();
   legend.hidden = !!state.table;
   const rounds = history.map((h) => h.round);
   if (state.table) {
     view.tip.dismiss();
-    const table = document.createElement('div');
+    const table = content.querySelector(':scope > .xscroll') || document.createElement('div');
     table.className = 'xscroll';
     table.innerHTML = `<table><caption class="meta" style="text-align:left">${esc(t('{label}（每回合结算后）', { label }))}</caption>
       <thead><tr><th scope="col">${esc(t('回合'))}</th>${series.map((s) => `<th scope="col" class="n"><span class="player-series-key" style="--c:${s.color}">${esc(seriesName(s))}</span></th>`).join('')}</tr></thead>
       <tbody>${rounds.map((r) => `<tr><th scope="row">${r}</th>${series.map((s) => { const p = pointsOf(history, s.id, key).find((x) => x.round === r); return `<td class="n">${p ? full.format(p.v) : '—'}</td>`; }).join('')}</tr>`).join('')}</tbody></table>`;
-    content.append(table);
+    if (table.parentNode !== content) content.replaceChildren(table);
     return;
   }
   const lines = series.map((s) => ({ ...s, pts: pointsOf(history, s.id, key) }));
@@ -143,10 +143,22 @@ export function drawRoundChart(host, history, nameOf, state, options = {}) {
       sp.title = t('突出玩家：{name}', { name: l.name }); legend.append(sp);
     }
   }
-  const wrap = document.createElement('div');
+  const wrap = content.querySelector(':scope > .chart-wrap') || document.createElement('div');
   wrap.className = 'chart-wrap';
-  wrap.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" tabindex="0" aria-label="${esc(t('{label}曲线，第 {from}–{to} 回合，切换到表格可读出数值', { label, from: x0, to: x1 }))}"><title>${esc(label)}</title>${svg}</svg>`;
-  content.append(wrap);
+  const next = document.createElement('div');
+  next.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" tabindex="0" aria-label="${esc(t('{label}曲线，第 {from}–{to} 回合，切换到表格可读出数值', { label, from: x0, to: x1 }))}"><title>${esc(label)}</title>${svg}</svg>`;
+  const previousSvg = wrap.querySelector('svg'), nextSvg = next.querySelector('svg');
+  const previousHit = previousSvg?.querySelector('.hit'), nextHit = nextSvg.querySelector('.hit');
+  if (!previousHit) wrap.replaceChildren(nextSvg);
+  else {
+    for (const attr of [...previousSvg.attributes]) if (!nextSvg.hasAttribute(attr.name)) previousSvg.removeAttribute(attr.name);
+    for (const attr of [...nextSvg.attributes]) previousSvg.setAttribute(attr.name, attr.value);
+    for (const child of [...previousSvg.childNodes]) if (child !== previousHit) child.remove();
+    while (nextSvg.firstChild !== nextHit) previousSvg.insertBefore(nextSvg.firstChild, previousHit);
+    for (const attr of [...previousHit.attributes]) if (!nextHit.hasAttribute(attr.name)) previousHit.removeAttribute(attr.name);
+    for (const attr of [...nextHit.attributes]) previousHit.setAttribute(attr.name, attr.value);
+  }
+  if (wrap.parentNode !== content) content.replaceChildren(wrap);
 
   const applyHighlight = () => {
     legend.dataset.highlighted = String(!!state.highlight);
@@ -188,16 +200,16 @@ export function drawRoundChart(host, history, nameOf, state, options = {}) {
     },
   };
   view.tip.update(detailModel);
-  hit.addEventListener('pointermove', e => { if (e.pointerType !== 'touch') view.tip.preview(roundAt(e)); });
-  hit.addEventListener('pointerdown', e => { if (e.button === 0) view.tip.pin(roundAt(e)); });
-  hit.addEventListener('pointerleave', () => view.tip.leave());
-  svgEl.addEventListener('keydown', e => {
+  hit.onpointermove = e => { if (e.pointerType !== 'touch') view.tip.preview(roundAt(e)); };
+  hit.onpointerdown = e => { if (e.button === 0) view.tip.pin(roundAt(e)); };
+  hit.onpointerleave = () => view.tip.leave();
+  svgEl.onkeydown = e => {
     const index = Math.max(0, rounds.indexOf(state.pinnedRound));
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); view.tip.pin(rounds[index]); }
     else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       e.preventDefault(); view.tip.pin(rounds[Math.max(0, Math.min(rounds.length - 1, index + (e.key === 'ArrowRight' ? 1 : -1)))]);
     }
-  });
+  };
 }
 
 
@@ -236,7 +248,7 @@ export function drawUnitRounds(host, history, nameOf, state, options = {}) {
     if (!members.has(p.playerId)) continue;
     if (state.player && p.playerId !== state.player) continue;
     for (const u of p.units || []) {
-      const key = JSON.stringify([p.playerId, u.name || u.defId]);
+      const key = JSON.stringify([p.playerId, unitStatsKey(u)]);
       const row = aggregate.get(key) || { ...u, playerId: p.playerId, dmg: 0, kills: 0 };
       row.dmg += Number(u.dmg) || 0;
       row.kills += Number(u.kills) || 0;

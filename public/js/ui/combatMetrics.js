@@ -113,7 +113,7 @@ export function CombatMetricsPanel({ myId, onClose, runner = battleRunner }) {
         </li>`;
       }) : html`<li class="combat-metrics__empty">${scope === 'last' ? t('暂无上一场战斗记录') : t('暂无本地战斗记录')}<br /><small>${scope === 'last' ? t('打完一场战斗后显示') : t('开始战斗后实时显示干员数据')}</small></li>`}
     </ol>
-    <p class="combat-metrics__note">${t('仅统计自己 · 同名干员合并 · 召唤物计入所属干员')}<br />${t('实际扣血 / 有效治疗，DPS / HPS 按自己的战斗秒数计算。刷新后重新累计。')}</p>
+    <p class="combat-metrics__note">${t('仅统计自己 · 每个干员分别统计 · 召唤物计入所属干员')}<br />${t('实际扣血 / 有效治疗，DPS / HPS 按自己的战斗秒数计算。刷新后重新累计。')}</p>
     </div>
   </section>`;
 }

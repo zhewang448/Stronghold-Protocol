@@ -82,15 +82,12 @@ export function combineCombat(records, ownerId = null) {
     for (const r of record.rows) {
       if (ownerId != null && r.ownerId !== ownerId) continue;
       owners.add(r.ownerId);
-      // Keep per-piece records in the collector, but display same-name units together for each player.
-      // Distinct definitions (including promoted copies) with the same display name share one row.
-      const key = JSON.stringify([r.ownerId, r.kind, r.name || r.defId]);
+      const key = JSON.stringify([r.ownerId, r.kind, Number.isInteger(r.uid) ? `uid:${r.uid}` : r.key || r.defId]);
       let row = rows.get(key);
       if (!row) {
         row = { ...r, key, damage: 0, healing: 0, types: Object.fromEntries(DAMAGE_TYPES.map((t) => [t, 0])) };
         rows.set(key, row);
       }
-      // Use the latest encountered definition for the combined row's portrait.
       Object.assign(row, { defId: r.defId, name: r.name, kind: r.kind, picture: r.picture });
       row.damage += r.damage;
       row.healing += r.healing;

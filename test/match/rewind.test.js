@@ -9,8 +9,11 @@ import { makeMatch, checkInvariants } from './harness.js';
 /** Everything that decides a match, without piece uids (rewind keeps uidSeq monotonic). */
 function fingerprint(m) {
   const ids = (arr) => arr.map((p) => (p ? `${p.id}${p.items && p.items.length ? '+' + p.items.map((i) => i.id).join('+') : ''}` : '-'));
+  const history = m.history.map((round) => ({ ...round, players: round.players.map((player) => ({
+    ...player, units: (player.units || []).map(({ uid: _uid, ...unit }) => unit),
+  })) }));
   return JSON.stringify({
-    phase: m.phase, round: m.round, outcome: m.outcome, history: m.history, pool: [...m.pool.entries].map(([k, e]) => `${k}:${e.left}`),
+    phase: m.phase, round: m.round, outcome: m.outcome, history, pool: [...m.pool.entries].map(([k, e]) => `${k}:${e.left}`),
     players: m.order.map((ps) => ({
       lp: ps.lp, alive: ps.alive, funds: ps.funds, level: ps.shop.level, shop: ps.shop.slots.map((s) => s && s.id),
       board: ids([...ps.board.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([k, p]) => ({ ...p, id: `${k}=${p.id}` }))),

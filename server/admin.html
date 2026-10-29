@@ -290,6 +290,7 @@
 <script type="module">
 import { drawRoundChart, drawUnitRounds } from '/js/ui/roundChart.js';
 import { playerSeries } from '/js/ui/playerSeries.js';
+import { unitStatsKey } from '/shared/battleDamage.js';
 import { DEFAULT_VERSION, VERSIONS, versionById } from '/shared/versions.js';
 const gameVersion = (id) => versionById(id || DEFAULT_VERSION)?.label || id;
 import { DEV_PAGES, DEV_SCENES, devSceneUrl } from '/shared/devtools.js';
@@ -473,13 +474,62 @@ function roomOverview(rooms) {
     return `<tr class="${selectedRoom === r.code ? 'is-selected' : ''}"><td><button data-open-room="${esc(r.code)}" aria-expanded="${selectedRoom === r.code}">${disclosureArrow}${esc(r.code)}</button></td><td>${r.mode === 'solo' ? '独立模拟' : '同盟'} · ${esc(r.difficulty)} · ${esc(gameVersion(m?.version || r.version))}</td><td>${m ? `${esc(m.phaseName)} · 第 ${m.round} 回合` : '等待开局'}</td><td>${m ? m.left != null ? `${m.left} 秒` : m.paused ? '已暂停' : '不限时' : '—'}</td><td>${(m?.players || r.seats).map(p => `<span class="player-label">${esc(p.name)}${p.bot ? ' (AI)' : ''} · ${p.lp != null ? `LP ${p.lp} · ` : ''}${p.connected || p.bot ? '在线' : '离线'}${playerAccessLabel(p)}</span>`).join('')}</td></tr>`;
   }).join('')}</tbody></table></div></section>`;
 }
+function roomNodeKey(node) {
+  if (node.nodeType !== Node.ELEMENT_NODE) return null;
+  for (const attr of ['id', 'data-player-row', 'data-detail-player', 'data-piece-row', 'data-bond-row', 'data-chat-member', 'data-chat', 'data-stats']) {
+    if (node.hasAttribute(attr)) return `${attr}:${node.getAttribute(attr)}`;
+  }
+  return null;
+}
+function syncRoomNode(current, incoming) {
+  if (current.nodeType === Node.TEXT_NODE || current.nodeType === Node.COMMENT_NODE) {
+    if (current.nodeValue !== incoming.nodeValue) current.nodeValue = incoming.nodeValue;
+    return;
+  }
+  const input = current.matches('input, textarea');
+  const select = current.matches('select');
+  const dirty = input && current.value !== current.defaultValue;
+  const checked = input && current.checked !== current.defaultChecked;
+  const selected = select && current.value !== (current.querySelector('option[selected]')?.value ?? current.options[0]?.value);
+  const value = current.value, isChecked = current.checked;
+  for (const attr of [...current.attributes]) {
+    if (current.tagName === 'DETAILS' && attr.name === 'open') continue;
+    if (!incoming.hasAttribute(attr.name)) current.removeAttribute(attr.name);
+  }
+  for (const attr of [...incoming.attributes]) {
+    if (current.tagName === 'DETAILS' && attr.name === 'open') continue;
+    if (current.getAttribute(attr.name) !== attr.value) current.setAttribute(attr.name, attr.value);
+  }
+  if (!current.matches('[data-chat], [data-stats]') && !(select && document.activeElement === current && !current.disabled)) syncRoomChildren(current, incoming);
+  if ((dirty || selected) && current.value !== value) current.value = value;
+  if (checked) current.checked = isChecked;
+}
+function syncRoomChildren(current, incoming) {
+  let cursor = current.firstChild;
+  for (const next of [...incoming.childNodes]) {
+    const key = roomNodeKey(next);
+    let match = key ? [...current.childNodes].find((node) => roomNodeKey(node) === key) : cursor;
+    if (match && (match.nodeType !== next.nodeType || match.nodeName !== next.nodeName || (!key && roomNodeKey(match)))) match = null;
+    if (!match) { current.insertBefore(next.cloneNode(true), cursor); continue; }
+    if (match !== cursor) current.insertBefore(match, cursor);
+    syncRoomNode(match, next);
+    cursor = match.nextSibling;
+  }
+  while (cursor) { const next = cursor.nextSibling; cursor.remove(); cursor = next; }
+}
 function renderRooms() {
   if (selectedRoom && !latestRooms.some(r => r.code === selectedRoom)) selectedRoom = null;
   const r = latestRooms.find(r => r.code === selectedRoom);
-  $('#rooms').innerHTML = latestRooms.length ? roomOverview(latestRooms) + (r ? roomCard(r) : '') : '<p class="empty">还没有房间。玩家建房后会出现在这里。</p>';
+  const next = document.createElement('div');
+  next.innerHTML = latestRooms.length ? roomOverview(latestRooms) + (r ? roomCard(r) : '') : '<p class="empty">还没有房间。玩家建房后会出现在这里。</p>';
+  syncRoomChildren($('#rooms'), next);
   if (r) {
-    $(`[data-chat="${r.code}"]`)?.replaceWith(chatPanel(r));
-    $(`[data-stats="${r.code}"]`)?.replaceWith(statsPanel(r));
+    const chat = $(`[data-chat="${r.code}"]`), stats = $(`[data-stats="${r.code}"]`);
+    const chatContent = chatPanel(r), statsContent = statsPanel(r);
+    if (chat && chat.firstElementChild !== chatContent) chat.replaceChildren(chatContent);
+    if (stats && stats.firstElementChild !== statsContent) stats.replaceChildren(statsContent);
+    const prepMode = $('[data-room-prep-mode]');
+    if (prepMode) prepMode.dispatchEvent(new Event('change', { bubbles: true }));
     if (r.match) loadCatalog(r.code).catch(() => say('干员目录加载失败', true));
   }
 }
@@ -627,7 +677,7 @@ function candidateInput(kind, code, pid, attrs, uid = '') {
 
 function detailRow(code, p, cols) {
   const at = (label) => `data-room="${code}" data-player="${esc(p.id)}" data-label="${label}"`;
-  const bondRows = (list) => list.map((b) => `<tr>
+  const bondRows = (list) => list.map((b) => `<tr data-bond-row="${esc(b.id)}">
       <td class="${b.active ? 'on' : ''}">${esc(b.name)}</td>
       <td>${b.count} / ${esc(b.thresholds.join('·'))}</td>
       <td>${b.noStack ? '—' : `${b.layers}
@@ -637,7 +687,7 @@ function detailRow(code, p, cols) {
     </tr>`).join('');
   const used = p.bonds.filter((b) => b.count || b.layers || b.bonus || b.active);
   const others = p.bonds.filter((b) => !used.includes(b));
-  const pieceRows = p.pieces.map((x) => `<tr>
+  const pieceRows = p.pieces.map((x) => `<tr data-piece-row="${x.uid}">
       <td>${esc(x.where)}</td>
       <td>${esc(x.name)}${x.golden ? ' <span class="tag on">精锐</span>' : ''}${x.count > 1 ? ` ×${x.count}` : ''}${x.items.length ? `<br><span class="meta">${x.items.map((i) => esc(i.name)).join('、')}</span>` : ''}</td>
       <td class="row">
@@ -653,7 +703,7 @@ function detailRow(code, p, cols) {
       <button ${on(code, p, 'bountyRemove', '删除悬赏')} data-value="${esc(b.id)}" aria-label="删除悬赏 ${esc(b.name)}">删除</button></li>`),
   ].join('');
   const enemies = p.enemies.map((e) => `<li>${esc(e.name)} ×${e.count}${e.elite ? ' <span class="tag">精英</span>' : ''}${e.boss ? ' <span class="tag">领袖</span>' : ''}${e.fly ? ' <span class="meta">飞行</span>' : ''}${e.bounty ? ' <span class="meta">悬赏</span>' : ''}</li>`).join('');
-  return `<tr class="detail"><td colspan="${cols}">${playerActions(code, p)}<div class="panes">
+  return `<tr class="detail" data-detail-player="${esc(p.id)}"><td colspan="${cols}">${playerActions(code, p)}<div class="panes">
     <div><h3>盟约</h3>
       <p class="meta">加层走游戏逻辑（会触发获得层数的效果），设层直接改、不触发效果。层数只在盟约激活时生效，人数加成可以强行激活。</p>
       <div class="scroll"><table><thead><tr><th scope="col">盟约</th><th scope="col">人数/门槛</th><th scope="col">层数</th><th scope="col">人数加成</th></tr></thead>
@@ -713,7 +763,7 @@ function playerActions(code, p) {
 }
 function playerRow(code, p) {
   const who = `${esc(p.name)}${p.bot ? ' <span class="tag">AI</span>' : ''}${p.connected ? '' : ' <span class="tag off">离线</span>'}${p.alive ? '' : ' <span class="tag off">淘汰</span>'}`;
-  return `<tr class="player-summary"><td>${who}${playerAccessLabel(p)}</td><td>${p.lp}</td><td>${p.funds}</td><td>${p.level}</td><td>${p.freeRefreshes}</td><td>${p.board} / ${p.hand}</td><td>${p.ready ? '已就绪' : '未就绪'}${p.autoplay ? ' · 托管中' : ''}<br><span class="meta">预选盟约：${esc(p.bondPlan || '未预选')}</span></td><td><button data-toggle="${esc(p.id)}" aria-expanded="${open.has(p.id)}">${disclosureArrow}${open.has(p.id) ? '收起' : '操作 / 详情'}</button></td></tr>${open.has(p.id) ? detailRow(code,p,8) : ''}`;
+  return `<tr class="player-summary" data-player-row="${esc(p.id)}"><td>${who}${playerAccessLabel(p)}</td><td>${p.lp}</td><td>${p.funds}</td><td>${p.level}</td><td>${p.freeRefreshes}</td><td>${p.board} / ${p.hand}</td><td>${p.ready ? '已就绪' : '未就绪'}${p.autoplay ? ' · 托管中' : ''}<br><span class="meta">预选盟约：${esc(p.bondPlan || '未预选')}</span></td><td><button data-toggle="${esc(p.id)}" aria-expanded="${open.has(p.id)}">${disclosureArrow}${open.has(p.id) ? '收起' : '操作 / 详情'}</button></td></tr>${open.has(p.id) ? detailRow(code,p,8) : ''}`;
 }
 
 const chatPanels = new Map();
@@ -737,9 +787,11 @@ function chatPanel(r) {
   if (panel.dataset.signature !== signature) {
     panel.dataset.signature = signature;
     $('.chat-log', panel).innerHTML = r.chat.messages.length ? r.chat.messages.map((m) => `<p><strong>${m.role === 'system' ? '主机消息' : esc(m.name)}</strong> · ${clock(m.at)}<br>${esc(m.text)}</p>`).join('') : '<p class="meta">暂无消息</p>';
-    $('.chat-members', panel).innerHTML = [...r.seats.filter((p) => !p.bot && !p.left), ...(r.spectators || []).map((p) => ({ ...p, viewer: true }))].map((p) => `<div class="row"><span>${esc(p.name)}${p.viewer ? '（观战）' : ''}</span>
+    const members = document.createElement('div');
+    members.innerHTML = [...r.seats.filter((p) => !p.bot && !p.left), ...(r.spectators || []).map((p) => ({ ...p, viewer: true }))].map((p) => `<div class="row" data-chat-member="${esc(p.id)}"><span>${esc(p.name)}${p.viewer ? '（观战）' : ''}</span>
       ${p.viewer ? '' : `<button data-click="chatMute" data-room="${r.code}" data-player="${esc(p.id)}" data-value="${!p.muted}" data-label="禁言管理">${p.muted ? '解除禁言' : '禁言'}</button>`}
       <button class="danger" data-click="chatKick" data-room="${r.code}" data-player="${esc(p.id)}" data-label="踢出" data-confirm="将 ${esc(p.name)} 移出房间？对局中按离开规则处理。">踢出</button></div>`).join('');
+    syncRoomChildren($('.chat-members', panel), members);
   }
   return panel;
 }
@@ -843,8 +895,7 @@ function unitsRanking(history, nameOf, options = {}) {
     for (const h of history) {
       const p = h.players.find((x) => x.playerId === s.id);
       for (const u of (p && p.units) || []) {
-        // A host can reuse an empty DIY slot for another operator between rounds.
-        const key = JSON.stringify([u.defId, u.name]);
+        const key = unitStatsKey(u);
         const e = by.get(key) || { name: u.name, dmg: 0, kills: 0, rounds: 0 };
         e.dmg += u.dmg; e.kills += u.kills; e.rounds++;
         by.set(key, e);
@@ -990,7 +1041,12 @@ function statsPanel(r) {
     const json = JSON.stringify(data);
     if (p.seen[k] === json) return;
     p.seen[k] = json;
-    draw(p.el.querySelector(`[data-part="${k}"]`));
+    const host = p.el.querySelector(`[data-part="${k}"]`);
+    const scroll = [...host.querySelectorAll('.scroll, .xscroll')].map((el) => [el.scrollLeft, el.scrollTop]);
+    draw(host);
+    host.querySelectorAll('.scroll, .xscroll').forEach((el, i) => {
+      if (scroll[i]) { el.scrollLeft = scroll[i][0]; el.scrollTop = scroll[i][1]; }
+    });
   };
   p.el.querySelector('details[data-match]').hidden = !m;
   if (m) {
@@ -1156,7 +1212,8 @@ function drawReleaseUpdate() {
     'recovery-required': '更新未完成或健康检查未通过，需要离线恢复；请按下方说明先停服。',
     reconnecting: '正在安装并等待服务器恢复…',
   };
-  host.innerHTML = `<h2>版本更新</h2>
+  const next = document.createElement('div');
+  next.innerHTML = `<h2>版本更新</h2>
     <p><label><input type="checkbox" id="auto-update" ${d.automatic?.enabled ? 'checked' : ''} ${updateRequest ? 'disabled' : ''}> 空闲时自动安装新版本</label> <button data-auto-update-save ${updateRequest ? 'disabled' : ''}>保存自动更新设置</button></p>
     <p class="meta" role="status">自动更新：${esc(({ disabled: '已关闭', idle: '等待检查', waiting: '等待全部对局结束', announcing: '已公告，等待一分钟', installing: '正在安装', error: '失败', 'up-to-date': '暂无新版' })[d.automatic?.state] || '已关闭')} ${esc(d.automatic?.error || '')} ${d.automatic?.lastCheck ? ' · 上次检查 ' + esc(new Date(d.automatic.lastCheck).toLocaleString()) : ''} ${esc(d.automatic?.target || '')}</p>
     <p class="meta">从 ${esc(d.repository || 'zhewang448/Stronghold-Protocol')} 下载正式 Release，升级优先使用已签名增量包，不适配时改用完整素材包。回退旧版及同版修复使用完整包。保留额外素材、主机设置和对局记录；替换前备份程序与变化素材，完成后自动重启。</p>
@@ -1180,13 +1237,14 @@ function drawReleaseUpdate() {
       <button class="primary" data-update-install ${busy || d.state === 'reconnecting' || !d.canInstall || !selected?.installable ? 'disabled' : ''}>${d.state === 'active-matches' ? '继续安装并重启' : selected?.relation === 'current' ? '修复素材并重启' : selected?.relation === 'old' ? '回退并重启' : '下载并安装'}</button></div>
     ${d.canInstall === false ? '<p class="meta">当前启动方式不支持自动重启，请通过启动脚本或 npm start 启动服务器。</p>' : ''}
     ${d.source ? `<p class="meta">最近请求：${{ direct: 'GitHub 直连', proxy: '通过配置的代理访问 GitHub', mirror: '镜像站（GitHub 访问失败后自动切换）' }[d.source]}</p>` : ''}
-    <details class="stats" ${networkExpanded ? 'open' : ''}><summary>更新网络配置</summary>
+    <details class="stats" id="update-network-panel" ${networkExpanded ? 'open' : ''}><summary>更新网络配置</summary>
       <form class="stats-body" id="update-network-form" onsubmit="return false">
         <label class="network-field">HTTP / HTTPS 代理<input id="update-proxy" type="url" placeholder="http://127.0.0.1:7890" value="${esc(network.proxy)}" ${busy ? 'disabled' : ''} aria-describedby="update-network-help"></label>
         <label class="network-field">备用镜像前缀<input id="update-mirror" type="url" placeholder="https://gh-proxy.com/" value="${esc(network.mirror)}" ${busy ? 'disabled' : ''} aria-describedby="update-network-help"></label>
         <p class="meta" id="update-network-help">代理留空时直连 GitHub；失败后直接访问镜像。查询、校验文件和下载均适用。镜像须支持 GitHub API 和下载地址的前缀转发，留空可关闭回退。保存后立即生效，重启后保留。</p>
         <div class="row"><button data-update-network-save ${busy ? 'disabled' : ''}>保存网络配置</button><span id="update-network-feedback" role="status">${esc(networkFeedback)}</span></div>
       </form></details>`;
+  syncRoomChildren(host, next);
 }
 
 document.addEventListener('change', (e) => {
@@ -1767,8 +1825,14 @@ document.addEventListener('input', (e) => {
   drawPrepPreview();
 });
 let lastJson = '';
+let roomPointer = false;
+document.addEventListener('pointerdown', (event) => { if (event.target.closest?.('#rooms')) roomPointer = true; });
+window.addEventListener('pointerup', () => { roomPointer = false; });
+window.addEventListener('pointercancel', () => { roomPointer = false; });
+window.addEventListener('blur', () => { roomPointer = false; });
 async function refresh(force = false) {
   if (servicePending) return;
+  if (roomPointer) return;
   // never re-render under the user's cursor: typing into a field would lose its value
   const typing = document.activeElement?.matches('input, select, textarea');
   if (typing && !document.activeElement.closest('[data-chat-panel], #site-announcement')) return;
@@ -1777,7 +1841,7 @@ async function refresh(force = false) {
   try { data = await api('/api/rooms'); } catch { if (!servicePending) $('#status').textContent = '无法连接服务器'; return; }
   if (servicePending) return;
   if (data.error) { $('#status').textContent = data.error; return; }
-  if (document.activeElement?.matches('input, select, textarea')) { for (const r of data.rooms) chatPanel(r); return; }
+  if (roomPointer || document.activeElement?.matches('input, select, textarea')) { for (const r of data.rooms) chatPanel(r); return; }
   $('#status').textContent = `更新于 ${new Date().toLocaleTimeString()}`;
   const json = JSON.stringify(data.rooms);
   if (json === lastJson) return;

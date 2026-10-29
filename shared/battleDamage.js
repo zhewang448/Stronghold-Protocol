@@ -1,5 +1,10 @@
 // Read-only, bounded operator counters used by the live progress view.
 export const LIVE_DAMAGE_UNITS = 64;
+export function unitStatsKey(unit) {
+  return Number.isInteger(unit?.uid) && unit.uid >= 1 && unit.uid <= 2 ** 31
+    ? `uid:${unit.uid}`
+    : `legacy:${JSON.stringify([unit?.defId || '', unit?.name || ''])}`;
+}
 const counter = (n, cap = 1e13) => Number.isFinite(n) && n > 0 ? Math.min(cap, Math.round(n)) : 0;
 
 export function battleDamage(battle) {

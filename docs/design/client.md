@@ -2,6 +2,13 @@
 
 Part of [DESIGN.md](../DESIGN.md) (the index; section numbers are global).
 
+Boss-round prep pings use boss-field coordinates on the wire, converting the owner's board coordinates at the view
+boundary; a prep scout already uses field coordinates. Live round and combat rankings retain each piece's uid so
+same-name operators stay separate. Older round records without a uid retain their existing aggregate data.
+During boss prep the engine searches the full shared field for a ping, while its ground picker keeps scout coordinates
+in field space instead of applying the owner's placement transform; the simplified view searches its visible board.
+Host-console refresh keeps existing interaction and scroll containers, unfinished inputs and expanded details intact.
+
 ## 9. Client rendering contract (public/js/render)
 
 **Operator skins (§34.23, [SKINS.md](../SKINS.md)).** [ASSUMED] Retain received skin IDs separately from displayed

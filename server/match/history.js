@@ -7,7 +7,7 @@
 // finish() for an interrupted round. m.history is a MATCH_KEYS field (rewind.js): a rewind to round R's
 // prep restores the record as it was then, rounds ≥ R gone.
 
-import { battleDamage } from '../../shared/battleDamage.js';
+import { battleDamage, unitStatsKey } from '../../shared/battleDamage.js';
 import { diyRecordOf } from '../../shared/diy.js';
 import { timelineAt } from './fields.js';
 import { PHASE } from '../../shared/constants.js';
@@ -16,9 +16,9 @@ function mergeUnits(units) {
   const rows = new Map();
   for (const u of units) {
     if (!u || u.kind === 'token' || !(u.dmg > 0 || u.kills > 0)) continue;
-    const key = u.name || u.defId;
-    if (!key) continue;
-    const row = rows.get(key) || { defId: u.defId, name: u.name || u.defId, dmg: 0, kills: 0 };
+    if (!u.name && !u.defId) continue;
+    const key = unitStatsKey(u);
+    const row = rows.get(key) || { ...(Number.isInteger(u.uid) ? { uid: u.uid } : {}), defId: u.defId, name: u.name || u.defId, dmg: 0, kills: 0 };
     row.dmg += Math.max(0, Math.round(Number(u.dmg) || 0));
     row.kills += Math.max(0, Math.trunc(Number(u.kills) || 0));
     rows.set(key, row);
@@ -74,7 +74,7 @@ export function roundChartHistory(m, { live = false } = {}) {
     round: h.round,
     players: h.players.map((p) => ({
       ...Object.fromEntries(keys.map((key) => [key, p[key]])),
-      units: (p.units || []).map(({ defId, name, dmg, kills }) => ({ defId, name, dmg, kills })),
+      units: (p.units || []).map(({ uid, defId, name, dmg, kills }) => ({ ...(Number.isInteger(uid) ? { uid } : {}), defId, name, dmg, kills })),
       bonds: (p.bonds || []).filter((b) => !(b.noStack || m.gd.bond(b.id)?.noStack))
         .map(({ id, name, active, layers }) => ({ id, name, active, layers })),
     })),
@@ -123,7 +123,7 @@ export function roundChartHistory(m, { live = false } = {}) {
       }
       for (const u of p.units || []) {
         const rec = defs.get(u.uid);
-        if (rec) rows.push({ ...rec, dmg: Math.min(1e13, Math.max(0, Number(u.dmg) || 0)), kills: Math.min(1e9, Math.max(0, Number(u.kills) || 0)) });
+        if (rec) rows.push({ ...rec, uid: u.uid, dmg: Math.min(1e13, Math.max(0, Number(u.dmg) || 0)), kills: Math.min(1e9, Math.max(0, Number(u.kills) || 0)) });
       }
     }
   }

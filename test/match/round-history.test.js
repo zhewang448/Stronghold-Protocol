@@ -8,6 +8,25 @@ import { pointsOf } from '../../public/js/ui/roundChart.js';
 import { battleDamage, LIVE_DAMAGE_UNITS } from '../../shared/battleDamage.js';
 import { validateC2S } from '../../shared/protocol.js';
 
+test('live and settled history distinguish same-name pieces while combining their own waves', () => {
+  const h = makeMatch({ humans: 1, fake: true }).start().toPrep(), m = h.m;
+  try {
+    const chessId = Object.keys(m.data.chess)[0], name = m.gd.chess(chessId).name;
+    const unit = (uid, dmg) => ({ uid, defId: chessId, name, dmg, kills: 1 });
+    m.phase = 'UNITE';
+    m.lastResults.set('p_0', { damageDealt: 30, unitStats: [unit(71, 10), unit(72, 20)] });
+    const wave = { perPlayer: { p_0: { damageDealt: 7, unitStats: [unit(71, 7)] } } };
+    m.fields = [{ done: true, result: wave }];
+    const live = roundChartHistory(m, { live: true }).at(-1).players[0].units;
+    assert.deepEqual(live.map(({ uid, dmg }) => ({ uid, dmg })).sort((a, b) => a.uid - b.uid), [
+      { uid: 71, dmg: 17 }, { uid: 72, dmg: 20 },
+    ]);
+    m.order[0].stats.dmgDealt = 37;
+    recordRound(m, { uniteResult: wave });
+    assert.deepEqual(roundChartHistory(m).at(-1).players[0].units, live);
+  } finally { m.dispose(); }
+});
+
 test('public round charts use settled records, exclude noStack bonds and host-only details, follow rewind and the host gate', (t) => {
   const h = makeMatch({ humans: 2, fake: true }).start().toPrep();
   t.after(() => { h.m.dispose(); resetHostSettings(); });

@@ -5,6 +5,7 @@ import { C2S, S2C, validateC2S } from '../shared/protocol.js';
 import { StubMatch } from '../server/match/StubMatch.js';
 import { makeMatch } from './match/harness.js';
 import { activePings, pingTileAt } from '../public/js/ui/fieldPings.js';
+import * as fieldPings from '../public/js/ui/fieldPings.js';
 import { TestClient } from './helpers/wsClient.js';
 import { startServer } from '../server/index.js';
 
@@ -13,6 +14,30 @@ const ping = (fieldId = 'n:p_1', kind = 'question') => ({
 });
 
 describe('field pings', () => {
+  test('boss prep uses shared battlefield coordinates for both own and scouted views', () => {
+    assert.equal(typeof fieldPings.pingFieldTile, 'function');
+    assert.equal(typeof fieldPings.pingViewTile, 'function');
+    assert.equal(typeof fieldPings.pingRect, 'function');
+    for (const [side, col] of [['bossL', 4], ['bossR', 16]]) {
+      const board = { row: 10, col: 4 }, physical = { row: 3, col };
+      assert.deepEqual(fieldPings.pingFieldTile(board, side), physical);
+      assert.deepEqual(fieldPings.pingViewTile(physical, side), board);
+      assert.deepEqual(fieldPings.pingFieldTile(physical, null), physical);
+      assert.deepEqual(fieldPings.pingViewTile(physical, null), physical);
+      assert.deepEqual(fieldPings.pingFieldTile(fieldPings.pingViewTile({ row: 3, col: 14 }, side), side), { row: 3, col: 14 });
+    }
+    const field = { prep: true, kind: 'boss', rect: GEO.BOSS_RECT };
+    assert.deepEqual(fieldPings.pingRect(field, false, false), GEO.BOSS_RECT);
+    assert.deepEqual(fieldPings.pingRect(field, false, true), GEO.NORMAL_RECT);
+    assert.deepEqual(fieldPings.pingRect(field, true, false), GEO.BOSS_RECT);
+    const fullBossPrep = { r0: 7, r1: 12, c0: 0, c1: 20 };
+    for (const side of ['bossL', 'bossR']) {
+      assert.deepEqual(fieldPings.pingRect(field, false, true, side, { kind: 'engine' }), fullBossPrep);
+      assert.deepEqual(fieldPings.pingRect(field, false, true, side, { kind: 'fallback' }), GEO.NORMAL_RECT);
+    }
+    assert.deepEqual(fieldPings.pingRect(field, false, true, 'normal', { kind: 'engine' }), GEO.NORMAL_RECT);
+  });
+
   test('protocol accepts the supported kinds and rejects malformed coordinates', () => {
     assert.ok(C2S['g.ping']);
     assert.ok(PING_KINDS.includes('heart'));

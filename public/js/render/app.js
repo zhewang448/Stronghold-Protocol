@@ -821,7 +821,7 @@ export async function createFieldView(host, options = {}) {
   /** The tile under a canvas point in BOARD space (null off-grid; an impossible tile off the player's half). */
   function pickBoardTile(x, y) {
     const t = pickTile(cam, x, y, heightAt, tiles.levels);
-    if (!t || prepXf === IDENTITY) return t;
+    if (!t || mode !== 'prep' || prepXf === IDENTITY) return t;
     const b = prepXf.toBoard(t.row, t.col);
     return b ? { ...t, row: b.row, col: b.col } : { row: -1, col: -1, x: t.x, y: t.y };
   }
@@ -1405,7 +1405,8 @@ export async function createFieldView(host, options = {}) {
    * (review on #185).
    */
   function emitTileClick(ev, e) {
-    const t = pickBoardTile(ev.x, ev.y);
+    const t = e.button === 2 && mode === 'prep' && prepXf.kind === 'bossPrep'
+      ? groundTile(ev.x, ev.y) : pickBoardTile(ev.x, ev.y);
     if (!t || !(t.row >= 0) || !(t.col >= 0)) return;    // outside the board this field draws
     emit('tileClick', { row: t.row, col: t.col, button: e.button, clientX: e.clientX, clientY: e.clientY });
   }
