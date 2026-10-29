@@ -1,5 +1,7 @@
 import { createResultSummary } from './result-summary.js';
 import { wallView } from './admin-wall.js';
+import { roomRules, resultRules, battleView, stockView, lobbyBlockers, matchWaiting, diagnosticEvents } from './admin-observability.js';
+import { createAdminAudit } from './admin-audit.js';
 import { createResources } from './resources.js';
 import { createIdleUpdater } from './idle-update.js';
 import { readReleaseNotes } from './release-notes.js';
@@ -116,6 +118,13 @@ export function matchView(m) {
     phase: m.phase, phaseName: PHASE_NAMES[m.phase] || m.phase, round: m.round, ended: m.ended, paused: m.paused, solo: m.isSolo,
     left: m.deadline ? Math.max(0, Math.round((m.deadline - m.sched.now()) / 1000)) : null,
     rewindRounds: [...m.prepSnapshots.keys()].sort((a, b) => a - b), errors: m.errorCount,
+    errorCounts: { match: m.errorCount || 0, effects: m.dispatcher?.errors || 0, simulation: m.simErrors || 0 },
+    recentErrors: [
+      ...(m.errors || []).slice(-5).map(({ label, message }) => ({ label, message })),
+      ...[...(m.dispatcher?.errorsByKey || [])].slice(-3).map(([message, detail]) => ({ label: `效果错误（${detail.count} 次）`, message })),
+      ...[...(m.simErrorLog?.values() || [])].slice(-3).map(({ label, message }) => ({ label, message })),
+    ],
+    battles: battleView(m), waiting: matchWaiting(m),
     timerScale: m.timerScale, prep: m.prepOverride ?? getPrep(), prepInherited: m.prepOverride == null,
     enemyPlan: planView(m, BEFORE_COMBAT.has(m.phase)),
     fields: m.fields.filter((f) => f.cc && !f.done).map((f) => ({ id: f.fieldId, kind: f.kind, players: f.players.map((pid) => m.players.get(pid)?.name || pid) })),
@@ -163,13 +172,15 @@ export function roomsView(lobby) {
   if ([...lobby.rooms.values()].some(r => r.match?.hosted)) {
     return Promise.all([...lobby.rooms.values()].map(async room => {
       const view = roomsView({ registry: lobby.registry, rooms: new Map([[room.code, { ...room, match: room.match?.hosted ? null : room.match }]]) })[0];
-      if (room.match?.hosted) view.match = roomPresence(room, await room.match.admin('view'), lobby);
+      if (room.match?.hosted) { view.match = roomPresence(room, await room.match.admin('view'), lobby); view.blockers = []; }
       return view;
     }));
   }
   return [...lobby.rooms.values()].map((r) => ({
     code: r.code, mode: r.mode, difficulty: r.difficulty, version: r.version || DEFAULT_VERSION, content: r.content || null,
-    seats: r.seats.filter(Boolean).map((s) => playerAccess(lobby, { id: s.playerId, seat: s.seat, left: !!s.left, muted: !!r.chat?.muted.has(s.playerId), name: s.name, bot: s.isBot, connected: s.connected && !s.left })),
+    hostId: r.hostId || null, private: !!r.private, capacity: r.capacity ?? r.seats.length, rules: roomRules(r), blockers: lobbyBlockers(r),
+    seats: r.seats.filter(Boolean).map((s) => playerAccess(lobby, { id: s.playerId, seat: s.seat, left: !!s.left, muted: !!r.chat?.muted.has(s.playerId), name: s.name, bot: s.isBot, connected: s.connected && !s.left,
+      ready: typeof s.ready === 'boolean' ? s.ready : null, content: r.needsContent && !s.isBot ? s.content || 'loading' : null })),
     spectators: (r.spectators || []).map((s) => playerAccess(lobby, { id: s.playerId, name: s.name, connected: s.connected })),
     chat: r.chat?.history(r.code) || { messages: [] },
     match: r.match && r.match.order ? roomPresence(r, matchView(r.match), lobby) : null,
@@ -177,6 +188,31 @@ export function roomsView(lobby) {
     lastMatch: r.match ? null : r.adminLastMatch || null,
     log: r.adminLog || [],
   }));
+}
+
+async function actionState(room, playerId) {
+  const match = room?.match;
+  if (!match) return null;
+  const view = match.hosted ? await match.admin('view') : matchView(match);
+  if (!view || view.error) return null;
+  const player = (view.players || []).find((entry) => entry.id === playerId);
+  return { matchId: view.matchId, round: view.round, phase: view.phase,
+    player: player ? { name: player.name, lp: player.lp, funds: player.funds, level: player.level,
+      freeRefreshes: player.freeRefreshes, autoplay: player.autoplay, bonds: player.bonds,
+      pieces: player.pieces, effects: player.effects, bounties: player.bounties } : null };
+}
+
+function actionChanges(before, after) {
+  if (!before) return { before: null, after: null };
+  if (!after || before.matchId !== after.matchId) return { before, after: { state: '对局已结束或切换' } };
+  const left = {}, right = {};
+  for (const key of ['round', 'phase']) if (before[key] !== after[key]) { left[key] = before[key]; right[key] = after[key]; }
+  for (const key of ['lp', 'funds', 'level', 'freeRefreshes', 'autoplay', 'bonds', 'pieces', 'effects', 'bounties']) {
+    if (JSON.stringify(before.player?.[key]) !== JSON.stringify(after.player?.[key])) {
+      left[key] = before.player?.[key] ?? null; right[key] = after.player?.[key] ?? null;
+    }
+  }
+  return { before: left, after: right };
 }
 
 /** GET /api/catalog?room= — what a grant can name, for the running match's mode. */
@@ -552,7 +588,7 @@ function runAction(lobby, room, action, playerId, value) {
 export function resultRecord(room, m, summary, now = new Date()) {
   if (m.hosted) {
     if (!m.extensionEnd?.record) throw new Error('插件对局未返回统计记录');
-    return m.extensionEnd.record;
+    return { ...m.extensionEnd.record, rules: { ...roomRules(room, m), adminModified: room.adminModifiedMatch === m } };
   }
   const gd = m.gd;
   const players = (summary.players || []).map((p) => {
@@ -570,6 +606,7 @@ export function resultRecord(room, m, summary, now = new Date()) {
   return {
     savedAt: now.getTime(), room: room.code, mode: room.mode, difficulty: room.difficulty,
     version: m.version || DEFAULT_VERSION,
+    rules: { ...roomRules(room, m), adminModified: room.adminModifiedMatch === m },
     result: { ...summary, players },
     history: m.history || [],
   };
@@ -612,6 +649,7 @@ export function listRecords(dir) {
       out.push({
         id, version: rec.version || DEFAULT_VERSION, savedAt: rec.savedAt, room: rec.room, mode: rec.mode, difficulty: rec.difficulty, victory: !!r.victory,
         hiddenCleared: !!r.hiddenCleared, reason: r.reason, roundsPassed: r.roundsPassed, rounds: (rec.history || []).length, durationMs: r.durationMs,
+        rules: rec.rules || null, ruleStatus: resultRules(rec),
         players: (r.players || []).map((p) => ({ name: p.name, bot: !!p.isBot, alive: !!p.alive })),
       });
     } catch { /* a broken file is skipped */ }
@@ -780,9 +818,62 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
   };
   const session = (req) => (req.headers.cookie || '').split(';').some((s) => s.trim() === `sp_admin=${token}`);
   const summarizeResults = createResultSummary(resultsDir);
+  const audit = createAdminAudit({ lobby, file: path.join(resultsDir, 'admin-events.ndjson'), log });
+  const diagnosticSeen = new WeakMap(), diagnosticPending = new WeakSet();
+  let auditClosed = false;
+  const ingestDiagnostics = (room, match, data) => {
+    if (auditClosed || !match || !Array.isArray(data?.events)) return;
+    let seen = diagnosticSeen.get(match) || 0;
+    for (const event of data.events) if (event.seq > seen) {
+      const name = (id) => id === 'server' ? '服务器' : room.seats?.find((seat) => seat?.playerId === id)?.name || id;
+      audit.append({ ...event, room: room.code, from: event.from ? name(event.from) : undefined, to: event.to ? name(event.to) : undefined });
+      seen = event.seq;
+    }
+    diagnosticSeen.set(match, seen);
+  };
+  const diagnosticTimer = setInterval(() => {
+    for (const room of lobby.rooms.values()) {
+      const match = room.match;
+      if (!match || diagnosticPending.has(match)) continue;
+      diagnosticPending.add(match);
+      Promise.resolve().then(() => match.hosted ? match.admin('diagnostics') : diagnosticEvents(match))
+        .then((data) => ingestDiagnostics(room, match, data)).catch(() => {}).finally(() => diagnosticPending.delete(match));
+    }
+  }, 2000);
+  diagnosticTimer.unref();
+  async function auditedAction(body, action, execute) {
+    const room = lobby.rooms.get(String(body?.room)), match = room?.match;
+    const gameplay = !!match && !['announce', 'chatSend', 'chatClear', 'chatMute', 'chatKick'].includes(action);
+    const before = gameplay ? await actionState(room, body.playerId).catch(() => null) : null;
+    let marker = null;
+    if (gameplay) {
+      if (room.adminModifiedMatch !== match) { room.adminModifiedMatch = match; room.adminModifiedState = { pending: 0, success: false }; }
+      marker = room.adminModifiedState;
+      marker.pending++;
+    }
+    let result;
+    try { result = await execute(); }
+    catch (error) {
+      if (marker) { marker.pending--; if (!marker.pending && !marker.success && room.adminModifiedState === marker) room.adminModifiedMatch = null; }
+      audit.append({ type: 'action', room: body?.room || '', action, ok: false, error: String(error?.message || error).slice(0, 500) });
+      throw error;
+    }
+    if (marker) {
+      marker.pending--;
+      if (result?.ok) marker.success = true;
+      if (!marker.pending && !marker.success && room.adminModifiedState === marker) room.adminModifiedMatch = null;
+    }
+    const after = gameplay && lobby.rooms.get(String(body.room))?.match === match
+      ? await actionState(room, body.playerId).catch(() => null) : null;
+    let value = '';
+    if (!action.startsWith('chat') && action !== 'announce' && body?.value != null) value = JSON.stringify(body.value).slice(0, 500);
+    audit.append({ type: 'action', room: body?.room || '', action, player: before?.player?.name || room?.seats?.find((seat) => seat?.playerId === body?.playerId)?.name || null,
+      round: before?.round ?? null, ok: !!result?.ok, error: result?.error || null, value, ...actionChanges(before, after) });
+    return result;
+  }
   const resultFiles = () => recordFiles(resultsDir, [path.resolve(settingsFile), path.resolve(announcementDrafts.file), path.resolve(announcementPersistenceFile)]);
   const storageView = () => ({ results: resultFiles().length, replays: replayFiles(replaysDir).length,
-    adminLogs: replayAdminLogs(replaysDir) + [...lobby.rooms.values()].reduce((n, r) => n + (r.adminLog?.length || 0) + (r.match?.replay?.rounds || []).reduce((s, x) => s + x.admin.length, 0), 0) });
+    adminLogs: audit.list().events.length + replayAdminLogs(replaysDir) + [...lobby.rooms.values()].reduce((n, r) => n + (r.adminLog?.length || 0) + (r.match?.replay?.rounds || []).reduce((s, x) => s + x.admin.length, 0), 0) });
 
   const server = http.createServer(async (req, res) => {
     const send = (status, body, type = 'application/json; charset=utf-8') => {
@@ -860,6 +951,12 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
         return send(200, result);
       }
       if (req.method === 'GET' && url.pathname === '/api/resources') return send(200, resources.snapshot());
+      if (req.method === 'GET' && url.pathname === '/api/events') return send(200, audit.list(url.searchParams.get('room') || ''));
+      if (req.method === 'GET' && url.pathname === '/api/stock') {
+        const match = lobby.rooms.get(String(url.searchParams.get('room')))?.match;
+        const group = url.searchParams.get('group');
+        return send(200, match?.hosted ? await match.admin('stock', { group }) : { ...stockView(match, group), matchId: match ? matchId(match) : null });
+      }
       if (req.method === 'GET' && url.pathname === '/api/overview') return send(200, { current: resources.snapshot().current, announcement: lobby.announcements?.frame().announcement || null });
       if (req.method === 'GET' && url.pathname === '/api/release-notes') return send(200, notes);
       if (req.method === 'GET' && url.pathname === '/api/live') {
@@ -867,7 +964,7 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
       }
       if (req.method === 'POST' && url.pathname === '/api/live') {
         const body = await readJson(req);
-        return send(200, await liveIntent(lobby, body));
+        return send(200, await auditedAction(body, `代操作 ${body?.intent?.t || ''}`, () => liveIntent(lobby, body)));
       }
       if (req.method === 'GET' && url.pathname === '/api/replay') {
         const replay = readReplay(replaysDir, url.searchParams.get('id'), identity);
@@ -908,6 +1005,7 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
           } else if (category === 'replays') {
             for (const file of replayFiles(replaysDir)) deleted += deleteRecordFiles(resultsDir, replaysDir, file.slice(0, -3), 'replays');
           } else {
+            deleted += audit.clear();
             deleted += replayAdminLogs(replaysDir, true);
             for (const room of lobby.rooms.values()) {
               deleted += room.adminLog?.length || 0;
@@ -1032,13 +1130,13 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
       }
       if (req.method === 'GET' && url.pathname === '/api/result') {
         const rec = readRecord(resultsDir, url.searchParams.get('id'));
-        return rec ? send(200, rec) : send(404, { error: '记录不存在' });
+        return rec ? send(200, { ...rec, ruleStatus: resultRules(rec) }) : send(404, { error: '记录不存在' });
       }
       if (req.method === 'POST' && url.pathname === '/api/action') {
         // Markdown announcements accept up to 20k Unicode characters, plus JSON escapes.
         const body = await readJson(req, 256 * 1024);
         if (!body) return send(400, { error: '请求格式错误' });
-        const r = await handleAction(lobby, body);
+        const r = await auditedAction(body, String(body.action || ''), () => handleAction(lobby, body));
         log.info(`[admin] ${body.room} ${body.action}${body.playerId ? ' ' + body.playerId : ''}${body.value != null ? ' ' + JSON.stringify(body.value) : ''} → ${r.ok ? 'ok' : r.error}`);
         return send(200, r);
       }
@@ -1052,7 +1150,7 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
     server.once('error', reject);
     server.listen(port, host, () => { server.off('error', reject); resolve(); });
   }); } catch (e) {
-    clearInterval(idleTimer); resources.close();
+    clearInterval(idleTimer); clearInterval(diagnosticTimer); auditClosed = true; audit.close(); resources.close();
     if (hadStart) lobby.startMatch = originalStart; else delete lobby.startMatch;
     setReplayConfig(oldReplayConfig);
     throw e;
@@ -1063,17 +1161,19 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
   const onMatchEnd = lobby.onMatchEnd;
   lobby.onMatchEnd = function (room, ctx, summary) {
     if (ctx && !ctx.ended && ctx.live && room.matchCtx === ctx && !room.disposed && ctx.match && summary && !room.test && !ctx.match.test && !summary.test) {
+      ingestDiagnostics(room, ctx.match, ctx.match.hosted ? ctx.match.extensionEnd?.diagnostics : diagnosticEvents(ctx.match));
+      audit.append({ type: 'match', room: room.code, round: summary.roundsPassed, message: `对局结束：${summary.reason || (summary.victory ? '胜利' : '失败')}` });
       let rec = null;
       let id = null;
       try {
         rec = resultRecord(room, ctx.match, summary);
         id = saveRecord(resultsDir, room, rec, log);
-      } catch (e) { log.error('[admin] saving the result failed', e); }
+      } catch (e) { audit.append({ type: 'error', room: room.code, message: `保存对局记录失败：${e.message}` }); log.error('[admin] saving the result failed', e); }
       if (id) try {
         const replayExtra = { savedAt: rec.savedAt, room: room.code, resultId: id };
         const replay = ctx.match.hosted ? ctx.match.extensionEnd?.replay && { ...ctx.match.extensionEnd.replay, ...replayExtra } : replayRecord(ctx.match, replayExtra);
         if (replay) saveReplay(replaysDir, id, replay, 50);
-      } catch (e) { log.error('[replay] saving failed', e); }
+      } catch (e) { audit.append({ type: 'error', room: room.code, message: `保存回放失败：${e.message}` }); log.error('[replay] saving failed', e); }
       room.adminLastMatch = rec ? lastMatchView(rec, id) : null;
     }
     return onMatchEnd.call(this, room, ctx, summary);
@@ -1083,6 +1183,7 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
     url: `http://${host}:${actual}`, port: actual, token, resultsDir, replaysDir,
     close: () => new Promise((r) => {
       clearInterval(idleTimer);
+      clearInterval(diagnosticTimer); auditClosed = true; audit.close();
       resources.close();
       if (hadStart) lobby.startMatch = originalStart; else delete lobby.startMatch;
       clearTimeout(serviceTimer);

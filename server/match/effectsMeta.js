@@ -40,6 +40,7 @@
 // (onRoundStart, EffectDispatcher.dispatchEliminated: 信标's gift — GitHub #86).
 
 import { dispatchOperatorTraits, operatorTraitHandler } from './operatorTraits.js';
+import { recordAdminDiagnostic } from './diagnostics.js';
 import { itemKey } from './gamedata.js';
 import { boardOrder, parseKey, tileKey } from './board.js';
 import { pieceBonds as bondsOfPiece } from './bondsMeta.js';
@@ -171,6 +172,7 @@ export class EffectDispatcher {
     if (rec) rec.count++;
     else if (this.errorsByKey.size < 500) this.errorsByKey.set(msg, { count: 1, stack: e && e.stack ? String(e.stack) : null });
     if (this._errKeys.has(msg)) return;
+    recordAdminDiagnostic(this.m, { type: 'error', source: 'effect', message: msg.slice(0, 500) });
     this._errKeys.add(msg);
     if (this._errKeys.size > 500) this._errKeys.clear();
     this.m.log.error?.(`[match ${this.m.roomCode}] meta handler error ${msg}`, e && e.stack ? e.stack.split('\n').slice(0, 4).join(' | ') : '');

@@ -5,6 +5,7 @@
 // Installed on Match.prototype by server/match/Match.js (a method container: never instantiated; `this` is the match).
 
 import { buildDeployMap } from '../board.js';
+import { recordAdminDiagnostic } from '../diagnostics.js';
 
 export class MatchInfra {
   /** Run a callback with error isolation, then flush the views. */
@@ -17,6 +18,7 @@ export class MatchInfra {
   reportError(label, e) {
     this.errorCount++;
     const msg = `${label}: ${e && e.message ? e.message : e}`;
+    recordAdminDiagnostic(this, { type: 'error', message: msg.slice(0, 500) });
     if (this.errors.length < 50) this.errors.push({ label, message: String(e && e.message ? e.message : e), stack: e && e.stack ? String(e.stack).split('\n').slice(0, 6).join('\n') : null });
     this.log.error?.(`[match ${this.roomCode}] ${msg}`, e && e.stack ? String(e.stack).split('\n').slice(1, 4).join(' | ') : '');
   }

@@ -34,6 +34,7 @@ export class MatchReports {
     if (Number.isInteger(msg.resolved)) p.resolved = Math.max(0, Math.min(1e5, msg.resolved));
     if (Array.isArray(msg.damage)) p.damage = msg.damage.slice(0, 4).map((x) => ({ playerId: x.playerId, damageDealt: x.damageDealt, units: x.units.slice(0, LIVE_DAMAGE_UNITS) }));
     f.lastProgressAt = this.sched.now();
+    f.lastReportedAt = f.lastProgressAt;
     if (f.kind === 'boss' || f.kind === 'hidden') {
       this._creditBoss(f, msg.bossDmg, msg.by);
       this._creditLp(f, msg.leaks, true);

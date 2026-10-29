@@ -27,6 +27,11 @@
   .player-access { display: block; max-width: 28ch; font-size: 12px; white-space: normal; overflow-wrap: anywhere; }
   .player-label { display: block; }
   .player-label + .player-label { margin-top: 4px; }
+  .diagnostic-block { margin-top: 12px; }
+  .diagnostic-block h3 { margin: 0 0 4px; font-size: 14px; }
+  .diagnostic-block p { margin: 4px 0; }
+  .diagnostic-block td { white-space: normal; }
+  .event-change { max-width: 70ch; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
   [data-feedback-state="success"] { color: var(--mint); }
   [data-feedback-state="error"] { color: var(--red); }
   [data-records-reload] { min-width: 5.8em; }
@@ -236,7 +241,7 @@
 <body>
 <header>
   <h1>主机控制台</h1>
-  <nav aria-label="页面"><button data-tab="rooms" aria-pressed="true">房间</button><button data-tab="records" aria-pressed="false">对局记录</button><button data-tab="settings" aria-pressed="false">设置</button><button data-tab="server" aria-pressed="false">服务器</button><button data-tab="devtools" aria-pressed="false" hidden>模拟页面</button><button id="devmode-toggle" type="button" aria-pressed="false">开发者模式</button><a href="/resources" target="_blank" rel="noopener">资源 ↗</a></nav>
+  <nav aria-label="页面"><button data-tab="rooms" aria-pressed="true">房间</button><button data-tab="records" aria-pressed="false">对局记录</button><button data-tab="events" aria-pressed="false">事件记录</button><button data-tab="settings" aria-pressed="false">设置</button><button data-tab="server" aria-pressed="false">服务器</button><button data-tab="devtools" aria-pressed="false" hidden>模拟页面</button><button id="devmode-toggle" type="button" aria-pressed="false">开发者模式</button><a href="/resources" target="_blank" rel="noopener">资源 ↗</a></nav>
   <span class="meta">只能在这台电脑上打开 · 修改直接生效、不扣金币；只有「加层」「补发机变卡」「装备」会触发游戏效果</span>
   <span id="status" aria-live="polite"></span>
 </header>
@@ -276,6 +281,7 @@
 </main>
 <main id="rooms"></main>
 <main id="records" hidden></main>
+<main id="events" hidden></main>
 <main id="settings" hidden></main>
 <main id="devtools" hidden>
   <section class="devtools-intro"><h2>开发者模式</h2><p class="meta">集中打开项目的模拟与预览页面。工具用于开发和排查，不会影响正式对局。</p></section>
@@ -468,10 +474,47 @@ function playerAccessLabel(p) {
   if (p.bot) return '';
   return `<small class="meta player-access">${p.connected ? '接入' : '上次接入'}：${esc(p.accessDomain || '未知')}</small>`;
 }
+function rulesText(rules) {
+  if (!rules) return '规则未知';
+  const hp = rules.enemyHpMultiplier == null ? '敌人血量倍率未知' : `敌人血量 ×${rules.enemyHpMultiplier}`;
+  const pools = rules.independentPools == null ? '卡池规则未知' : rules.independentPools ? '独立卡池' : '分组共享卡池';
+  const unite = rules.uniteLayerGains == null ? '联防叠层未知' : `联防叠层${rules.uniteLayerGains ? '开启' : '关闭'}`;
+  const ai = rules.aiPicksLast == null ? 'AI 顺序未知' : rules.aiPicksLast ? 'AI 最后选择' : 'AI 按席位选择';
+  const plugins = rules.plugins?.length ? `插件：${rules.plugins.map((plugin) => plugin.id + (plugin.version ? '@' + plugin.version : '')).join('、')}` : rules.gameplayPlugins == null ? '插件信息未知' : rules.gameplayPlugins ? '玩法插件（名称未知）' : '无插件';
+  return [hp, pools, unite, ai, rules.test ? '测试房间' : '', plugins].filter(Boolean).join(' · ');
+}
+function ruleOptionsText(rules) {
+  if (!rules?.convenience) return '其他房间选项未知';
+  const entries = [['benchEquip', '整备区装备'], ['soloUnlimited', '独立模拟不限时'], ['prepLoadout', '休整期调整技能与模组'], ['unequip', '卸下装备'], ['morphPairing', '变形同构体增强']];
+  const enabled = { prepLoadout: 'prep', unequip: 'allow', morphPairing: 'plus' };
+  return entries.map(([key, label]) => {
+    const plugin = rules.pluginRules && Object.hasOwn(rules.pluginRules, key);
+    const on = plugin ? rules.pluginRules[key] === enabled[key] : rules.convenience[key];
+    return `${label}：${on ? '开' : '关'}${plugin ? '（插件）' : ''}`;
+  }).join(' · ');
+}
+function waitingRoom(r) {
+  const rows = r.seats.map((seat) => `<tr><td>${esc(seat.name)}${seat.id === r.hostId ? '（房主）' : ''}${seat.bot ? '（AI）' : ''}</td><td>${seat.bot || seat.connected ? '在线' : '离线'}</td><td>${seat.bot ? 'AI' : seat.id === r.hostId ? '开局时自动准备' : seat.ready == null ? '未知' : seat.ready ? '已准备' : '未准备'}</td><td>${seat.content ? esc(({ ready: '已加载', failed: '加载失败', loading: '加载中' })[seat.content] || seat.content) : '—'}</td></tr>`).join('');
+  return `<div class="diagnostic-block"><h3>等待室</h3><p>${r.blockers?.length ? '暂不能开局：' + esc(r.blockers.join('；')) : '已知准备条件均已满足'}</p><div class="xscroll"><table><thead><tr><th>玩家</th><th>连接</th><th>准备</th><th>内容加载</th></tr></thead><tbody>${rows || '<tr><td colspan="4">没有玩家</td></tr>'}</tbody></table></div><p class="meta">开局还可能受服务器容量限制。</p></div>`;
+}
+function battleStatus(match) {
+  if (!match.battles?.length) return '';
+  const kinds = { normal: '作战', unite: '联防', boss: '领袖', hidden: '隐秘核心' };
+  const rows = match.battles.map((field) => {
+    const state = field.done ? '已完成' : field.verifying ? '结果校验中' : field.held ? '等待共享生命池确认' : field.mode === 'server' ? '服务器执行中' : field.authority ? `等待 ${field.authority.name} 的战斗结果` : '等待分配';
+    const progress = field.mode === 'client' && field.progressAgeSeconds != null
+      ? `已击杀 ${field.progress?.killed ?? 0} / ${field.progress?.total ?? '未知'} · ${field.progressAgeSeconds} 秒前上报`
+      : field.mode === 'client' ? '尚无进度上报' : '服务器执行，不使用客户端进度上报';
+    const reason = { timeout: '结果超时', silent: '进度中断', invalid: '结果无效', disconnect: '断线', left: '离开' };
+    const takeover = field.takeover ? `<br><span class="meta">接管：${esc(field.takeover.from || '未知')} → ${esc(field.takeover.to || '未知')}（${esc(reason[field.takeover.reason] || field.takeover.reason || '未知原因')}）</span>` : '';
+    return `<tr><td>${esc(kinds[field.kind] || field.kind)} · ${field.players.map((player) => esc(player.name)).join('、')}</td><td>${esc(state)}${takeover}</td><td>${esc(progress)}</td><td>${field.elapsedSeconds == null ? '—' : field.elapsedSeconds + ' 秒'}</td></tr>`;
+  }).join('');
+  return `<div class="diagnostic-block"><h3>战场状态</h3><div class="xscroll"><table><thead><tr><th>战场</th><th>状态</th><th>最近进度</th><th>已运行</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
 function roomOverview(rooms) {
   return `<section class="room"><h2>房间概览 · ${rooms.length}</h2><p class="meta">选择房间查看操作或数据。</p><div class="xscroll"><table class="room-summary"><thead><tr><th>房间</th><th>模式 / 难度</th><th>阶段 / 回合</th><th>剩余时间</th><th>玩家 · LP · 在线状态</th></tr></thead><tbody>${rooms.map(r => {
     const m = r.match;
-    return `<tr class="${selectedRoom === r.code ? 'is-selected' : ''}"><td><button data-open-room="${esc(r.code)}" aria-expanded="${selectedRoom === r.code}">${disclosureArrow}${esc(r.code)}</button></td><td>${r.mode === 'solo' ? '独立模拟' : '同盟'} · ${esc(r.difficulty)} · ${esc(gameVersion(m?.version || r.version))}</td><td>${m ? `${esc(m.phaseName)} · 第 ${m.round} 回合` : '等待开局'}</td><td>${m ? m.left != null ? `${m.left} 秒` : m.paused ? '已暂停' : '不限时' : '—'}</td><td>${(m?.players || r.seats).map(p => `<span class="player-label">${esc(p.name)}${p.bot ? ' (AI)' : ''} · ${p.lp != null ? `LP ${p.lp} · ` : ''}${p.connected || p.bot ? '在线' : '离线'}${playerAccessLabel(p)}</span>`).join('')}</td></tr>`;
+    return `<tr class="${selectedRoom === r.code ? 'is-selected' : ''}"><td><button data-open-room="${esc(r.code)}" aria-expanded="${selectedRoom === r.code}">${disclosureArrow}${esc(r.code)}</button></td><td>${r.mode === 'solo' ? '独立模拟' : '同盟'} · ${esc(r.difficulty)} · ${esc(gameVersion(m?.version || r.version))}<br><span class="meta">${esc(rulesText(r.rules))}</span></td><td>${m ? `${esc(m.phaseName)} · 第 ${m.round} 回合` : '等待开局'}</td><td>${m ? m.left != null ? `${m.left} 秒` : m.paused ? '已暂停' : '不限时' : '—'}</td><td>${(m?.players || r.seats).map(p => `<span class="player-label">${esc(p.name)}${p.bot ? ' (AI)' : ''} · ${p.lp != null ? `LP ${p.lp} · ` : ''}${p.connected || p.bot ? '在线' : '离线'}${playerAccessLabel(p)}</span>`).join('')}</td></tr>`;
   }).join('')}</tbody></table></div></section>`;
 }
 function roomNodeKey(node) {
@@ -812,7 +855,7 @@ function roomPrep(r) {
 function roomCard(r) {
   const m = r.match;
   const seats = r.seats.map((s) => `<span class="player-label">${esc(s.name)}${s.bot ? '(AI)' : ''}${s.connected ? '' : '(离线)'}${playerAccessLabel(s)}</span>`).join('');
-  let body = `<p class="meta">${seats || '空房间'} · 未开局</p>`;
+  let body = `<p class="meta">${seats || '空房间'} · 未开局</p>${waitingRoom(r)}`;
   if (m) {
     const rounds = m.rewindRounds;
     const canRewind = rounds.length > 0 && !m.ended;
@@ -823,7 +866,12 @@ function roomCard(r) {
         <span class="meta">${m.left != null ? `剩余 ${m.left} 秒` : m.paused ? '已暂停' : '不限时'}</span>
         ${m.paused ? '<span class="tag">已暂停</span>' : ''}
         ${m.errors ? `<span class="tag" style="color:var(--warn)">错误 ${m.errors}</span>` : ''}
+        ${m.errorCounts?.effects ? `<span class="tag" style="color:var(--warn)">效果错误 ${m.errorCounts.effects}</span>` : ''}
+        ${m.errorCounts?.simulation ? `<span class="tag" style="color:var(--warn)">模拟错误 ${m.errorCounts.simulation}</span>` : ''}
       </div>
+      ${m.waiting?.length ? `<p class="note">${m.waiting.map(esc).join('；')}</p>` : ''}
+      ${m.recentErrors?.length ? `<details class="diagnostic-block"><summary>已记录的错误详情</summary><ul>${m.recentErrors.map((error) => `<li>${esc(error.label)}：${esc(error.message)}</li>`).join('')}</ul></details>` : ''}
+      ${battleStatus(m)}
       <div class="row" style="margin-top:8px">
         <label>回到第 <select id="rw-${r.code}" aria-label="回档到第几回合" ${canRewind ? '' : 'disabled'}>
           ${rounds.map((n) => `<option value="${n}" ${n === rounds[rounds.length - 1] ? 'selected' : ''}>${n}</option>`).join('')}</select> 回合休整期</label>
@@ -854,6 +902,8 @@ function roomCard(r) {
       <span class="meta">${r.mode === 'solo' ? '独立模拟' : '同盟'} · ${esc(r.difficulty)} · 游戏版本 ${esc(gameVersion(m?.version || r.version))}</span>
       <button class="danger" style="margin-left:auto" data-click="closeRoom" data-room="${r.code}" data-label="关闭房间" data-confirm="关闭房间 ${r.code}？里面的玩家会被送回大厅。">关闭房间</button>
     </div>
+    <p class="meta">${r.private ? '私密房间' : '公开房间'} · 席位 ${r.seats.length} / ${r.capacity} · 观战 ${r.spectators?.length || 0} · ${esc(rulesText(r.rules))}</p>
+    <p class="meta">${esc(ruleOptionsText(r.rules))}</p>
     ${body}
   </section>`;
 }
@@ -1013,11 +1063,44 @@ function logTable(log) {
  * is redrawn only when its own data changed (a hover tooltip or an open select survives the poll).
  */
 const panels = new Map();
+const stockStates = new Map();
+function drawStockRows(host, state) {
+  const query = state.query.trim().toLowerCase(), data = state.data;
+  const personal = data.personal.flatMap((player) => player.entries.map((entry) => ({ ...entry, kind: '自选', owner: player.name })));
+  const all = [...data.chess.map((entry) => ({ ...entry, kind: '干员' })), ...data.items.map((entry) => ({ ...entry, kind: '装备' })), ...personal];
+  const rows = all.filter((entry) => (!query || `${entry.name} ${entry.id} ${entry.owner || ''}`.toLowerCase().includes(query)) && (!state.kind || entry.kind === state.kind));
+  $('[data-stock-rows]', host).innerHTML = rows.length ? rows.map((entry) => `<tr><td>${esc(entry.kind)}</td><td>${esc(entry.name)}${entry.owner ? ` · ${esc(entry.owner)}` : ''}</td><td>${entry.banned ? '禁用' : entry.available === false ? '不在卡池' : entry.cap == null ? '不限量' : `${entry.left} / ${entry.cap}`}</td><td>${entry.held ?? '—'}</td><td>${entry.banned ? '相关盟约均已禁用' : entry.available === false ? '该干员没有可用库存' : entry.cap != null && entry.held > entry.cap ? `超额占用 ${entry.held - entry.cap}` : entry.debt ? `超额占用 ${entry.debt}` : entry.shopLevel ? `商店等级 ${entry.shopLevel} 起可抽` : entry.cap != null && entry.left === 0 ? '库存已耗尽' : '—'}</td></tr>`).join('') : '<tr><td colspan="5">没有匹配的库存</td></tr>';
+}
+async function loadStock(host, group) {
+  const code = host.closest('[data-stock-room]').dataset.stockRoom;
+  const state = stockStates.get(code) || { query: '', kind: '', request: 0 };
+  stockStates.set(code, state);
+  const request = ++state.request;
+  host.innerHTML = '<p role="status">正在读取库存…</p>';
+  try {
+    const params = new URLSearchParams({ room: code });
+    if (group != null) params.set('group', group);
+    const data = await api('/api/stock?' + params);
+    if (request !== state.request) return;
+    if (data.error) throw new Error(data.error);
+    if (latestRooms.find((room) => room.code === code)?.match?.matchId !== data.matchId) throw new Error('对局已变化，请重新读取');
+    state.data = data;
+    host.innerHTML = `<div class="row"><label>卡池组 <select data-stock-group>${data.groups.map((entry) => `<option value="${esc(entry.id)}" ${entry.id === data.selected ? 'selected' : ''}>${esc(entry.players.map((player) => player.name).join('、'))}</option>`).join('')}</select></label><label>类型 <select data-stock-kind><option value="">全部</option><option>干员</option><option>装备</option><option>自选</option></select></label><label>搜索 <input type="search" data-stock-filter value="${esc(state.query)}" placeholder="名称或编号"></label><button data-stock-load>刷新库存</button></div>
+      <p class="meta">库存快照：${esc(data.phase)} · 第 ${esc(data.round)} 回合 · 读取于 ${new Date().toLocaleTimeString()}；不会自动刷新。</p>
+      <p class="meta">库存按所选组计算；自选库存归个人。商店中已展示的卡不预占库存，剩余为 0 时仍可能购买已展示的卡。未设库存上限的装备显示不限量。</p>
+      <p class="meta">本局禁用盟约：${esc(data.disabledBonds.join('、') || '无')}</p><div class="scroll xscroll"><table><thead><tr><th>类型</th><th>名称</th><th>剩余 / 总数</th><th>占用</th><th>说明</th></tr></thead><tbody data-stock-rows></tbody></table></div>`;
+    $('[data-stock-kind]', host).value = state.kind;
+    drawStockRows(host, state);
+  } catch (error) {
+    if (request === state.request) host.innerHTML = `<p role="status">读取库存失败：${esc(error.message)}</p><button data-stock-load>重新读取</button>`;
+  }
+}
 function statsPanel(r) {
   let p = panels.get(r.code);
   if (!p) {
     const el = document.createElement('div');
-    el.innerHTML = `<details class="stats" data-match open><summary>本局统计</summary><div class="stats-body">
+    el.innerHTML = `<details class="stats" data-stock><summary>卡池与装备库存</summary><div class="stats-body" data-stock-content><p class="meta">按组查看当前库存。</p><button data-stock-load>读取库存</button></div></details>
+      <details class="stats" data-match open><summary>本局统计</summary><div class="stats-body">
         <div class="row" data-part="ended"></div>
         <div><h3>每回合曲线</h3><div data-part="chart"></div></div>
         <div><h3>每回合详情</h3><div data-part="rounds"></div></div>
@@ -1031,6 +1114,14 @@ function statsPanel(r) {
     p = { el, seen: {}, chart: { metric: 'lp', table: false }, rounds: { round: null }, unitRounds: { round: null, player: '', all: false } };
     panels.set(r.code, p);
   }
+  p.el.dataset.stockRoom = r.code;
+  const stockMatch = r.match?.matchId || null;
+  if (p.stockMatch !== stockMatch) {
+    p.stockMatch = stockMatch;
+    stockStates.delete(r.code);
+    $('[data-stock-content]', p.el).innerHTML = '<p class="meta">按组查看当前库存。</p><button data-stock-load>读取库存</button>';
+  }
+  $('details[data-stock]', p.el).hidden = !r.match;
   // the running match, else the room's last ended one (kept until its next match starts)
   const m = r.match || r.lastMatch;
   const ended = !r.match && !!r.lastMatch;
@@ -1073,19 +1164,49 @@ function statsPanel(r) {
   return p.el;
 }
 
+let eventRows = [], eventPage = 0, eventRequest = 0;
+const EVENT_PAGE_SIZE = 50;
+function drawEvents() {
+  const pages = Math.max(1, Math.ceil(eventRows.length / EVENT_PAGE_SIZE));
+  eventPage = Math.min(eventPage, pages - 1);
+  const rows = eventRows.slice(eventPage * EVENT_PAGE_SIZE, (eventPage + 1) * EVENT_PAGE_SIZE);
+  const reason = { timeout: '结果超时', silent: '进度中断', invalid: '结果无效', disconnect: '断线', left: '离开' };
+  $('#events-list').innerHTML = rows.length ? `<div class="xscroll"><table><thead><tr><th>时间</th><th>房间 / 回合</th><th>类型</th><th>事件</th><th>变更</th></tr></thead><tbody>${rows.map((entry) => {
+    const type = ({ room: '房间', match: '对局', presence: '连接', action: '主机操作', error: '异常', takeover: '接管' })[entry.type] || entry.type;
+    const message = entry.source === 'simulation' ? `战场 ${entry.field || '未知'} 的结果报告 ${entry.count} 个模拟错误` : entry.source === 'effect' ? `效果处理：${entry.message}` : entry.message || (entry.type === 'takeover' ? `战场 ${entry.field}：${entry.from || '未知'} → ${entry.to || '未知'}（${reason[entry.reason] || entry.reason || '未知原因'}）` : `${ACTION_NAMES[entry.action] || entry.action || ''}${entry.player ? ' · ' + entry.player : ''}${entry.ok === false ? ' · 失败：' + (entry.error || '未知错误') : entry.ok === true ? ' · 完成' : ''}`);
+    const changed = entry.before && Object.keys(entry.before).length || entry.after && Object.keys(entry.after).length;
+    const detail = changed ? `<details><summary>查看前后值</summary><pre class="event-change">${esc(JSON.stringify({ 修改前: entry.before, 修改后: entry.after }, null, 2))}</pre></details>` : entry.value ? `<span class="meta">${esc(entry.value)}</span>` : '—';
+    return `<tr><td>${new Date(entry.at).toLocaleString('zh-CN', { hour12: false })}</td><td>${esc(entry.room || '全站')}${entry.round != null ? ' · 第 ' + esc(entry.round) + ' 回合' : ''}</td><td>${esc(type)}</td><td>${esc(message)}${entry.player && entry.message ? ' · ' + esc(entry.player) : ''}</td><td>${detail}</td></tr>`;
+  }).join('')}</tbody></table></div>` : '<p class="empty">没有匹配的事件。</p>';
+  $('#events-pagination').innerHTML = `<button data-event-page="${eventPage - 1}" ${eventPage === 0 ? 'disabled' : ''}>上一页</button><span>第 ${eventPage + 1} / ${pages} 页 · ${eventRows.length} 条</span><button data-event-page="${eventPage + 1}" ${eventPage + 1 >= pages ? 'disabled' : ''}>下一页</button>`;
+}
+async function showEvents() {
+  const host = $('#events');
+  if (!$('#events-list')) host.innerHTML = '<section class="room"><div class="row"><h2>事件记录</h2><label>房间号 <input id="events-room" type="search" placeholder="全部房间"></label><button data-events-refresh>查询 / 刷新</button></div><p class="meta">记录房间连接、对局异常、战场接管和主机操作；本机最多保留最近 2000 条。记录启用前的事件不会补算。</p><p id="events-status" role="status"></p><div id="events-list"></div><div id="events-pagination" class="row"></div></section>';
+  const request = ++eventRequest, room = $('#events-room').value.trim();
+  try {
+    const data = await api('/api/events?' + new URLSearchParams({ room }));
+    if (request !== eventRequest) return;
+    if (!Array.isArray(data.events)) throw new Error(data.error || '事件数据无效');
+    eventRows = data.events;
+    $('#events-status').textContent = data.problem || `更新于 ${new Date().toLocaleTimeString()}`;
+    drawEvents();
+  } catch (error) { if (request === eventRequest) $('#events-status').textContent = '读取失败：' + error.message; }
+}
+
 // ---- 对局记录
 let summaryRequest = 0, lastSummaryJson = '';
 async function showSummary() {
   const request = ++summaryRequest;
   const params = new URLSearchParams();
-  for (const k of ['mode','difficulty','version']) { const v = $(`#summary-${k}`).value; if(v) params.set(k,v); }
+  for (const k of ['mode','difficulty','version','rules']) { const v = $(`#summary-${k}`).value; if(v) params.set(k,v); }
   for (const k of ['from','to']) { const v = $(`#summary-${k}`).value; if(v) params.set(k,String(new Date(v + (k === 'to' ? 'T23:59:59.999' : 'T00:00:00')).getTime())); }
   const d = await api('/api/results-summary?' + params);
   if (request !== summaryRequest) return;
   const json = JSON.stringify(d);
   if (json === lastSummaryJson) return;
   const rank = (list, text) => `<ol>${list.slice(0,10).map((r)=>`<li>${esc(r.name)} · ${text(r)}</li>`).join('')}</ol>`;
-  $('#summary-data').innerHTML = `<p>${d.games} 局 · ${d.wins} 胜 · 胜率 ${(100*d.winRate).toFixed(1)}% · 跳过 ${d.skipped} 份损坏或字段缺失记录</p><div class="xscroll"><table><thead><tr><th>游戏版本</th><th>模式 / 难度</th><th>局数</th><th>胜率</th><th>平均到达回合</th></tr></thead><tbody>${d.groups.map((g)=>`<tr><td>${esc(gameVersion(g.version))}</td><td>${esc(g.mode)} / ${esc(g.difficulty)}</td><td>${g.games}</td><td>${(100*g.winRate).toFixed(1)}%</td><td>${g.averageRound.toFixed(1)}</td></tr>`).join('')}</tbody></table></div><div class="units"><div><h3>常用干员（按局去重）</h3>${rank(d.operators,r=>r.games+' 局')}</div><div><h3>常用盟约</h3>${rank(d.bonds,r=>r.games+' 局')}</div><div><h3>伤害累计</h3>${rank([...d.operators].sort((a,b)=>b.damage-a.damage),r=>fmt(r.damage))}</div><div><h3>单局最高伤害</h3>${rank([...d.operators].sort((a,b)=>b.maxDamage-a.maxDamage),r=>fmt(r.maxDamage))}</div></div><p class="meta">旧记录仅统计已保存的阵容、激活盟约与伤害；早期未保存的回合使用情况不会补算。</p>`;
+  $('#summary-data').innerHTML = `<p>${d.games} 局 · ${d.wins} 胜 · 胜率 ${(100*d.winRate).toFixed(1)}% · 跳过 ${d.skipped} 份损坏或字段缺失记录</p><p class="meta">筛选前：已确认默认 ${d.ruleCounts.standard} 局 · 自定义或主机干预 ${d.ruleCounts.custom} 局 · 规则未知 ${d.ruleCounts.unknown} 局。旧记录缺少规则信息时不会推定为默认。</p><div class="xscroll"><table><thead><tr><th>游戏版本</th><th>模式 / 难度</th><th>局数</th><th>胜率</th><th>平均到达回合</th></tr></thead><tbody>${d.groups.map((g)=>`<tr><td>${esc(gameVersion(g.version))}</td><td>${esc(g.mode)} / ${esc(g.difficulty)}</td><td>${g.games}</td><td>${(100*g.winRate).toFixed(1)}%</td><td>${g.averageRound.toFixed(1)}</td></tr>`).join('')}</tbody></table></div><div class="units"><div><h3>常用干员（按局去重）</h3>${rank(d.operators,r=>r.games+' 局')}</div><div><h3>常用盟约</h3>${rank(d.bonds,r=>r.games+' 局')}</div><div><h3>伤害累计</h3>${rank([...d.operators].sort((a,b)=>b.damage-a.damage),r=>fmt(r.damage))}</div><div><h3>单局最高伤害</h3>${rank([...d.operators].sort((a,b)=>b.maxDamage-a.maxDamage),r=>fmt(r.maxDamage))}</div></div><p class="meta">旧记录仅统计已保存的阵容、激活盟约与伤害；早期未保存的回合使用情况不会补算。</p>`;
   lastSummaryJson = json;
 }
 
@@ -1097,7 +1218,7 @@ function drawRecordList() {
   const pages = Math.max(1, Math.ceil(all.length / RECORD_PAGE_SIZE));
   recordPage = Math.min(Math.max(0, recordPage), pages - 1);
   const list = all.slice(recordPage * RECORD_PAGE_SIZE, (recordPage + 1) * RECORD_PAGE_SIZE);
-  $('#records-list').innerHTML = list.length ? `<div class="xscroll"><table><thead><tr><th>结束时间</th><th>房间</th><th>模式</th><th>结果</th><th>通过回合</th><th>时长</th><th>玩家</th><th>操作</th></tr></thead><tbody>${list.map(x => `<tr><td>${new Date(x.savedAt).toLocaleString('zh-CN', { hour12: false })}</td><td>${esc(x.room)}</td><td>${x.mode === 'solo' ? '独立模拟' : '同盟'} · ${esc(x.difficulty)} · ${esc(gameVersion(x.version))}</td><td class="${x.victory ? 'good' : 'bad'}">${outcomeText(x)}</td><td>${x.roundsPassed ?? ''}</td><td>${dur(x.durationMs)}</td><td>${(x.players || []).map(p => esc(p.name)).join('、')}</td><td><button data-record="${esc(x.id)}">查看</button><a class="replay-link" href="/replay?id=${encodeURIComponent(x.id)}" target="_blank" rel="noopener">回放</a><button class="danger" data-record-delete="${esc(x.id)}">删除</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="empty">没有匹配的记录。</p>';
+  $('#records-list').innerHTML = list.length ? `<div class="xscroll"><table><thead><tr><th>结束时间</th><th>房间</th><th>模式</th><th>规则</th><th>结果</th><th>通过回合</th><th>时长</th><th>玩家</th><th>操作</th></tr></thead><tbody>${list.map(x => `<tr><td>${new Date(x.savedAt).toLocaleString('zh-CN', { hour12: false })}</td><td>${esc(x.room)}</td><td>${x.mode === 'solo' ? '独立模拟' : '同盟'} · ${esc(x.difficulty)} · ${esc(gameVersion(x.version))}</td><td>${({ standard: '已确认默认', custom: '自定义 / 主机干预', unknown: '未知' })[x.ruleStatus] || '未知'}</td><td class="${x.victory ? 'good' : 'bad'}">${outcomeText(x)}</td><td>${x.roundsPassed ?? ''}</td><td>${dur(x.durationMs)}</td><td>${(x.players || []).map(p => esc(p.name)).join('、')}</td><td><button data-record="${esc(x.id)}">查看</button><a class="replay-link" href="/replay?id=${encodeURIComponent(x.id)}" target="_blank" rel="noopener">回放</a><button class="danger" data-record-delete="${esc(x.id)}">删除</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="empty">没有匹配的记录。</p>';
   $('#record-pagination').innerHTML = `<button data-record-page="${recordPage - 1}" ${recordPage === 0 ? 'disabled' : ''}>上一页</button><span role="status">第 ${recordPage + 1} / ${pages} 页 · ${all.length} 条 · 每页 ${RECORD_PAGE_SIZE} 条</span><button data-record-page="${recordPage + 1}" ${recordPage + 1 >= pages ? 'disabled' : ''}>下一页</button>`;
 }
 function showRecords() {
@@ -1108,7 +1229,7 @@ function showRecords() {
 async function loadRecords() {
   const host = $('#records');
   // Create the page once; refresh data without blanking the summary or filters.
-  if (!$('#records-list')) host.innerHTML = `<section class="room"><h2>跨局汇总</h2><div class="row"><label>开始日期 <input id="summary-from" type="date"></label><label>结束日期 <input id="summary-to" type="date"></label><label>模式 <select id="summary-mode"><option value="">全部</option><option value="solo">独立</option><option value="coop">同盟</option></select></label><label>游戏版本 <select id="summary-version"><option value="">全部版本</option>${VERSIONS.map(v => `<option value="${esc(v.id)}">${esc(v.label)}</option>`).join('')}</select></label><label>难度 <input id="summary-difficulty" placeholder="全部"></label><button data-summary-filter>应用筛选</button></div><div id="summary-data" role="status">正在汇总…</div></section><section class="room"><div class="row"><h2>对局记录</h2><span class="meta">对局结束时自动保存在 logs/results/，只在这台电脑上可见</span>
+  if (!$('#records-list')) host.innerHTML = `<section class="room"><h2>跨局汇总</h2><div class="row"><label>开始日期 <input id="summary-from" type="date"></label><label>结束日期 <input id="summary-to" type="date"></label><label>模式 <select id="summary-mode"><option value="">全部</option><option value="solo">独立</option><option value="coop">同盟</option></select></label><label>游戏版本 <select id="summary-version"><option value="">全部版本</option>${VERSIONS.map(v => `<option value="${esc(v.id)}">${esc(v.label)}</option>`).join('')}</select></label><label>难度 <input id="summary-difficulty" placeholder="全部"></label><label>规则 <select id="summary-rules"><option value="standard">已确认默认</option><option value="">全部</option><option value="custom">自定义或主机干预</option><option value="unknown">规则未知</option></select></label><button data-summary-filter>应用筛选</button></div><div id="summary-data" role="status">正在汇总…</div></section><section class="room"><div class="row"><h2>对局记录</h2><span class="meta">对局结束时自动保存在 logs/results/，只在这台电脑上可见</span>
       <button style="margin-left:auto" data-records-reload>刷新</button></div><div class="row"><label for="record-filter">搜索记录</label><input id="record-filter" type="search" placeholder="房间码、玩家、模式、难度或结果" value="${esc(recordQuery)}"></div><div id="records-list"></div><div class="row record-pagination" id="record-pagination"></div>
   </section><div id="record"></div>`;
   const button = $('[data-records-reload]');
@@ -1154,6 +1275,8 @@ async function showRecord(id) {
       <span class="${res.victory ? 'good' : 'bad'}">${outcomeText(res)}</span>
       <a class="replay-link" href="/replay?id=${encodeURIComponent(id)}" target="_blank" rel="noopener">打开整局回放</a>
       <span class="meta">${rec.mode === 'solo' ? '独立模拟' : '同盟'} · ${esc(rec.difficulty)} · 游戏版本 ${esc(gameVersion(rec.version))} · 通过 ${res.roundsPassed ?? 0} 回合 · ${dur(res.durationMs)} · 种子 ${esc(res.seed)}</span></div>
+    <p class="meta">规则：${esc(rulesText(rec.rules))}${!rec.rules && res.enemyHpMultiplier != null ? ` · 记录中的敌人血量 ×${esc(res.enemyHpMultiplier)}` : ''}${!rec.rules && res.independentPools ? ' · 独立卡池' : ''} · ${({ standard: '已确认默认', custom: '自定义或主机干预', unknown: '规则未知' })[rec.ruleStatus] || '规则未知'}${rec.rules?.adminModified ? ' · 主机曾修改本局' : ''}</p>
+    <p class="meta">${esc(ruleOptionsText(rec.rules))}</p>
     <div class="stats-body">
       <div><h3>玩家</h3><div class="xscroll"><table><thead><tr><th scope="col">玩家</th><th scope="col">评语</th><th scope="col" class="n">通过回合</th><th scope="col" class="n">LP</th><th scope="col">分队</th><th scope="col">终局阵容</th><th scope="col">盟约</th></tr></thead>
         <tbody>${players.map((p) => `<tr><th scope="row">${esc(p.name)}${p.isBot ? ' <span class="tag">AI</span>' : ''}${p.alive ? '' : ` <span class="tag off">第 ${p.eliminatedRound ?? '?'} 回合淘汰</span>`}</th>
@@ -1445,7 +1568,7 @@ async function showSettings() {
       <form id="storage-form" onsubmit="return false"><p id="storage-counts" class="meta" role="status">正在读取数量…</p>
         <label><input type="checkbox" name="storage" value="results"> 对局结果（logs/results/）</label>
         <label><input type="checkbox" name="storage" value="replays"> 回放文件（logs/replays/）</label>
-        <label><input type="checkbox" name="storage" value="adminLogs"> 控制台操作日志（房间、进行中的录制和已保存回放的操作摘要）</label>
+        <label><input type="checkbox" name="storage" value="adminLogs"> 事件和操作记录（房间、事件记录、进行中的录制和已保存回放的操作摘要）</label>
         <div class="row"><button class="danger" data-storage-clear>清理所选数据</button><button data-storage-refresh>刷新数量</button><span id="storage-saved" role="status"></span></div>
       </form>
     </section>
@@ -1623,13 +1746,13 @@ async function refreshStorage() {
   const host = $('#storage-counts');
   if (!host) return;
   const data = await api('/api/storage').catch(() => ({ error: '连接服务器失败' }));
-  host.textContent = data.error ? `读取失败：${data.error}，请刷新数量。` : `对局结果 ${data.results} 局 · 回放 ${data.replays} 局 · 操作日志 ${data.adminLogs} 条（含保存副本）`;
+  host.textContent = data.error ? `读取失败：${data.error}，请刷新数量。` : `对局结果 ${data.results} 局 · 回放 ${data.replays} 局 · 事件和操作记录 ${data.adminLogs} 条（含保存副本）`;
 }
 
 async function clearStorage(button, id = null) {
   const categories = [...document.querySelectorAll('input[name="storage"]:checked')].map((el) => el.value);
   if (!id && !categories.length) { say('请先选择要清理的数据', true); return; }
-  const labels = { results: '对局结果', replays: '回放文件', adminLogs: '控制台操作日志及回放内摘要' };
+  const labels = { results: '对局结果', replays: '回放文件', adminLogs: '事件和操作记录及回放内摘要' };
   const scope = id ? `对局 ${id} 的结果与关联回放` : categories.map((c) => labels[c]).join('、');
   if (!confirm(`确定删除${scope}？删除后无法恢复。`)) return;
   button.disabled = true;
@@ -1830,19 +1953,21 @@ document.addEventListener('pointerdown', (event) => { if (event.target.closest?.
 window.addEventListener('pointerup', () => { roomPointer = false; });
 window.addEventListener('pointercancel', () => { roomPointer = false; });
 window.addEventListener('blur', () => { roomPointer = false; });
+let lastRoomRefreshAt = null;
 async function refresh(force = false) {
   if (servicePending) return;
-  if (roomPointer) return;
+  if (roomPointer) { if (!$('#rooms').hidden) $('#status').textContent = `房间更新暂停（正在操作${lastRoomRefreshAt ? '；上次 ' + lastRoomRefreshAt : ''}）`; return; }
   // never re-render under the user's cursor: typing into a field would lose its value
   const typing = document.activeElement?.matches('input, select, textarea');
-  if (typing && !document.activeElement.closest('[data-chat-panel], #site-announcement')) return;
+  if (typing && !document.activeElement.closest('[data-chat-panel], #site-announcement')) { if (!$('#rooms').hidden) $('#status').textContent = `房间更新暂停（正在编辑${lastRoomRefreshAt ? '；上次 ' + lastRoomRefreshAt : ''}）`; return; }
   if ($('#rooms').hidden && !force) return;
   let data;
   try { data = await api('/api/rooms'); } catch { if (!servicePending) $('#status').textContent = '无法连接服务器'; return; }
   if (servicePending) return;
   if (data.error) { $('#status').textContent = data.error; return; }
   if (roomPointer || document.activeElement?.matches('input, select, textarea')) { for (const r of data.rooms) chatPanel(r); return; }
-  $('#status').textContent = `更新于 ${new Date().toLocaleTimeString()}`;
+  lastRoomRefreshAt = new Date().toLocaleTimeString();
+  $('#status').textContent = `更新于 ${lastRoomRefreshAt}`;
   const json = JSON.stringify(data.rooms);
   if (json === lastJson) return;
   lastJson = json;
@@ -2099,7 +2224,7 @@ async function setTab(name) {
 
   // Navigation must paint before any API finishes. Keep existing controls and drafts
   // on return; settings saves and reset actions explicitly reload their own data.
-  for (const id of ['rooms', 'records', 'settings', 'server', 'devtools']) $(`#${id}`).hidden = name !== id;
+  for (const id of ['rooms', 'records', 'events', 'settings', 'server', 'devtools']) $(`#${id}`).hidden = name !== id;
   animateTab(name);
   if (name === 'server') return;
   const host = $(`#${name}`);
@@ -2112,6 +2237,7 @@ async function setTab(name) {
   const load = (async () => {
     try {
       if (name === 'records') await showRecords();
+      else if (name === 'events') await showEvents();
       else if (name === 'settings') await showSettings();
       else if (name === 'rooms') await refresh(true);
       else if (name === 'devtools') await drawDevTools();
@@ -2171,11 +2297,35 @@ document.addEventListener('keydown', (e) => {
 });
 // Keep number drafts stable when a wheel gesture passes over a focused input.
 document.addEventListener('wheel', e => { if (e.target.matches('input[type="number"]') && document.activeElement === e.target) e.preventDefault(); }, { passive: false });
+document.addEventListener('click', (event) => {
+  const stockButton = event.target.closest('[data-stock-load]');
+  if (stockButton) {
+    const host = stockButton.closest('[data-stock-content]');
+    loadStock(host, $('[data-stock-group]', host)?.value);
+  }
+  if (event.target.closest('[data-events-refresh]')) { eventPage = 0; showEvents(); }
+  const page = event.target.closest('[data-event-page]');
+  if (page) { eventPage = Number(page.dataset.eventPage); drawEvents(); }
+});
+document.addEventListener('change', (event) => {
+  const host = event.target.closest('[data-stock-content]');
+  if (!host) return;
+  const state = stockStates.get(host.closest('[data-stock-room]').dataset.stockRoom);
+  if (event.target.matches('[data-stock-group]')) loadStock(host, event.target.value);
+  else if (event.target.matches('[data-stock-kind]') && state?.data) { state.kind = event.target.value; drawStockRows(host, state); }
+});
+document.addEventListener('input', (event) => {
+  if (!event.target.matches('[data-stock-filter]')) return;
+  const host = event.target.closest('[data-stock-content]');
+  const state = stockStates.get(host.closest('[data-stock-room]').dataset.stockRoom);
+  if (state?.data) { state.query = event.target.value; drawStockRows(host, state); }
+});
 initAnnouncementEditor({ api });
 refreshStatus();
 setInterval(refreshStatus, 3000);
 refresh();
 roomPoll = setInterval(refresh, 1500);
+setInterval(() => { if (currentTab === 'events') showEvents(); }, 5000);
 loadService();
 openUpdateConsole();
 api('/api/release-notes').then((n) => showReleaseNotes(n, { storageKey: 'sp.admin.release-notes' })).catch(() => {});

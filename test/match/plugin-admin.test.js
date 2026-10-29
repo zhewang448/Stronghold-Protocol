@@ -38,6 +38,10 @@ for (const transport of ['process', 'worker']) test(`local console preserves gam
   assert.equal(view.players[0].funds, funds + 23);
   assert.ok(room.adminLog.some(e => e.action === 'funds' && e.ok));
   assert.ok((await catalogView(lobby, 'TEST')).chess.length > 0);
+  const stock = await m.admin('stock', { group: 1 });
+  assert.equal(stock.matchId, view.matchId);
+  assert.ok(stock.chess.length > 0 && stock.items.length > 0);
+  assert.ok(Array.isArray((await m.admin('diagnostics')).events));
   assert.equal((await wallView(lobby, 'TEST')).seats[0].funds, funds + 23);
   seats[0].connected = false;
   m.onDisconnect('p_0');

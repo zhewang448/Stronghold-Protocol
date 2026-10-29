@@ -11,6 +11,7 @@ import { DeadBattle, syntheticResult, RESULT_GRACE_MS, HARD_CAP_SECONDS, Headles
 import { buildBattleSpec, createBattleFromSpec } from '../../sim/spec.js';
 import { captureReplayFields, finishReplayField } from '../replay.js';
 import { testSlice } from '../testTrace.js';
+import { recordAdminDiagnostic } from '../diagnostics.js';
 import { morphBattleOpt } from '../../../shared/plugins/rules.js';
 
 
@@ -53,7 +54,7 @@ export class MatchClientCombat {
       // spec's scheduled enemies — the capsule's denominator). `resolved` starts at **null**: it is only adopted from a
       // real report, so `resolved ?? killed` fallbacks (an unreported field, a synthetic result) keep working — a 0 here
       // would read as "nothing resolved yet" and could never be told apart from a reported 0.
-      progress: { gt: 0, killed: 0, total, leaks: 0, resolved: null, done: false }, lastProgressAt: this.sched.now(),
+      progress: { gt: 0, killed: 0, total, leaks: 0, resolved: null, done: false }, lastProgressAt: this.sched.now(), lastReportedAt: null,
       bossAcked: 0, bossBy: {}, lpAcked: 0, lpCum: 0, deadlineTimer: null, doneTimer: null, waitTimer: null,
       // boss fields: the latest client reports (re-credited as the plausibility budget grows), the server run's
       // CreditPool, humans demoted for an implausible result (never the authority of this field again), a 'cleared'
@@ -136,6 +137,7 @@ export class MatchClientCombat {
     f.mode = 'client';
     f.authority = pid;
     f.lastProgressAt = this.sched.now();
+    f.lastReportedAt = null;
     if (f.deadlineTimer) { this.cancel(f.deadlineTimer); f.deadlineTimer = null; }
     if (f.kind === 'boss' || f.kind === 'hidden') return; // the pool / team LP / silence watchdog end those
     if (this.paused) { f.rearmDeadline = true; return; }
@@ -174,6 +176,8 @@ export class MatchClientCombat {
     const prev = f.mode === 'client' ? f.authority : null;
     if (prev) {
       this.verifyStats.takeovers++;
+      f.lastTakeover = { from: prev, to: 'server', reason };
+      recordAdminDiagnostic(this, { type: 'takeover', field: f.fieldId, from: prev, to: 'server', reason });
       this.log.info?.(`[match ${this.roomCode}] ${f.fieldId} R${this.round}: server takeover from ${prev} (${reason})`);
     }
     f.mode = 'server';

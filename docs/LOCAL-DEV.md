@@ -86,6 +86,8 @@ Ctrl / ⌘ 点击、中键及浏览器菜单仍可另开页面。预览无法复
 ### 2026-10-16 控制台与组队界面修订
 
 - 控制台顶部读取 /api/overview，显示在线人数、房间、对局、CPU 与内存；公告和重启/关闭位于「服务器」。房间先选概览，再分「操作 / 数据」；玩家行只读，展开后按数值、发放、托管分组，数字输入按 Enter 应用，滚轮不改值。对局记录每页 20 条，可搜索房间、玩家、模式、难度、结果。
+- 控制台房间视图显示敌人血量倍率、独立或分组卡池、联防叠层及插件；等待室说明房主、准备状态、内容加载和已知开局阻塞原因。活动战场展示执行者、上报时间、接管原因及错误。库存按请求读取，每组展示干员、装备和个人自选库存；已展示的商店卡不预占库存。跨局汇总默认筛选规则已确认的默认对局，旧记录缺字段时标为未知，不能推定为默认。
+- 事件记录保存在 `logs/results/admin-events.ndjson`，包括房间成员连接变化、对局错误、战场接管和主机操作；关键状态可查看前后值。界面最多显示最近 2000 条，文件超过约 2 MiB 时压缩到当前保留记录；数据清理中的事件和操作记录会一并删除它。战斗模拟只在结果上报错误时记录数量，客户端未上报或启用前发生的事件不能补算。
 - 设置 → 插件管理通过 startAdmin 的 studioUrl 跳转到游戏实际端口。runMain 使用 srv.studio.pageUrl 注入地址；只有本机会话通过 /studio 路由取得跳转，页面没有硬编码 3000 或公开钥匙。社区来源与兼容边界见 [COMMUNITY-PLUGINS.md](COMMUNITY-PLUGINS.md)。
 - 组队海报偏好独立保存为 sp.pref.room.card / sp.pref.room.cardSkin；room.card 的 charId、skinId 由生成目录校验，room.state.seats 的 card/cardSkin 同步队友；不改战斗皮肤、技能或模拟。清空恢复自动分配。
 - data/seat-art.json 由 node tools/build-data.mjs --seat-art-only 生成并下载图片到忽略目录 public/assets/seat-portrait/；加 --offline 仅据缓存生成目录。固定素材清单下含 432 名干员、1356 张图；未被源收录的未来皮肤不在此数量内。完整包包含所列图片。来源为官方 character/skin 表及 docs/research/seat-art-portraits.json 对应的素材清单。

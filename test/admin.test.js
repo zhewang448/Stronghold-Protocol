@@ -115,6 +115,8 @@ test('console: localhost only, token required, actions change the running match'
   assert.deepEqual(records[0].players.map((p) => p.name), ['Host']);
   const rec = (await req(P, `/api/result?id=${encodeURIComponent(records[0].id)}`, { headers: auth })).json;
   assert.equal(rec.result.players[0].name, 'Host');
+  assert.equal(rec.rules.adminModified, true);
+  assert.equal(rec.ruleStatus, 'custom');
   assert.ok(Array.isArray(rec.history));
   assert.equal((await req(P, `/api/result?id=${encodeURIComponent('../package.json')}`, { headers: auth })).status, 404);
   assert.equal((await req(P, `/api/results`)).status, 403);

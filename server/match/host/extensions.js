@@ -1,10 +1,11 @@
 // Local console integration for isolated gameplay matches. No plugin code runs in the parent process.
 // i18n-ignore-file: host-only console responses.
 import { matchView, catalogView, handleAction, resultRecord } from '../../admin.js';
-import { liveState, liveIntent } from '../../admin-live.js';
+import { liveState, liveIntent, matchId } from '../../admin-live.js';
 import { wallView } from '../../admin-wall.js';
 import { setPrep, setUniteLayerGains, setRoundCharts, setLiveRoundDamage } from '../hostSettings.js';
 import { setReplayConfig, replayRecord } from '../replay.js';
+import { stockView, diagnosticEvents } from '../../admin-observability.js';
 
 const rooms = new WeakMap();
 function roomFor(match) {
@@ -31,6 +32,8 @@ export function extensionAdmin(match, kind, value, config) {
   const room = roomFor(match), lobby = { rooms: new Map([[room.code, room]]) };
   let result;
   if (kind === 'view') result = matchView(match);
+  else if (kind === 'stock') result = { ...stockView(match, value?.group), matchId: matchId(match) };
+  else if (kind === 'diagnostics') result = diagnosticEvents(match);
   else if (kind === 'catalog') result = catalogView(lobby, room.code);
   else if (kind === 'wall') result = wallView(lobby, room.code);
   else if (kind === 'live') result = liveState(lobby, value);
@@ -41,5 +44,5 @@ export function extensionAdmin(match, kind, value, config) {
 }
 export function extensionEnd(match, summary) {
   if (!match?.order || !match.gd) return null;
-  return { record: resultRecord(roomFor(match), match, summary), replay: replayRecord(match, {}) };
+  return { record: resultRecord(roomFor(match), match, summary), replay: replayRecord(match, {}), diagnostics: diagnosticEvents(match) };
 }

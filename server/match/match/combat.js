@@ -4,6 +4,7 @@
 // Installed on Match.prototype by server/match/Match.js (a method container: never instantiated; `this` is the match).
 
 import { PHASE, GEO } from '../../../shared/constants.js';
+import { recordAdminDiagnostic } from '../diagnostics.js';
 import { deriveSeed } from '../../sim/rng.js';
 import { withBounties } from '../waves.js';
 import { planUnite } from '../unite.js';
@@ -123,7 +124,9 @@ export class MatchCombat {
 
   /** Aggregate a finished field's content/engine errors (battle.errors: unique records) for diagnostics. */
   _collectSimErrors(f, res) {
-    this.simErrors += Number(res && res.errors) || 0;
+    const errorCount = Number(res && res.errors) || 0;
+    this.simErrors += errorCount;
+    if (errorCount) recordAdminDiagnostic(this, { type: 'error', source: 'simulation', field: f?.fieldId, count: errorCount });
     const list = f && f.battle && Array.isArray(f.battle.errors) ? f.battle.errors : [];
     for (const e of list) {
       if (!e || typeof e !== 'object') continue;

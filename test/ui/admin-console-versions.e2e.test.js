@@ -107,6 +107,7 @@ test('console four-version replay digests, live/wall context and summary filters
     }
     await page.goto(admin.url); await page.click('[data-tab="records"]');
     await page.waitForSelector('#summary-version');
+    await page.select('#summary-rules', '');
     assert.equal(await page.$$eval('#summary-version option', opts => opts.length), 5);
     for (const v of VERSIONS) {
       await page.select('#summary-version', v.id); await page.click('[data-summary-filter]');

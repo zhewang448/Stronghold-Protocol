@@ -6,6 +6,7 @@
 // Installed on Match.prototype by server/match/Match.js (a method container: never instantiated; `this` is the match).
 
 import { groupLeaks } from '../leak-history.js';
+import { recordAdminDiagnostic } from '../diagnostics.js';
 import { PHASE, GEO } from '../../../shared/constants.js';
 import { createRng, deriveSeed } from '../../sim/rng.js';
 import { creditedKillsOf } from '../../sim/spec.js';
@@ -325,8 +326,11 @@ export class MatchBoss {
     if (demote && prev) f.demoted.add(prev);
     const next = this._authorityFor(f, prev);
     if (next) {
+      f.lastTakeover = { from: prev, to: next, reason: why };
+      recordAdminDiagnostic(this, { type: 'takeover', field: f.fieldId, from: prev, to: next, reason: why });
       f.authority = next;
       f.lastProgressAt = this.sched.now();
+      f.lastReportedAt = null;
       if (prev) this.sendTo(prev, { t: 'b.end', battleId: f.battleId, fieldId: f.fieldId, reason: 'takeover' });
       this._sendStart(next, f);
       return;
