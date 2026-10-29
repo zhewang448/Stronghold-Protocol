@@ -47,7 +47,7 @@ test('console shows delta choice, full downgrade/repair choice and actual fallba
     await page.waitForSelector('dialog.release-notes[open]');
     await page.click('dialog.release-notes .release-notes__button--primary');
     await page.waitForSelector('#release-version-select');
-    assert.match(await page.$eval('#release-update', el => el.textContent), /优先下载增量包/);
+    assert.match(await page.$eval('#release-update', el => el.textContent), /比较增量路径与可用素材分包/);
     for (const target of [older, RELEASE_TAG]) {
       await page.select('#release-version-select', target);
       const label = await page.$eval('#release-update .meta[style]', el => el.textContent);
@@ -57,6 +57,8 @@ test('console shows delta choice, full downgrade/repair choice and actual fallba
     await page.click('[data-update-install]');
     await page.waitForFunction(() => document.querySelector('[data-update-install]').disabled);
     assert.equal(typeof report, 'function');
+    report({ state: 'verifying', route: [tag], routeStep: 1, routeTotal: 1 });
+    await page.waitForFunction(() => document.querySelector('#release-update').textContent.includes('增量更新路径'));
     await page.$eval('#auto-update', (el) => { el.checked = !el.checked; window.updateCheckbox = el; });
     const fullName = `Stronghold-Protocol-${tag}-assets.zip`;
     report({ state: 'downloading', received: 1048576, size: 104857600, asset: fullName,

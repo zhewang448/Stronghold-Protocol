@@ -7,7 +7,7 @@
 ## 快速开服
 
 只需下载并解压 Windows 启动器附件，双击 EXE，在「新建实例」里选择空的安装目录，点击「下载并安装」。
-启动器使用 .NET 自行下载正式 Release 的完整游戏包、核对 SHA-256 与 MANIFEST 文件清单后解压；不需要预先下载游戏包。
+启动器使用 .NET 自行准备正式 Release。源码中的 1.3.0 会在有签名索引时比较完整包与精简包、素材分包的下载量，校验后安装；旧 Release 继续使用完整包。不需要预先下载游戏包。
 缺少受支持的 Node.js 时，会从 Node.js 官网下载并校验便携 Node 22 LTS，保存在当前用户目录，不需要系统安装或管理员权限。
 首次安装需要能访问 GitHub 和 nodejs.org。下载失败、校验失败或取消时不会注册半成品实例，清理临时目录后可重试。
 
@@ -103,11 +103,11 @@ Get-FileHash ./StrongholdProtocolLauncher.exe -Algorithm SHA256
 
 ## 命名与本版
 
-启动器版本 1.2.0；EXE 固定 StrongholdProtocolLauncher.exe，附件 StrongholdProtocolLauncher-v1.2.0-win-x64.zip。新目录 server-01、server-02；显示名按游戏/扩展版本生成，旧自动 MODIFIED_FILE 显示名迁移，自定义名称保留，原目录和端口不移动。
+已发布的启动器版本为 1.2.0；此分支的源码版本为 1.3.0，需随新的 Release 发布后才能通过自更新获取。EXE 固定 StrongholdProtocolLauncher.exe，附件名随版本变化。新目录 server-01、server-02；显示名按游戏/扩展版本生成，旧自动 MODIFIED_FILE 显示名迁移，自定义名称保留，原目录和端口不移动。
 
 ### 控制台同时更新 Windows 启动器（2026-10-26）
 
-Windows 控制台升级、回退或同版修复时，若 Release 包含启动器附件，在游戏包准备后继续下载启动器。要求同一标签的 Ed25519 签名和 SHA-256；附件损坏、未签名、路径或 EXE 格式异常在停服前拒绝。非 Windows 不下载，旧 Release 无附件保留原版。
+Windows 控制台升级、回退或同版修复时，若 Release 包含启动器附件，在游戏包准备后核验同一标签的 Ed25519 签名和 SHA-256。启动器成功安装或自更新后在 EXE 旁记录 ZIP 哈希、版本、文件大小和修改时间；记录与当前文件及目标 ZIP 一致时无需重复下载，记录的版本更高时不会降级。记录缺失或文件变化时重新下载验证。非 Windows 不下载，旧 Release 无附件保留原版。
 
 安装目标为游戏根目录 StrongholdProtocolLauncher.exe，以及新版启动器在所选实例 logs/launcher-location.json 自行登记的绝对路径和精确哈希；不扫描任意 EXE。游戏和启动器共用更新备份，失败及手动回滚同时恢复；原先不存在的根目录 EXE 回滚时移除。
 

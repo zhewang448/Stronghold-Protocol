@@ -239,7 +239,7 @@ public partial class MainWindow
             var label = p.Stage switch
             {
                 "release" => t("正在获取游戏版本"),
-                "download" => t("正在下载完整游戏包"),
+                "download" => t("正在下载游戏安装包"),
                 "verify" => t("正在校验并解压游戏包"),
                 "runtime" => t("正在准备便携 Node.js"),
                 _ => t("游戏安装完成"),

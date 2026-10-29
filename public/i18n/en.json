@@ -3483,6 +3483,7 @@
   "【启动器】请选择空的绝对路径，已有安装请使用导入已有实例。": "Choose an empty folder with an absolute path. Use Import existing for installed servers.",
   "【启动器】正在获取游戏版本": "Checking game releases",
   "【启动器】正在下载完整游戏包": "Downloading full game package",
+  "【启动器】正在下载游戏安装包": "Downloading game installation files",
   "【启动器】正在校验并解压游戏包": "Verifying and extracting game package",
   "【启动器】正在准备便携 Node.js": "Preparing portable Node.js",
   "【启动器】游戏安装完成": "Game installation complete",

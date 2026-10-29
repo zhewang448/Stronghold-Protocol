@@ -77,9 +77,22 @@ public sealed class LauncherSelfUpdate(HttpClient http)
         return releases.OrderByDescending(r => Version.Parse(r.Version)).FirstOrDefault();
     }
     public static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
-    public static void VerifyRelease(string tag, string asset, byte[] sums, byte[] signature, byte[] zip, string[]? keys = null)
+    public static void WriteReceipt(string target, string zipHash, string version)
     {
-        if (!ValidTag(tag) || sums.Length > 1024 * 1024 || signature.Length > 1024 || zip.Length > MaxZip) throw new IOException("Invalid update metadata.");
+        var info = new FileInfo(target);
+        var receipt = target + ".release.json";
+        var temporary = receipt + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        try
+        {
+            File.WriteAllText(temporary, JsonSerializer.Serialize(new { format = 1, zipHash, version, size = info.Length,
+                mtimeMs = new DateTimeOffset(info.LastWriteTimeUtc).ToUnixTimeMilliseconds() }));
+            File.Move(temporary, receipt, true);
+        }
+        finally { if (File.Exists(temporary)) File.Delete(temporary); }
+    }
+    public static void VerifySums(string tag, byte[] sums, byte[] signature, string[]? keys = null)
+    {
+        if (!ValidTag(tag) || sums.Length > 1024 * 1024 || signature.Length > 1024) throw new IOException("Invalid update metadata.");
         byte[] sig;
         try { sig = Convert.FromBase64String(Encoding.UTF8.GetString(signature).Trim()); } catch (FormatException e) { throw new IOException("Invalid release signature.", e); }
         if (sig.Length != 64) throw new IOException("Invalid release signature.");
@@ -95,6 +108,11 @@ public sealed class LauncherSelfUpdate(HttpClient http)
             }
             catch (Exception e) when (e is FormatException or ArgumentException) { }
         if (!valid) throw new IOException("Release signature verification failed.");
+    }
+    public static void VerifyRelease(string tag, string asset, byte[] sums, byte[] signature, byte[] zip, string[]? keys = null)
+    {
+        if (zip.Length > MaxZip) throw new IOException("Invalid update metadata.");
+        VerifySums(tag, sums, signature, keys);
         var matches = Encoding.UTF8.GetString(sums).Split('\n').Select(line => Regex.Match(line.TrimEnd('\r'), @"^([a-fA-F0-9]{64})  (.+)$"))
             .Where(m => m.Success && m.Groups[2].Value == asset).ToArray();
         if (matches.Length != 1 || !Hash(zip).Equals(matches[0].Groups[1].Value, StringComparison.OrdinalIgnoreCase)) throw new IOException("Launcher archive SHA256 verification failed.");
@@ -205,7 +223,14 @@ public sealed class LauncherSelfUpdate(HttpClient http)
                 await Task.Delay(1500);if(launched.HasExited)throw new IOException("Updated launcher exited during startup.");
             }
             else if(!restart(plan.Target))throw new IOException("Updated launcher failed to restart.");
-            File.WriteAllText(Path.Combine(work,"result.json"),JsonSerializer.Serialize(new{state="installed",plan.Version,plan.Target}));return 0;
+            try { WriteReceipt(plan.Target, Hash(zip), plan.Version); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            File.WriteAllText(Path.Combine(work,"result.json"),JsonSerializer.Serialize(new{state="installed",plan.Version,plan.Target}));
+            try { File.Delete(Path.Combine(work,"release.zip")); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            return 0;
         }
         catch(Exception error)
         {

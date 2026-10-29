@@ -105,3 +105,14 @@ test('tools/release-sign.mjs: keygen never overwrites, sign writes verifiable SH
   fs.writeFileSync(path.join(dir, name), 'changed');
   await assert.rejects(verify('v0.2.5-extended.9', dir, { keys: [pub] }), /hash mismatch/);
 });
+
+test('release signatures cover both route and asset indexes', async t => {
+  const dir = temp(t), key = path.join(dir, 'keys', 'release.pem'), publicKey = keygen(key);
+  const tag = 'v0.2.5-extended.9';
+  const names = [`Stronghold-Protocol-${tag}-update.zip`, `Stronghold-Protocol-${tag}-update-index.json`, `Stronghold-Protocol-${tag}-art-index.json`];
+  for (const name of names) fs.writeFileSync(path.join(dir, name), name);
+  await sign(tag, dir, { file: key, keys: [publicKey] });
+  assert.deepEqual(await verify(tag, dir, { keys: [publicKey] }), [...names].sort());
+  fs.writeFileSync(path.join(dir, names[1]), 'tampered');
+  await assert.rejects(verify(tag, dir, { keys: [publicKey] }), /hash mismatch/);
+});

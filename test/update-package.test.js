@@ -201,7 +201,11 @@ test('a whole update: base zip v9.9.8 → --update v9.9.9 ships only what change
     assert.match(r.stdout, /^ {2}vs v9\.9\.8: 5 changed, 1 added, \d+ unchanged, 1 removed$/m);
     assert.match(r.stdout, /^removed: 1 file\(s\) \(server\/old\.js\)$/m);
     const upZip = path.join(out, `${FOLDER}-v9.9.9-update.zip`);
-    assert.deepEqual(fs.readdirSync(out).sort(), [`${FOLDER}-v9.9.8.zip`, `${FOLDER}-v9.9.9-update.zip`], 'both stages removed');
+    assert.deepEqual(fs.readdirSync(out).sort(), [`${FOLDER}-v9.9.8.zip`, `${FOLDER}-v9.9.9-update-index.json`, `${FOLDER}-v9.9.9-update.zip`], 'both stages removed');
+    const index = JSON.parse(fs.readFileSync(path.join(out, `${FOLDER}-v9.9.9-update-index.json`), 'utf8'));
+    assert.equal(index.archive, `${FOLDER}-v9.9.9-update.zip`);
+    assert.equal(index.sha256, sha(fs.readFileSync(upZip)));
+    assert.deepEqual(index.fromTags, ['v9.9.8']);
     const got = new Map();
     readZip(upZip, (name, data) => got.set(name, data));
     const SHIP = ['package-lock.json', 'package.json', 'public/assets/char/a.png', 'server/new.js', 'server/sim/rng.js', 'shared/constants.js'];

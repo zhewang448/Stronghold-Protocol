@@ -8,6 +8,15 @@ if (path.dirname(path.resolve(backup)) !== safeBase) process.exit(2);
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const digest = file => { try { const b = fs.readFileSync(file); return { size: b.length, sha256: crypto.createHash('sha256').update(b).digest('hex') }; } catch (e) { if (e.code === 'ENOENT') return null; throw e; } };
 const equal = (a, b) => a === null ? b === null : !!b && a.size === b.size && a.sha256 === b.sha256;
+function writeReceipt(file, zipHash, version) {
+  if (!/^[a-f0-9]{64}$/.test(zipHash || '')) return;
+  const info = fs.statSync(file), receipt = `${file}.release.json`;
+  const temporary = `${receipt}.${crypto.randomBytes(8).toString('hex')}.tmp`;
+  try {
+    fs.writeFileSync(temporary, JSON.stringify({ format: 1, zipHash, version, size: info.size, mtimeMs: Math.trunc(info.mtimeMs) }));
+    fs.renameSync(temporary, receipt);
+  } finally { fs.rmSync(temporary, { force: true }); }
+}
 const lock = path.join(backup, 'launcher-update.lock');
 for (let attempt = 0; attempt < 1800; attempt++) {
   let fd;
@@ -35,7 +44,11 @@ for (let attempt = 0; attempt < 1800; attempt++) {
       }
       if (linked) throw new Error('Linked launcher target');
       const current = digest(target.path);
-      if (equal(current, target.desired)) { target.state = 'installed'; continue; }
+      if (equal(current, target.desired)) {
+        target.state = 'installed';
+        try { writeReceipt(target.path, target.zipHash, target.version); } catch {}
+        continue;
+      }
       if (!equal(current, target.before)) { target.state = 'changed'; continue; }
       const tmp = target.path + '.update-' + crypto.randomBytes(8).toString('hex') + '.tmp';
       const executableLock = target.path + '.update.lock'; let executableLease;
@@ -46,6 +59,7 @@ for (let attempt = 0; attempt < 1800; attempt++) {
         fs.copyFileSync(payload, tmp); fs.renameSync(tmp, target.path);
         if (!equal(digest(target.path), target.desired)) throw new Error('Launcher verification failed');
         target.state = 'installed';
+        try { writeReceipt(target.path, target.zipHash, target.version); } catch {}
       }
       catch (e) { if (!['EPERM', 'EBUSY', 'EACCES'].includes(e.code)) throw e; }
       finally {

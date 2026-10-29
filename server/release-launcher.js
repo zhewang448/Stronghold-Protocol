@@ -11,6 +11,12 @@ const HEX = /^[a-f0-9]{64}$/;
 const digest = file => { try { const bytes = fs.readFileSync(file); return { size: bytes.length, sha256: crypto.createHash('sha256').update(bytes).digest('hex') }; } catch (e) { if (e.code === 'ENOENT') return null; throw e; } };
 const equal = (a, b) => a === null ? b === null : !!b && a.size === b.size && a.sha256 === b.sha256;
 const stagedDir = stage => path.join(path.dirname(stage), 'launcher');
+const launcherVersion = name => /^StrongholdProtocolLauncher-v(\d+\.\d+\.\d+)-win-x64\.zip$/.exec(name || '')?.[1] || null;
+const compareLauncherVersions = (left, right) => {
+  const leftParts = left.split('.').map(Number), rightParts = right.split('.').map(Number);
+  for (let index = 0; index < 3; index++) if (leftParts[index] !== rightParts[index]) return Math.sign(leftParts[index] - rightParts[index]);
+  return 0;
+};
 
 export function pickLauncherAsset(release) {
   const candidates = (release.assets || []).filter(a => /^StrongholdProtocolLauncher-v\d+\.\d+\.\d+-win-x64\.zip$/.test(a.name)
@@ -20,7 +26,7 @@ export function pickLauncherAsset(release) {
 }
 
 /** Called only after the archive SHA256 and tag-bound release signature have been checked. */
-export function stageLauncherArchive(zip, stage, { tag, asset }) {
+export function stageLauncherArchive(zip, stage, { tag, asset, zipHash = digest(zip)?.sha256 }) {
   if (zipUnpackedSize(zip) > 170 * 1024 * 1024) throw new Error('启动器压缩包解压大小超出限制');
   let executable = null; const names = new Set();
   readZip(zip, (name, bytes) => {
@@ -38,7 +44,7 @@ export function stageLauncherArchive(zip, stage, { tag, asset }) {
   });
   if (!executable) throw new Error('启动器附件缺少 StrongholdProtocolLauncher.exe');
   const directory = stagedDir(stage); fs.mkdirSync(directory, { recursive: true });
-  const record = { format: 1, tag, asset, size: executable.length, sha256: crypto.createHash('sha256').update(executable).digest('hex') };
+  const record = { format: 1, tag, asset, zipHash, size: executable.length, sha256: crypto.createHash('sha256').update(executable).digest('hex') };
   fs.writeFileSync(path.join(directory, LAUNCHER_EXE), executable);
   fs.writeFileSync(path.join(directory, 'manifest.json'), JSON.stringify(record));
   return { state: 'staged', asset, sha256: record.sha256 };
@@ -53,12 +59,7 @@ export function safeLauncherPath(file) {
   return path.resolve(file);
 }
 
-export function prepareLauncherUpdate(root, stage) {
-  const directory = stagedDir(stage), metadata = path.join(directory, 'manifest.json');
-  if (!fs.existsSync(metadata)) return null;
-  const value = JSON.parse(fs.readFileSync(metadata, 'utf8')), source = path.join(directory, LAUNCHER_EXE);
-  if (fs.lstatSync(metadata).isSymbolicLink() || fs.lstatSync(source).isSymbolicLink() || fs.statSync(metadata).size > 8192) throw new Error('暂存启动器路径无效');
-  if (value.format !== 1 || !HEX.test(value.sha256) || !equal(value, digest(source))) throw new Error('暂存启动器校验失败');
+export function launcherTargets(root) {
   const targets = [safeLauncherPath(path.join(root, LAUNCHER_EXE))];
   const location = path.join(root, 'logs', 'launcher-location.json');
   if (fs.existsSync(location)) {
@@ -70,6 +71,46 @@ export function prepareLauncherUpdate(root, stage) {
     // Only a launcher that registered its own exact executable bytes can be an external update target.
     if (registered.format === 1 && HEX.test(registered.sha256) && current?.sha256 === registered.sha256 && !targets.some(p => p.toLowerCase() === file.toLowerCase())) targets.push(file);
   }
+  return targets;
+}
+
+function launcherReceipt(file) {
+  try {
+    safeLauncherPath(file);
+    const receipt = `${file}.release.json`, info = fs.lstatSync(receipt), executable = fs.statSync(file);
+    if (!info.isFile() || info.isSymbolicLink() || info.size > 8192 || !executable.isFile()) return null;
+    const value = JSON.parse(fs.readFileSync(receipt, 'utf8'));
+    return value.format === 1 && value.size === executable.size && value.mtimeMs === Math.trunc(executable.mtimeMs) ? value : null;
+  } catch { return null; }
+}
+
+function launcherIsNewer(file, targetVersion) {
+  const receipt = launcherReceipt(file);
+  return !!(targetVersion && /^\d+\.\d+\.\d+$/.test(receipt?.version || '')
+    && compareLauncherVersions(receipt.version, targetVersion) > 0);
+}
+
+export function launcherReceiptMatches(file, zipHash, targetVersion = null) {
+  return HEX.test(zipHash) && (launcherReceipt(file)?.zipHash === zipHash || launcherIsNewer(file, targetVersion));
+}
+
+export function writeLauncherReceipt(file, zipHash, version = null) {
+  if (!HEX.test(zipHash)) return;
+  const executable = fs.statSync(safeLauncherPath(file));
+  const receipt = `${file}.release.json`, temporary = `${receipt}.${crypto.randomBytes(8).toString('hex')}.tmp`;
+  try {
+    fs.writeFileSync(temporary, JSON.stringify({ format: 1, zipHash, version, size: executable.size, mtimeMs: Math.trunc(executable.mtimeMs) }));
+    fs.renameSync(temporary, receipt);
+  } finally { fs.rmSync(temporary, { force: true }); }
+}
+
+export function prepareLauncherUpdate(root, stage) {
+  const directory = stagedDir(stage), metadata = path.join(directory, 'manifest.json');
+  if (!fs.existsSync(metadata)) return null;
+  const value = JSON.parse(fs.readFileSync(metadata, 'utf8')), source = path.join(directory, LAUNCHER_EXE);
+  if (fs.lstatSync(metadata).isSymbolicLink() || fs.lstatSync(source).isSymbolicLink() || fs.statSync(metadata).size > 8192) throw new Error('暂存启动器路径无效');
+  if (value.format !== 1 || !HEX.test(value.sha256) || !equal(value, digest(source)) || (value.zipHash !== undefined && !HEX.test(value.zipHash))) throw new Error('暂存启动器校验失败');
+  const targets = launcherTargets(root).filter(file => !launcherIsNewer(file, launcherVersion(value.asset)));
   return { ...value, source, targets, root };
 }
 
@@ -92,7 +133,8 @@ export function backupLaunchers(plan, backup) {
   return plan.targets.map((file, index) => {
     const before = digest(file), stored = 'launcher-backup-' + index + '.exe';
     if (before) fs.copyFileSync(file, path.join(backup, stored));
-    return { path: file, stored, before, desired: { size: plan.size, sha256: plan.sha256 }, state: 'ready' };
+    return { path: file, stored, before, desired: { size: plan.size, sha256: plan.sha256 }, zipHash: plan.zipHash,
+      version: launcherVersion(plan.asset), state: 'ready' };
   });
 }
 
@@ -102,7 +144,11 @@ export function replaceLaunchers(plan, targets, backup, { replace = fs.renameSyn
   const worker = path.join(backup, 'launcher-update-worker.mjs');
   fs.copyFileSync(fileURLToPath(new URL('./launcher-update-worker.mjs', import.meta.url)), worker);
   for (const target of targets) {
-    if (equal(digest(target.path), target.desired)) { target.state = 'unchanged'; continue; }
+    if (equal(digest(target.path), target.desired)) {
+      target.state = 'unchanged';
+      try { writeLauncherReceipt(target.path, target.zipHash, target.version); } catch {}
+      continue;
+    }
     if (!equal(digest(target.path), target.before)) throw new Error('启动器在更新期间已变化，未覆盖');
     const temporary = target.path + '.update-' + crypto.randomBytes(8).toString('hex') + '.tmp';
     const lock = target.path + '.update.lock'; let lease;
@@ -113,6 +159,7 @@ export function replaceLaunchers(plan, targets, backup, { replace = fs.renameSyn
       fs.copyFileSync(payload, temporary); replace(temporary, target.path);
       if (!equal(digest(target.path), target.desired)) throw new Error('启动器替换后校验失败');
       target.state = 'installed';
+      try { writeLauncherReceipt(target.path, target.zipHash, target.version); } catch {}
     } catch (error) {
       if (['EPERM', 'EBUSY', 'EACCES'].includes(error.code)) target.state = 'pending';
       else throw error;
@@ -145,6 +192,7 @@ export function restoreLaunchers(backup, records, { target = true } = {}) {
       if (record.before) fs.copyFileSync(path.join(backup, record.stored), record.path);
       else fs.rmSync(record.path, { force: true });
       if (!equal(digest(record.path), record.before)) throw new Error('启动器回滚后校验失败');
+      try { fs.rmSync(`${record.path}.release.json`, { force: true }); } catch {}
     } finally { if (lease !== undefined) { fs.closeSync(lease); fs.rmSync(lock, { force: true }); } }
   }
 }

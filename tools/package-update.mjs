@@ -163,11 +163,11 @@ export function manifestText({ app, files }) {
  * UPDATE.json's text (server/update.js parseUpdate reads it).
  * @param {{ app: string, from: string[], files: Map, removed: { path: string, sha256: string[] }[], tag?: string, fromTags?: string[], art?: Map }} u
  */
-export function updateText({ app, from, files, removed, tag, fromTags, art }) {
+export function updateText({ app, from, files, removed, tag, fromTags, art, requiresStartup = false }) {
   let bytes = 0;
   for (const d of files.values()) bytes += d.size;
   const gone = removed.map((r) => `{"path":${JSON.stringify(r.path)},"sha256":${JSON.stringify(r.sha256)}}`);
   return `{"format":${UPDATE_FORMAT},"app":${JSON.stringify(app)},"from":${JSON.stringify(from)},"count":${files.size},"bytes":${bytes},`
-    + `${tag ? `"tag":${JSON.stringify(tag)},"fromTags":${JSON.stringify(fromTags)},` : ''}`
+    + `${tag ? `"tag":${JSON.stringify(tag)},"fromTags":${JSON.stringify(fromTags)},"requiresStartup":${requiresStartup},` : ''}`
     + `\n"removed":[${block(gone)}],\n"files":${filesJson(files)}${art ? `,\n"art":${filesJson(art)}` : ''}}\n`;
 }

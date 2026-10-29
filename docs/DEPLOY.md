@@ -133,6 +133,24 @@ nssm start StrongholdProtocol
 
 ### 1.5 更新
 
+#### 本库控制台的增量链与素材分包
+
+较新的更新器会检查签名的增量索引，比较当前安装到目标版本的可用路径；若要跨过多个版本，在暂存区依次合成并核对每一步，完成后只安装和重启一次。索引缺失的历史版本需要先下载增量包才能读取其适用版本；查询与探测有上限，找不到可用路径时改用分包或完整包。中间版本标记了必须启动的数据迁移时，不自动跳过：先单独安装该版本。
+
+发布提供素材索引与分包时，更新器还会比较 lite 和缺失素材的预计下载量，复用哈希相同的本地素材。普通素材有签名索引中可用的公开源时先逐文件校验并获取，否则下载普通素材分包；本地提取素材和官方特效分别有独立分包。全部目标文件校验通过才安装；公开源、分包或签名验证失败时按情况使用完整包或报告错误。旧 Release 没有这些新附件，继续使用原有更新方式。首次使用本能力前，旧安装仍需先升级到包含新更新器的版本。
+
+此分支的 Windows 启动器源码版本为 1.3.0。新建实例时同样比较完整包与 lite 加素材分包的下载量，核验发布签名和各文件；已存在的实例仍由其游戏控制台执行增量更新。1.3.0 需要先构建并随新的 Release 发布，已发布的 1.2.0 不会自动获得新行为。
+
+维护者先按现有流程制作同一标签的完整包、lite 包和增量包，然后在同一附件目录生成素材分包并一起签名：
+
+```powershell
+node tools/split-release.mjs <完整包.zip> <Release标签> <附件目录> .cache/assets-ledger.json
+node tools/release-sign.mjs sign <Release标签> <附件目录>
+node tools/release-sign.mjs verify <Release标签> <附件目录>
+```
+
+最后一个参数是可选的素材下载记录；不提供时更新器使用签名分包，不从公开源逐文件下载。生成的 `*-art-index.json`、`*-common-art.zip`、`*-local-art.zip`、`*-fx-art.zip` 与打包增量时生成的 `*-update-index.json` 均须与目标 Release 的校验文件和签名一起发布。空分组不生成附件。若该版本必须在后续更新前运行一次迁移，打增量包时设置 `SP_UPDATE_REQUIRES_STARTUP=1`；旧包缺少此标记，仍按原有跨版本升级兼容性处理。
+
 ```powershell
 cd C:\Stronghold-Protocol
 powershell -ExecutionPolicy Bypass -File scripts\install-service-windows.ps1 -Stop   # 装了开机自启时
@@ -569,7 +587,7 @@ node scripts/host-launcher.mjs --port 3001 --host 127.0.0.1 --versions act2autoc
 
 ### 控制台同时更新 Windows 启动器（2026-10-26）
 
-Windows 控制台升级、回退或同版修复时，若 Release 包含启动器附件，在游戏包准备后继续下载启动器。要求同一标签的 Ed25519 签名和 SHA-256；附件损坏、未签名、路径或 EXE 格式异常在停服前拒绝。非 Windows 不下载，旧 Release 无附件保留原版。
+Windows 控制台升级、回退或同版修复时，若 Release 包含启动器附件，在游戏包准备后核验发布签名和 ZIP 哈希。成功安装或自更新后在 EXE 旁记录 ZIP 哈希、版本、文件大小和修改时间；匹配时跳过下载，已自行更新到更高版本的启动器不会被旧附件覆盖。记录缺失或文件变化时重新下载验证。非 Windows 不下载，旧 Release 无附件保留原版。
 
 安装目标为游戏根目录 StrongholdProtocolLauncher.exe，以及新版启动器在所选实例 logs/launcher-location.json 自行登记的绝对路径和精确哈希；不扫描任意 EXE。游戏和启动器共用更新备份，失败及手动回滚同时恢复；原先不存在的根目录 EXE 回滚时移除。
 
