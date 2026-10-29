@@ -42,6 +42,9 @@ static class LauncherSelfUpdateChecks
             var plan=await updater.PrepareAsync(found!,target,parentDirectory:Path.Combine(root,"work"),keys:[pub]);
             Check(File.ReadAllBytes(target).SequenceEqual(old),"prepared update does not replace a running launcher early");
             Check(await LauncherSelfUpdate.ApplyAsync(plan,[pub],false,_=>true)==0&&File.ReadAllBytes(target).SequenceEqual(next),"standalone helper replaces target with exact verified EXE bytes");
+            using(var receipt=JsonDocument.Parse(File.ReadAllText(target+".release.json")))
+                Check(receipt.RootElement.GetProperty("zipHash").GetString()==LauncherSelfUpdate.Hash(zip),"self update records the verified archive hash for the game updater");
+            Check(!File.Exists(Path.Combine(Path.GetDirectoryName(plan)!,"release.zip")),"successful self update removes its temporary archive");
             File.WriteAllBytes(target,old);plan=await updater.PrepareAsync(found!,target,parentDirectory:Path.Combine(root,"work"),keys:[pub]);
             Check(await LauncherSelfUpdate.ApplyAsync(plan,[pub],false,_=>false)==1&&File.ReadAllBytes(target).SequenceEqual(old),"restart failure restores pristine original executable");
             plan=await updater.PrepareAsync(found!,target,parentDirectory:Path.Combine(root,"work"),keys:[pub]);File.WriteAllBytes(target,Exe("changed"));

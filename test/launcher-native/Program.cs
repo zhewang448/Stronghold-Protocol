@@ -6,6 +6,15 @@ using System.Text.Json;
 using StrongholdProtocolLauncher.Services;
 
 #if BOOTSTRAP
+if (args.Length == 1 && args[0] == "--split-install")
+{
+#if SELF_UPDATE
+    await LauncherSplitInstallChecks.Run();
+#else
+    Console.WriteLine("RESULT split_install=false checks=0");
+#endif
+    return;
+}
 if (args.Length == 1 && args[0] == "--self-update")
 {
 #if SELF_UPDATE

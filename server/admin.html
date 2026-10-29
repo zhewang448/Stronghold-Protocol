@@ -1216,19 +1216,21 @@ function drawReleaseUpdate() {
   next.innerHTML = `<h2>版本更新</h2>
     <p><label><input type="checkbox" id="auto-update" ${d.automatic?.enabled ? 'checked' : ''} ${updateRequest ? 'disabled' : ''}> 空闲时自动安装新版本</label> <button data-auto-update-save ${updateRequest ? 'disabled' : ''}>保存自动更新设置</button></p>
     <p class="meta" role="status">自动更新：${esc(({ disabled: '已关闭', idle: '等待检查', waiting: '等待全部对局结束', announcing: '已公告，等待一分钟', installing: '正在安装', error: '失败', 'up-to-date': '暂无新版' })[d.automatic?.state] || '已关闭')} ${esc(d.automatic?.error || '')} ${d.automatic?.lastCheck ? ' · 上次检查 ' + esc(new Date(d.automatic.lastCheck).toLocaleString()) : ''} ${esc(d.automatic?.target || '')}</p>
-    <p class="meta">从 ${esc(d.repository || 'zhewang448/Stronghold-Protocol')} 下载正式 Release，升级优先使用已签名增量包，不适配时改用完整素材包。回退旧版及同版修复使用完整包。保留额外素材、主机设置和对局记录；替换前备份程序与变化素材，完成后自动重启。</p>
+    <p class="meta">从 ${esc(d.repository || 'zhewang448/Stronghold-Protocol')} 下载正式 Release，按可用索引比较增量链、精简包和素材分包，必要时使用完整包。保留额外素材、主机设置和对局记录；替换前备份程序与变化素材，完成后自动重启。</p>
     <div class="row"><span>当前版本：<strong>${esc(d.currentVersion || '读取中…')}</strong></span>
       ${d.latestVersion ? `<span>最新版本：<strong>${esc(d.latestVersion)}</strong></span>` : ''}</div>
     <p><label for="release-version-select">选择版本</label><br><select id="release-version-select" ${busy || d.state === 'reconnecting' ? 'disabled' : ''}>
       ${versions.length ? versions.map((r) => `<option value="${esc(r.tag)}" ${r.tag === selectedRelease ? 'selected' : ''}>${esc(r.tag)} · ${{ new: '新版本', current: '当前版本', old: '旧版本' }[r.relation]}${r.reason ? ' · 不可安装' : ''}</option>`).join('') : '<option value="">检查后显示可选版本</option>'}</select></p>
     ${actualPackage?.asset ? `<p class="meta" style="overflow-wrap:anywhere">安装包：${esc(actualPackage.asset)}${actualPackage.size ? ` · ${(actualPackage.size / 1048576).toFixed(1)} MB` : ''}${selected.publishedAt ? ` · 发布于 ${esc(new Date(selected.publishedAt).toLocaleDateString())}` : ''} · ${selected.signed ? '已签名' : '未签名'}</p>` : ''}
-    ${selected?.fallbackAsset ? `<p class="meta">优先下载增量包；不适配或校验失败时自动改用完整素材包（${(selected.fallbackSize / 1048576).toFixed(1)} MB）。</p>` : ''}
+    ${selected?.fallbackAsset ? `<p class="meta">自动比较增量路径与可用素材分包；无法使用时下载完整素材包（${(selected.fallbackSize / 1048576).toFixed(1)} MB）。</p>` : ''}
+    ${d.route?.length ? `<p class="meta">增量更新路径：${esc([d.currentVersion, ...d.route].join(' → '))}${d.routeTotal ? ` · 校验 ${d.routeStep} / ${d.routeTotal}` : ''}</p>` : ''}
+    ${d.split ? `<p class="meta">使用精简包与按需素材${d.groups ? ` · 下载分组：${esc(d.groups.join('、') || '无需额外分组')}` : ''}</p>` : ''}
     ${d.target === selected?.tag && d.fallback ? `<p class="note">已改用完整素材包：${esc(d.fallbackReason || '增量包不可用')}</p>` : ''}
     ${selected?.reason ? `<p class="note">该版本不可安装：${esc(selected.reason)}</p>` : ''}
-    ${selected?.relation === 'old' ? '<p class="note">回退使用目标旧版的完整素材包。安装前备份程序及变化素材；设置与记录保留原样，不会自动恢复为旧版格式。</p>' : ''}
+    ${selected?.relation === 'old' ? '<p class="note">回退使用目标旧版的精简包和素材分包，或完整素材包。安装前备份程序及变化素材；设置与记录保留原样，不会自动恢复为旧版格式。</p>' : ''}
     <p id="release-update-state" role="status" aria-live="polite" ${d.error || d.state === 'recovery-required' ? 'class="bad"' : 'class="meta"'}>${esc(d.state === 'recovery-required' ? `${messages[d.state]} ${d.error || ''}` : d.error ? `更新失败：${d.error}。可重新检查后重试。` : messages[d.state] || '')}</p>
     ${selected?.launcherAsset ? '<p class="meta" data-testid="launcher-update-plan">同时更新 Windows 启动器：' + esc(selected.launcherAsset) + '。使用同一发布签名验签，更新根目录 EXE 和已登记的独立启动器；占用时关闭窗口后完成替换。</p>' : ''}
-    ${d.launcher ? '<p class="meta" id="launcher-update-state" role="status">启动器：' + esc(({ downloading: '正在下载', staged: '已校验，等待安装', installed: '已更新', pending: '等待关闭启动器后替换', unavailable: '该 Release 无启动器附件，保留原版', 'not-applicable': '当前系统无需 Windows 启动器', changed: '目标已变化，请重新检查更新' })[d.launcher.state] || d.launcher.state) + '</p>' : ''}
+    ${d.launcher ? '<p class="meta" id="launcher-update-state" role="status">启动器：' + esc(({ downloading: '正在下载', staged: '已校验，等待安装', installed: '已更新', unchanged: '已是目标版本', pending: '等待关闭启动器后替换', unavailable: '该 Release 无启动器附件，保留原版', 'not-applicable': '当前系统无需 Windows 启动器', changed: '目标已变化，请重新检查更新' })[d.launcher.state] || d.launcher.state) + '</p>' : ''}
     ${d.warning ? `<p class="note" role="status">${esc(d.warning)}</p>` : ''}
     ${d.recovery ? `<p class="note">停服后，在安装目录运行：<code>${esc(d.recovery)}</code>。程序会核对备份和当前文件；状态不匹配时会拒绝覆盖。</p>` : ''}
     ${d.state === 'recovery-required' ? '<p class="note">先关闭启动窗口、服务及外部守护器，再离线恢复。恢复完成后重新启动服务器并刷新本页。恢复不会续接已经被跨版本更新结束的对局。</p>' : ''}

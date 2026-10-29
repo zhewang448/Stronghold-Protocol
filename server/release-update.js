@@ -16,7 +16,8 @@ import { SIGNATURE_ASSET, SUMS_ASSET, parseSignature, sumFor, verifySums } from 
 import { fetch as networkFetch, ProxyAgent } from 'undici';
 import { DEFAULT_GITHUB_PROXY, normalizeProxyPrefix } from '../tools/assets/sources.mjs';
 import { assertUpdateSpace } from './update-backups.js';
-import { pickLauncherAsset, stageLauncherArchive } from './release-launcher.js';
+import { pickLauncherAsset, stageLauncherArchive, launcherTargets, launcherReceiptMatches } from './release-launcher.js';
+import { parseSplitIndex } from './release-split.js';
 
 export const UPDATE_REPOSITORY = 'zhewang448/Stronghold-Protocol';
 const API = `https://api.github.com/repos/${UPDATE_REPOSITORY}/releases`;
@@ -59,7 +60,7 @@ export function compareReleaseTags(a, b) {
 export function pickReleaseAsset(release) {
   // Only the full package can supply extracted scenes, effects and their matching manifests.
   const assets = Array.isArray(release.assets) ? release.assets : [];
-  return assets.find((a) => /^Stronghold-Protocol-v[^/\\]+-assets\.zip$/.test(a.name));
+  return assets.find((a) => /^Stronghold-Protocol-v\d+\.\d+\.\d+(?:-extended\.\d+)?-assets\.zip$/.test(a.name));
 }
 export function pickReleaseUpdateAsset(release) {
   const assets = Array.isArray(release.assets) ? release.assets : [];
@@ -131,7 +132,7 @@ export function createUpdateRequest(config, { fetchImpl = networkFetch, onSource
 const skip = (rel) => isSetupArt(rel) || removalProblem(rel) !== null;
 
 /** Only manifest-listed program files may be installed; reject traversal, duplicates and incremental archives. */
-export function stageZip(zip, stage, releaseTag, { root = null } = {}) {
+export function stageZip(zip, stage, releaseTag, { root = null, allowIncompleteArt = false } = {}) {
   const seen = new Set();
   const art = new Map();
   const checkedParents = new Set();
@@ -177,12 +178,12 @@ export function stageZip(zip, stage, releaseTag, { root = null } = {}) {
   const result = verifyFiles(stage, expected);
   if (result.missing.length || result.mismatched.length) throw new Error(`文件校验失败：${[...result.missing, ...result.mismatched].slice(0, 3).join('、')}`);
   fs.writeFileSync(path.join(stage, ART_STAGE_FILE), JSON.stringify({ format: 1, app: manifest.app, files: Object.fromEntries(art) }));
-  verifyStagedArt(root || stage, stage, readStagedArt(stage, manifest.app));
+  if (!allowIncompleteArt) verifyStagedArt(root || stage, stage, readStagedArt(stage, manifest.app));
   return manifest;
 }
 
 /** Build a complete transactional stage from a signed delta and the installed files it leaves unchanged. */
-export function stageUpdateZip(zip, stage, releaseTag, root) {
+export function stageUpdateZip(zip, stage, releaseTag, root, { baseTag = installedTag(root), previousStages = [], consolidate = false } = {}) {
   const seen = new Set();
   const shipped = new Map();
   let manifestText, updateText;
@@ -205,11 +206,12 @@ export function stageUpdateZip(zip, stage, releaseTag, root) {
   if (!manifestText || !updateText) throw new Error('增量包缺少 MANIFEST.json 或 UPDATE.json');
   const manifest = parseManifest(manifestText), update = parseUpdate(updateText);
   if (manifest.app !== update.app || TAG.exec(releaseTag)?.slice(1, 4).join('.') !== manifest.app) throw new Error('增量包基础版本与 Release 标签不一致');
-  if (compareReleaseTags(releaseTag, installedTag(root)) <= 0) throw new Error('回退和同版修复必须使用完整素材包');
+  if (compareReleaseTags(releaseTag, baseTag) <= 0) throw new Error('回退和同版修复必须使用完整素材包');
   if (update.tag && update.tag !== releaseTag) throw new Error('增量包目标标签与 Release 不一致');
-  const baseVersion = appVersion(root);
+  const baseRoot = previousStages.at(-1) || root;
+  const baseVersion = appVersion(baseRoot);
   if (!update.from.includes(baseVersion)) throw new Error(`增量包不适用于当前基础版本 v${baseVersion}`);
-  if (update.fromTags && !update.fromTags.includes(installedTag(root))) throw new Error('增量包不适用于当前扩展版本');
+  if (update.fromTags && !update.fromTags.includes(baseTag)) throw new Error('增量包不适用于当前扩展版本');
   if (!update.art) throw new Error('增量包缺少完整目标素材哈希清单');
   const art = update.art;
   for (const rel of art.keys()) if (!isSetupArt(rel) || removalProblem(rel)) throw new Error(`素材清单包含非法路径：${rel}`);
@@ -233,7 +235,7 @@ export function stageUpdateZip(zip, stage, releaseTag, root) {
   const checkedParents = new Set();
   for (const [rel, expected] of manifest.files) {
     if (!shipped.has(rel)) {
-      const source = releaseTarget(root, rel, checkedParents), got = digestFile(source);
+      const source = releaseTarget(baseRoot, rel, checkedParents), got = digestFile(source);
       if (!got || got.size !== expected.size || got.sha256 !== expected.sha256) throw new Error(`本机文件与增量包基线不符：${rel}`);
       const file = path.join(stage, ...rel.split('/'));
       fs.mkdirSync(path.dirname(file), { recursive: true }); fs.copyFileSync(source, file);
@@ -245,15 +247,31 @@ export function stageUpdateZip(zip, stage, releaseTag, root) {
   if (checked.missing.length || checked.mismatched.length) throw new Error('增量包合并后程序校验失败');
   fs.writeFileSync(path.join(stage, 'MANIFEST.json'), manifestText);
   fs.writeFileSync(path.join(stage, ART_STAGE_FILE), JSON.stringify({ format: 1, app: manifest.app, files: Object.fromEntries(art) }));
-  verifyStagedArt(root, stage, readStagedArt(stage, manifest.app));
+  verifyStagedArt(root, stage, readStagedArt(stage, manifest.app), { previousStages });
+  if (consolidate) {
+    for (const [rel, expected] of art) {
+      const staged = path.join(stage, ...rel.split('/'));
+      if (fs.existsSync(staged)) continue;
+      const original = digestFile(releaseTarget(root, rel));
+      if (original?.size === expected.size && original.sha256 === expected.sha256) continue;
+      const source = [...previousStages].reverse().map(dir => releaseTarget(dir, rel)).find(file => {
+        const got = digestFile(file);
+        return got?.size === expected.size && got.sha256 === expected.sha256;
+      });
+      if (!source) throw new Error(`增量链缺少目标素材：${rel}`);
+      fs.mkdirSync(path.dirname(staged), { recursive: true });
+      fs.copyFileSync(source, staged);
+    }
+    verifyStagedArt(root, stage, art);
+  }
   return manifest;
 }
 
 /** Keep ongoing matches responsive while the authenticated archive is unpacked and hashed. */
-export function stageReleaseArchive(zip, stage, tag, root, incremental = false) {
+export function stageReleaseArchive(zip, stage, tag, root, incremental = false, options = {}) {
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL('./release-stage-worker.js', import.meta.url), {
-      workerData: { zip, stage, tag, root, incremental }, execArgv: [],
+      workerData: { zip, stage, tag, root, incremental, options }, execArgv: [],
     });
     let result, failure;
     worker.once('message', value => { result = value; });
@@ -267,7 +285,88 @@ export function stageReleaseArchive(zip, stage, tag, root, incremental = false) 
   });
 }
 
+export function planUpdateRoute(currentTag, targetTag, candidates) {
+  const queue = [{ tag: currentTag, bytes: 0, route: [] }], best = new Map();
+  while (queue.length) {
+    queue.sort((left, right) => left.bytes - right.bytes || left.route.length - right.route.length || left.tag.localeCompare(right.tag));
+    const next = queue.shift();
+    if (best.has(next.tag) && best.get(next.tag) <= next.bytes) continue;
+    best.set(next.tag, next.bytes);
+    if (next.tag === targetTag) return next.route;
+    for (const candidate of candidates) {
+      if (!Array.isArray(candidate.fromTags) || !candidate.fromTags.includes(next.tag)
+        || !Number.isSafeInteger(candidate.size) || candidate.size < 0
+        || (candidate.remaining !== undefined && (!Number.isSafeInteger(candidate.remaining) || candidate.remaining < 0))) continue;
+      if (candidate.requiresStartup && candidate.tag !== targetTag) continue;
+      if (compareReleaseTags(candidate.tag, next.tag) <= 0 || compareReleaseTags(candidate.tag, targetTag) > 0) continue;
+      queue.push({ tag: candidate.tag, bytes: next.bytes + (candidate.remaining ?? candidate.size), route: [...next.route, candidate.tag] });
+    }
+  }
+  return null;
+}
+
+export function inspectUpdateZip(zip, tag) {
+  let update = null, manifest = null, requiresStartup = false;
+  readZip(zip, (name, bytes) => {
+    if (name === 'Stronghold-Protocol/MANIFEST.json') {
+      if (manifest || bytes.length > 32 * 1024 * 1024) throw new Error('程序清单重复或过大');
+      manifest = parseManifest(bytes.toString('utf8'));
+    }
+    if (name !== 'Stronghold-Protocol/UPDATE.json') return;
+    if (update || bytes.length > 32 * 1024 * 1024) throw new Error('增量包元数据重复或过大');
+    const text = bytes.toString('utf8'), raw = JSON.parse(text);
+    if (raw.requiresStartup !== undefined && typeof raw.requiresStartup !== 'boolean') throw new Error('增量包启动要求无效');
+    requiresStartup = raw.requiresStartup === true;
+    update = parseUpdate(text);
+  });
+  if (!update || !manifest || manifest.app !== update.app || !update.fromTags || !update.tag || update.tag !== tag || !update.art) throw new Error('增量包缺少适用版本信息');
+  const programBytes = [...manifest.files.values()].reduce((sum, file) => sum + file.size, 0);
+  if (!Number.isSafeInteger(programBytes)) throw new Error('增量包程序大小无效');
+  return { tag, fromTags: update.fromTags, requiresStartup, programBytes };
+}
+
+function inspectReleaseArchive(zip, tag) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('./release-stage-worker.js', import.meta.url), {
+      workerData: { zip, tag, inspect: true }, execArgv: [],
+    });
+    let result, failure;
+    worker.once('message', value => { result = value; });
+    worker.once('error', error => { failure = error; });
+    worker.once('exit', code => {
+      if (failure) reject(failure);
+      else if (code !== 0 || !result) reject(new Error('增量包检查线程提前退出'));
+      else resolve(result);
+    });
+  });
+}
+
+function runSplitWorker(data) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('./release-stage-worker.js', import.meta.url), { workerData: data, execArgv: [] });
+    let result, failure;
+    worker.once('message', value => { result = value; });
+    worker.once('error', error => { failure = error; });
+    worker.once('exit', code => {
+      if (failure) reject(failure);
+      else if (code !== 0 || !result) reject(new Error('素材分包检查线程提前退出'));
+      else resolve(result);
+    });
+  });
+}
+
 const UNSIGNED_VIA_MIRROR = '该版本没有发布签名，只能在直连或代理访问 GitHub 时安装';
+
+async function readBounded(response, maximum) {
+  if (!response.body || Number(response.headers.get('content-length') || 0) > maximum) throw new Error('更新索引过大或为空');
+  const chunks = []; let size = 0;
+  for await (const chunk of Readable.fromWeb(response.body)) {
+    size += chunk.length;
+    if (size > maximum) throw new Error('更新索引过大');
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}
 
 /**
  * The expected ZIP SHA-256. A signed release (SHA256SUMS.txt.sig) may come through any route: the signature anchors
@@ -297,26 +396,269 @@ async function expectedHash({ release, asset, request, listing, keys }) {
   throw new Error('Release 缺少 SHA-256 校验值，无法安装');
 }
 
+async function stageDeltaRoute({ root, work, release, releases, request, keys, progress, maxBytes = Infinity }) {
+  const currentTag = installedTag(root), targetTag = release.tag_name;
+  const all = new Map(releases.map(item => [item.tag_name, item]));
+  all.set(targetTag, release);
+  const pending = [targetTag], checked = new Set(), candidates = [], archives = new Map();
+  const download = async (item, asset, zip) => {
+    const want = await expectedHash({ release: item, asset, request, listing: 'mirror', keys });
+    assertUpdateSpace(root, asset.size);
+    await request(assetUrl(asset), async response => {
+      if (!response.body) throw new Error('增量包响应为空');
+      let received = 0;
+      const hash = crypto.createHash('sha256');
+      const meter = new Transform({ transform(chunk, _encoding, callback) {
+        received += chunk.length;
+        if (received > asset.size) return callback(new Error('增量包大小不符'));
+        hash.update(chunk);
+        progress({ state: 'downloading', asset: asset.name, received, size: asset.size, routeDiscovery: true });
+        callback(null, chunk);
+      } });
+      await pipeline(Readable.fromWeb(response.body), meter, fs.createWriteStream(zip));
+      if (received !== asset.size || hash.digest('hex') !== want) throw new Error('增量包哈希或大小不符');
+    }, 15 * 60 * 1000);
+    return inspectReleaseArchive(zip, item.tag_name);
+  };
+  let legacyBytes = 0;
+  const fullSize = pickReleaseAsset(release)?.size;
+  const discoveryBudget = Math.min(256 * 1024 * 1024, Number.isSafeInteger(fullSize) && fullSize > 0 ? fullSize : Infinity);
+  while (pending.length && checked.size < 128) {
+    const tag = pending.shift();
+    if (checked.has(tag)) continue;
+    checked.add(tag);
+    const item = all.get(tag), asset = item && preferredUpdate(item, currentTag);
+    if (!asset || !Number.isSafeInteger(asset.size) || asset.size <= 0) continue;
+    const zip = path.join(work, `delta-${checked.size}.zip`);
+    try {
+      const indexAsset = item.assets.find(entry => entry.name === `Stronghold-Protocol-${tag}-update-index.json`);
+      let metadata;
+      if (indexAsset) {
+        const expected = await expectedHash({ release: item, asset: indexAsset, request, listing: 'mirror', keys });
+        metadata = await request(assetUrl(indexAsset), async response => {
+          const bytes = await readBounded(response, 1024 * 1024);
+          if (crypto.createHash('sha256').update(bytes).digest('hex') !== expected) throw new Error('更新索引哈希不符');
+          const value = JSON.parse(bytes.toString('utf8'));
+          if (value.format !== 1 || value.tag !== tag || value.archive !== asset.name || value.size !== asset.size
+            || !/^[a-f0-9]{64}$/.test(value.sha256 || '') || !Array.isArray(value.fromTags)
+            || !value.fromTags.every(base => typeof base === 'string' && /^v\d+\.\d+\.\d+(?:-extended\.\d+)?$/.test(base))
+            || (value.requiresStartup !== undefined && typeof value.requiresStartup !== 'boolean')) throw new Error('更新索引格式错误');
+          return value;
+        });
+      } else {
+        if (legacyBytes + asset.size > discoveryBudget) continue;
+        metadata = await download(item, asset, zip);
+        legacyBytes += asset.size;
+      }
+      candidates.push({ ...metadata, size: asset.size, remaining: indexAsset ? asset.size : 0 });
+      archives.set(tag, { zip, asset, item, metadata, downloaded: !indexAsset });
+      if (tag === targetTag && metadata.fromTags.includes(currentTag) && indexAsset && asset.size >= maxBytes) return null;
+      for (const base of metadata.fromTags) {
+        if (compareReleaseTags(base, currentTag) > 0 && compareReleaseTags(base, tag) < 0 && all.has(base)) pending.push(base);
+      }
+    } catch (error) {
+      fs.rmSync(zip, { force: true });
+      if (tag === targetTag) throw error;
+    }
+  }
+  const route = planUpdateRoute(currentTag, targetTag, candidates);
+  if (!route?.length) {
+    const blocked = planUpdateRoute(currentTag, targetTag, candidates.map(candidate => ({ ...candidate, requiresStartup: false })));
+    if (blocked?.length) {
+      const error = new Error('中间版本需要先启动并完成数据迁移，请先单独安装该版本');
+      error.code = 'UPDATE_REQUIRES_STARTUP';
+      throw error;
+    }
+    return null;
+  }
+  const remainingBytes = route.reduce((sum, tag) => sum + (archives.get(tag).downloaded ? 0 : archives.get(tag).asset.size), 0);
+  if (remainingBytes >= maxBytes) return null;
+  const previousStages = [];
+  let baseTag = currentTag, manifest;
+  for (const [index, tag] of route.entries()) {
+    const archive = archives.get(tag);
+    if (!archive.downloaded) {
+      const actual = await download(archive.item, archive.asset, archive.zip);
+      if (JSON.stringify([...actual.fromTags].sort()) !== JSON.stringify([...archive.metadata.fromTags].sort())
+        || actual.requiresStartup !== (archive.metadata.requiresStartup === true)
+        || digestFile(archive.zip)?.sha256 !== archive.metadata.sha256) throw new Error('增量包与签名索引不符');
+      archive.metadata.programBytes = actual.programBytes;
+    }
+    assertUpdateSpace(root, archive.metadata.programBytes + zipUnpackedSize(archive.zip));
+    const stage = path.join(work, index === route.length - 1 ? 'Stronghold-Protocol' : `chain-${index}`);
+    progress({ state: 'verifying', asset: archive.asset.name, route, routeStep: index + 1, routeTotal: route.length });
+    manifest = await stageReleaseArchive(archive.zip, stage, tag, root, true, {
+      baseTag, previousStages, consolidate: index === route.length - 1,
+    });
+    previousStages.push(stage);
+    baseTag = tag;
+  }
+  return { stage: previousStages.at(-1), app: manifest.app, tag: targetTag,
+    asset: archives.get(targetTag).asset.name, route };
+}
+
+async function stageSplitRelease({ root, work, release, request, keys, progress, full, planOnly = false, cachedPlan = null }) {
+  const tag = release.tag_name, assets = release.assets || [];
+  const indexAsset = assets.find(asset => asset.name === `Stronghold-Protocol-${tag}-art-index.json`);
+  const lite = assets.find(asset => asset.name === `Stronghold-Protocol-${tag}-lite.zip`);
+  if (!indexAsset || !lite || !assets.some(asset => asset.name === SIGNATURE_ASSET)) return null;
+  let text = cachedPlan?.text, index = cachedPlan?.index, initial = cachedPlan?.initial;
+  if (!cachedPlan) {
+    const wantedIndex = await expectedHash({ release, asset: indexAsset, request, listing: 'mirror', keys });
+    text = await request(assetUrl(indexAsset), async response => {
+      const bytes = await readBounded(response, 32 * 1024 * 1024);
+      if (crypto.createHash('sha256').update(bytes).digest('hex') !== wantedIndex) throw new Error('素材索引哈希不符');
+      return bytes.toString('utf8');
+    });
+    index = parseSplitIndex(text, tag);
+    initial = await runSplitWorker({ root, tag, splitIndex: text, planSplit: true });
+  }
+  const groupAsset = group => {
+    const asset = assets.find(item => item.name === index.groups.get(group));
+    if (!asset) throw new Error(`缺少素材分包：${group}`);
+    if (!Number.isSafeInteger(asset.size) || asset.size <= 0) throw new Error('素材分包大小未知');
+    return asset;
+  };
+  if (!Number.isSafeInteger(lite.size) || lite.size <= 0) throw new Error('精简包大小未知');
+  const estimate = initial.needed.reduce((total, group) => {
+    const missing = initial.missing.filter(rel => index.files.get(rel).group === group && rel !== 'data/assets.json');
+    if (!missing.length) return total;
+    const asset = groupAsset(group), rawBytes = missing.reduce((sum, rel) => sum + index.files.get(rel).size, 0);
+    const publicSources = group === 'common' && missing.length <= 64 && rawBytes <= 128 * 1024 * 1024
+      && missing.every(rel => index.files.get(rel).source && index.files.get(rel).size <= 32 * 1024 * 1024);
+    return total + (publicSources ? Math.min(rawBytes, asset.size) : asset.size);
+  }, lite.size);
+  if (full && Number.isSafeInteger(full.size) && full.size > 0 && estimate >= full.size) return null;
+  if (planOnly) return { text, index, initial, estimate };
+  const download = async (asset, filename) => {
+    const want = await expectedHash({ release, asset, request, listing: 'mirror', keys });
+    assertUpdateSpace(root, asset.size);
+    await request(assetUrl(asset), async response => {
+      if (!response.body) throw new Error('分包响应为空');
+      let received = 0;
+      const hash = crypto.createHash('sha256');
+      const meter = new Transform({ transform(chunk, _encoding, callback) {
+        received += chunk.length;
+        if (received > asset.size) return callback(new Error('分包大小不符'));
+        hash.update(chunk);
+        progress({ state: 'downloading', asset: asset.name, received, size: asset.size, split: true });
+        callback(null, chunk);
+      } });
+      await pipeline(Readable.fromWeb(response.body), meter, fs.createWriteStream(filename));
+      if (received !== asset.size || hash.digest('hex') !== want) throw new Error('分包哈希或大小不符');
+    }, 15 * 60 * 1000);
+  };
+  const zip = path.join(work, 'split.zip'), stage = path.join(work, 'Stronghold-Protocol');
+  await download(lite, zip);
+  assertUpdateSpace(root, zipUnpackedSize(zip));
+  const manifest = await stageReleaseArchive(zip, stage, tag, root, false, { allowIncompleteArt: true });
+  if (manifest.app !== index.app) throw new Error('精简包与素材索引版本不符');
+  let sourcedBytes = 0;
+  let plan = await runSplitWorker({ root, stage, tag, splitIndex: text, planSplit: true });
+  const common = plan.missing.filter(rel => index.files.get(rel).group === 'common');
+  const commonBytes = common.reduce((sum, rel) => sum + index.files.get(rel).size, 0);
+  if (common.length && common.length <= 64 && commonBytes <= 128 * 1024 * 1024
+    && common.every(rel => index.files.get(rel).source && index.files.get(rel).size <= 32 * 1024 * 1024)
+    && commonBytes < groupAsset('common').size) {
+    for (const rel of common) {
+      const expected = index.files.get(rel);
+      try {
+        const bytes = await request(expected.source, async response => {
+          if (!response.body) throw new Error('公开素材响应为空');
+          const parts = []; let size = 0;
+          for await (const chunk of Readable.fromWeb(response.body)) {
+            size += chunk.length;
+            if (size > expected.size) throw new Error('公开素材大小不符');
+            parts.push(chunk);
+          }
+          const data = Buffer.concat(parts);
+          if (data.length !== expected.size || crypto.createHash('sha256').update(data).digest('hex') !== expected.sha256) throw new Error('公开素材哈希不符');
+          return data;
+        });
+        const target = releaseTarget(stage, rel);
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        fs.writeFileSync(target, bytes);
+        sourcedBytes += bytes.length;
+        progress({ state: 'downloading', asset: rel, received: bytes.length, size: bytes.length, split: true });
+      } catch { break; }
+    }
+    plan = await runSplitWorker({ root, stage, tag, splitIndex: text, planSplit: true });
+  }
+  const groupAssets = plan.needed.map(group => ({ group, asset: groupAsset(group) }));
+  const bytes = lite.size + sourcedBytes + groupAssets.reduce((total, item) => total + item.asset.size, 0);
+  if (full && Number.isSafeInteger(full.size) && full.size > 0 && bytes >= full.size) throw new Error('完整包比素材分包更小');
+  for (const { group, asset } of groupAssets) {
+    await download(asset, zip);
+    assertUpdateSpace(root, zipUnpackedSize(zip));
+    progress({ state: 'verifying', asset: asset.name, split: true });
+    await runSplitWorker({ zip, root, stage, tag, splitIndex: text, splitGroup: group });
+  }
+  await runSplitWorker({ root, stage, tag, splitIndex: text, finishSplit: true });
+  fs.rmSync(zip, { force: true });
+  return { stage, app: manifest.app, tag, asset: lite.name, split: true, groups: plan.needed, downloadBytes: bytes };
+}
+
 /** Stream with backpressure, verify published ZIP SHA-256, then verify individual program files. */
 export async function downloadAndStage({ root, release, fetchImpl = fetch, listing = 'direct', keys, progress = () => {}, platform = process.platform,
-  request = async (url, consume, timeout) => consume(await responseFor(url, fetchImpl, timeout), 'direct') }) {
+  releases = [], request = async (url, consume, timeout) => consume(await responseFor(url, fetchImpl, timeout), 'direct') }) {
   const full = pickReleaseAsset(release);
   const installed = installedTag(root);
   const delta = preferredUpdate(release, installed);
   const candidates = [...(delta ? [delta] : []), ...(full ? [full] : [])];
-  if (!candidates.length) throw new Error('这个 Release 缺少完整素材包，无法保证素材完整');
+  if (!candidates.length && !release.assets?.some(asset => asset.name === `Stronghold-Protocol-${release.tag_name}-art-index.json`)) {
+    throw new Error('这个 Release 缺少完整素材包，无法保证素材完整');
+  }
   const base = path.join(root, 'logs', 'update-staging');
   fs.mkdirSync(base, { recursive: true });
   const work = fs.mkdtempSync(path.join(base, 'release-'));
   const zip = path.join(work, 'release.zip');
   try {
     let lastError;
+    let routed = null;
+    let split = null;
+    let splitPlan = null;
+    if (releases.length || !delta) {
+      try { splitPlan = await stageSplitRelease({ root, work, release, request, keys, progress, full, planOnly: true }); }
+      catch (error) { lastError = error; }
+    }
+    if (delta && releases.length) {
+      const fullSize = Number.isSafeInteger(full?.size) && full.size > 0 ? full.size : Infinity;
+      try { routed = await stageDeltaRoute({ root, work, release, releases, request, keys, progress, maxBytes: Math.min(fullSize, splitPlan?.estimate ?? Infinity) }); }
+      catch (error) {
+        if (error.code === 'UPDATE_REQUIRES_STARTUP') throw error;
+        lastError = error;
+      }
+      if (!routed) {
+        candidates.splice(0, candidates.length, ...(full ? [full] : []));
+        if (full) progress({ state: 'downloading', received: 0, size: full.size || 0, fallback: true,
+          fallbackReason: lastError?.message || '没有可用的增量更新路径', asset: full.name,
+          route: undefined, routeStep: undefined, routeTotal: undefined });
+      }
+    }
+    if (!routed && splitPlan) {
+      try {
+        fs.rmSync(path.join(work, 'Stronghold-Protocol'), { recursive: true, force: true });
+        split = await stageSplitRelease({ root, work, release, request, keys, progress, full, cachedPlan: splitPlan });
+        if (split) {
+          candidates.unshift(release.assets.find(asset => asset.name === split.asset));
+          progress({ state: 'verifying', asset: split.asset, split: true, fallback: false, fallbackReason: undefined,
+            route: undefined, routeStep: undefined, routeTotal: undefined });
+        }
+      } catch (error) {
+        lastError = error;
+        fs.rmSync(path.join(work, 'Stronghold-Protocol'), { recursive: true, force: true });
+        if (full) progress({ state: 'downloading', asset: full.name, received: 0, size: full.size || 0,
+          split: false, fallback: true, fallbackReason: error.message });
+      }
+    }
+    if (!candidates.length) throw lastError || new Error('没有可用的更新包');
     for (const asset of candidates) {
       let gameStaged = false;
       try {
         assertUpdateSpace(root, Number.isSafeInteger(asset.size) && asset.size > 0 ? asset.size : 0);
-        const want = await expectedHash({ release, asset, request, listing, keys });
-        const staged = await request(assetUrl(asset), async (response) => {
+        const prepared = asset === delta && routed ? routed : split && asset?.name === split.asset ? split : null;
+        const want = prepared ? null : await expectedHash({ release, asset, request, listing, keys });
+        const staged = prepared || await request(assetUrl(asset), async (response) => {
           fs.rmSync(path.join(work, 'Stronghold-Protocol'), { recursive: true, force: true });
           if (!response.body) throw new Error('安装包响应为空');
           let received = 0;
@@ -341,24 +683,30 @@ export async function downloadAndStage({ root, release, fetchImpl = fetch, listi
         if (launcherAsset) {
           if (!release.assets?.some(a => a.name === SIGNATURE_ASSET)) throw new Error('启动器更新要求维护者发布签名，未安装任何文件');
           const wantLauncher = await expectedHash({ release, asset: launcherAsset, request, listing, keys });
-          if (launcherAsset.size > 160 * 1024 * 1024) throw new Error('启动器附件过大');
-          const launcherZip = path.join(work, 'launcher.zip');
-          assertUpdateSpace(root, launcherAsset.size || 160 * 1024 * 1024);
-          launcher = await request(assetUrl(launcherAsset), async response => {
-            if (!response.body) throw new Error('启动器附件响应为空');
-            let received = 0; const hash = crypto.createHash('sha256');
-            const meter = new Transform({ transform(chunk, _encoding, callback) {
-              received += chunk.length;
-              if (received > 160 * 1024 * 1024) { callback(new Error('启动器附件过大')); return; }
-              hash.update(chunk); progress({ state: 'downloading', launcher: { state: 'downloading', asset: launcherAsset.name },
-                asset: launcherAsset.name, received, size: launcherAsset.size || 0 }); callback(null, chunk);
-            } });
-            await pipeline(Readable.fromWeb(response.body), meter, fs.createWriteStream(launcherZip));
-            if (launcherAsset.size && received !== launcherAsset.size) throw new Error('启动器附件大小不符');
-            if (hash.digest('hex') !== wantLauncher) throw new Error('启动器附件 SHA-256 校验失败');
-            const result = stageLauncherArchive(launcherZip, staged.stage, { tag: release.tag_name, asset: launcherAsset.name });
-            fs.rmSync(launcherZip); return result;
-          }, 10 * 60 * 1000);
+          const targets = launcherTargets(root);
+          const targetVersion = /^StrongholdProtocolLauncher-v(\d+\.\d+\.\d+)-win-x64\.zip$/.exec(launcherAsset.name)?.[1] || null;
+          if (targets.every(target => launcherReceiptMatches(target, wantLauncher, targetVersion))) {
+            launcher = { state: 'unchanged', asset: launcherAsset.name, paths: targets };
+          } else {
+            if (launcherAsset.size > 160 * 1024 * 1024) throw new Error('启动器附件过大');
+            const launcherZip = path.join(work, 'launcher.zip');
+            assertUpdateSpace(root, launcherAsset.size || 160 * 1024 * 1024);
+            launcher = await request(assetUrl(launcherAsset), async response => {
+              if (!response.body) throw new Error('启动器附件响应为空');
+              let received = 0; const hash = crypto.createHash('sha256');
+              const meter = new Transform({ transform(chunk, _encoding, callback) {
+                received += chunk.length;
+                if (received > 160 * 1024 * 1024) { callback(new Error('启动器附件过大')); return; }
+                hash.update(chunk); progress({ state: 'downloading', launcher: { state: 'downloading', asset: launcherAsset.name },
+                  asset: launcherAsset.name, received, size: launcherAsset.size || 0 }); callback(null, chunk);
+              } });
+              await pipeline(Readable.fromWeb(response.body), meter, fs.createWriteStream(launcherZip));
+              if (launcherAsset.size && received !== launcherAsset.size) throw new Error('启动器附件大小不符');
+              if (hash.digest('hex') !== wantLauncher) throw new Error('启动器附件 SHA-256 校验失败');
+              const result = stageLauncherArchive(launcherZip, staged.stage, { tag: release.tag_name, asset: launcherAsset.name, zipHash: wantLauncher });
+              fs.rmSync(launcherZip); return result;
+            }, 10 * 60 * 1000);
+          }
         }
         progress({ state: 'verifying', asset: staged.asset, received: 0, size: asset.size || 0, launcher });
         return { ...staged, launcher };
@@ -418,7 +766,10 @@ export function createReleaseUpdater({ root, port = Number(process.env.PORT) || 
     const full = pickReleaseAsset(release);
     const relation = compareReleaseTags(release.tag_name, installedTag(root));
     const delta = preferredUpdate(release, installedTag(root));
-    const asset = delta || full;
+    const split = release.assets?.some(item => item.name === SIGNATURE_ASSET)
+      && release.assets?.some(item => item.name === `Stronghold-Protocol-${release.tag_name}-art-index.json`)
+      ? release.assets.find(item => item.name === `Stronghold-Protocol-${release.tag_name}-lite.zip`) : null;
+    const asset = delta || full || split;
     let reason = '';
     let launcherAsset;
     try {
@@ -465,6 +816,26 @@ export function createReleaseUpdater({ root, port = Number(process.env.PORT) || 
     try { saveUpdateStatus(root, current); } catch { /* still report the original failure through the API */ }
     return status();
   };
+  async function routeReleases() {
+    const currentTag = installedTag(root);
+    while (hasMore && page < 5 && (!releases.length || compareReleaseTags(releases.at(-1).tag_name, currentTag) > 0)) {
+      const nextPage = page + 1;
+      try {
+        const { data, via } = await request(`${API}?per_page=30&page=${nextPage}`, async (response, source) => {
+          const found = await response.json();
+          if (!Array.isArray(found) || found.some(item => !item || typeof item.tag_name !== 'string')) throw new Error('Release 列表响应格式错误');
+          return { data: found, via: source };
+        });
+        const formal = data.filter(item => !item.draft && !item.prerelease && TAG.test(item.tag_name));
+        for (const item of formal) listedVia.set(item.tag_name, via);
+        releases = [...new Map([...releases, ...formal].map(item => [item.tag_name, item])).values()]
+          .sort((left, right) => compareReleaseTags(right.tag_name, left.tag_name));
+        page = nextPage;
+        hasMore = data.length === 30;
+      } catch { break; }
+    }
+    return releases;
+  }
   async function launch(force) {
     if (hasActive() && !force) { current = { ...current, state: 'active-matches' }; return; }
     const cancel = await schedule({ root, port, ...prepared });
@@ -548,10 +919,16 @@ export function createReleaseUpdater({ root, port = Number(process.env.PORT) || 
       const preparedAsset = prepared?.asset && release.assets?.find((a) => a.name === prepared.asset);
       current = { ...current, ...view, ...(preparedAsset ? { asset: preparedAsset.name, size: preparedAsset.size || 0 } : {}),
         target: tag, state: prepared ? 'verifying' : 'downloading', error: undefined, received: 0,
+        route: prepared ? current.route : undefined, routeStep: prepared ? current.routeStep : undefined,
+        routeTotal: prepared ? current.routeTotal : undefined, split: prepared ? current.split : false,
+        groups: prepared ? current.groups : undefined, downloadBytes: prepared ? current.downloadBytes : undefined,
         fallback: prepared ? current.fallback : false, fallbackReason: prepared ? current.fallbackReason : undefined };
       (async () => {
         try {
-          prepared ||= await stageRelease({ root, release, fetchImpl, request, listing: listedVia.get(tag), progress: (p) => { current = { ...current, ...p }; } });
+          const candidates = prepared ? releases : await routeReleases();
+          prepared ||= await stageRelease({ root, release, releases: candidates, fetchImpl, request, listing: listedVia.get(tag), progress: (p) => { current = { ...current, ...p }; } });
+          current = { ...current, ...(prepared.route ? { route: prepared.route } : {}),
+            ...(prepared.split ? { split: true, groups: prepared.groups, downloadBytes: prepared.downloadBytes } : {}) };
           if (prepared.launcher) current = { ...current, launcher: prepared.launcher };
           await launch(force);
         } catch (e) { prepared = null; fail(e); }

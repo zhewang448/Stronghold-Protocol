@@ -17,7 +17,7 @@
     <DebugSymbols>false</DebugSymbols>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>../public/icons/favicon.ico</ApplicationIcon>
-    <Version>1.2.0</Version>
+    <Version>1.3.0</Version>
     <Product>Stronghold Protocol Launcher</Product>
     <Title>Stronghold Protocol Launcher</Title>
     <Description>Windows host launcher for Stronghold Protocol: Alliance</Description>

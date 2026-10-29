@@ -35,13 +35,20 @@ export function readStagedArt(stage, app) {
 }
 
 /** Verify both changed staged files and unchanged retained files, including manifest references. */
-export function verifyStagedArt(root, stage, files, { installed = false } = {}) {
+export function verifyStagedArt(root, stage, files, { installed = false, previousStages = [] } = {}) {
   // Cache directory checks within this synchronous pass, never across staging/install/verification boundaries.
   const localParents = new Set(), stagedParents = new Set();
+  const previousParents = new Map(previousStages.map(earlier => [earlier, new Set()]));
   const source = (rel) => {
     const local = releaseTarget(root, rel, localParents);
     const staged = releaseTarget(stage, rel, stagedParents);
-    return !installed && fs.existsSync(staged) ? staged : local;
+    if (!installed && fs.existsSync(staged)) return staged;
+    if (!installed) for (const earlier of [...previousStages].reverse()) {
+      const candidate = releaseTarget(earlier, rel, previousParents.get(earlier));
+      const got = digestFile(candidate), expected = files.get(rel);
+      if (got && expected && got.size === expected.size && got.sha256 === expected.sha256) return candidate;
+    }
+    return local;
   };
   for (const [rel, expected] of files) {
     const got = digestFile(source(rel));

@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { LAUNCHER_EXE, pickLauncherAsset, stageLauncherArchive, prepareLauncherUpdate } from '../server/release-launcher.js';
+import { LAUNCHER_EXE, pickLauncherAsset, stageLauncherArchive, prepareLauncherUpdate, writeLauncherReceipt } from '../server/release-launcher.js';
 import { downloadAndStage, updatePaths } from '../server/release-update.js';
 import { applyReleaseStage } from '../server/release-install.js';
 import { markBackup, restoreReleaseBackup, listBackups } from '../server/update-backups.js';
@@ -88,6 +88,18 @@ test('changed external registration cannot authorize overwriting an unrelated ex
   assert.deepEqual(result.launcher.paths, [path.join(root, LAUNCHER_EXE)]);assert.deepEqual(fs.readFileSync(outside), pe('changed'));
 });
 
+test('a newer self-updated external launcher is retained while the root launcher is updated', t => {
+  const root = fixture(t), outside = path.join(root, 'desktop', LAUNCHER_EXE), newer = pe('self-updated');
+  put(root, LAUNCHER_EXE, pe('old'));
+  put(root, 'desktop/' + LAUNCHER_EXE, newer);
+  register(root, outside);
+  writeLauncherReceipt(outside, 'a'.repeat(64), '9.0.0');
+  const result = applyReleaseStage(root, stage(t, root), { to: tag });
+  assert.deepEqual(result.launcher.paths, [path.join(root, LAUNCHER_EXE)]);
+  assert.deepEqual(fs.readFileSync(outside), newer);
+  assert.deepEqual(fs.readFileSync(path.join(root, LAUNCHER_EXE)), pe('new'));
+});
+
 test('root launcher is removed on rollback when it did not previously exist', t => {
   const root = fixture(t), result = applyReleaseStage(root, stage(t, root), { to: tag });
   assert.ok(fs.existsSync(path.join(root, LAUNCHER_EXE)));restoreReleaseBackup(root, path.basename(result.backup));
@@ -153,4 +165,37 @@ test('Windows console downloads and verifies launcher signature before any insta
   assert.equal(fs.existsSync(path.join(root, LAUNCHER_EXE)), false);
   calls.length = 0;await downloadAndStage({ root, release, platform:'linux', request, keys });
   assert.equal(calls.includes(asset.browser_download_url), false);
+});
+
+test('signed launcher archive receipts avoid repeated downloads and detect a changed executable', async t => {
+  const root = fixture(t), game = archive(), launcher = storedZip([[LAUNCHER_EXE, pe('installed')], ['README.md', 'notes']]);
+  const release = releaseFor(game), base = release.assets[0].browser_download_url.replace(/[^/]+$/, '');
+  const asset = { name: 'StrongholdProtocolLauncher-v1.2.0-win-x64.zip', size: launcher.length, browser_download_url: base + 'StrongholdProtocolLauncher-v1.2.0-win-x64.zip' };
+  release.assets.push(asset);
+  const pair = crypto.generateKeyPairSync('ed25519'), keys = [pair.publicKey.export({ format: 'der', type: 'spki' }).toString('base64')];
+  const sums = `${sha(game)}  ${release.assets[0].name}\n${sha(launcher)}  ${asset.name}\n`;
+  const signature = crypto.sign(null, Buffer.from(`stronghold-protocol-release\n${tag}\n${sums}`), pair.privateKey).toString('base64');
+  release.assets.push({ name: 'SHA256SUMS.txt', browser_download_url: `${base}SHA256SUMS.txt` },
+    { name: 'SHA256SUMS.txt.sig', browser_download_url: `${base}SHA256SUMS.txt.sig` });
+  const target = path.join(root, LAUNCHER_EXE);
+  fs.writeFileSync(target, pe('installed'));
+  writeLauncherReceipt(target, sha(launcher));
+  const calls = [];
+  const request = async (url, consume) => {
+    calls.push(url);
+    return consume(new Response(url.endsWith('.sig') ? signature : url.endsWith('.txt') ? sums : url === asset.browser_download_url ? launcher : game), 'direct');
+  };
+  const reused = await downloadAndStage({ root, release, platform: 'win32', request, keys });
+  assert.equal(reused.launcher.state, 'unchanged');
+  assert.ok(!calls.includes(asset.browser_download_url));
+  fs.writeFileSync(target, Buffer.concat([pe('changed'), Buffer.from('different')]));
+  calls.length = 0;
+  const changed = await downloadAndStage({ root, release, platform: 'win32', request, keys });
+  assert.equal(changed.launcher.state, 'staged');
+  assert.ok(calls.includes(asset.browser_download_url));
+  writeLauncherReceipt(target, 'a'.repeat(64), '9.0.0');
+  calls.length = 0;
+  const newer = await downloadAndStage({ root, release, platform: 'win32', request, keys });
+  assert.equal(newer.launcher.state, 'unchanged');
+  assert.ok(!calls.includes(asset.browser_download_url), 'a self-updated newer launcher is not downgraded');
 });

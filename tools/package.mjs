@@ -1072,7 +1072,8 @@ export function buildUpdate(root, p, bases, { out, install = true, force = false
   const full = path.join(work, '.full', FOLDER);
   const stage = path.join(work, FOLDER);
   const zipPath = path.join(dest, `${name}.zip`);
-  freshTargets([work, zipPath], force);
+  const indexPath = path.join(dest, `${FOLDER}-${releaseTag(p.version)}-update-index.json`);
+  freshTargets([work, zipPath, indexPath], force);
   const staged = makeStage(root, p, full, { install, env, log });
   log(`comparing ${staged.length} files with ${bases.map((b) => `v${b.version}`).join(', ')} …`);
   const next = new Map();
@@ -1097,7 +1098,7 @@ export function buildUpdate(root, p, bases, { out, install = true, force = false
   const update = { app: p.version, from: [...new Set(bases.map((b) => b.version))],
     tag: releaseTag(p.version), fromTags: bases.map((b) => b.tag || `v${b.version}`),
     files: new Map(diff.ship.map((f) => [f, next.get(f)])), removed: diff.removed,
-    art: new Map([...next].filter(([rel]) => isSetupArt(rel))) };
+    art: new Map([...next].filter(([rel]) => isSetupArt(rel))), requiresStartup: env.SP_UPDATE_REQUIRES_STARTUP === '1' };
   fs.writeFileSync(path.join(stage, UPDATE_FILE), updateText(update));
   // what the player's server will read back
   parseUpdate(fs.readFileSync(path.join(stage, UPDATE_FILE), 'utf8'));
@@ -1106,6 +1107,9 @@ export function buildUpdate(root, p, bases, { out, install = true, force = false
   if (problems.length) throw new Error(`refusing to zip ${stage}:\n${problems.map((x) => `  ${x}`).join('\n')}`);
   log(`zipping ${held.length} files (${MB(sumBytes(stage, held))}) → ${zipPath}`);
   zipFolder(work, zipPath);
+  const archive = digestFile(zipPath);
+  fs.writeFileSync(indexPath, JSON.stringify({ format: 1, tag: releaseTag(p.version), fromTags: update.fromTags,
+    archive: path.basename(zipPath), size: archive.size, sha256: archive.sha256, requiresStartup: update.requiresStartup }));
   if (!keepStage) fs.rmSync(work, { recursive: true, force: true });
   return {
     zipPath, zipBytes: fileBytes(zipPath), files: held.length, diff, bytes: diff.ship.reduce((n, f) => n + next.get(f).size, 0),
