@@ -55,7 +55,17 @@ export class PlayerViews {
   }
 
   privateView() {
-    const slots = this.shop.slots.map((s) => (s ? { kind: s.kind, id: s.id, price: this.priceOf(s), basePrice: s.basePrice, sold: !!s.sold, frozen: !!s.frozen } : null));
+    // 「剩余 N 张」 is the pool's real copy count, m.private only (the protocol, schema and replays are unchanged):
+    // chess slots go through `poolOf` (a 自选 pick reads that player's own stock), item slots through the player's
+    // group-shared `itemPoolFor` (`left()` is Infinity for an uncapped item — JSON carries it as null, which the
+    // client draws as 「—」). A 悬赏 slot has no pool, so it gets no `remaining`.
+    const slots = this.shop.slots.map((s) => {
+      if (!s) return null;
+      const row = { kind: s.kind, id: s.id, price: this.priceOf(s), basePrice: s.basePrice, sold: !!s.sold, frozen: !!s.frozen };
+      if (s.kind === 'chess') row.remaining = this.poolOf(s.id).left(s.id);
+      else if (s.kind === 'item') row.remaining = this.m.itemPoolFor(this).left(s.id);
+      return row;
+    });
     const offer = this.offers[0] || null;
     const free = this.shop.freeRefreshes > 0;
     const board = [];

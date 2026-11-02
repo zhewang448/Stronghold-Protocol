@@ -3633,5 +3633,6 @@
   "上游兼容或旧版格式": "Upstream-compatible or legacy format",
   "来源版本：{versions}": "Source versions: {versions}",
   "调配文件包含无效配置，未导入任何内容。": "The loadout file contains invalid settings. Nothing was imported.",
-  "调配文件包含不可用技能、模组或干员，未导入任何配置。": "The file contains unavailable skills, modules or operators. No settings were imported."
+  "调配文件包含不可用技能、模组或干员，未导入任何配置。": "The file contains unavailable skills, modules or operators. No settings were imported.",
+  "剩余{n}张": "{n} left"
 }
