@@ -309,7 +309,36 @@ export class FxWiring {
     return false;
   }
 
-  skinOf(u) { return u && u.skin && this.idx ? this.idx.skins[u.skin] || null : null; }
+  /**
+   * The skin record a unit plays with: the player's own appearance (index.json `skins[v.info.skin]`) when it is
+   * listed, else the operator's (`units[].skin`). `points` place effects on it; a skin that also ships its own effect
+   * set (the client's CharacterSkinHooker) has `modes` and `replace` too, and none otherwise.
+   */
+  skinOf(u, v) {
+    if (!this.idx) return null;
+    const s = v?.info?.skin;
+    if (s && this.idx.skins?.[s]) return this.idx.skins[s];
+    return (u && u.skin && this.idx.skins[u.skin]) || null;
+  }
+
+  /** The attack modes a unit plays now: the player's skin's own when the index has some, else the operator's. */
+  modesOf(u, v) {
+    const m = this.idx?.skins?.[v?.info?.skin]?.modes;
+    return Array.isArray(m) && m.length ? m : (u?.modes || []);
+  }
+
+  /**
+   * The key a skin swaps a default effect for (CharacterSkinHooker._replaceEffectPairs), else the key itself.
+   * The hook belongs to the unit that PLAYS the effect: its own one when it is drawn on that unit (v), else the
+   * emitter's (`o.flipFrom`: a skill's hit is created by its caster and placed on the target).
+   */
+  skinKey(k, v, o) {
+    const r = this.idx?.skins?.[v?.info?.skin]?.replace;
+    if (r && r[k]) return r[k];
+    const f = o?.flipFrom;
+    const rf = f && f !== v ? this.idx?.skins?.[f.info?.skin]?.replace : null;
+    return (rf && rf[k]) || k;
+  }
 
   /**
    * Where a view stands, as mounts.js reads it: board feet + facing, the view itself (its model's bones: the
@@ -351,10 +380,13 @@ export class FxWiring {
       }
       for (const sub of a.abilities || []) walk(sub, depth + 1);
     };
+    const repls = [];   // the skins' own effect sets (view.info.skin): their keys preload too
     for (const v of views) {
       const u = this.unitOf(v);
       if (!u) continue;
-      for (const m of u.modes || []) {
+      const sk = this.skinOf(u, v);
+      if (sk?.replace) repls.push(sk.replace);
+      for (const m of [...(u.modes || []), ...(sk?.modes || [])]) {
         walk(m.attack);
         walk(m.combat);   // index v2: the blow on a blocker (most enemies' only attack)
         if (m.overrideStartEffect) keys.add(m.overrideStartEffect);
@@ -363,6 +395,8 @@ export class FxWiring {
       if (u.startEffect) keys.add(u.startEffect);
       if (u.deadEffect) keys.add(u.deadEffect);
     }
+    // a skin's own prefabs: what its replacement table points at (CharacterSkinHooker._replaceEffectPairs)
+    for (const r of repls) for (const k of [...keys]) if (r[k]) keys.add(r[k]);
     // the skill, talent and charge effects (render/vfx/skillfx.js keys: plans, the skills' projectiles, bindings) and the
     // talents' and abilities' (render/vfx/talentfx.js, index v3)
     for (const k of this.skills.keys(views)) keys.add(k);
@@ -396,7 +430,7 @@ export class FxWiring {
    * enemy in a form the index names a mode for (skillfx.js formMode: Reborn, Stone, Fly …), that mode; else `Default`.
    */
   mode(u, v, skillOn) {
-    const modes = u?.modes || [];
+    const modes = this.modesOf(u, v);
     if (!modes.length) return null;
     const st = this.skills.state(v, skillOn);
     const sn = Number.isInteger(v?.info?.skillIndex) ? `S${v.info.skillIndex + 1}` : null;
@@ -504,7 +538,7 @@ export class FxWiring {
    * started in the battle's first frames used to sit at the HitPoint for good).
    */
   playOn(key, v, o = {}) {
-    let k = lc(key);
+    let k = this.skinKey(lc(key), v, o);   // a skin's own effect set replaces the operator's default keys
     if (!k || !this.ofx.lib.has(k)) return null;
     if (k === YU_WALL_SOURCE) {
       const wall = new YuWall(this, v);
@@ -518,7 +552,7 @@ export class FxWiring {
       if (alt && alt !== k && this.ofx.lib.has(alt)) { k = alt; def = this.ofx.lib.def(k); }
     }
     const u = this.unitOf(v);
-    const skin = this.skinOf(u);
+    const skin = this.skinOf(u, v);
     const pose = this.pose(v);
     pose.strike = !!o.strike;
     let P = this._placing(def, def ? null : this.idx?.prefabs?.[k] || null, o);
@@ -1010,7 +1044,7 @@ export class FxWiring {
    */
   _fly(proj, src, tgt, kind, time, o = {}) {
     const su = this.unitOf(src), tu = this.unitOf(tgt);
-    const sSkin = this.skinOf(su), tSkin = this.skinOf(tu);
+    const sSkin = this.skinOf(su, src), tSkin = this.skinOf(tu, tgt);
     // the start: the mount point as the attack clip poses it at its strike frame (a follow-up shot: as it is drawn then);
     // a rope's end on the shooter follows the point as it is drawn
     const startAt = (out, strike = false) => {
@@ -1420,7 +1454,7 @@ export class FxWiring {
   /** A chain's bounce lands: its line from prev to next (kept on their HitPoints while it shows), its hit on next. */
   _bounce(c, prev, next) {
     if (!next || next.destroyed) return;
-    const ps = this.skinOf(this.unitOf(prev)), ns = this.skinOf(this.unitOf(next));
+    const ps = this.skinOf(this.unitOf(prev), prev), ns = this.skinOf(this.unitOf(next), next);
     const a = unitPoint(ps, 'hit', this.pose(prev)), b = unitPoint(ns, 'hit', this.pose(next));
     if (c.line && this.ofx.lib.has(c.line)) {
       const h = this.ofx.spawn(c.line, { pos: a.slice(), groundZ: -(prev.z || 0) }, {
