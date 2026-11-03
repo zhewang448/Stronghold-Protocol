@@ -2424,6 +2424,67 @@ def skin_points(env, rel, prefab, graphic, container=None):
     return points
 
 
+def replace_skin_keys(value, replacements):
+    if isinstance(value, str):
+        return replacements.get(value.lower(), value)
+    if isinstance(value, list):
+        return [replace_skin_keys(item, replacements) for item in value]
+    if isinstance(value, dict):
+        return {key: replace_skin_keys(item, replacements) for key, item in value.items()}
+    return value
+
+
+def skin_effect_pairs(env, root):
+    replacements = {}
+    stack = [root]
+    while stack:
+        node = stack.pop()
+        for component in env.tt(node).get('m_Component', []):
+            source, obj = env.resolve(node.assets_file, component.get('component'))
+            if obj is None or source == 'builtin' or obj.type.name != 'MonoBehaviour':
+                continue
+            if env.script(obj)[1] != 'CharacterSkinHooker':
+                continue
+            for pair in env.tt(obj).get('_replaceEffectPairs') or []:
+                original, replacement = pair.get('fromEffect'), pair.get('toEffect')
+                if isinstance(original, str) and original and isinstance(replacement, str) and replacement:
+                    replacements[original.lower()] = replacement.lower()
+        stack.extend(go_children(env, node))
+    return replacements
+
+
+def crawl_skin_effects(ab_root, cabs, units, installed, eff, log):
+    skins, referenced = {}, set()
+    for char_id, record in (installed.get('chars') or {}).items():
+        choices = record.get('skins') or {}
+        rel = f'skinpack/{char_id}.ab'
+        if not choices or char_id not in units or not (Path(ab_root) / rel).exists():
+            continue
+        try:
+            env = AssetEnv(ab_root, cabs)
+            prefabs = env.prefabs(rel, full=True)
+            for skin_id in choices:
+                stem = skin_id.replace('@', '_')
+                container = next((key for key in prefabs if '/battle/prefabs/skins/character/' in key
+                                  and key.endswith(f'/{stem}.prefab')), None)
+                if container is None:
+                    continue
+                replacements = skin_effect_pairs(env, prefabs[container])
+                usable = {key: target for key, target in replacements.items() if target in eff}
+                for key, target in replacements.items():
+                    if target not in eff:
+                        log(f'  skin {skin_id}: no effect {target}, keeping {key}')
+                unit = units[char_id]
+                points = skin_points(env, rel, stem, unit.get('graphic'), container=container)
+                entry = {'source': f'{rel} {container}', 'graphic': unit.get('graphic'), 'points': points or {},
+                         'replace': usable, 'modes': replace_skin_keys(unit.get('modes') or [], usable)}
+                skins[skin_id] = entry
+                referenced.update(usable.values())
+        except Exception as error:
+            log(f'  FAIL skin {char_id}: {error!r}')
+    return skins, referenced
+
+
 def strings_of(v, out):
     """all_strings without the fields that name animations or sounds (NOT_EFFECT_FIELDS)."""
     if isinstance(v, dict):
@@ -3245,12 +3306,17 @@ def export_fx(ab_root, out_root, manifest, log, selection='sample', keys=None, j
     token_idx = container_index(ab_root, (TOKEN_GLOB,), root / '.cache/fx/tokens.json', jobs, log) \
         if any(not u.startswith(('char_', 'enemy_')) for u in unit_ids) else {}
     units, projectiles, skills, skins, referenced = crawl_units(ab_root, cabs, unit_ids, gd, eff, enemy_idx, token_idx, log)
+    retained = previous or (_read_json(out / 'index.json') if keys else None) or {}
+    installed = _read_json(root / 'data/assets.json') or {}
+    skin_entries, skin_refs = crawl_skin_effects(ab_root, cabs, {**retained.get('units', {}), **units}, installed, eff, log)
+    skins.update(skin_entries)
+    referenced.update(skin_refs)
     timings['units'] = time.time() - t0
 
     generic = {v for group in FX_GENERIC.values() for v in group.values()}
     generic |= {k for k, rel in eff.items() if rel in FX_GENERIC_BUNDLES}
     if keys:
-        wanted = set(keys)
+        wanted = set(keys) | skin_refs
     else:                         # the used set holds the sample too (a full run never drops a key a sample has)
         wanted = set(FX_SAMPLE_KEYS) | set(FX_COVERAGE_KEYS) | referenced | generic
     missing = sorted(k for k in wanted if k not in eff)
@@ -3305,7 +3371,9 @@ def export_fx(ab_root, out_root, manifest, log, selection='sample', keys=None, j
             units, projectiles, skills, skins = ({**v, **(prev.get(k) or {})} for k, v in
                                                zip(('units', 'projectiles', 'skills', 'skins'), (units, projectiles, skills, skins)))
         else:
-            units, projectiles, skills, skins = (prev.get(x) or {} for x in ('units', 'projectiles', 'skills', 'skins'))
+            new_skins = skins
+            units, projectiles, skills = (prev.get(x) or {} for x in ('units', 'projectiles', 'skills'))
+            skins = {**(prev.get('skins') or {}), **new_skins}
         summaries = {**(prev.get('prefabs') or {}), **summaries}
         old_textures = (_read_json(out / 'textures.json') or {}).get('textures') or {}
         tex_all = {**textures, **old_textures} if add_only else {**old_textures, **textures}

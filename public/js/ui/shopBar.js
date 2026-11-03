@@ -128,6 +128,7 @@ export function ChessCard({ slot, idx, priv, frozen = false, reason = null, free
       <span class="scard__class">
         <${Img} src=${profIconUrl(m, c?.profession)} class="scard__prof" />
         <span>${c?.subProfessionName || ''}</span>
+        ${slot?.remaining !== undefined ? html`<span class="scard__remaining">${slot.remaining == null ? '—' : t('剩余{n}张', { n: slot.remaining })}</span>` : null}
       </span>
     </span>
     ${willMerge ? html`<span class="scard__mergetag" title=${hint}>${t('可晋升')}</span>` : null}
@@ -176,6 +177,7 @@ export function ItemCard({ slot, idx, frozen = false, reason = null, free = fals
     <span class="scard__itemart"><${Img} src=${itemIconUrl(m, it)} fallback=${html`<${GIcon} name="bolt" />`} /></span>
     <span class="scard__body">
       <span class="scard__name">${it?.name || slot.id}</span>
+      ${slot?.remaining !== undefined ? html`<span class="scard__remaining">${slot.remaining == null ? '—' : t('剩余{n}张', { n: slot.remaining })}</span>` : null}
       <span class="scard__idesc"><${RichText} text=${it?.descRaw || it?.desc || ''} /></span>
     </span>
     ${frozen ? html`<span class="scard__ice" aria-hidden="true"><${Icon} name="snow" /></span>` : null}

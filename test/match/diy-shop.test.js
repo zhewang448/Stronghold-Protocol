@@ -124,6 +124,8 @@ test('per-player stock: 8 at tier 5, 5 at tier 6 doubled in co-op (16 / 10, #650
   const p1 = h.ps('p_1');
   assert.deepEqual(p0.diyStock.snapshot(), { [T5A]: 16, [T5B]: 16, [T6A]: 10 }, 'co-op: twice the single-player 8 / 5, like the shared pool');
   assert.deepEqual(p1.diyStock.snapshot(), { [T5A]: 16 }, 'a stock of its own for the same slot');
+  assert.equal(p0.privateView().shop.chessStock[T5A], 16);
+  assert.equal(p1.privateView().shop.chessStock[T5A], 16);
   for (const id of [T5A, T5B, T6A, T6B]) assert.ok(!m.pool.has(id), 'never in the shared pool');
   const seen = (ps, level, n = 300) => {
     ps.shop.level = level;
@@ -160,6 +162,8 @@ test('buy → 3 copies merge into the elite (the stock pays the copies); sell / 
   assert.equal(p0.allChess().filter((p) => p.id === T5A).length, 0);
   assert.equal(elite.poolCopies, 3);
   assert.equal(p0.diyStock.left(T5A), 13, 'co-op stock 16, three copies taken');
+  assert.equal(p0.privateView().shop.chessStock[T5A], 13);
+  assert.equal(h.ps('p_1').privateView().shop.chessStock[T5A], 16);
   assert.ok(p0.offers.length >= 1, 'the merge queued a reward offer');
   assert.equal(p0.gd.chess(elite.id).module.id, 'uniequip_002_siege');
   // a slot the player has not filled is no piece: another player's slot cannot be bought or granted

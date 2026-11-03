@@ -99,13 +99,13 @@ test('console 联防 layers: save, undo, reload, failure recovery and desktop/mo
     assert.equal(await page.$eval('#unite-layers-host-control', e => e.checked), false);
     await page.click('#unite-layers-enabled');
     await page.click('#unite-layers-host-control');
-    await page.click('[data-unite-layers-reset]');
+    await page.click('[data-room-creation-reset]');
     assert.equal(await checked(), false, 'undo restores the saved value');
     assert.equal(await page.$eval('#unite-layers-host-control', e => e.checked), false, 'undo restores the permission');
     await page.click('#unite-layers-enabled');
     await page.click('#unite-layers-host-control');
-    await page.click('[data-unite-layers-save]');
-    await page.waitForFunction(() => document.querySelector('#unite-layers-saved').textContent.includes('已保存'));
+    await page.click('[data-room-creation-save]');
+    await page.waitForFunction(() => document.querySelector('#room-creation-saved').textContent.includes('已保存'));
     assert.equal(getUniteLayerGains(), true);
     assert.equal(getAllowRoomUniteLayerGains(), true);
     await page.click('[data-prep-save]');
@@ -139,12 +139,12 @@ test('console 联防 layers: save, undo, reload, failure recovery and desktop/mo
     });
     await page.click('#unite-layers-enabled');
     await page.click('#unite-layers-host-control');
-    await page.click('[data-unite-layers-save]');
-    await page.waitForFunction(() => document.querySelector('#unite-layers-saved').textContent.includes('保存失败'));
+    await page.click('[data-room-creation-save]');
+    await page.waitForFunction(() => document.querySelector('#room-creation-saved').textContent.includes('保存失败'));
     assert.equal(getUniteLayerGains(), true, 'failed save leaves the server unchanged');
     assert.equal(getAllowRoomUniteLayerGains(), true, 'failed save preserves server permission');
-    assert.equal(await page.$eval('[data-unite-layers-save]', (el) => el.disabled), false, 'can retry');
-    await page.click('[data-unite-layers-reset]');
+    assert.equal(await page.$eval('[data-room-creation-save]', (el) => el.disabled), false, 'can retry');
+    await page.click('[data-room-creation-reset]');
     assert.equal(await checked(), true);
     assert.equal(await page.$eval('#unite-layers-host-control', e => e.checked), true);
     await page.waitForFunction(() => getComputedStyle(document.querySelector('#msg')).display === 'none');
@@ -152,7 +152,7 @@ test('console 联防 layers: save, undo, reload, failure recovery and desktop/mo
     mkdirSync(OUT, { recursive: true });
     for (const [name, width, height] of [['desktop', 1440, 900], ['mobile', 390, 844]]) {
       await page.setViewport({ width, height });
-      const fits = await page.$eval('#unite-layers-form', (form) => {
+      const fits = await page.$eval('#room-defaults-settings', (form) => {
         const rect = form.getBoundingClientRect();
         return rect.left >= 0 && rect.right <= innerWidth && form.scrollWidth <= form.clientWidth;
       });

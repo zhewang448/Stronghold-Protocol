@@ -55,7 +55,16 @@ export class PlayerViews {
   }
 
   privateView() {
-    const slots = this.shop.slots.map((s) => (s ? { kind: s.kind, id: s.id, price: this.priceOf(s), basePrice: s.basePrice, sold: !!s.sold, frozen: !!s.frozen } : null));
+    const chessStock = this.pool.snapshot();
+    for (const [id] of this.diyStock?.entries || []) chessStock[id] = this.diyStock.left(id);
+    for (const id of Object.keys(chessStock)) if (!Number.isFinite(chessStock[id])) chessStock[id] = null;
+    const slots = this.shop.slots.map((s) => {
+      if (!s) return null;
+      const row = { kind: s.kind, id: s.id, price: this.priceOf(s), basePrice: s.basePrice, sold: !!s.sold, frozen: !!s.frozen };
+      if (s.kind === 'chess') row.remaining = this.poolOf(s.id).left(s.id);
+      else if (s.kind === 'item') row.remaining = this.m.itemPoolFor(this).left(s.id);
+      return row;
+    });
     const offer = this.offers[0] || null;
     const free = this.shop.freeRefreshes > 0;
     const board = [];
@@ -81,6 +90,7 @@ export class PlayerViews {
         cards: this.personalChoice.cards.map((c) => bountyCard(this.gd, c)),
       } : null,
       shop: {
+        chessStock,
         level: this.shop.level,
         maxLevel: this.gd.maxShopLevel,
         upgradePrice: this.shop.level >= this.gd.maxShopLevel ? 0 : this.shop.upgradePrice,

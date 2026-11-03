@@ -1124,6 +1124,7 @@ use the same availability. Those cards are not already-shown shop or reward card
 Non-shop effect-only equipment is unlimited.
 
 Operator capacities use measured single-player exceptions and twice those counts in co-op; DIY remains private.
+The private shop view also carries `chessStock { baseChessId: remaining }` for the bond member popup, composed from the receiving player's ordinary and DIY pools. It includes operators outside the current shop and never enters public state. Same-pool purchases/sales refresh these reads; independent pools and other groups do not share another player's personal stock.
 `take(..., { overdraw: true })` records full occupation, including authorized acquisitions beyond capacity.
 Already displayed operator shop offers remain purchasable after exhaustion (路标月报#2 2:50–2:57, #498);
 operator reward offers follow the same rule by the owner's 2026-10-11 decision. Future rolls still use available stock.
@@ -1236,6 +1237,12 @@ shared/roomConvenience.js normalizes five room booleans. Lobby snapshots them in
 阻止旧服务器不支持的不限请求。3005 空闲测试实例已平滑重启并复现同输入由失败转成功。
 
 ## 控制台版本与目录（2026-10-27）
+
+主机「新建房间默认配置与房主权限」统一管理 18 项选项，默认值只用于新房，权限变更立即生效且保留旧房当前值。
+字段、兼容接口及逐项锁定语义见 [网络规则](design/network.md#主机房间默认值与逐项权限2026-11-03)。
+
+客户端房间设置支持恢复主机当前默认值，覆盖所有可修改项但保持难度不变；整批校验后提交，容量不足不移出成员。
+版本切换仍需全员同意，默认配置或权限在投票期间变化会取消本次恢复；细节见 [恢复默认协议](design/network.md#房间恢复主机默认配置2026-11-03)。
 
 主机控制台共用活动 matchId/version/cs，换局/版本/插件内容使目录失效；发放按当前对局和目录校验。
 实时观察保留房间便利规则及插件覆盖优先级，补齐四项既有普通动作，保留阶段与席位限制。

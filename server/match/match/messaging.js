@@ -70,10 +70,14 @@ export class MatchMessaging {
     if (this._privDirty.size) {
       const list = [...this._privDirty];
       this._privDirty.clear();
-      for (const ps of list) {
-        if (!(ps.isBot || ps.left || !ps.connected)) this._sendPrivate(ps, false);
-        this._notifyPrepScouts(ps);
+      const recipients = new Set(list);
+      for (const changed of list) for (const peer of this.players.values()) {
+        if (this.poolFor(peer) === this.poolFor(changed) || this.itemPoolFor(peer) === this.itemPoolFor(changed)) recipients.add(peer);
       }
+      for (const ps of recipients) {
+        if (!(ps.isBot || ps.left || !ps.connected)) this._sendPrivate(ps, false);
+      }
+      for (const ps of list) this._notifyPrepScouts(ps);
     }
     if (this._pubDirty || forcePublic) this._maybeSendPublic(forcePublic);
   }

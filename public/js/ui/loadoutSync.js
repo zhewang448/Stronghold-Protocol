@@ -54,6 +54,7 @@ import { needsContent, serverDefaultVersion } from '../versions.js';
 import { DEFAULT_VERSION } from '../../../shared/versions.js';
 import { toast } from './toasts.js';
 import { t, N_ } from '../../../shared/i18n.js';
+import { avatarForShare, onAccountChange } from './accounts.js';
 
 export const SYNC_DEBOUNCE_MS = 500;
 export const RETRY_MS = 1500;
@@ -733,6 +734,15 @@ export function installSkinsSync({ net, timers, target = skinsStore, notify, con
  * @param {{ net: any, timers?: { setTimeout: Function, clearTimeout: Function }, target?: ReturnType<typeof createStore>,
  *   getChessReady?: () => Promise<any>, listChess?: () => any[], notify?: (text: string) => void, content?: any }} deps
  */
+export function installAvatarSync({ net, timers, app = store } = {}) {
+  const target = createStore({ revision: 0, sync: 'idle' });
+  const offAccount = onAccountChange(() => target.set({ revision: target.get().revision + 1 }));
+  const sync = installPrefSync({ net, timers, app, target, key: 'revision', stateKey: 'sync',
+    msgType: 'room.avatar', field: null, prepare: async () => ({ avatar: await avatarForShare() }),
+    tag: 'avatar', content: null, gate: () => !!app.get().me?.playerId, seatBound: false });
+  return { flush: sync.flush, dispose() { offAccount(); sync.dispose(); } };
+}
+
 export function installCardSync({ net, timers, target = cardStore, getChessReady, listChess, notify, content = appContentSet, app = store, gate = null } = {}) {
   const ready = getChessReady || (() => data.load('chess'));
   const list = listChess || (() => data.list('chess'));
@@ -745,7 +755,8 @@ export function installCardSync({ net, timers, target = cardStore, getChessReady
       if (!want) return { charId: '' };
       if (await ready() == null) return null;
       const catalogue = getChessReady ? null : await data.load('seat-art');
-      const record = cardOperators(list(), catalogue).find(c => c.charId === want);
+      const assets = getChessReady ? data.get('assets') : await data.load('assets');
+      const record = cardOperators(list(), catalogue, assets, data.get('skins')).find(c => c.charId === want);
       const skin = target.get()[CARD_SKIN_KEY] || '';
       return { charId: record ? want : '', ...(skin ? { skinId: record?.choices?.some(s => s.id === skin) ? skin : '' } : {}) };
     },

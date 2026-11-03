@@ -39,6 +39,13 @@ LOBBY(room) → INFO_CHECK (co-op 25 s; solo and any single-human match untimed 
 ```
 Solo FUNNY has 9 rounds (boss at R9); everything is read from `data/config.json → modes[modeId]`.
 
+The extension adds a first-slot `band_random` card (name and LP `?`) to the strategy draft. It is a reveal-on-assignment choice: the server
+draws one still-free allowed strategy from `rngDraft`, records the selected real strategy as the player pick, and grants
+one extra LP and one Fund. A player who highlights it and times out receives the same seeded resolution and bonus;
+forced assignment accepts the sentinel too. AI and unhighlighted timeouts retain their existing choices. This is an
+`[ASSUMED]` extension rule. Shop-stock changes also refresh other players' private views within the affected pool;
+remaining counts never enter public views, battle inputs or results.
+
 Shop layouts are version-specific (`config.modes[modeId].shopSlots`, official
 `activity.AUTOCHESS_SEASON[season].shopLevelDataDict[modeId][level].charChessCount` / `itemCount`). Both 第一期
 builds have no equipment slot at levels 1–4 and one at 5–6; 第二期上半 and the default have one at 1–6 in every
@@ -376,3 +383,6 @@ Default legacy rules remain the baseline. See [BOT_STRATEGIES](../BOT_STRATEGIES
 Maintainer-approved deviations: new rooms default benchEquip, soloUnlimited and prepLoadout on; unequip and morphPairing off. Bench equipment overrides only the first-period restriction. SoloUnlimited applies only to timed solo phases, never co-op or battle clocks. Prep loadout remains locked after ready. Unequip and morphPairing reuse the existing optional plugin mechanics. A declared plugin rule wins over the corresponding room setting. Direct Match callers without convenience retain historical behavior; no generated data or golden changes are required.
 
 The room's custom enemy HP multiplier defaults to 1 and ranges from 0.1 to 100. It multiplies the selected mode and round's ordinary enemy HP multiplier, and independently multiplies the leader's shared HP pool. The setting is fixed when the match starts and does not alter attack, defense or official generated data. A non-default value marks the resulting local record unofficial for achievement and aggregate filtering.
+
+The bond member popup also displays the receiving player's available operator stock, including operators outside the current shop.
+The view uses the same clamped pool balance as purchases, merges and sales; personal DIY stock remains separate and independent/grouped pools retain their existing ownership. This is a display extension and changes no acquisition or battle rule.

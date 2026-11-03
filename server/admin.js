@@ -41,6 +41,8 @@ import { getPrep, setPrep, normalizePrep, getUniteLayerGains, setUniteLayerGains
 import { getAllowRoomUniteLayerGains, setAllowRoomUniteLayerGains } from './match/hostSettings.js';
 import { getShowPwaInstall, setShowPwaInstall } from './match/hostSettings.js';
 import { getAllowAiTakeover, setAllowAiTakeover } from './match/hostSettings.js';
+import { getSeatAvatars, setSeatAvatars } from './match/hostSettings.js';
+import { ROOM_CONFIG_FIELDS, getRoomCreation, normalizeRoomCreation, setRoomCreation } from './match/hostSettings.js';
 import { resetAiTakeover } from './aiTakeover.js';
 import { readPersonalDataConfig, writePersonalDataConfig } from './http/personalDataConfig.js';
 import { AnnouncementDrafts } from './announcement-drafts.js';
@@ -701,6 +703,11 @@ export function loadSettings(file, log) {
     const install = setShowPwaInstall(saved.showPwaInstall ?? true);
     if (install.error) log.error(`[admin] ${file}: showPwaInstall ignored (${install.error})`);
     if (typeof saved.allowAiTakeover === 'boolean') setAllowAiTakeover(saved.allowAiTakeover);
+    setSeatAvatars(saved.seatAvatars ?? false);
+    if (saved.roomCreation) {
+      const creation = setRoomCreation(saved.roomCreation);
+      if (creation.error) log.error('[admin] roomCreation ignored: ' + creation.error);
+    }
     const chat = setChatSettings(saved.chat ?? DEFAULT_CHAT_SETTINGS);
     if (chat.error) log.error(`[admin] ${file}: chat ignored (${chat.error})`);
     const b = setBlockedWords(saved.blockedWords ?? []);
@@ -724,8 +731,20 @@ function saveSettings(file, body) {
   if (typeof liveRoundDamage !== 'boolean') return { error: '实时伤害设置必须为开或关' };
   const showPwaInstall = Object.hasOwn(body, 'showPwaInstall') ? body.showPwaInstall : getShowPwaInstall();
   if (typeof showPwaInstall !== 'boolean') return { error: '桌面安装按钮设置必须为开或关' };
-  const allowAiTakeover = Object.hasOwn(body, 'allowAiTakeover') ? body.allowAiTakeover : getAllowAiTakeover();
+  let allowAiTakeover = Object.hasOwn(body, 'allowAiTakeover') ? body.allowAiTakeover : getAllowAiTakeover();
   if (typeof allowAiTakeover !== 'boolean') return { error: '观战接替 AI 权限必须为开或关' };
+  const seatAvatars = Object.hasOwn(body, 'seatAvatars') ? body.seatAvatars : getSeatAvatars();
+  if (typeof seatAvatars !== 'boolean') return { error: '座位头像设置必须为开或关' };
+  const creation = normalizeRoomCreation(Object.hasOwn(body, 'roomCreation') ? body.roomCreation : {});
+  if (creation.error) return creation;
+  if (Object.hasOwn(body, 'seatAvatars')) creation.config.defaults.seatAvatars = seatAvatars;
+  if (Object.hasOwn(body, 'uniteLayerGains')) creation.config.defaults.uniteLayerGains = uniteLayerGains;
+  if (Object.hasOwn(body, 'allowRoomUniteLayerGains')) creation.config.hostControls.uniteLayerGains = allowRoomUniteLayerGains;
+  if (Object.hasOwn(body, 'allowAiTakeover')) {
+    creation.config.hostControls.aiTakeoverEnabled = allowAiTakeover;
+    if (!allowAiTakeover) creation.config.defaults.aiTakeoverEnabled = false;
+  }
+  if (body.roomCreation?.defaults?.aiTakeoverEnabled === true || body.roomCreation?.hostControls?.aiTakeoverEnabled === true) allowAiTakeover = true;
   const chat = normalizeChatSettings(Object.hasOwn(body, 'chat') ? body.chat : getChatSettings());
   if (chat.error) return chat;
   const blocked = normalizeBlockedWords(Object.hasOwn(body, 'blockedWords') ? body.blockedWords : getBlockedWords());
@@ -735,7 +754,10 @@ function saveSettings(file, body) {
   if (typeof replay.enabled !== 'boolean' || replay.keep !== 50) return { error: '回放设置无效（最多保留 50 局）' };
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const tmp = `${file}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify({ prep: r.prep, uniteLayerGains, allowRoomUniteLayerGains, roundCharts, liveRoundDamage, showPwaInstall, allowAiTakeover, chat: chat.settings, blockedWords: blocked.words, replay, social: social.settings }, null, 2));
+  fs.writeFileSync(tmp, JSON.stringify({ prep: r.prep, uniteLayerGains: creation.config.defaults.uniteLayerGains,
+    allowRoomUniteLayerGains: creation.config.hostControls.uniteLayerGains, roundCharts, liveRoundDamage, showPwaInstall,
+    allowAiTakeover, seatAvatars: creation.config.defaults.seatAvatars, roomCreation: creation.config,
+    chat: chat.settings, blockedWords: blocked.words, replay, social: social.settings }, null, 2));
   fs.renameSync(tmp, file);
   setPrep(r.prep);
   setUniteLayerGains(uniteLayerGains);
@@ -745,6 +767,8 @@ function saveSettings(file, body) {
   setLiveRoundDamage(liveRoundDamage);
   setShowPwaInstall(showPwaInstall);
   setAllowAiTakeover(allowAiTakeover);
+  setSeatAvatars(seatAvatars);
+  setRoomCreation(creation.config);
   setChatSettings(chat.settings);
   setBlockedWords(blocked.words);
   setReplayConfig({ enabled: process.env.SP_REPLAY === '0' ? false : replay.enabled });
@@ -754,6 +778,8 @@ function saveSettings(file, body) {
   if (Object.hasOwn(body, 'liveRoundDamage')) out.liveRoundDamage = getLiveRoundDamage();
   if (Object.hasOwn(body, 'showPwaInstall')) out.showPwaInstall = getShowPwaInstall();
   if (Object.hasOwn(body, 'allowAiTakeover')) out.allowAiTakeover = getAllowAiTakeover();
+  if (Object.hasOwn(body, 'seatAvatars')) out.seatAvatars = getSeatAvatars();
+  if (Object.hasOwn(body, 'roomCreation')) out.roomCreation = getRoomCreation();
   if (Object.hasOwn(body, 'chat')) out.chat = getChatSettings();
   if (Object.hasOwn(body, 'blockedWords')) out.blockedWords = getBlockedWords();
   if (Object.hasOwn(body, 'replay')) out.replay = { enabled: getReplayConfig().enabled, keep: 50, forcedOff: process.env.SP_REPLAY === '0' };
@@ -1091,7 +1117,7 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
       if (req.method === 'GET' && url.pathname === '/api/catalog') return send(200, await catalogView(lobby, url.searchParams.get('room')));
       if (req.method === 'GET' && url.pathname === '/api/results-summary') return send(200, summarizeResults(Object.fromEntries(url.searchParams)));
       if (req.method === 'GET' && url.pathname === '/api/results') return send(200, { records: listRecords(resultsDir) });
-      if (req.method === 'GET' && url.pathname === '/api/settings') return send(200, { social: getSocialSettings(), prep: getPrep(), uniteLayerGains: getUniteLayerGains(), allowRoomUniteLayerGains: getAllowRoomUniteLayerGains(), roundCharts: getRoundCharts(), liveRoundDamage: getLiveRoundDamage(), showPwaInstall: getShowPwaInstall(), allowAiTakeover: getAllowAiTakeover(), chat: getChatSettings(), blockedWords: getBlockedWords(), replay: { enabled: getReplayConfig().enabled, keep: 50, forcedOff: process.env.SP_REPLAY === '0' }, file: settingsFile, defaults: prepDefaults(lobby.safeData()) });
+      if (req.method === 'GET' && url.pathname === '/api/settings') return send(200, { social: getSocialSettings(), prep: getPrep(), uniteLayerGains: getUniteLayerGains(), allowRoomUniteLayerGains: getAllowRoomUniteLayerGains(), roundCharts: getRoundCharts(), liveRoundDamage: getLiveRoundDamage(), showPwaInstall: getShowPwaInstall(), allowAiTakeover: getAllowAiTakeover(), seatAvatars: getSeatAvatars(), roomCreation: getRoomCreation(), roomConfigFields: ROOM_CONFIG_FIELDS, chat: getChatSettings(), blockedWords: getBlockedWords(), replay: { enabled: getReplayConfig().enabled, keep: 50, forcedOff: process.env.SP_REPLAY === '0' }, file: settingsFile, defaults: prepDefaults(lobby.safeData()) });
       if (req.method === 'POST' && url.pathname === '/api/settings') {
         const body = await readJson(req);
         if (!body) return send(400, { error: '请求格式错误' });
@@ -1102,6 +1128,11 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
         }
         if (r.ok) for (const room of lobby.rooms.values()) room.match?.syncExtensions?.();
         if (r.ok && Object.hasOwn(body, 'social')) lobby.social?.sync(true);
+        if (r.ok && Object.hasOwn(body, 'roomCreation')) {
+          for (const room of lobby.rooms.values()) lobby.broadcastState?.(room);
+          const frame = { t: 'site.settings', showPwaInstall: getShowPwaInstall(), roomCreation: getRoomCreation() };
+          if (network?.conns) for (const connection of network.conns.values()) sendSocket(connection.ws, frame);
+        }
         if (r.ok && Object.hasOwn(body, 'allowAiTakeover')) for (const room of lobby.rooms.values()) {
           if (!getAllowAiTakeover()) { room.aiTakeoverEnabled = false; resetAiTakeover(room); }
           lobby.broadcastState?.(room);

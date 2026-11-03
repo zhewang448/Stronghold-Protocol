@@ -113,6 +113,18 @@ test('skin directory and plans are restricted to the current operators and isola
   }
 });
 
+test('the eight issue #20 outfits install portrait and illustration separately from their avatar', () => {
+  const ids = ['char_1045_svash2@sale#20', 'char_4098_vvana@epoque#40', 'char_4098_vvana@epoque#59',
+    'char_4039_horn@epoque#59', 'char_4162_cathy@kitchen#5', 'char_1040_blaze2@nlc#1', 'char_1033_swire2@nlc#1', 'char_2025_shu@nlc#1'];
+  const plan = buildSkinPlan(research, ids);
+  for (const id of ids) {
+    const skin = plan.template.chars[id.split('@')[0]].skins[id];
+    assert.ok(skin.portrait.alts[0].urls[0].includes('/portrait/'));
+    assert.ok(skin.illust.alts[0].urls[0].includes('/skin/'));
+    assert.notEqual(skin.portrait.alts[0].rel, skin.illust.alts[0].rel);
+  }
+});
+
 test('single-model outfits use their real upstream folder without requesting absent backs', () => {
   for (const id of ['char_1012_skadi2@boc#4', 'char_1012_skadi2@iteration#2',
     'char_4134_cetsyr@epoque#50', 'char_291_aglina@boc#1', 'char_291_aglina@summer#5']) {

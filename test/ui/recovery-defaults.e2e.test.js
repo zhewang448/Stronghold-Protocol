@@ -51,7 +51,7 @@ test('process entry enables recovery by default and console toggles persist acro
     await recovery(false);
     await page.$eval('#ai-takeover-allowed', e => e.scrollIntoView({ block: 'center' })); await page.click('#ai-takeover-allowed');
     const saved = page.waitForResponse(r => r.url().endsWith('/api/settings') && r.request().method() === 'POST');
-    await page.click('[data-ai-takeover-save]'); assert.equal((await (await saved).json()).allowAiTakeover, false);
+    await page.click('[data-room-creation-save]'); assert.equal((await (await saved).json()).roomCreation.hostControls.aiTakeoverEnabled, false);
     await stop(); await start(); await open();
     assert.equal(await page.$eval('#recovery-enabled', e => e.checked), false, 'saved recovery off survives actual restart');
     assert.equal(await page.$eval('#recovery-enabled', e => e.disabled), false, 'recovery can be re-enabled after restart');

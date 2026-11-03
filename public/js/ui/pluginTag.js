@@ -39,7 +39,7 @@ export function roomPluginFacts(room, myId) {
     on: new Set(list.map((p) => p.id)),
     auto: new Set(list.filter((p) => p.auto).map((p) => p.id)),
     chosen: list.filter((p) => !p.auto).map((p) => p.id),
-    editable: room?.hostId != null && room.hostId === myId && !room.inMatch,
+    editable: room?.hostId != null && room.hostId === myId && !room.inMatch && room.hostControls?.plugins !== false,
     inMatch: !!room?.inMatch,
     warnings: Array.isArray(c?.warnings) ? c.warnings.filter((w) => w && typeof w.code === 'string') : [],
     vs: typeof c?.vs === 'string' ? c.vs : null,

@@ -1,5 +1,5 @@
 import { VersionSwitch } from '../ui/versionPicker.js';
-import { lobbyVersion, isDefaultVersion, versionLabel, shownVersion, offeredDifficulties, soloTimedOf, setLobbyVersion } from '../versions.js';
+import { lobbyVersion, isDefaultVersion, versionLabel, shownVersion, offeredDifficulties, soloTimedOf, setLobbyVersion, fallbackDifficulty, serverDefaultVersion } from '../versions.js';
 import { LobbyMusicButton } from '../ui/lobbyMusic.js';
 import { AccountMeChip } from '../ui/accounts.js';
 import { OnlinePlayersButton, PresenceSelector } from '../ui/social.js';
@@ -497,10 +497,10 @@ function JoinLine({ text }) {
 }
 
 /** One difficulty of 选择模拟协议: name, text, effects; the extras (code, rounds, 隐秘核心, battlefields, queue) below. */
-export function ProtoCard({ roomMode, difficulty, selected, onSelect, matchmaking, random, variant }) {
+export function ProtoCard({ roomMode, difficulty, selected, onSelect, matchmaking, random, variant, disabled = false }) {
   const info = difficultyInfo(roomMode, difficulty, { random, variant });
   return html`<button type="button" class=${`pcard${selected ? ' is-on' : ''}`} style=${`--d-color:${DIFFICULTY_COLORS[difficulty]}`}
-      onClick=${() => onSelect(difficulty)} aria-pressed=${selected ? 'true' : 'false'}>
+      onClick=${() => onSelect(difficulty)} disabled=${disabled} aria-pressed=${selected ? 'true' : 'false'}>
     <span class="pcard__glow" aria-hidden="true"></span>
     <span class="pcard__head">
       <${DifficultyIcon} difficulty=${difficulty} class="pcard__glyph" />
@@ -527,10 +527,11 @@ export function ProtoCard({ roomMode, difficulty, selected, onSelect, matchmakin
  * (ui/transitions.js); the picture is redrawn for each difficulty.
  */
 export function ProtocolSelect({ card, roomMode, random, variant, difficulty, onDifficulty, onClose, matchmaking, brief, privateRoom, onPrivate,
-  online, maint, busy, isSearching, onCreate, onBrowse, chained = false, onUnlimited = null }) {
+  online, maint, busy, isSearching, onCreate, onBrowse, chained = false, onUnlimited = null, soloUnlimited = true, hostControls = {} }) {
   const currentVersion = useStore(shownVersion);
   const allowedDifficulties = offeredDifficulties(getConfig(), roomMode);
-  const [unlimited, setUnlimited] = useState(true);
+  const [unlimited, setUnlimited] = useState(soloUnlimited);
+  useEffect(() => setUnlimited(soloUnlimited), [soloUnlimited]);
   const timedSolo = roomMode === 'solo' && soloTimedOf(getConfig(), currentVersion) === true;
   const [leaving, leave] = useLeave(onClose);
   const pageRef = useRef(null);
@@ -568,18 +569,18 @@ export function ProtocolSelect({ card, roomMode, random, variant, difficulty, on
         ${brief ? html`<div class="proto-fp">${brief}</div>` : null}
       </section>
       <section class="proto-side">
-${timedSolo ? html`<label class="proto-unlimited" data-testid="solo-unlimited"><input type="checkbox" checked=${unlimited} onChange=${e => { setUnlimited(e.currentTarget.checked); onUnlimited?.(e.currentTarget.checked); }} />${t('不限时')}</label>` : null}
+${timedSolo ? html`<label class="proto-unlimited" data-testid="solo-unlimited"><input type="checkbox" checked=${unlimited} disabled=${hostControls['convenience.soloUnlimited'] === false} onChange=${e => { setUnlimited(e.currentTarget.checked); onUnlimited?.(e.currentTarget.checked); }} />${t('不限时')}</label>` : null}
                 <div class="proto-list" role="radiogroup" aria-label=${t('模拟难度')}>
           ${allowedDifficulties.map((d) => html`<${ProtoCard} key=${d} roomMode=${roomMode} difficulty=${d} selected=${difficulty === d} onSelect=${onDifficulty}
-            matchmaking=${matchmaking} random=${random} variant=${variant} />`)}
+            matchmaking=${matchmaking} random=${random} variant=${variant} disabled=${hostControls.difficulty === false} />`)}
         </div>
         <div class="proto-foot">
           ${roomMode !== 'solo' ? html`<div class="proto-opts">
             ${roomMode !== 'solo' && CAN_PRIVATE ? html`<label class="proto-private" title=${t('不在公开大厅显示，仅通过房间码或邀请加入')}>
-              <input type="checkbox" checked=${privateRoom} onChange=${(e) => onPrivate(e.currentTarget.checked)} /><span>${t('私密房间')}</span></label>` : null}
+              <input type="checkbox" checked=${privateRoom} disabled=${hostControls.private === false} onChange=${(e) => onPrivate(e.currentTarget.checked)} /><span>${t('私密房间')}</span></label>` : null}
             ${roomMode === 'coop' && CAN_LIST ? html`<${Button} variant="secondary" size="md" icon="search" onClick=${onBrowse}>${t('同盟大厅')}<//>` : null}
           </div>` : null}
-          <p class="proto-hint">${hint}</p>
+          <p class="proto-hint">${hint}${Object.values(hostControls).some(allowed => allowed === false) ? html`<br />${t('主机未允许房主修改此项房间配置')}` : null}</p>
           <button type="button" class="proto-start" disabled=${!online || maint?.active || !!busy} onClick=${onCreate}>
             <span class="proto-start__mark" aria-hidden="true"><span class="proto-start__rook"><i>[</i><${Icon} name="rook" /><i>]</i></span><small>STRONGHOLD<br />PROTOCOL</small></span>
             <span class="proto-start__label">${busy === 'create' || busy === 'queue' ? html`<${Spinner} size="sm" />` : null}${label}</span>
@@ -795,12 +796,22 @@ export function LobbyScreen() {
   const [fpVariant, setFpVariant] = useState(firepowerVariantPreference);
   const roomMode = simulation === 'solo' ? 'solo' : 'coop';
   const randomMode = simulation === 'firepower';
-  useEffect(() => { const allowed = offeredDifficulties(getConfig(), roomMode); if (allowed.length && !allowed.includes(difficulty)) setDifficulty(allowed.at(-1)); }, [selectedVersion, data.get('config'), roomMode]);
+  useEffect(() => { const allowed = offeredDifficulties(getConfig(), roomMode); if (allowed.length && !allowed.includes(difficulty)) setDifficulty(fallbackDifficulty(allowed, difficulty)); }, [selectedVersion, data.get('config'), roomMode, difficulty]);
   const variant = randomMode ? fpVariant : 'blitz';
   const [code, setCode] = useState('');
   const [customCode, setCustomCode] = useState('');
   const customCodeOk = !customCode || CODE_RE.test(customCode);
   const [privateRoom, setPrivateRoom] = useState(false);
+  const roomCreation = useStore(state => state.roomCreation);
+  useEffect(() => {
+    if (!roomCreation?.defaults) return;
+    const defaults = roomCreation.defaults;
+    setDifficulty(defaults.difficulty);
+    setPrivateRoom(defaults.private === true);
+    setSoloUnlimited(defaults['convenience.soloUnlimited'] !== false);
+    const state = store.get();
+    store.set({ lobbyVersion: state.versions?.some(version => version.id === defaults.version) ? defaults.version : serverDefaultVersion(state) });
+  }, [roomCreation]);
   const [asTest, setAsTest] = useState(false);
   const testMode = useStore((s) => s.testMode === true);
 
@@ -854,6 +865,7 @@ export function LobbyScreen() {
     savePref('lobby.random', m === 'firepower');
   };
   const pickDifficulty = (d) => {
+    if (roomCreation?.hostControls?.difficulty === false) return;
     setDifficulty(d);
     savePref(randomMode ? 'lobby.firepowerDifficulty' : 'lobby.difficulty', d);
   };
@@ -895,6 +907,7 @@ export function LobbyScreen() {
       toast(t('同盟密钥为 {ROOM_CODE_LEN} 位字母或数字', { ROOM_CODE_LEN }), 'warn');
       return;
     }
+    prepareCreation();
     setSheetChained(true); setAllyOpen(false); setSheetOpen(true);
   };
   const closeProtocol = () => {
@@ -964,12 +977,19 @@ export function LobbyScreen() {
   const [joinOpen, setJoinOpen] = useState(false);
   const [achOpen, setAchOpen] = useState(false);              // 成就统计 (ui/achievements.js)
   // 同盟模拟 → 选择同盟方式; 独立模拟 / 无限火力 → 选择模拟协议
-  const openMode = (m) => { modeTrigger.current = m === 'solo' ? '.hub-entries__row .hub-entry-wrap:first-child .hub-entry' : '.hub-entries__row .hub-entry-wrap:nth-child(2) .hub-entry'; pickMode(m); if (m === 'coop') { setSheetChained(false); setAllyOpen(true); } else { setSheetChained(false); setSheetOpen(true); } };
+  const prepareCreation = () => {
+    if (roomCreation?.hostControls?.version === false) {
+      const state = store.get(), preferred = roomCreation.defaults.version;
+      store.set({ lobbyVersion: state.versions?.some(version => version.id === preferred) ? preferred : serverDefaultVersion(state) });
+    }
+    if (roomCreation?.hostControls?.difficulty === false) setDifficulty(roomCreation.defaults.difficulty);
+  };
+  const openMode = (m) => { modeTrigger.current = m === 'solo' ? '.hub-entries__row .hub-entry-wrap:first-child .hub-entry' : '.hub-entries__row .hub-entry-wrap:nth-child(2) .hub-entry'; pickMode(m); prepareCreation(); if (m === 'coop') { setSheetChained(false); setAllyOpen(true); } else { setSheetChained(false); setSheetOpen(true); } };
   const openSearch = () => { setSheetOpen(false); setSheetChained(false); setAllyOpen(false); setModalOpen(true); };
   const modeCard = MODE_CARDS.find((c) => c.id === simulation) || MODE_CARDS[0];
 
   if (sheetOpen) return html`<${ProtocolSelect} card=${modeCard} roomMode=${roomMode} random=${randomMode} variant=${variant} difficulty=${difficulty}
-      onUnlimited=${setSoloUnlimited} onDifficulty=${pickDifficulty} onClose=${closeProtocol} matchmaking=${matchmakingCounts}
+      onUnlimited=${setSoloUnlimited} soloUnlimited=${soloUnlimited} hostControls=${roomCreation?.hostControls} onDifficulty=${pickDifficulty} onClose=${closeProtocol} matchmaking=${matchmakingCounts}
       brief=${randomMode ? html`<${FirepowerBrief} variant=${fpVariant} onVariant=${pickVariant} />` : null}
       privateRoom=${privateRoom} onPrivate=${setPrivateRoom} online=${online} maint=${maint} busy=${busy} isSearching=${isSearching}
       onCreate=${sheetChained && roomMode === 'coop' ? createCoop : create} onBrowse=${openSearch} chained=${sheetChained} />`;

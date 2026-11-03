@@ -29,7 +29,7 @@ globalThis.fetch = async (url) => {
 };
 
 const { screenFieldId, bondOwnerId, ownerBonds, withLiveLayers, ownerBoard, stripView, playerBonds, watchedPlayer, playerLayer, screenStrip,
-  detailBondOwner, toggleBond, popupView } = await import('../../public/js/ui/watchBonds.js');
+  detailBondOwner, toggleBond, popupView, popupStock } = await import('../../public/js/ui/watchBonds.js');
 const { BondStrip, BondPopup } = await import('../../public/js/ui/bondStrip.js');
 const { CombatHud } = await import('../../public/js/ui/combatHud.js');
 const { cameraLayers } = await import('../../public/js/battle/observe.js');
@@ -331,6 +331,20 @@ describe('§20.15 the bonds: views + live layers', () => {
     assert.deepEqual(v.priv.board.map((x) => x.id), ['chess_char_1_09_a', 'chess_char_1_03_a'], 'popupView passes them on');
     assert.equal(popupView({ open: { id: 'yanShip', ownerId: ME }, pub: PUB(), priv: PRIV, myId: ME, field: meta, units: ops }).priv, PRIV, 'your own: your pieces');
   });
+});
+
+test('bond stock follows the owning pool and never substitutes private or independent teammate stock', () => {
+  const counts = { ordinary: 7, custom: 3 };
+  const priv = { playerId: 'self', shop: { chessStock: counts }, diy: { custom: { charId: 'operator' } } };
+  const pub = { poolGroups: [{ playerIds: ['self', 'mate'] }, { playerIds: ['other'] }] };
+  assert.deepEqual(popupStock({ pub, priv, myId: 'self', ownerId: 'self' }), { counts, scope: 'shared' });
+  assert.deepEqual(popupStock({ pub, priv, myId: 'self', ownerId: 'mate' }), { counts: { ordinary: 7 }, scope: 'shared' });
+  assert.equal(popupStock({ pub, priv, myId: 'self', ownerId: 'other' }), null);
+  assert.equal(popupStock({ pub, priv, myId: 'spectator', ownerId: 'self' }), null);
+  assert.equal(popupStock({ pub: { ...pub, independentPools: true }, priv, myId: 'self', ownerId: 'mate' }), null);
+  assert.equal(popupStock({ pub: { ...pub, independentPools: true }, priv, myId: 'self', ownerId: 'self' }).scope, 'independent');
+  assert.equal(popupStock({ pub: {}, priv, myId: 'self', ownerId: 'self' }).scope, 'personal');
+  assert.equal(popupStock({ pub, priv: { playerId: 'self', shop: {} }, myId: 'self', ownerId: 'self' }), null);
 });
 
 describe('§20.15 the strip and the popup say whose bonds they show', () => {

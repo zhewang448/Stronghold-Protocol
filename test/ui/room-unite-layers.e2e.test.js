@@ -58,7 +58,7 @@ test('room unite layers: host switches, guest sees the room rule on desktop and 
           assert.equal(await guest.$eval(input, e => e.disabled), true);
           assert.equal(await host.$eval(input, e => e.disabled), true, 'permission defaults off');
           await consolePage.click('#unite-layers-host-control');
-          await consolePage.click('[data-unite-layers-save]');
+          await consolePage.click('[data-room-creation-save]');
           await host.waitForFunction(() => !document.querySelector('[name="unite-layer-gains"]').disabled);
           assert.equal(await host.$eval(input, e => e.checked), false);
           await press(host, input);
@@ -75,7 +75,7 @@ test('room unite layers: host switches, guest sees the room rule on desktop and 
           await guest.waitForFunction(() => !document.querySelector('[name="unite-layer-gains"]').checked);
           assert.equal(srv.lobby.rooms.get(code).uniteLayerGains, false);
           await consolePage.click('#unite-layers-host-control');
-          await consolePage.click('[data-unite-layers-save]');
+          await consolePage.click('[data-room-creation-save]');
           await host.waitForFunction(() => document.querySelector('[name="unite-layer-gains"]').disabled);
           const denied = await host.evaluate(async () => {
             try { await (await import('/js/net.js')).net.request('room.setUniteLayerGains', { on: true }); return null; }
@@ -88,8 +88,8 @@ test('room unite layers: host switches, guest sees the room rule on desktop and 
     }
     for (const [width, height] of [[1440, 900], [390, 844]]) {
       await consolePage.setViewport({ width, height });
-      assert.ok(await consolePage.$eval('#unite-layers-form', e => { const r = e.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && e.scrollWidth <= e.clientWidth; }));
-      await consolePage.$eval('#unite-settings', e => e.scrollIntoView());
+      assert.ok(await consolePage.$eval('#room-defaults-settings', e => { const r = e.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && e.scrollWidth <= e.clientWidth; }));
+      await consolePage.$eval('[data-room-config-row="uniteLayerGains"]', e => e.scrollIntoView());
       await consolePage.screenshot({ path: `.cache/room-unite-layers/permission-console-${width}.png` });
     }
   } finally {

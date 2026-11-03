@@ -145,6 +145,18 @@ test('an unowned looping effect ends after LOOP_TTL; an OnPlayEmitter loop is ow
 });
 
 describe('placement and direction', () => {
+  test('skin key mapping reaches chained effects and does not recurse into the mapped parent', () => {
+    const parent = compileEffect(desc([root([pe({}), { class: 'OnPlayEmitter', enabled: true,
+      fields: { _effects: ['default_child', 'default_parent'], _preDelay: 0 } }]), psNode(1, 0)], { key: 'skin_parent' }));
+    const child = compileEffect(desc([root([pe({})]), psNode(1, 0)], { key: 'skin_child' }));
+    const defs = new Map([['skin_parent', parent], ['skin_child', child]]);
+    const lib = { available: true, defs, has: key => defs.has(key), def: key => defs.get(key) || null };
+    const ofx = new OfficialFx({ P: { Container: class {} }, renderer: null, cam: () => null, lib, tier: 'full' });
+    const mapping = { default_child: 'skin_child', default_parent: 'skin_parent' };
+    const handle = ofx.spawn('default_parent', { pos: [0, 0, 0] }, { resolveKey: key => mapping[key] || key });
+    assert.equal(handle.key, 'skin_parent');
+    assert.deepEqual(handle.children.map(value => value.key), ['skin_child']);
+  });
   test('the anchor moves the root; mirror reflects x about the anchor', () => {
     const d = desc([root([pe({})]), { ...psNode(1, 0), pos: [0.5, 0, 0] }]);
     const fx = new Effect(compileEffect(d), { seed: 1 }).place({ pos: [2, 3, -1] });
@@ -432,6 +444,30 @@ describe('wiring', () => {
     await w.ready();
     const keys = w.keysFor([view(1, 'char_x', 5)]);
     for (const k of ['x_start', 'x_hit', 'x_trail', 'x_phit', 'g_hit', 'g_stun', 'g_birth']) assert.ok(keys.includes(k), k);
+  });
+
+  test('a worn skin can replace effect keys and provide its own modes', async () => {
+    index.skins['char_x@sale#20'] = {
+      points: index.skins.char_x.points,
+      replace: { x_start: 'skin_start' },
+      modes: [{ name: 'S2', attack: { class: 'RangedAttack', projectileKey: 'skin_proj', cast: [] } }],
+    };
+    const { ofx, spawned } = fakeOfx();
+    const w = new FxWiring(ofx, {});
+    await w.ready();
+    const v = view(1, 'char_x', 5);
+    v.info.skin = 'char_x@sale#20';
+    v.flags = 16;
+    assert.equal(w.skinOf(w.unitOf(v), v), index.skins['char_x@sale#20']);
+    assert.equal(w.skinKey('x_start', v), 'skin_start');
+    const target = view(2, 'char_x', 6);
+    target.info.skin = 'char_target@skin#1';
+    index.skins[target.info.skin] = { replace: { x_start: 'target_start' } };
+    assert.equal(w.skinKey('x_start', target, { flipFrom: v }), 'skin_start', 'the emitter owns a hit on another skin');
+    assert.ok(w.modesOf(w.unitOf(v), v).some(mode => mode.name === 'Default'), 'partial overrides retain the base mode');
+    assert.equal(w.mode(w.unitOf(v), v, true).name, 'S2');
+    w.playOn('x_start', v);
+    assert.equal(spawned[0], 'skin_start');
   });
 });
 

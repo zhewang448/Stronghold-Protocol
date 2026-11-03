@@ -69,13 +69,14 @@ import { RecoveryHost, bootDomainGate } from './ui/domainRecovery.js';
 import { markGameEntry } from './ui/domainRecoveryModel.js';
 import { installRehearsal } from './battle/rehearsal.js';
 import { recordResult, installStatsRecorder } from './ui/stats.js';
-import { installSettingsViews, loadoutStore, installLoadoutSync, installOwnershipSync, installDiySync, installSkinsSync, installCardSync } from './ui/loadoutSync.js';
+import { installSettingsViews, loadoutStore, installLoadoutSync, installOwnershipSync, installDiySync, installSkinsSync, installCardSync, installAvatarSync } from './ui/loadoutSync.js';
 import { installBondPlanSync } from './ui/bondPlan.js';
 
 import { startBuildGuard, fetchBuild } from './ui/buildGuard.js';
 import { initLang, useLang, tickerText } from './ui/lang.js';
 import { t, N_, translateWire } from '../../shared/i18n.js';
 import { PING_KEEP } from '../../shared/constants.js';
+import { isSharedAvatar } from '../../shared/avatar.js';
 import { recordError, installTrafficMeter } from './diag.js';
 import { validPing } from './ui/fieldPings.js';
 import { installContent, installContentSet } from './content.js';
@@ -171,7 +172,7 @@ function backToLobby() {
   clearTimeout(restoreTimer);
   const s = store.get();
   if (s.room || s.match.public) closeAllDialogs();
-  store.set({ room: null, match: emptyMatch(), ticker: [], emotes: [], pings: [] });
+  store.set({ room: null, roomAvatars: null, match: emptyMatch(), ticker: [], emotes: [], pings: [] });
   store.patch('ui', { restoring: false });
 }
 
@@ -195,6 +196,7 @@ function onWelcome(msg) {
     installedNotices: msg.content?.notices === true,
     testMode: msg.testMode === true,
     versions: sanitizeVersions(msg.versions),
+    roomCreation: msg.roomCreation || null,
   });
   welcomeAt = Date.now();
 
@@ -235,7 +237,7 @@ function onRoomState(msg) {
   // A (new) match starts: forget the previous match's state so stale results never show.
   if (room.inMatch && !(prevRoom && prevRoom.inMatch && prevRoom.code === room.code)) store.set({ match: emptyMatch(), pings: [] });
   if (prevRoom && prevRoom.code === room.code && !room.inMatch && roomVersion(prevRoom) !== roomVersion(room) && store.get().match.public) store.set({ match: emptyMatch(), pings: [] });
-  store.set({ room });
+  store.set({ room, ...(prevRoom?.code !== room.code ? { roomAvatars: null } : {}) });
   identity.rememberMatch(room.inMatch && seats.some((seat) => seat?.playerId === myId)
     ? { name: store.get().me.name, code: room.code || '' } : null);
   if (room.mode === 'coop' && typeof room.code === 'string') rememberRoom(room.code, room.test === true);
@@ -269,6 +271,11 @@ function wireNet() {
   net.on('replaced', () => toast(t('该身份已在其他页面登录，本页已断开'), 'warn', { ttl: 6000 }));
   net.on('unhandledError', (err) => toastError(err));
   net.on('room.state', onRoomState);
+  net.on('room.avatars', message => {
+    if (message.code !== store.get().room?.code) return;
+    const avatars = Object.fromEntries(Object.entries(message.avatars || {}).filter(([, avatar]) => avatar && isSharedAvatar(avatar)));
+    store.set({ roomAvatars: { code: message.code, avatars } });
+  });
   net.on('match.state', msg => { store.set({ matchmaking: payload(msg) }); if (msg.error) toastError({ code: msg.error }); });
   net.on('match.found', msg => store.set({ matchmaking: { ...payload(msg), status: 'found' } }));
   net.on('match.counts', msg => {
@@ -288,7 +295,10 @@ function wireNet() {
     store.set({ matchmakingCounts: byVersion, matchmakingVersions: msg.offered ?? null, matchmakingFeatures: msg.features ?? {} });
   });
   net.on('site.announcement', (message) => store.set({ announcement: announcementFromMessage(message) }));
-  net.on('site.settings', (message) => pwaInstall.setEnabled(message.showPwaInstall));
+  net.on('site.settings', (message) => {
+    pwaInstall.setEnabled(message.showPwaInstall);
+    if (Object.hasOwn(message, 'roomCreation')) store.set({ roomCreation: message.roomCreation });
+  });
   net.on('room.closed', (msg) => {
     backToLobby();
     const known = Object.hasOwn(CLOSE_REASON, String(msg.reason)) ? CLOSE_REASON[msg.reason] : null;
@@ -485,6 +495,7 @@ async function boot() {
   installOwnershipSync({ net });
   installDiySync({ net });
   installCardSync({ net });
+  installAvatarSync({ net });
   // 干员皮肤 (docs/SKINS.md): keeps the server's copy of this browser's chosen appearances current (room.skins), from
   // ui/skins.js' own store — its 皮肤 section is rendered by screens/loadout.js.
   // the room's cosmetic plugins and the player's own over the art manifest (content.js; nothing is fetched without them)

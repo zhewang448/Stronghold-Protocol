@@ -36,6 +36,66 @@ test('income = min(3 + r, 12) in every mode; funds are lost at prep end (band_ca
   h2.m.dispose();
 });
 
+test('private shop view reports live operator and equipment pool copies', () => {
+  const h = makeMatch({ mode: 'coop', humans: 2, seed: 7 }).start();
+  h.toPrep(1);
+  const ps = h.ps('p_0');
+  const chess = ps.shop.slots.find((slot) => slot?.kind === 'chess' && !slot.sold);
+  const item = ps.shop.slots.find((slot) => slot?.kind === 'item' && !slot.sold);
+  assert.ok(chess && item);
+  let view = ps.privateView().shop.slots;
+  assert.equal(view.find((slot) => slot?.id === chess.id)?.remaining, ps.poolOf(chess.id).left(chess.id));
+  assert.equal(view.find((slot) => slot?.id === item.id)?.remaining, h.m.itemPoolFor(ps).left(item.id));
+  ps.funds = 100;
+  assert.deepEqual(h.m.handle(ps.playerId, { t: 'g.buy', slot: ps.shop.slots.indexOf(chess) }), { ok: true });
+  view = ps.privateView().shop.slots;
+  assert.equal(view.find((slot) => slot?.id === chess.id)?.remaining, ps.poolOf(chess.id).left(chess.id));
+  h.m.dispose();
+});
+
+test('a teammate purchase pushes updated remaining stock to another player without their own action', t => {
+  const h = makeMatch({ mode: 'coop', humans: 2, seed: 7, fake: true }).start();
+  t.after(() => h.m.dispose()); h.toPrep(1);
+  const buyer = h.ps('p_0'), peer = h.ps('p_1');
+  const slot = buyer.shop.slots.find(value => value?.kind === 'chess' && !value.sold);
+  peer.shop.slots[0] = { ...slot };
+  h.m.markPrivate(peer); h.flushAll();
+  const before = h.lastTo(peer.playerId, 'm.private').shop.slots[0].remaining;
+  buyer.funds = 100;
+  assert.deepEqual(h.m.handle(buyer.playerId, { t: 'g.buy', slot: buyer.shop.slots.indexOf(slot) }), { ok: true });
+  h.flushAll();
+  assert.equal(h.lastTo(peer.playerId, 'm.private').shop.slots[0].remaining, before - 1);
+  assert.equal(JSON.stringify(h.m.publicView()).includes('remaining'), false);
+});
+
+test('bond stock covers operators outside the shop and refreshes after a teammate buys, merges and sells', t => {
+  const h = makeMatch({ mode: 'coop', humans: 2, seed: 7, fake: true }).start().toPrep(1);
+  t.after(() => h.m.dispose());
+  const buyer = h.ps('p_0'), peer = h.ps('p_1');
+  const id = [...buyer.pool.entries.keys()].find(value => !peer.shop.slots.some(slot => slot?.id === value));
+  assert.ok(id);
+  const capacity = buyer.pool.cap(id);
+  h.m.markPrivate(peer); h.flushAll();
+  assert.equal(h.lastTo(peer.playerId, 'm.private').shop.chessStock[id], capacity);
+  buyer.funds = 100;
+  for (let index = 0; index < 3; index++) {
+    buyer.shop.slots[0] = { kind: 'chess', id, basePrice: 1, frozen: false, sold: false };
+    assert.deepEqual(h.m.handle(buyer.playerId, { t: 'g.buy', slot: 0 }), { ok: true });
+    h.flushAll();
+    assert.equal(h.lastTo(peer.playerId, 'm.private').shop.chessStock[id], capacity - index - 1);
+  }
+  const elite = buyer.allChess().find(piece => buyer.gd.baseIdOf(piece.id) === id && buyer.gd.isGolden(piece.id));
+  assert.ok(elite);
+  assert.deepEqual(h.m.handle(buyer.playerId, { t: 'g.sell', uid: elite.uid }), { ok: true });
+  h.flushAll();
+  assert.equal(h.lastTo(peer.playerId, 'm.private').shop.chessStock[id], capacity);
+  const before = h.lastTo(peer.playerId, 'm.private');
+  h.m.markPrivate(buyer); h.flushAll();
+  assert.equal(h.lastTo(peer.playerId, 'm.private'), before);
+  assert.equal(JSON.stringify(h.m.publicView()).includes('chessStock'), false);
+  for (const banned of h.m.bannedChess) assert.equal(Object.hasOwn(peer.privateView().shop.chessStock, banned), false);
+});
+
 test('upgrade price: base per mode, −1 per round start (floor 0), resets to the next base after a level-up; MAX_LEVEL', () => {
   const h = makeMatch({ mode: 'solo', difficulty: 'NORMAL', seed: 4 }).start();
   h.toPrep(1);

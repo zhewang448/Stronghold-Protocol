@@ -11,6 +11,7 @@ import { LIVE_DAMAGE_UNITS } from './battleDamage.js';
 import { isTestCommand } from './testMode.js';
 import { PLUGIN_OFFER_SLOTS } from './plugins/limits.js';
 import { PRESENCE_STATUSES } from './social.js';
+import { isSharedAvatar } from './avatar.js';
 
 
 // ---- tiny validators -------------------------------------------------------
@@ -542,6 +543,10 @@ export const C2S = {
   'room.aiRequest': { botId: isId },
   'room.aiVote': { voteId: (v) => typeof v === 'string' && v.length <= 16, approve: isBool },
   'room.setAiPicksLast': { on: isBool },
+  'room.setSeatAvatars': { on: isBool },
+  'room.setSpectatorLimit': { limit: value => isInt(value, 2, 20) },
+  'room.resetSettings': {},
+  'room.avatar': { avatar: isSharedAvatar },
   'room.setBotBand': { seat: v => isInt(v, 0, MAX_SEATS - 1), bandId: v => v == null || isId(v), $optional: ['bandId'] },
   'room.setUniteLayerGains': { on: isBool },
   'room.addBot': {},
@@ -679,7 +684,7 @@ export const S2C = [
   'welcome', 'ok', 'error', 'pong',
   'social.state',
   'match.state', 'match.found', 'match.counts',
-  'room.state', 'room.closed', 'chat.message', 'chat.history', 'site.announcement', 'site.settings',
+  'room.state', 'room.avatars', 'room.closed', 'chat.message', 'chat.history', 'site.announcement', 'site.settings',
   'm.public', 'm.private', 'm.state', 'm.field', 'm.toast', 'm.ticker', 'm.emote', 'm.ping', 'm.result',
   // m.layer { playerId, bondId, add } — own live prep layer gain; ephemeral, never replayed on resync.
   'm.layer',

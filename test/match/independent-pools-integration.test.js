@@ -33,10 +33,14 @@ test('independent operator and equipment stock follows its owner through acquisi
   assert.equal(first.pool.left(id), 0);
   assert.equal(second.pool.left(id), cap);
   assert.equal(bot.pool.left(id), cap);
+  assert.equal(first.privateView().shop.chessStock[id], 0);
+  assert.equal(second.privateView().shop.chessStock[id], cap);
   const elite = first.allChess().find((piece) => match.gd.baseIdOf(piece.id) === id && match.gd.isGolden(piece.id));
   assert.ok(elite);
   assert.ok(first.sell(elite.uid).ok);
   assert.equal(first.pool.left(id), 3);
+  assert.equal(first.privateView().shop.chessStock[id], 3);
+  assert.equal(second.privateView().shop.chessStock[id], cap);
   assert.equal(second.pool.left(id), cap);
   assert.ok(first.acquireItem(PACK));
   assert.ok(first.acquireItem(PACK));

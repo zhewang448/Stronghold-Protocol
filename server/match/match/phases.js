@@ -5,7 +5,7 @@
 // round start).
 // Installed on Match.prototype by server/match/Match.js (a method container: never instantiated; `this` is the match).
 
-import { PHASE, ERR } from '../../../shared/constants.js';
+import { PHASE, ERR, RANDOM_BAND_ID } from '../../../shared/constants.js';
 import { msg } from '../../../shared/i18n.js';
 import { buildNormalWave, buildBossWave } from '../waves.js';
 import { waveSource } from '../enemyPicks.js';
@@ -263,6 +263,7 @@ export class MatchPhases {
    */
   timeoutBand(playerId) {
     const f = this.draft && this.draft.focus instanceof Map ? this.draft.focus.get(playerId) : null;
+    if (f === RANDOM_BAND_ID) return f;
     if (typeof f === 'string' && this.gd.bandAllowed(f) && !this.bandTaken(f, playerId)) return f;
     return this.defaultBand(playerId);
   }
@@ -280,7 +281,7 @@ export class MatchPhases {
     if (d.picks[ps.playerId]) return fail(ERR.ALREADY);
     if (!(d.focus instanceof Map)) d.focus = new Map();
     if (bandId == null) { d.focus.delete(ps.playerId); return OK; }
-    if (typeof bandId !== 'string' || !this.gd.bandAllowed(bandId)) return fail(ERR.BAD_TARGET);
+    if (typeof bandId !== 'string' || (bandId !== RANDOM_BAND_ID && !this.gd.bandAllowed(bandId))) return fail(ERR.BAD_TARGET);
     d.focus.set(ps.playerId, bandId);
     return OK;
   }
@@ -292,8 +293,10 @@ export class MatchPhases {
     if (!ps.alive || ps.left) return fail(ERR.ELIMINATED);
     if (this.draft.picks[ps.playerId]) return fail(ERR.ALREADY);
     if (this.draftTurn(ps.playerId) !== ps.playerId) return fail(ERR.NOT_YOUR_TURN);
-    if (typeof bandId !== 'string' || !this.gd.bandAllowed(bandId)) return fail(ERR.BAD_TARGET);
-    if (this.bandTaken(bandId, ps.playerId)) return fail(ERR.BAD_TARGET, '队友已选'); // i18n-ignore: developer detail (players see ERR_TEXT)
+    const random = bandId === RANDOM_BAND_ID;
+    if (typeof bandId !== 'string' || (!random && !this.gd.bandAllowed(bandId))) return fail(ERR.BAD_TARGET);
+    if (!random && this.bandTaken(bandId, ps.playerId)) return fail(ERR.BAD_TARGET, '队友已选'); // i18n-ignore: developer detail (players see ERR_TEXT)
+    if (random && !this.gd.bandIds().some(candidate => !this.bandTaken(candidate, ps.playerId))) return fail(ERR.BAD_TARGET);
     this._applyBand(ps, bandId);
     return OK;
   }
@@ -302,12 +305,16 @@ export class MatchPhases {
     const d = this.draft;
     const g = ps && this.draftGroup(ps.playerId);
     if (!d || !g || !ps.alive || ps.left || d.picks[ps.playerId]) return;
-    let id = this.gd.bandAllowed(bandId) ? bandId : this.defaultBand(ps.playerId);
+    const randomBonus = bandId === RANDOM_BAND_ID;
+    let id = randomBonus ? this.rngDraft.pick(this.gd.bandIds().filter(candidate => !this.bandTaken(candidate, ps.playerId)))
+      : this.gd.bandAllowed(bandId) ? bandId : this.defaultBand(ps.playerId);
+    if (!id) id = this.defaultBand(ps.playerId);
     if (dedupe && this.bandTaken(id, ps.playerId)) id = this.gd.bandIds().find((b) => !this.bandTaken(b, ps.playerId)) || id;
     d.picks[ps.playerId] = id;
     g.picks[ps.playerId] = id;
     ps.bandId = id;
-    ps.lp = this.gd.startLp(id);
+    ps.lp = this.gd.startLp(id) + (randomBonus ? 1 : 0);
+    if (randomBonus) ps.funds += 1;
     this.markPrivate(ps);
     this.markPublic();
     this.startDraftTurn(g);

@@ -41,6 +41,7 @@ import { bootArtReady, preloadBootArt, onBootArt } from '../ui/protocolBoot.js';
 import { reducedMotion } from '../ui/device.js';
 import { modeOffBonds, bandOffBonds, bandOffLine } from '../ui/gameLogic.js';
 import { t, tParts, tName } from '../../../shared/i18n.js';
+import { RANDOM_BAND_ID } from '../../../shared/constants.js';
 import { peekStatsRecords, strategyBadgeIds, selfRowOf, aggregateStats } from '../ui/stats.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
@@ -48,7 +49,7 @@ function DraftPortrait({ player, players, myId }) {
   const localSkins = useStore(s => s.skins || s, Object.is, skinsStore);
   const otherSkins = useStore(s => s.otherSkins !== false, Object.is, settingsStore);
   const [failed, setFailed] = useState([]);
-  const list = cardOperators(data.list('chess'), data.get('seat-art'));
+  const list = cardOperators(data.list('chess'), data.get('seat-art'), data.get('assets'), data.get('skins'));
   const context = { pool: list, byChar: new Map(list.map(op => [op.charId, op])) };
   const op = seatOperator(player, context, { myId, myCard: player.card });
   if (!op) return null;
@@ -94,6 +95,21 @@ export function allowedBands(bands, modeType) {
 /** The official default strategy of an automatic assignment (data/config.json bandDraft.timeoutBandId). */
 export const DEFAULT_TIMEOUT_BAND = 'band_bldsk';
 
+export function randomBandCard() {
+  return {
+    bandId: RANDOM_BAND_ID,
+    random: true,
+    name: '?',
+    effectName: t('随机盟约'),
+    desc: t('确认后随机抽取一个未被队友选择的盟约，并额外获得 1 生命值和 1 资金。'),
+    totalHp: null,
+  };
+}
+
+export function bandRecord(gd, bandId) {
+  return bandId === RANDOM_BAND_ID ? randomBandCard() : gd.band(bandId);
+}
+
 /**
  * The strategy the server assigns me when my turn times out (server/match/match/phases.js defaultBand): the official default
  * 「华法琳」 while no teammate holds it, else the first free strategy in draft order (sortId) — never one a teammate
@@ -104,7 +120,7 @@ export const DEFAULT_TIMEOUT_BAND = 'band_bldsk';
  * @returns {string|null}
  */
 export function timeoutBand(bands, taken, defaultId = DEFAULT_TIMEOUT_BAND) {
-  const list = Array.isArray(bands) ? bands : [];
+  const list = (Array.isArray(bands) ? bands : []).filter((band) => band?.bandId !== RANDOM_BAND_ID);
   const has = (id) => !!(taken && typeof taken.has === 'function' && taken.has(id));
   if (defaultId && !has(defaultId) && (!list.length || list.some((b) => b.bandId === defaultId))) return defaultId;
   return list.find((b) => !has(b.bandId))?.bandId || defaultId || null;
@@ -133,6 +149,7 @@ export function teammateBands(picks, myId) {
  * @param {{ bands: any[], taken: Map<string, any>, myPick: string|null, myTurn: boolean, defaultId?: string }} o
  */
 export function draftSelection(sel, { bands, taken, myPick, myTurn, defaultId = DEFAULT_TIMEOUT_BAND }) {
+  if (sel === RANDOM_BAND_ID && myPick) return myPick;
   if (!Array.isArray(bands) || !bands.length) return sel;
   const free = timeoutBand(bands, taken, defaultId) || bands[0].bandId;
   if (!sel) return myPick || free;
@@ -148,7 +165,8 @@ export function draftSelection(sel, { bands, taken, myPick, myTurn, defaultId = 
  */
 export function autoPickBand(sel, { bands, taken, myPick = null, defaultId = DEFAULT_TIMEOUT_BAND }) {
   if (myPick) return null;
-  const list = Array.isArray(bands) ? bands : [];
+  if (sel === RANDOM_BAND_ID) return RANDOM_BAND_ID;
+  const list = (Array.isArray(bands) ? bands : []).filter((band) => band?.bandId !== RANDOM_BAND_ID);
   const has = (id) => !!(taken && typeof taken.has === 'function' && taken.has(id));
   if (sel && !has(sel) && list.some((b) => b.bandId === sel)) return sel;
   return timeoutBand(list, taken, defaultId);
@@ -244,7 +262,8 @@ export function BandDraftScreen({ held = null } = {}) {
   const mode = gd.config?.modes?.[pub?.modeId];
   const offBonds = modeOffBonds(mode); // the bonds this mode never activates (标准: 10 of 23)
   const solo = roomSolo || mode?.type === 'SINGLE' || String(pub?.modeId || '').includes('single');
-  const bands = useMemo(() => allowedBands(gd.list('bands'), mode?.type || (solo ? 'SINGLE' : 'MULTI')), [gd.ready, mode?.type, solo, data.locale()]);
+  const bands = useMemo(() => [randomBandCard(), ...allowedBands(gd.list('bands'), mode?.type || (solo ? 'SINGLE' : 'MULTI'))],
+    [gd.ready, mode?.type, solo, data.locale()]);
   const players = sortedPlayers(pub);
   const draft = normalizeDraft(pub?.draft, players, myId, pub?.poolGroups);
   const grouped = draft.groups.length > 1;
@@ -307,10 +326,10 @@ export function BandDraftScreen({ held = null } = {}) {
 
   // what a timeout gives me: the highlighted band while free, else the default (never 队友已选 — match/phases.js timeoutBand)
   const autoId = autoPickBand(sel, { bands, taken, myPick, defaultId });
-  const autoName = (autoId && gd.band(autoId)?.name) || gd.band(defaultId)?.name || tName('华法琳');
+  const autoName = (autoId && bandRecord(gd, autoId)?.name) || bandRecord(gd, defaultId)?.name || tName('华法琳');
 
-  const band = sel ? gd.band(sel) : null;
-  const selTaken = !!band && taken.has(band.bandId);
+  const band = sel ? bandRecord(gd, sel) : null;
+  const selTaken = !!band && band.bandId !== RANDOM_BAND_ID && taken.has(band.bandId);
   const confirm = async () => {
     if (!band || busy || !myTurn || selTaken) return;
     setBusy('pick');
@@ -383,17 +402,18 @@ export function BandDraftScreen({ held = null } = {}) {
       <section class=${cx('draft-grid', grouped && 'draft-grid--grouped')} role="listbox" aria-label=${t('策略')}>
         ${bands.map((b) => {
           const who = pickers.get(b.bandId) || [];
-          const isTaken = taken.has(b.bandId);
+          const isRandom = b.bandId === RANDOM_BAND_ID;
+          const isTaken = !isRandom && taken.has(b.bandId);
           const otherGroups = otherBandGroups(draft, b.bandId);
           const badged = local.badges.has(b.bandId);
-          const offNames = bandOffBonds(b, offBonds).map((id) => gd.bond(id)?.name || id); // 本局禁用 (still selectable)
+          const offNames = isRandom ? [] : bandOffBonds(b, offBonds).map((id) => gd.bond(id)?.name || id); // 本局禁用 (still selectable)
           return html`<button key=${b.bandId} type="button" role="option" aria-selected=${sel === b.bandId ? 'true' : 'false'} data-band=${b.bandId}
               aria-disabled=${isTaken ? 'true' : 'false'} title=${isTaken ? t('队友已选') : offNames.length ? bandOffLine(offNames) : undefined}
               class=${cx('dband', sel === b.bandId && 'is-sel', myPick === b.bandId && 'is-mine', isTaken && 'is-taken', offNames.length && 'is-off')} onClick=${() => { setSel(b.bandId); audio.sfx('tab', { volume: 0.5 }); }}>
-            <${BandIcon} bandId=${b.bandId} size="lg" />
+            ${isRandom ? html`<span class="dband__random" aria-hidden="true">?</span>` : html`<${BandIcon} bandId=${b.bandId} size="lg" />`}
             <span class="dband__name">${b.name}</span>
             ${badged ? html`<span class="dband__badge" data-testid="band-badge"><${Sprite} k="statistics/strategyBadge" class="dband__badge-art" /></span>` : null}
-            <span class="dband__lp num"><i></i>${b.totalHp}</span>
+            <span class="dband__lp num"><i></i>${isRandom ? '?' : b.totalHp}</span>
             <${BandOffTag} names=${offNames} />
             ${who.length ? html`<span class="dband__who">${who.slice(0, 4).map((p) => html`<${PlayerAvatar} key=${p.playerId} player=${p} size="sm" />`)}</span>` : null}
             ${otherGroups.length ? html`<span class="dband__groups">${otherGroups.map((group) => html`<span key=${group.id}
@@ -407,9 +427,9 @@ export function BandDraftScreen({ held = null } = {}) {
       <aside class="draft-detail brackets">
         ${band ? html`
           <div class="draft-detail__art">
-            <${BandIcon} bandId=${band.bandId} size="xl" />
+            ${band.random ? html`<span class="draft-detail__random" aria-hidden="true">?</span>` : html`<${BandIcon} bandId=${band.bandId} size="xl" />`}
           </div>
-          <div class="draft-detail__hp"><span>${t('初始生命值')}</span><${LpTower} value=${band.totalHp} size="lg" /></div>
+          <div class="draft-detail__hp"><span>${t('初始生命值')}</span>${band.random ? html`<b class="num draft-detail__random-hp">?</b>` : html`<${LpTower} value=${band.totalHp} size="lg" />`}</div>
           <h2 class="draft-detail__name">${band.name}</h2>
           ${local.won[band.bandId] ? html`<span class="draft-detail__medal">${t('已通过模拟{n}次', { n: local.won[band.bandId] })}</span>` : null}
           <${BandOffNote} names=${bandOffBonds(band, offBonds).map((id) => gd.bond(id)?.name || id)} />

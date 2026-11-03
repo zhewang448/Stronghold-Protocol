@@ -35,6 +35,7 @@ export function versionVoteOf(room) {
   if (!isObj(v) || !Number.isInteger(v.id) || typeof v.version !== 'string' || !Array.isArray(v.voters) || !Array.isArray(v.agreed)) return null;
   return {
     id: v.id, version: v.version, proposerId: v.proposerId ?? null,
+    ...(v.resetSettings === true ? { resetSettings: true } : {}),
     voters: v.voters.filter((x) => typeof x === 'string'), agreed: v.agreed.filter((x) => typeof x === 'string'),
     remainingMs: Number.isFinite(v.remainingMs) && v.remainingMs > 0 ? v.remainingMs : 0,
   };
@@ -79,7 +80,7 @@ export function VersionVoteView({ facts, seconds, busy = false, online = true, c
     <div class="vervote__text">
       <strong>${t('切换到「{version}」投票：{agreed}/{total}', { version: versionLabel(v.version), agreed: facts.yes, total: facts.total })}</strong>
       <span class="vervote__time" aria-hidden="true"><${Icon} name="hourglass" /><b class="num">${seconds}</b>s</span>
-      <span class="vervote__hint t-lo">${t('全员同意后切换；切换后需要重新准备，本同盟上一局的结算回放会清除。')}</span>
+      <span class="vervote__hint t-lo">${v.resetSettings ? t('全员同意后恢复默认配置，难度保持不变；拒绝或超时不会更改配置。') : t('全员同意后切换；切换后需要重新准备，本同盟上一局的结算回放会清除。')}</span>
       <div class="vervote__players">${facts.chips.map((c) => html`<span key=${c.id} class=${c.agreed ? 'is-agreed' : ''}>${c.name} · ${c.agreed ? t('已同意') : t('待同意')}</span>`)}</div>
     </div>
     <div class="vervote__actions">

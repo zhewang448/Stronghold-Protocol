@@ -27,6 +27,16 @@ const quiet = { info() {}, warn() {}, error() {}, debug() {} };
 const command = (s, intent) => ({ room: 'TEST', playerId: s.playerId, matchId: s.matchId,
   revision: s.revision, round: s.public.round, phase: s.public.phase, intent });
 
+test('host console separates ending the whole match from rest-phase controls', () => {
+  const html = fs.readFileSync('server/admin.html', 'utf8');
+  const roomCard = html.slice(html.indexOf('function roomCard'), html.indexOf('// ---- statistics'));
+  const operations = roomCard.slice(roomCard.indexOf('data-click="rewind"'), roomCard.indexOf('roomPrep'));
+  const header = roomCard.slice(roomCard.indexOf('<h2 id="room-'), roomCard.indexOf('</section>'));
+  assert.doesNotMatch(operations, /data-click="endMatch"/);
+  assert.match(header, /data-label="结束整局"/);
+  assert.match(header, /结束整局将立即判负并结算/);
+});
+
 for (const v of VERSIONS) test(`console version identity, catalog and records: ${v.id}`, t => {
   const h = makeMatch({ humans: 1, fake: true, data: getVersionData(v.id, { log: quiet }) }).start().toPrep();
   t.after(() => h.m.dispose());

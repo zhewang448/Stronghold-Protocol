@@ -89,6 +89,8 @@ export const initialState = Object.freeze({
   installedNotices: false,
   session: { entered: false },
   room: null,
+  roomCreation: null,
+  roomAvatars: null,
   announcement: null,
   social: null,
   matchmaking: { status: 'idle' },

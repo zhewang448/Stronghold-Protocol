@@ -13,6 +13,67 @@
 //   { mode: 'untimed' }                     no timer: the prep ends when every player is ready (or the console ends it)
 
 import { DEFAULT_SOCIAL_SETTINGS } from '../../shared/social.js';
+import { ROOM_CAPACITIES, DIFFICULTIES, MAX_SPECTATORS, SPECTATOR_LIMIT_MAX } from '../../shared/constants.js';
+import { VERSIONS } from '../../shared/versions.js';
+import { CONVENIENCE_DEFAULTS } from '../../shared/roomConvenience.js';
+
+export const ROOM_CONFIG_FIELDS = Object.freeze([
+  { key: 'difficulty', label: '模拟难度', options: DIFFICULTIES, labels: { FUNNY: '标准模拟', NORMAL: '险境模拟', HARD: '绝境模拟', ABYSS: '终极模拟' }, default: 'FUNNY' },
+  { key: 'version', label: '游戏版本', options: ['', ...VERSIONS.map(version => version.id)], default: '' },
+  { key: 'private', label: '私密房间', default: false },
+  { key: 'capacity', label: '人数上限', options: ROOM_CAPACITIES, default: 4 },
+  { key: 'spectatorLimit', label: '观战席上限', min: MAX_SPECTATORS, max: SPECTATOR_LIMIT_MAX, nullable: true, default: null },
+  { key: 'aiPicksLast', label: 'AI 队友最后选择', default: true },
+  { key: 'seatAvatars', label: '真人座位头像优先（AI 保留策略头像）', default: false },
+  { key: 'aiTakeoverEnabled', label: '允许观战者接替 AI', default: false },
+  { key: 'uniteLayerGains', label: '允许联防叠层', default: false, hostControl: false },
+  { key: 'enemyHpMultiplier', label: '敌人血量倍率', min: 0.1, max: 100, default: 1 },
+  { key: 'independentPools', label: '独立卡池', default: false },
+  { key: 'rescueEnabled', label: '队友救援', default: false },
+  ...Object.entries(CONVENIENCE_DEFAULTS).map(([key, value], index) => ({
+    key: 'convenience.' + key, label: ['允许整备区装备', '独立模拟不限时', '休整期调整技能与模组', '允许卸下装备', '变形同构体增强规则'][index], default: value,
+  })),
+  { key: 'plugins', label: '房间插件（留空沿用插件管理默认，[] 表示不启用可选插件）', default: null, list: true },
+]);
+const initialRoomCreation = () => ({
+  defaults: Object.fromEntries(ROOM_CONFIG_FIELDS.map(field => [field.key, field.default])),
+  hostControls: Object.fromEntries(ROOM_CONFIG_FIELDS.map(field => [field.key,
+    field.key === 'aiTakeoverEnabled' ? !/^(0|false|no|off)$/i.test(process.env.SP_AI_TAKEOVER || '') : field.hostControl !== false])),
+});
+let roomCreation = initialRoomCreation();
+export function getRoomCreation() { return structuredClone(roomCreation); }
+export function normalizeRoomCreation(value, current = roomCreation) {
+  if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).some(key => !['defaults', 'hostControls'].includes(key))) return { error: '房间默认配置格式无效' };
+  const next = structuredClone(current);
+  for (const section of ['defaults', 'hostControls']) {
+    if (!Object.hasOwn(value, section)) continue;
+    const values = value[section];
+    if (!values || typeof values !== 'object' || Array.isArray(values)) return { error: '房间默认配置格式无效' };
+    for (const [key, setting] of Object.entries(values)) {
+      const field = ROOM_CONFIG_FIELDS.find(entry => entry.key === key);
+      if (!field) return { error: '未知房间配置项：' + key };
+      const valid = section === 'hostControls' ? typeof setting === 'boolean'
+        : field.list ? setting === null || Array.isArray(setting) && setting.length <= 32 && setting.every(id => typeof id === 'string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(id))
+        : field.nullable && setting === null ? true
+        : field.options ? field.options.includes(setting)
+        : typeof field.default === 'boolean' ? typeof setting === 'boolean'
+        : typeof setting === 'number' && Number.isFinite(setting) && setting >= field.min && setting <= field.max && (key !== 'spectatorLimit' || Number.isInteger(setting));
+      if (!valid) return { error: field.label + '的配置值无效' };
+      next[section][key] = setting;
+    }
+  }
+  return { config: next };
+}
+export function setRoomCreation(value) {
+  const result = normalizeRoomCreation(value);
+  if (result.error) return result;
+  roomCreation = result.config;
+  return { ok: true };
+}
+export function roomHostCanChange(key) { return roomCreation.hostControls[key] !== false; }
+export function roomCreationFrame() {
+  return JSON.stringify(roomCreation) === JSON.stringify(initialRoomCreation()) ? null : getRoomCreation();
+}
 const MODES = new Set(['default', 'scale', 'fixed', 'perRound', 'untimed']);
 let social = DEFAULT_SOCIAL_SETTINGS;
 export function getSocialSettings() { return social; }
@@ -29,17 +90,23 @@ export function setSocialSettings(value) {
 const DEFAULT_PREP = Object.freeze({ mode: 'default' });
 let prep = DEFAULT_PREP;
 // New-room rule default and live permission to edit it; a Match without an explicit rule retains the legacy fallback.
-let uniteLayerGains = false;
-let allowRoomUniteLayerGains = false;
 let roundCharts = true;
 let liveRoundDamage = true;
 let showPwaInstall = true;
+export function getSeatAvatars() { return roomCreation.defaults.seatAvatars; }
+export function setSeatAvatars(value) {
+  if (typeof value !== 'boolean') return { error: '座位头像设置必须为开或关' };
+  roomCreation.defaults.seatAvatars = value;
+  return { ok: true };
+}
 // Default on; a saved console choice wins over an explicit legacy environment override.
 let allowAiTakeover = null;
 export function getAllowAiTakeover() { return allowAiTakeover ?? !/^(0|false|no|off)$/i.test(process.env.SP_AI_TAKEOVER || ''); }
 export function setAllowAiTakeover(value) {
   if (typeof value !== 'boolean') return { error: '观战接替 AI 权限必须为开或关' };
   allowAiTakeover = value;
+  roomCreation.hostControls.aiTakeoverEnabled = value;
+  if (!value) roomCreation.defaults.aiTakeoverEnabled = false;
   return { ok: true };
 }
 export function getShowPwaInstall() { return showPwaInstall; }
@@ -62,17 +129,17 @@ export function setRoundCharts(v) {
   return { ok: true };
 }
 
-export function getUniteLayerGains() { return uniteLayerGains; }
-export function getAllowRoomUniteLayerGains() { return allowRoomUniteLayerGains; }
+export function getUniteLayerGains() { return roomCreation.defaults.uniteLayerGains; }
+export function getAllowRoomUniteLayerGains() { return roomCreation.hostControls.uniteLayerGains; }
 export function setAllowRoomUniteLayerGains(v) {
   if (typeof v !== 'boolean') return { error: '房主联防叠层控制权限必须为开或关' };
-  allowRoomUniteLayerGains = v;
+  roomCreation.hostControls.uniteLayerGains = v;
   return { ok: true };
 }
 
 export function setUniteLayerGains(v) {
   if (typeof v !== 'boolean') return { error: '联防叠层设置必须为开或关' };
-  uniteLayerGains = v;
+  roomCreation.defaults.uniteLayerGains = v;
   return { ok: true };
 }
 
@@ -119,7 +186,7 @@ export function setPrep(v) {
 }
 
 /** Back to the data's timers and the official 联防 rule (tests). */
-export function resetHostSettings() { prep = DEFAULT_PREP; uniteLayerGains = false; allowRoomUniteLayerGains = false; roundCharts = true; liveRoundDamage = true; showPwaInstall = true; allowAiTakeover = null; social = DEFAULT_SOCIAL_SETTINGS; }
+export function resetHostSettings() { prep = DEFAULT_PREP; roomCreation = initialRoomCreation(); roundCharts = true; liveRoundDamage = true; showPwaInstall = true; allowAiTakeover = null; social = DEFAULT_SOCIAL_SETTINGS; }
 
 /** The 休整期 seconds of round r for a match whose data gives `base` (null = untimed stays untimed). */
 export function prepSecondsFor(round, base, p = prep) {

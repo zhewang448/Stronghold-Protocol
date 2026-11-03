@@ -940,3 +940,30 @@ scope记录mode/versions/charIds，缺省仍保持旧预设全局行为；应用
 技能与模组按当前和历史官方名单语义校验，合法默认值允许；不可用选项或干员整份拒绝。异步完成后重查弹窗、版本和阶段。
 导入使用与预设相同的canonical快照合并和原子写入；应用重查阶段锁，存储失败不发布部分状态，不创建预设或改关联。
 不修改干员持有、自选编队导入格式。新增lo-transfer-dialog使用独立滚动，手机横屏操作栏保留可见。
+
+### 统一房间默认配置、权限与搜索（2026-11-03）
+
+控制台「设置 → 对局设置 → 新建房间默认配置与房主权限」集中管理 18 项房间选项；设置页顶部可搜索名称、说明和关键词。
+每项分别保存新房默认值及「允许房主修改」。默认值在创建时捕获，锁定立即生效且保留旧房当前值；旧头像、联防和 AI 设置入口合并，持久化文件兼容原字段。
+版本留空跟随服务器默认，观战席留空跟随 `SP_MAX_SPECTATORS`，插件留空跟随插件管理默认，`[]` 关闭可选插件；强制插件仍生效。
+AI 接替只适用于第二期下半原版合作房；编辑锁只限制房主修改，兼容 API `allowAiTakeover:false` 仍按原约定撤销全局能力与待决投票。
+默认配置不满足公开匹配条件时，散人仍可等待合适的招募房，不会被分配到错误版本或难度。
+新时装名片合并已安装图片清单与旧座位目录，客户端同步器和服务端使用相同的接受范围。
+回归入口为 `test/room-creation-settings.test.js`、`test/matchmaking.test.js`，以及启用 `SP_E2E=1` 的
+`test/ui/room-creation-settings.e2e.test.js`、`test/ui/seat-skin-picker.e2e.test.js` 和原控制台设置测试。
+
+头像进一步支持同房间分享：本机资料仍存浏览器，头像经 `room.avatar` 保存在服务器会话内存，
+只向房间成员发送独立 `room.avatars` 快照；编号和战绩不上传。新客户端自动压缩旧 PNG/WebP 头像为 128×128 JPEG，
+单张不超过 32 KiB。头像优先开启后等待室和局内显示队友头像，AI 保留策略头像。
+观战席数字输入显示实际数值，输入过程保留草稿，按 Enter 或「确认」提交 2–20 整数。
+新增回归入口 `test/avatar-sharing.test.js` 与 `SP_E2E=1 node --test test/ui/avatar-sharing.e2e.test.js`。
+
+房间设置底部「恢复默认」调用 `room.resetSettings`，恢复主机当前默认配置中除难度外的可修改项。
+版本变化沿用全员投票并一起提交其他配置；人数/观战席不足或目标版本不支持当前难度时保持原配置。
+锁定项、插件接管规则和固定插件仍受保护。测试入口为 `test/room-creation-settings.test.js` 和
+`SP_E2E=1 node --test test/ui/room-creation-settings.e2e.test.js`，覆盖确认/取消、移动布局、权限、完整性及版本投票。
+
+顶部盟约展开页的成员数字读取 `m.private.shop.chessStock`，不要从持有数量或当前商店槽倒推。
+普通卡池与个人自选库存由服务器合成，只发接收者；客户端按本人/同组/独立语义决定显示，缺少数据则不显示数字。
+回归入口为 `test/match/economy.test.js`、`test/match/diy-shop.test.js`、`test/match/independent-pools-integration.test.js`、
+`test/ui/watch-bonds.test.js`、`test/ui/feedback1b-bonds.test.js` 和 `SP_E2E=1 node --test test/ui/bond-stock.e2e.test.js`。

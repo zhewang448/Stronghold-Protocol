@@ -142,7 +142,7 @@ export function BondStrip({ bonds, layersDisabled = false, onOpen, openId = null
  *   note, no 在场 count and no 当前效果 block (its numbers would promise an effect the mode never gives; the bond text stays).
  *   `entry.harmony` (the server's bond views: the +1 调和 added to `count`): 在场 n（含调和 +1） and the 调和 row
  */
-export function BondPopup({ bondId, entry, priv, banned = [], onClose, onMember, place = null, over = false, beside = null, owner = null, ownerId, off = false, morphMode = 'official' }) {
+export function BondPopup({ bondId, entry, priv, stock = null, banned = [], onClose, onMember, place = null, over = false, beside = null, owner = null, ownerId, off = false, morphMode = 'official' }) {
   const b = data.lookup('bonds', bondId);
   if (!b) return null;
   const count = entry?.count ?? 0;
@@ -200,23 +200,28 @@ export function BondPopup({ bondId, entry, priv, banned = [], onClose, onMember,
       <${RichText} as="p" text=${b.descRaw || b.desc} class="bpop__desc" />
     </section>
     <section class="bpop__sec">
-      <h4>${t('成员')} <small>${memberHeadCount(members, countsHand)}/${members.length}</small></h4>
+      <h4 class="bpop__members-heading">${t('成员')} <small>${memberHeadCount(members, countsHand)}/${members.length}</small>
+        ${stock ? html`<small class="bpop__stock-scope">${stock.scope === 'independent' ? t('个人独立卡池') : stock.scope === 'shared' ? t('同组共享卡池') : t('个人卡池')}</small>` : null}</h4>
       ${harmony ? (harmonyBy.length
         ? html`<button type="button" class="bpop__harmony" data-harmony=${harmony} title=${harmonyText} onClick=${() => onMember?.(harmonyBy[0].id, null)}>
           <${BondGlyph} bondId=${HARMONY_BOND} /><b>${harmonyName} +${harmony}</b><span>${harmonyText}</span></button>`
         : html`<div class="bpop__harmony" role="note" data-harmony=${harmony} title=${harmonyText}>
           <${BondGlyph} bondId=${HARMONY_BOND} /><b>${harmonyName} +${harmony}</b><span>${harmonyText}</span></div>`) : null}
-      <div class="bpop__members">
+      <div class=${cx('bpop__members', stock && 'has-stock')}>
         ${members.map((mb) => {
           const si = siOf(mb);
           const name = si ? si.name : mb.name;
           const items = mb.granted && Array.isArray(mb.items) ? mb.items : null;
+          const remaining = !mb.banned && Object.hasOwn(stock?.counts || {}, mb.id) ? stock.counts[mb.id] : undefined;
+          const hasStock = remaining === null || Number.isInteger(remaining) && remaining >= 0;
           return html`<button key=${mb.id} type="button" class=${cx('bpop__member', mb.onBoard && 'is-on', mb.owned && !mb.onBoard && 'is-owned', mb.banned && 'is-banned', mb.granted && 'is-granted', si && 'is-standin')}
               onClick=${() => (si ? onMember?.(mb.id, items, si.standInFor) : mb.pick ? onMember?.(mb.id, items, null, mb.pick) : onMember?.(mb.id, items))}
               data-granted=${mb.granted ? '1' : null} data-standin=${si ? si.charId : null} data-diy=${mb.diy ? mb.rec?.charId || '1' : null}
               title=${`${name}${si ? t('（{note}）', { note: standInForText(mb.name) }) : ''}${mb.granted ? t('（变形同构体：视为本盟约成员）') : ''}${mb.banned ? t('（本局禁用）') : mb.onBoard ? t('（在场）') : mb.owned ? t('（整备区）') : ''}`}>
             <${UnitThumb} kind="chess" id=${mb.id} ownerId=${ownerId ?? priv?.playerId} size="sm" dim=${!mb.owned || mb.banned} rec=${si || mb.rec || null} title=${name} />
             <span class="bpop__mname">${name}</span>
+            ${hasStock ? html`<span class=${cx('bpop__stock', remaining === 0 && 'is-empty')} data-stock-id=${mb.id} data-stock=${remaining === null ? 'unlimited' : remaining} title=${mb.diy ? t('自选个人卡池') : undefined}
+                aria-label=${remaining === null ? t('卡池不限量') : t('卡池剩余 {n} 张', { n: remaining })}>${remaining === null ? '∞' : t('剩余{n}张', { n: remaining })}</span>` : null}
             ${mb.banned ? html`<span class="bpop__ban"><${Icon} name="close" /></span>` : null}
             ${mb.granted ? html`<span class="bpop__iso" aria-hidden="true">${t('同构')}</span>` : null}
             ${mb.diy ? html`<span class="bpop__iso bpop__diy" data-diy="1" aria-hidden="true">${t('自选')}</span>` : null}

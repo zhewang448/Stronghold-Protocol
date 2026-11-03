@@ -178,7 +178,7 @@ export class OfficialFx {
    */
   spawn(key, place, opts = {}) {
     if (!this.active || !key) return null;
-    const k = String(key).toLowerCase();
+    const k = String(opts.resolveKey ? opts.resolveKey(key) : key).toLowerCase();
     if (!this.lib.has(k)) return null;
     const lim = MAX_EFFECTS[this.tier] || 200;
     const important = !!opts.loop || !!opts.important;
@@ -458,13 +458,19 @@ export class FxHandle {
     // a chained effect of the prefab itself (OnPlayEmitter) starts with the same placement and owner; a looping one
     // stops with it (OnFinishEmitter's start where it finished)
     this.children = [];
-    const own = { track: this.opts.track, data: this.opts.data, loop: this.opts.loop, important: this.opts.important, owner: this.opts.owner };
-    for (const e of def.onPlay) for (const k of e.keys) if (k !== def.key) { const c = s.spawn(k, this.placeArgs, own); if (c) this.children.push(c); }
+    const own = { track: this.opts.track, data: this.opts.data, loop: this.opts.loop, important: this.opts.important, owner: this.opts.owner, resolveKey: this.opts.resolveKey };
+    for (const e of def.onPlay) for (const k of e.keys) {
+      const resolved = own.resolveKey ? own.resolveKey(k) : k;
+      if (resolved !== def.key) { const child = s.spawn(resolved, this.placeArgs, own); if (child) this.children.push(child); }
+    }
     const prev = fx.onFinish;
     fx.onFinish = (f) => {
       prev?.(f);
       this._stopChildren();
-      for (const k of def.onFinish) if (k !== def.key) s.spawn(k, { pos: f.anchor.slice(), yaw: f.yaw, mirror: f.mirror, groundZ: f.groundZ }, { track: this.opts.track, owner: this.opts.owner });
+      for (const k of def.onFinish) {
+        const resolved = this.opts.resolveKey ? this.opts.resolveKey(k) : k;
+        if (resolved !== def.key) s.spawn(resolved, { pos: f.anchor.slice(), yaw: f.yaw, mirror: f.mirror, groundZ: f.groundZ }, { track: this.opts.track, owner: this.opts.owner, resolveKey: this.opts.resolveKey });
+      }
     };
     this.effect = fx;
     // started late (a cast whose wind-up began past the clip's start): advanced to where it would be

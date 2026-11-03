@@ -10,6 +10,7 @@ import { t as tr } from '../../../shared/i18n.js';
 import { useStore } from '../store.js';
 import { skinsStore, ownerSkin } from './skins.js';
 import { settingsStore } from './settingsStore.js';
+import { useAccount } from './accounts.js';
 import {
   uiUrl, chessAvatarUrl, chessPortraitUrl, itemIconUrl, tokenAvatarUrl, enemyIconUrl, bondIconUrl, bandIconUrl,
 } from './assetUrls.js';
@@ -288,12 +289,14 @@ export function RichTip({ text, children, placement = 'top' }) {
  * @param {{ player: any, size?: 'sm'|'md', self?: boolean, class?: string }} props
  */
 export function PlayerAvatar({ player, size = 'md', self = false, class: cls, avatar = null }) {
-  const src = avatar || (player?.bandId ? bandIconUrl(data.get('assets'), player.bandId) : null);
+  const avatarFirst = useStore(state => state.room?.seatAvatars === true) && !player?.isBot;
+  const account = useAccount(player?.isBot ? null : player?.playerId);
+  const src = avatar || (avatarFirst ? (player?.isBot ? null : account?.avatar) : player?.bandId ? bandIconUrl(data.get('assets'), player.bandId) : null);
   const glyph = [...(player?.name || '').trim()][0] || '?';
   const dead = player?.alive === false || player?.status === 'dead';
   const left = player?.status === 'left';
   const color = playerSeatColor(player?.seat);
-  return html`<span class=${cx('pavatar', `pavatar--${size}`, self && 'is-self', dead && 'is-dead', left && 'is-left', player?.isBot && 'is-bot',
+  const face = html`<span class=${cx('pavatar', `pavatar--${size}`, self && 'is-self', dead && 'is-dead', left && 'is-left', player?.isBot && 'is-bot',
       player?.connected === false && !player?.isBot && 'is-offline', cls)} style=${`--seat-color:${color}`}>
     <span class="pavatar__img">
       <${Img} src=${src} fallback=${player?.isBot ? html`<${Icon} name="robot" class="pavatar__bot" />` : html`<span class="pavatar__glyph">${glyph}</span>`} />
@@ -301,4 +304,12 @@ export function PlayerAvatar({ player, size = 'md', self = false, class: cls, av
     ${dead ? html`<span class="pavatar__x" aria-label=${tr('已淘汰')}><${Icon} name="close" /></span>` : null}
     ${left ? html`<span class="pavatar__door" aria-label=${tr('已离开')}><${Icon} name="exit" /></span>` : null}
   </span>`;
+  const band = avatarFirst && player?.bandId ? data.lookup('bands', player.bandId) : null;
+  if (!band) return face;
+  return html`<${Tooltip} tap=${true} text=${html`<${BandIcon} bandId=${band.bandId} size="sm" /> <b>${band.name}</b>`}
+      aside=${html`<${RichText} text=${band.descRaw || band.desc || ''} />`}>
+    <span tabindex="0" role="button" aria-label=${band.name} onKeyDown=${event => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); event.currentTarget.click(); }
+    }}>${face}</span>
+  <//>`;
 }

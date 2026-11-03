@@ -122,6 +122,13 @@ does not. Official field separation and the exact fallback / live-update contrac
 
 ### Official battle effects (官方特效; render/vfx, 0.3.0)
 
+Local account avatars (#21) use an explicit 1:1 crop before saving: drag or arrow keys move the image, a slider zooms,
+confirmation exports a 128×128 JPEG and cancel leaves the saved avatar unchanged. The same account store supplies the
+lobby, waiting room and in-match avatar components; local image bytes are never sent to the server. The host-console
+avatar preference sets the default for new rooms and defaults off; existing rooms retain their selected value. With it enabled,
+human seats without a locally known avatar use a name glyph, while in-match AI keeps its strategy icon (robot fallback before
+selection). Strategy/planned-bond details retain their icon and description through hover/focus/tap.
+
 `public/js/render/vfx/` plays the official battle effect prefabs that `tools/local-extract/fx.py` extracts from the
 player's own client (the format: DESIGN §33, docs/design/vfx-format.md) on the 3D board. It is client-only: it draws
 events the field view already receives, and the simulation, the protocol and the golden results do not change. The
@@ -1240,3 +1247,29 @@ Hub 卡片和弹窗共用一条目录轮询，平时 10 秒、打开弹窗 4 秒
 命名预设可选择保存持有状态：以 charId 保留未持有名单，空名单表示全部持有；应用仅改所选范围，旧预设没有该部分时保持现状。库 v3 和文件 v4 保证旧页面拒绝未知格式；先校验四版本可下掉名单，再原子写入和同步。对局期间持有状态不可应用。
 
 同盟等待室每个 AI 席位有房主可选的策略下拉框；观战名单显示服务器实际上限并可滚动。队友救援开启时，联防结束后合格的真人收到目标按钮，待救者看到等待提示；救援成功不显示淘汰弹窗，未获救而被淘汰时仍显示。救援请求带对局和回合身份，结算及统计标记非官方；主机控制台也将救援对局归为自定义规则。
+
+### 设置搜索、房间权限与新时装名片（2026-11-03）
+
+主机控制台设置页提供名称/说明/关键词搜索，逐区域及逐房间配置行过滤；清空或 Escape 恢复所有项，
+搜索不销毁节点或丢失未保存值，无匹配时显示反馈。房间默认配置统一为 18 行，每行包含默认值和房主修改权限，
+头像、联防及观战接替 AI 合并到该表。创建页及房间页禁用锁定项，版本/插件规则继续限制可用功能；
+大厅版本浏览仍可选择其他版本，创建时遵循主机锁定版本。独立模拟不限时选框显示真实配置值。
+名片时装列表合并旧 `seat-art` 与已安装资产的图片条目，名称来自时装元数据；元数据记录本身不代表已安装。
+选择经调配同步和服务端再次验证，其他队友与刷新后保持同一立绘；历史版本使用服务器当前共享的时装资源清单。
+真人头像优先模式不改变局内 AI 的策略头像。
+
+按用户进一步要求，真人头像会分享给同房间玩家与观战者；更新、移除、刷新及重连同步到等待室和局内组件。
+账号编号和战绩保持本机存储。观战席上限改为可读的数字输入和确认按钮：支持清空及输入两位数，
+编辑过程不发请求，不因无关房间更新丢失草稿；确认时校验 2–20 的整数。复选框的固定尺寸仅作用于复选框。
+
+房间设置底部提供「恢复默认」，说明恢复主机配置并保留当前难度；确认后由服务器统一恢复所有可修改配置，
+锁定项保持当前值。版本变化的投票条明确说明将同时恢复其余配置；拒绝或超时保持原配置。
+非房主、断线、开局后或投票期间禁用恢复入口。设置弹层关闭再确认，重新打开时以服务端实际配置重建数字输入草稿。
+
+### 盟约展开页卡池余量（2026-11-03）
+
+顶部盟约展开页在成员姓名下方显示「剩余 N 张」，零库存以提示色区分，无限库存显示 ∞。
+成员区标明「同组共享卡池」「个人独立卡池」或「个人卡池」；自选成员的数量来自自己的自选库存。
+数字随同池玩家购买、晋升和出售更新，点击成员仍打开原干员详情；小屏有库存时按可读宽度自动换列。
+自己的盟约显示本机接收的私有卡池；同组队友可复用共享的普通库存，但不能套用自己的自选库存。
+其他组、独立卡池队友、纯观战或旧服务器未提供库存时隐藏数量，禁用成员不伪造为零。

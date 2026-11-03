@@ -288,10 +288,15 @@
 .bpop__sec--now { padding: .1rem .12rem; background: rgba(78, 216, 175, .06); border-left: 3px solid var(--mint-500); }
 .bpop__desc { font-size: calc(.15 * var(--t)); line-height: 1.7; color: var(--text-md); }
 .bpop__members { display: grid; grid-template-columns: repeat(5, 1fr); gap: .08rem; }
+.bpop__members.has-stock { grid-template-columns: repeat(auto-fit, minmax(max(.8rem, 64px), 1fr)); }
 .bpop__member { position: relative; display: flex; flex-direction: column; align-items: center; gap: .03rem; padding: .04rem 0; background: none; border: 1px solid transparent; }
 .bpop__member:hover { border-color: var(--line-2); background: rgba(255, 255, 255, .03); }
 .bpop__member.is-on .uthumb__art { border-color: var(--mint-400); box-shadow: 0 0 .1rem rgba(23, 249, 183, .45); }
 .bpop__mname { font-size: calc(.12 * var(--t)); color: var(--text-lo); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bpop__members-heading { flex-wrap: wrap; }
+.bpop__sec h4 .bpop__stock-scope { margin-inline-start: auto; font-size: max(calc(.12 * var(--t)), 10px); }
+.bpop__stock { font-size: max(calc(.12 * var(--t)), 10px); line-height: 1.4; color: var(--text-md); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bpop__stock.is-empty { color: var(--amber); }
 .bpop__member.is-on .bpop__mname { color: var(--mint-400); }
 .bpop__member.is-owned .bpop__mname { color: var(--text-hi); }
 .bpop__ban { position: absolute; top: .02rem; right: .1rem; width: .2rem; height: .2rem; display: grid; place-items: center; background: var(--red); color: #fff; border-radius: 50%; }

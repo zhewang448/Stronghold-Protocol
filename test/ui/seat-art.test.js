@@ -17,6 +17,17 @@ import { chessPortraitUrl } from '../../public/js/ui/assetUrls.js';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const CHESS = Object.values(JSON.parse(readFileSync(path.join(ROOT, 'data/chess.json'), 'utf8').replace(/\r\n/g, '\n')));
 
+test('installed skin posters merge into the seat picker without requiring an old seat-art entry', () => {
+  const charId = 'char_1045_svash2', skinId = charId + '@sale#20';
+  const list = cardOperators([{ charId, name: '凛御银灰', rarity: 6, visible: true }],
+    { chars: { [charId]: { charId, choices: [{ id: charId + '#1', name: '默认', portrait: '/default.png' }] } } },
+    { chars: { [charId]: { skins: { [skinId]: { portrait: '/skin.png', illust: '/large.png' }, metadataOnly: {} } } } },
+    { chars: { [charId]: [{ id: skinId, name: '雪覆伦城' }] } });
+  assert.deepEqual(list[0].choices.find(choice => choice.id === skinId), { id: skinId, name: '雪覆伦城', portrait: '/skin.png' });
+  assert.equal(list[0].choices.some(choice => choice.id === 'metadataOnly'), false);
+  assert.equal(list[0].choices.some(choice => choice.id === charId + '#1'), true);
+});
+
 test('the pickable operators: one per visible, non-自选 charId, the elite form, 6★ first', () => {
   const list = cardOperators(CHESS);
   const ids = list.map((c) => c.charId);

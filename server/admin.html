@@ -164,6 +164,12 @@
   .settings-group-title { margin: 0; padding-bottom: 6px; font-size: 20px; }
   .settings-group .room { min-width: 0; }
   .settings-group .room h2 { margin-top: 0; font-size: 17px; }
+  .settings-search { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 16px 0 22px; }
+  .settings-search input { flex: 1; min-width: 160px; max-width: 560px; min-height: 40px; }
+  .settings-search [role="status"] { flex-basis: 100%; color: var(--text-lo); }
+  .room-defaults-table th { text-align: left; max-width: 440px; white-space: normal; }
+  .room-defaults-table td input:not([type="checkbox"]), .room-defaults-table select { width: 100%; min-width: 150px; max-width: 300px; }
+  [data-room-config-row][hidden], .settings-group[hidden], .settings-group .room[hidden] { display: none; }
   .settings-group .meta { max-width: 82ch; line-height: 1.65; overflow-wrap: anywhere; }
   .settings-group form > .row { margin-top: 14px; }
   .update-backup-list { padding-left: 20px; }
@@ -879,7 +885,6 @@ function roomCard(r) {
         <button class="primary" data-click="rewind" data-from="#rw-${r.code}" data-room="${r.code}" data-label="回档" data-confirm="回到第 {v} 回合休整期开始？之后的进度和之后回合的存档都会丢失。" ${canRewind ? '' : 'disabled'}>回档</button>
         <button data-click="endPrep" data-room="${r.code}" data-label="结束休整期" ${m.phase === 'PREP' ? '' : 'disabled'}>结束休整期</button>
         ${m.solo ? `<button data-click="pause" data-value="${m.paused ? 0 : 1}" data-room="${r.code}" data-label="${m.paused ? '继续' : '暂停'}">${m.paused ? '继续战斗' : '暂停战斗'}</button>` : ''}
-        <button class="danger" data-click="endMatch" data-room="${r.code}" data-label="结束对局" data-confirm="直接结束这局（判负）？">结束对局</button>
       </div>
       ${roomPrep(r)}
       ${m.fields.length ? `<div class="row" style="margin-top:8px">${m.fields.map((f) => `<span class="tag">${esc({ normal: '作战', unite: '联防', boss: '领袖', hidden: '隐秘核心' }[f.kind] || f.kind)} · ${f.players.map(esc).join('、')}</span>
@@ -901,6 +906,7 @@ function roomCard(r) {
       <h2 id="room-${r.code}">房间 ${r.code}</h2>
       <a class="live-link" href="/wall?room=${encodeURIComponent(r.code)}" target="_blank" rel="noopener">监控墙</a>
       <span class="meta">${r.mode === 'solo' ? '独立模拟' : '同盟'} · ${esc(r.difficulty)} · 游戏版本 ${esc(gameVersion(m?.version || r.version))}</span>
+      ${m ? `<button class="danger" data-click="endMatch" data-room="${r.code}" data-label="结束整局" data-confirm="结束整局将立即判负并结算，当前对局无法继续。这会终止整局游戏，不只是结束休整期。确认结束整局？">结束整局</button>` : ''}
       <button class="danger" style="margin-left:auto" data-click="closeRoom" data-room="${r.code}" data-label="关闭房间" data-confirm="关闭房间 ${r.code}？里面的玩家会被送回大厅。">关闭房间</button>
     </div>
     <p class="meta">${r.private ? '私密房间' : '公开房间'} · 席位 ${r.seats.length} / ${r.capacity} · 观战 ${r.spectators?.length || 0} · ${esc(rulesText(r.rules))}</p>
@@ -1523,6 +1529,28 @@ function drawPrepPreview() {
     }).join('')}</tr>`).join('')}</tbody></table>`;
 }
 
+function roomCreationSettings(data) {
+  const config = data.roomCreation;
+  if (!config) return '';
+  const ids = { seatAvatars: 'seat-avatars-enabled', uniteLayerGains: 'unite-layers-enabled' };
+  const permissionIds = { uniteLayerGains: 'unite-layers-host-control', aiTakeoverEnabled: 'ai-takeover-allowed' };
+  const control = field => {
+    const value = config.defaults[field.key];
+    const attrs = `data-room-default="${esc(field.key)}" id="${ids[field.key] || 'room-default-' + field.key.replaceAll('.', '-')}" aria-label="${esc(field.label)}默认值"`;
+    if (typeof field.default === 'boolean') return `<input type="checkbox" ${attrs} ${value === true ? 'checked' : ''}>`;
+    if (field.options) return `<select ${attrs}>${field.options.map(option => `<option value="${esc(option)}" ${option === value ? 'selected' : ''}>${field.labels?.[option] ? esc(field.labels[option]) : field.key === 'version' ? (option ? esc(gameVersion(option)) : '跟随服务器默认') : field.key === 'capacity' ? option + ' 人' : esc(option)}</option>`).join('')}</select>`;
+    if (field.list) return `<input type="text" ${attrs} value="${esc(value === null ? '' : JSON.stringify(value))}" placeholder="留空沿用插件默认" maxlength="2048">`;
+    return `<input type="number" ${attrs} min="${field.min}" max="${field.max}" step="${field.key === 'spectatorLimit' ? '1' : 'any'}" value="${value ?? ''}" placeholder="跟随服务配置">`;
+  };
+  return `<section class="room" id="room-defaults-settings"><h2>新建房间默认配置与房主权限</h2>
+    <p class="meta">默认值只用于之后新建的房间，不覆盖已有房间。修改权限保存后立即生效，锁定时保留房间当前值。单人、版本及插件不适用的设置仍遵循原限制。头像、联防叠层和 AI 接替配置已合并到此表。</p>
+    <div class="xscroll"><table class="room-defaults-table"><thead><tr><th>房间配置项</th><th>新建房间默认值</th><th>允许房主修改</th></tr></thead><tbody>
+      ${data.roomConfigFields.map(field => `<tr data-room-config-row="${esc(field.key)}" ${field.key === 'seatAvatars' ? 'id="seat-avatars-settings"' : ''}><th scope="row">${esc(field.label)}</th><td>${control(field)}</td><td><input type="checkbox" data-room-control="${esc(field.key)}" ${permissionIds[field.key] ? `id="${permissionIds[field.key]}"` : ''} aria-label="允许房主修改${esc(field.label)}" ${config.hostControls[field.key] !== false ? 'checked' : ''}></td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="row"><button type="button" class="primary" data-room-creation-save>保存房间默认配置与权限</button><button type="button" data-room-creation-reset>撤销修改</button><span id="room-creation-saved" role="status"></span></div>
+  </section>`;
+}
+
 async function showSettings() {
   const host = $('#settings');
   const [d, domains] = await Promise.all([
@@ -1549,11 +1577,6 @@ async function showSettings() {
         <p id="domain-feedback" class="meta" role="status" aria-live="polite"></p>
       </form>
     </section>
-    <section class="room" id="ai-takeover-settings"><h2>观战接替 AI</h2>
-      <p class="meta" id="ai-takeover-help">默认允许房主在开局前启用观战接替 AI。仅第二期下半的原版合作房支持，观战者仍需在休整期获得真人过半同意。关闭会停止已有房间的新申请并取消未完成投票，不撤销已完成的接替。保存后立即生效并在重启后保留；未保存配置时默认开启，兼容 SP_AI_TAKEOVER=0 关闭。</p>
-      <form id="ai-takeover-form" onsubmit="return false"><label><input id="ai-takeover-allowed" type="checkbox" aria-describedby="ai-takeover-help" ${d.allowAiTakeover === true ? 'checked' : ''}> 允许房主开启观战接替 AI</label>
-      <div class="row"><button type="button" class="primary" data-ai-takeover-save>保存</button><button type="button" data-ai-takeover-reset>撤销修改</button><span id="ai-takeover-saved" class="meta" role="status"></span></div></form>
-    </section>
     <section class="room" id="pwa-install-settings"><h2>桌面安装入口</h2>
       <p class="meta" id="pwa-install-help">默认显示首页、大厅和横屏提示中的「添加到桌面」按钮。关闭只隐藏游戏内入口，不会卸载已安装的应用，也不影响浏览器自带的安装菜单。原生安装仍需浏览器支持及有效的 HTTPS 证书或本机地址。</p>
       <form id="pwa-install-form" onsubmit="return false"><label><input id="pwa-install-visible" type="checkbox" aria-describedby="pwa-install-help" ${d.showPwaInstall !== false ? 'checked' : ''}> 显示「添加到桌面」按钮</label>
@@ -1576,6 +1599,7 @@ async function showSettings() {
       </form>
     </section>
     <section class="room" id="recovery-settings"><h2>重启恢复</h2><div id="recovery-content" role="status">正在读取…</div></section>
+    ${roomCreationSettings(d)}
     <section class="room" id="round-charts-settings"><h2>局内每回合统计</h2>
     <p class="meta" id="round-charts-help">默认开启。所有玩家与观战者可在局内查看每回合曲线与干员伤害排行；关闭后隐藏整个统计入口和面板。保存后立即对所有房间生效，重启服务器后保留。</p>
     <form id="round-charts-form" class="stats-body" onsubmit="return false">
@@ -1590,14 +1614,6 @@ async function showSettings() {
       ${[['directory','启用在线玩家名单'],['invitations','启用房间直接邀请'],['statusSelection','允许玩家设置在线状态'],['invisible','允许玩家选择隐身'],['counts','显示可见在线人数'],['hostOnly','仅房主可以发送邀请']].map(([key,label]) => `<label><input type="checkbox" data-social-option="${key}" ${d.social?.[key] ? 'checked' : ''}> ${label}</label>`).join('')}
       <p class="meta">忙碌玩家不接收邀请；对局中、已有房间、离线及隐身玩家均不能被邀请。邀请 60 秒过期，每人发送间隔至少 10 秒，单个玩家最多收到 5 份待处理邀请。关闭邀请会撤销待处理邀请。</p>
       <div class="row"><button class="primary" data-social-save>保存</button><button data-social-reset>撤销修改</button><span class="meta" id="social-saved" role="status"></span></div>
-    </form></section>
-    <section class="room" id="unite-settings"><h2>联防叠层</h2>
-    <p class="meta" id="unite-layers-help">联防叠层默认关闭，新建房间沿用下方默认规则。只有开启「允许房主自行设置联防叠层」，房主才能在等待室「同盟设置」中修改，开局后固定。关闭权限会立即锁定已有房间的修改入口，但保留房间已选规则和正在进行的对局。开启叠层后，每场战斗额度重新获得，结算保留新增层数，上限仍为 999；最终攻势和隐秘核心仍不叠层。</p>
-    <p class="meta">修改权限保存后立即生效，默认叠层规则仅用于新建房间。设置保存在 ${esc(d.file)}，重启服务器后保留。</p>
-    <form id="unite-layers-form" class="stats-body" onsubmit="return false">
-      <label><input id="unite-layers-enabled" type="checkbox" aria-describedby="unite-layers-help" ${d.uniteLayerGains ? 'checked' : ''}> 新建房间默认允许联防叠层</label>
-      <label><input id="unite-layers-host-control" type="checkbox" aria-describedby="unite-layers-help" ${d.allowRoomUniteLayerGains ? 'checked' : ''}> 允许房主自行设置联防叠层</label>
-      <div class="row"><button class="primary" data-unite-layers-save>保存</button><button data-unite-layers-reset>撤销修改</button><span class="meta" id="unite-layers-saved" role="status"></span></div>
     </form></section>
     <section class="room" id="prep-settings"><h2>休整期时长</h2>
     <p class="meta">所有房间、所有对局都用这一份，保存在 ${esc(d.file)}，重启服务器也保留。只对有计时的同盟对局生效：独立模拟和只有一个真人的同盟房间本来就不限时。
@@ -1666,13 +1682,14 @@ function arrangeSettings(domains) {
   sections.set(blocked.id, blocked);
   sections.set(chat.id, chat);
   const groups = [
-    ['game', '对局设置', ['prep-settings', 'unite-settings', 'ai-takeover-settings', 'round-charts-settings']],
+    ['game', '对局设置', ['room-defaults-settings', 'prep-settings', 'round-charts-settings']],
     ['chat', '交流管理', ['social-settings', 'chat-policy-settings', 'chat-settings']],
     ['history', '记录与恢复', ['replay-settings', 'recovery-settings']],
     ['system', '维护与扩展', ['release-update', 'update-backups-settings', 'domain-recovery-settings', 'pwa-install-settings', 'plugin-settings', 'issue-feedback']],
     ['cleanup', '数据清理', ['storage-settings']],
   ];
   host.innerHTML = `<div class="settings-intro"><h2>主机设置</h2><p class="meta">每项设置单独保存。除页面另有说明外，保存后立即生效；主机配置保存在 ${esc(settingsData.file)}。</p></div>
+    <div class="settings-search"><label for="settings-search">搜索设置</label><input id="settings-search" type="search" placeholder="输入名称、说明或关键词" autocomplete="off"><button type="button" id="settings-search-clear">清空</button><span id="settings-search-status" role="status" aria-live="polite"></span></div>
     <div class="settings-layout"><nav class="settings-nav" aria-label="设置分类">${groups.map(([id,label])=>`<a href="#settings-${id}">${label}</a>`).join('')}</nav><div class="settings-content"></div></div>`;
   for (const [id, label, ids] of groups) {
     const group = document.createElement('div'); group.id = 'settings-' + id; group.className = 'settings-group';
@@ -1684,6 +1701,30 @@ function arrangeSettings(domains) {
   savedDomains = domains?.config || { canonicalOrigin: '', sources: [] };
   drawDomainSources(savedDomains);
   if (!domains?.ok) $('#domain-feedback').textContent = '域名设置读取失败，请刷新后重试。';
+  const search = $('#settings-search');
+  const filter = () => {
+    const words = search.value.normalize('NFKC').trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const matches = text => words.every(word => text.toLowerCase().includes(word));
+    let count = 0;
+    for (const group of host.querySelectorAll('.settings-group')) {
+      let visible = 0;
+      for (const section of group.querySelectorAll(':scope > .room')) {
+        const rows = [...section.querySelectorAll('[data-room-config-row]')];
+        const allRows = matches(section.querySelector('h2')?.textContent || '');
+        for (const row of rows) row.hidden = !allRows && !matches(row.textContent);
+        const shown = rows.length ? rows.some(row => !row.hidden) : matches(section.textContent);
+        section.hidden = !shown;
+        if (shown) { visible++; count++; }
+      }
+      group.hidden = !visible;
+      const link = host.querySelector('.settings-nav a[href="#' + group.id + '"]');
+      if (link) link.hidden = !visible;
+    }
+    $('#settings-search-status').textContent = words.length ? (count ? '找到 ' + count + ' 个设置区域' : '没有匹配的设置，请尝试其他关键词') : '';
+  };
+  search.addEventListener('input', filter);
+  $('#settings-search-clear').addEventListener('click', () => { search.value = ''; filter(); search.focus(); });
+  search.addEventListener('keydown', event => { if (event.key === 'Escape') { event.stopPropagation(); search.value = ''; filter(); } });
 }
 
 let savedDomains = { canonicalOrigin: '', sources: [] };
@@ -1856,6 +1897,36 @@ document.addEventListener('pointerdown', (e) => {
   if (e.target.closest('[data-candidate-option]')) e.preventDefault();
 });
 document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-room-creation-reset]')) {
+    for (const input of document.querySelectorAll('[data-room-default]')) {
+      const value = settingsData.roomCreation.defaults[input.dataset.roomDefault];
+      if (input.type === 'checkbox') input.checked = value === true;
+      else input.value = value === null ? '' : Array.isArray(value) ? JSON.stringify(value) : String(value);
+    }
+    for (const input of document.querySelectorAll('[data-room-control]')) input.checked = settingsData.roomCreation.hostControls[input.dataset.roomControl] !== false;
+    $('#room-creation-saved').textContent = ''; return;
+  }
+  if (e.target.closest('[data-room-creation-save]')) {
+    const controls = [...$('#room-defaults-settings').querySelectorAll('input,select,button')];
+    const status = $('#room-creation-saved');
+    try {
+      const defaults = {};
+      for (const input of document.querySelectorAll('[data-room-default]')) {
+        const field = settingsData.roomConfigFields.find(item => item.key === input.dataset.roomDefault);
+        defaults[field.key] = input.type === 'checkbox' ? input.checked : field.list ? (input.value.trim() ? JSON.parse(input.value) : null)
+          : field.nullable && input.value === '' ? null : input.type === 'number' || field.key === 'capacity' ? Number(input.value) : input.value;
+      }
+      const hostControls = Object.fromEntries([...document.querySelectorAll('[data-room-control]')].map(input => [input.dataset.roomControl, input.checked]));
+      controls.forEach(input => { input.disabled = true; }); status.textContent = '保存中…';
+      api('/api/settings', { roomCreation: { defaults, hostControls } }).then(result => {
+        if (!result.ok) throw new Error(result.error || '保存失败');
+        settingsData.roomCreation = result.roomCreation;
+        status.textContent = '已保存；默认值用于新建房间，房主修改权限立即生效';
+      }).catch(error => { status.textContent = '保存失败：' + error.message; say(status.textContent, true); })
+        .finally(() => { controls.forEach(input => { input.disabled = false; }); });
+    } catch (error) { status.textContent = '保存失败：' + error.message; }
+    return;
+  }
   const deleteBackup = e.target.closest('button[data-update-backup-delete]');
   if (deleteBackup) { void changeUpdateBackup({ action: 'delete', id: deleteBackup.dataset.updateBackupDelete, confirm: confirm(`确定清理更新备份 ${deleteBackup.dataset.updateBackupDelete}？此操作不可撤销。`) }); return; }
   if (e.target.closest('button[data-update-backup-save]')) {
@@ -1981,23 +2052,6 @@ async function refresh(force = false) {
 }
 
 document.addEventListener('click', (e) => {
-  if (e.target.closest('[data-ai-takeover-reset]')) {
-    $('#ai-takeover-allowed').checked = settingsData.allowAiTakeover === true;
-    $('#ai-takeover-saved').textContent = ''; return;
-  }
-  if (e.target.closest('[data-ai-takeover-save]')) {
-    const controls = [...$('#ai-takeover-form').querySelectorAll('input,button')];
-    const status = $('#ai-takeover-saved'), allowAiTakeover = $('#ai-takeover-allowed').checked;
-    controls.forEach(control => { control.disabled = true; }); status.textContent = '保存中…';
-    api('/api/settings', { allowAiTakeover }).then(result => {
-      if (!result.ok) throw new Error(result.error || '保存失败');
-      settingsData.allowAiTakeover = result.allowAiTakeover;
-      $('#ai-takeover-allowed').checked = result.allowAiTakeover;
-      status.textContent = '已保存，房间权限立即生效；重启后保留';
-    }).catch(error => { status.textContent = '保存失败：' + error.message; })
-      .finally(() => { controls.forEach(control => { control.disabled = false; }); });
-    return;
-  }
   if (e.target.closest('[data-pwa-install-reset]')) {
     $('#pwa-install-visible').checked = settingsData.showPwaInstall !== false;
     $('#pwa-install-saved').textContent = ''; return;
@@ -2142,33 +2196,6 @@ document.addEventListener('click', (e) => {
         saved.textContent = '已保存，所有房间立即生效';
       } else { saved.textContent = `保存失败：${r.error}`; say(saved.textContent, true); }
     }).finally(() => { chartSave.disabled = input.disabled = reset.disabled = live.disabled = false; });
-    return;
-  }
-  if (e.target.closest('button[data-unite-layers-reset]')) {
-    $('#unite-layers-enabled').checked = !!settingsData.uniteLayerGains;
-    $('#unite-layers-host-control').checked = !!settingsData.allowRoomUniteLayerGains;
-    $('#unite-layers-saved').textContent = '';
-    return;
-  }
-  const uniteSave = e.target.closest('button[data-unite-layers-save]');
-  if (uniteSave) {
-    const checkbox = $('#unite-layers-enabled');
-    const permission = $('#unite-layers-host-control');
-    const saved = $('#unite-layers-saved');
-    const reset = $('#unite-layers-form [data-unite-layers-reset]');
-    const uniteLayerGains = checkbox.checked;
-    const allowRoomUniteLayerGains = permission.checked;
-    uniteSave.disabled = checkbox.disabled = permission.disabled = reset.disabled = true;
-    saved.textContent = '保存中…';
-    api('/api/settings', { uniteLayerGains, allowRoomUniteLayerGains }).catch(() => ({ error: '连接服务器失败' })).then((r) => {
-      if (r.ok) {
-        settingsData.uniteLayerGains = r.uniteLayerGains;
-        checkbox.checked = r.uniteLayerGains;
-        settingsData.allowRoomUniteLayerGains = r.allowRoomUniteLayerGains;
-        permission.checked = r.allowRoomUniteLayerGains;
-        saved.textContent = '已保存，房主修改权限立即生效；默认叠层规则用于新建房间';
-      } else { saved.textContent = `保存失败：${r.error}`; say(saved.textContent, true); }
-    }).finally(() => { uniteSave.disabled = checkbox.disabled = permission.disabled = reset.disabled = false; });
     return;
   }
   if (e.target.closest('button[data-prep-reset]')) { showSettings(); return; }

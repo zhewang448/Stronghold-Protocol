@@ -1,6 +1,64 @@
 {
  "source": "AoyamaT1 PR #85, 83dbfb84be46699617fd45440d9eae762d3f94f1; Paper-Yuan 06cd3d0aafee6d9b1a3c542414fb847e16871a4d. Names: official skin_table; verified model directories: fexli/ArknightsResource.; First-period additions: local official skin_table.json (50 outfits for 31 previously uncovered operators), fexli Front/Spine and Back atlases verified 2026-10-25; yuanyan3060 avatars.",
  "chars": {
+  "char_1045_svash2": [
+   {
+    "id": "char_1045_svash2@sale#20",
+    "name": "雪覆伦城",
+    "group": "忒斯特收藏/XXII",
+    "stem": "char_1045_svash2_sale_20",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_1045_svash2_sale%2320.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_1045_svash2_sale%2320.png",
+    "illust": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/skin/char_1045_svash2_sale%2320b.png",
+    "back": true
+   }
+  ],
+  "char_4098_vvana": [
+   {
+    "id": "char_4098_vvana@epoque#40",
+    "name": "寄自奥格尼斯科",
+    "group": "时代/XXXIX",
+    "stem": "char_4098_vvana_epoque_40",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_4098_vvana_epoque%2340.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_4098_vvana_epoque%2340.png",
+    "illust": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/skin/char_4098_vvana_epoque%2340b.png",
+    "back": true
+   },
+   {
+    "id": "char_4098_vvana@epoque#59",
+    "name": "还愿礼",
+    "group": "时代/LIX",
+    "stem": "char_4098_vvana_epoque_59",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_4098_vvana_epoque%2359.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_4098_vvana_epoque%2359.png",
+    "illust": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/skin/char_4098_vvana_epoque%2359b.png",
+    "back": true
+   }
+  ],
+  "char_4162_cathy": [
+   {
+    "id": "char_4162_cathy@kitchen#5",
+    "name": "暖冬教室",
+    "group": "罗德厨房/V",
+    "stem": "char_4162_cathy_kitchen_5",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_4162_cathy_kitchen%235.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_4162_cathy_kitchen%235.png",
+    "illust": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/skin/char_4162_cathy_kitchen%235b.png",
+    "back": true
+   }
+  ],
+  "char_2025_shu": [
+   {
+    "id": "char_2025_shu@nlc#1",
+    "name": "源远流长",
+    "group": "国家图书馆",
+    "stem": "char_2025_shu_nlc_1",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_2025_shu_nlc%231.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_2025_shu_nlc%231.png",
+    "illust": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/skin/char_2025_shu_nlc%231b.png",
+    "back": true
+   }
+  ],
   "char_498_inside": [
    {
     "id": "char_498_inside@kitchen#2",
@@ -504,6 +562,16 @@
     "group": "音律联觉/IV",
     "stem": "char_1033_swire2_ambienceSynesthesia_4",
     "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_1033_swire2_ambienceSynesthesia%234.png",
+    "back": true
+   },
+   {
+    "id": "char_1033_swire2@nlc#1",
+    "name": "盛世之象",
+    "group": "国家图书馆",
+    "stem": "char_1033_swire2_nlc_1",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_1033_swire2_nlc%231.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_1033_swire2_nlc%231.png",
+    "illust": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/skin/char_1033_swire2_nlc%231b.png",
     "back": true
    }
   ],
@@ -1159,6 +1227,16 @@
     "stem": "char_1040_blaze2_winter_5",
     "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_1040_blaze2_winter%235.png",
     "back": true
+   },
+   {
+    "id": "char_1040_blaze2@nlc#1",
+    "name": "夜行烛火",
+    "group": "国家图书馆",
+    "stem": "char_1040_blaze2_nlc_1",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_1040_blaze2_nlc%231.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_1040_blaze2_nlc%231.png",
+    "illust": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/skin/char_1040_blaze2_nlc%231b.png",
+    "back": true
    }
   ],
   "char_4145_ulpia": [
@@ -1214,6 +1292,16 @@
     "group": "时代/XXIV",
     "stem": "char_4039_horn_epoque_24",
     "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_4039_horn_epoque%2324.png",
+    "back": true
+   },
+   {
+    "id": "char_4039_horn@epoque#59",
+    "name": "锋光初现",
+    "group": "时代/LIX",
+    "stem": "char_4039_horn_epoque_59",
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_4039_horn_epoque%2359.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_4039_horn_epoque%2359.png",
+    "illust": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/skin/char_4039_horn_epoque%2359b.png",
     "back": true
    }
   ],

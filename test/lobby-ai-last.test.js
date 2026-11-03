@@ -210,6 +210,16 @@ test('new co-op rooms default AI-last on; new solo rooms keep the irrelevant opt
   assert.equal(new Room('SOLO', 'solo', 'NORMAL', Date.now()).aiPicksLast, false);
 });
 
+test('seat avatar preference is a boolean room option and remains off by default', () => {
+  assert.equal(validateC2S({ t: 'room.setSeatAvatars', on: true }), null);
+  assert.notEqual(validateC2S({ t: 'room.setSeatAvatars', on: 'true' }), null);
+  const room = new Room('AVAT', 'coop', 'NORMAL', 0);
+  assert.equal(room.seatAvatars, false);
+  assert.equal(room.toState().seatAvatars, undefined);
+  room.seatAvatars = true;
+  assert.equal(room.toState().seatAvatars, true);
+});
+
 test('unite layers: boolean protocol, host defaults captured per room and explicit false survives worker transport', () => {
   try {
     for (const on of [true, false]) {

@@ -309,7 +309,40 @@ export class FxWiring {
     return false;
   }
 
-  skinOf(u) { return u && u.skin && this.idx ? this.idx.skins[u.skin] || null : null; }
+  skinOf(u, v) {
+    if (!this.idx) return null;
+    const skinId = v?.info?.skin;
+    if (skinId && this.idx.skins?.[skinId]) {
+      const skin = this.idx.skins[skinId];
+      if (Object.keys(skin.points || {}).length) return skin;
+      return { ...this.idx.skins?.[u?.skin], ...skin, points: this.idx.skins?.[u?.skin]?.points || {} };
+    }
+    return u && u.skin && this.idx.skins?.[u.skin] || null;
+  }
+
+  modesOf(u, v) {
+    const modes = this.idx?.skins?.[v?.info?.skin]?.modes;
+    if (!Array.isArray(modes) || !modes.length) return u?.modes || [];
+    const base = u?.modes || [];
+    return [...base.map(mode => modes.find(override => override.name === mode.name) || mode),
+      ...modes.filter(mode => !base.some(original => original.name === mode.name))];
+  }
+
+  skinKey(key, v, opts = {}) {
+    const source = opts.flipFrom;
+    const sourceMap = source && source !== v ? this.idx?.skins?.[source.info?.skin]?.replace : null;
+    const own = this.idx?.skins?.[v?.info?.skin]?.replace;
+    return sourceMap?.[key] || own?.[key] || key;
+  }
+
+  spawn(key, place, opts = {}) {
+    const resolveKey = candidate => {
+      const original = lc(candidate);
+      const replacement = this.skinKey(original, opts.skinSource || opts.owner);
+      return this.ofx.lib.has(replacement) ? replacement : original;
+    };
+    return this.ofx.spawn(resolveKey(key), place, { ...opts, resolveKey });
+  }
 
   /**
    * Where a view stands, as mounts.js reads it: board feet + facing, the view itself (its model's bones: the
@@ -354,7 +387,8 @@ export class FxWiring {
     for (const v of views) {
       const u = this.unitOf(v);
       if (!u) continue;
-      for (const m of u.modes || []) {
+      const skin = this.skinOf(u, v);
+      for (const m of [...(u.modes || []), ...(skin?.modes || [])]) {
         walk(m.attack);
         walk(m.combat);   // index v2: the blow on a blocker (most enemies' only attack)
         if (m.overrideStartEffect) keys.add(m.overrideStartEffect);
@@ -362,6 +396,7 @@ export class FxWiring {
       }
       if (u.startEffect) keys.add(u.startEffect);
       if (u.deadEffect) keys.add(u.deadEffect);
+      for (const replacement of Object.values(skin?.replace || {})) if (replacement) keys.add(replacement);
     }
     // the skill, talent and charge effects (render/vfx/skillfx.js keys: plans, the skills' projectiles, bindings) and the
     // talents' and abilities' (render/vfx/talentfx.js, index v3)
@@ -396,7 +431,7 @@ export class FxWiring {
    * enemy in a form the index names a mode for (skillfx.js formMode: Reborn, Stone, Fly …), that mode; else `Default`.
    */
   mode(u, v, skillOn) {
-    const modes = u?.modes || [];
+    const modes = this.modesOf(u, v);
     if (!modes.length) return null;
     const st = this.skills.state(v, skillOn);
     const sn = Number.isInteger(v?.info?.skillIndex) ? `S${v.info.skillIndex + 1}` : null;
@@ -504,7 +539,8 @@ export class FxWiring {
    * started in the battle's first frames used to sit at the HitPoint for good).
    */
   playOn(key, v, o = {}) {
-    let k = lc(key);
+    let k = this.skinKey(lc(key), v, o);
+    if (k !== lc(key) && !this.ofx.lib.has(k)) k = lc(key);
     if (!k || !this.ofx.lib.has(k)) return null;
     if (k === YU_WALL_SOURCE) {
       const wall = new YuWall(this, v);
@@ -518,7 +554,7 @@ export class FxWiring {
       if (alt && alt !== k && this.ofx.lib.has(alt)) { k = alt; def = this.ofx.lib.def(k); }
     }
     const u = this.unitOf(v);
-    const skin = this.skinOf(u);
+    const skin = this.skinOf(u, v);
     const pose = this.pose(v);
     pose.strike = !!o.strike;
     let P = this._placing(def, def ? null : this.idx?.prefabs?.[k] || null, o);
@@ -531,7 +567,7 @@ export class FxWiring {
     const place = { pos, groundZ: -ground, yaw: 0, mirror: false, flipY: false, mountRot: null, rootRot: null };
     this._rotate(P, place, skin, pose);
     this._orient(def, place, pose, o, v);
-    const opts = { track: o.track || null, data: o.data ?? null, loop: !!o.loop, important: !!o.important, skip: o.skip > 0 ? o.skip : 0, owner: v };
+    const opts = { track: o.track || null, data: o.data ?? null, loop: !!o.loop, important: !!o.important, skip: o.skip > 0 ? o.skip : 0, owner: v, skinSource: o.flipFrom || v };
     // the owner each frame: FollowMountPoint keeps the effect on the unit's point (and its rotation), a held effect
     // moves with the unit (`keep`), FollowDirection turns it with the unit, PauseEffectIf hides it while the unit shows
     // a condition; a prefab with chained effects (OnPlayEmitter: system.js FxHandle._start hands them this track) has
@@ -598,7 +634,7 @@ export class FxWiring {
         if (d && d.pause) fx.hidden = this._paused(d.pause, v, p);
       };
     }
-    return this.ofx.spawn(k, place, opts);
+    return this.spawn(k, place, opts);
   }
 
   /**
@@ -756,7 +792,7 @@ export class FxWiring {
     if (!mem) { mem = new Map(); this.picks.set(id, mem); }
     const list = pickAttacks(a, { heal, ranged: !!kind && kind !== 'none', blocked: !!((src.flags | 0) & UF.BLOCKED) }, seedOf(id, nth), 0, nth, mem);
     const set = { cast: [], castTarget: [], inputTarget: [], hit: [], groups: null, hitOpts: null, projectileKey: null, shot: null, shotClass: null };
-    const modeIdx = (u?.modes || []).indexOf(m);
+    const modeIdx = this.modesOf(u, src).indexOf(m);
     for (const x of list) {
       const ems = Array.isArray(x.emitters) ? x.emitters : [];
       const ok = (r) => this._rowOk(r, ems[r?.emitter], src, nth, modeIdx);
@@ -1010,7 +1046,7 @@ export class FxWiring {
    */
   _fly(proj, src, tgt, kind, time, o = {}) {
     const su = this.unitOf(src), tu = this.unitOf(tgt);
-    const sSkin = this.skinOf(su), tSkin = this.skinOf(tu);
+    const sSkin = this.skinOf(su, src), tSkin = this.skinOf(tu, tgt);
     // the start: the mount point as the attack clip poses it at its strike frame (a follow-up shot: as it is drawn then);
     // a rope's end on the shooter follows the point as it is drawn
     const startAt = (out, strike = false) => {
@@ -1072,8 +1108,8 @@ export class FxWiring {
     };
     const def = mainKey ? this.ofx.lib.def(mainKey) : null;
     const flipIfLeft = def ? def.flipIfLeft : false;
-    const handle = mainKey ? this.ofx.spawn(mainKey, { pos: from.slice(), groundZ: -(src.z || 0), rootRot: ID_ROT }, {
-      important: true,
+    const handle = mainKey ? this.spawn(mainKey, { pos: from.slice(), groundZ: -(src.z || 0), rootRot: ID_ROT }, {
+      important: true, skinSource: src,
       track: (fx) => {
         if (flight.done) return;
         if (flight.back) { if (!this._stepBack(flight, fx.time, src, sSkin)) { finish(fx); return; } } else step(Math.min(flight.dur, fx.time));
@@ -1092,8 +1128,8 @@ export class FxWiring {
       // the rope: its LineRenderers from the shooter's mount point now to the head (effect.js linkLines; a world-space
       // line draws nothing before); without a head it flies the shot itself
       const drive = !handle;
-      flight.rope = this.ofx.spawn(ropeKey, { pos: from.slice(), groundZ: -(src.z || 0), rootRot: ID_ROT }, {
-        important: true,
+      flight.rope = this.spawn(ropeKey, { pos: from.slice(), groundZ: -(src.z || 0), rootRot: ID_ROT }, {
+        important: true, skinSource: src,
         track: (fx) => {
           if (flight.done) return;
           step(Math.min(flight.dur, fx.time));
@@ -1264,7 +1300,7 @@ export class FxWiring {
       if (src && this.skills.bindsReached(src, proj)) return;
       for (const k of proj.onReached || []) {
         const kk = lc(k);
-        if (kk && this.ofx.lib.has(kk)) this.ofx.spawn(kk, { pos: at.slice(), groundZ: at[2] }, {});
+        if (kk && this.ofx.lib.has(kk)) this.spawn(kk, { pos: at.slice(), groundZ: at[2] }, { skinSource: src });
       }
     };
     if (laterAt == null) go();
@@ -1420,11 +1456,11 @@ export class FxWiring {
   /** A chain's bounce lands: its line from prev to next (kept on their HitPoints while it shows), its hit on next. */
   _bounce(c, prev, next) {
     if (!next || next.destroyed) return;
-    const ps = this.skinOf(this.unitOf(prev)), ns = this.skinOf(this.unitOf(next));
+    const ps = this.skinOf(this.unitOf(prev), prev), ns = this.skinOf(this.unitOf(next), next);
     const a = unitPoint(ps, 'hit', this.pose(prev)), b = unitPoint(ns, 'hit', this.pose(next));
     if (c.line && this.ofx.lib.has(c.line)) {
-      const h = this.ofx.spawn(c.line, { pos: a.slice(), groundZ: -(prev.z || 0) }, {
-        important: true,
+      const h = this.spawn(c.line, { pos: a.slice(), groundZ: -(prev.z || 0) }, {
+        important: true, skinSource: c.src,
         track: (fx) => {
           if (!prev.destroyed && prev.alive !== false) unitPoint(ps, 'hit', this.pose(prev), a);
           if (!next.destroyed && next.alive !== false) unitPoint(ns, 'hit', this.pose(next), b);
@@ -1434,7 +1470,7 @@ export class FxWiring {
       });
       if (h) setTimeout0(this.ofx, h, CHAIN_LINE_S);
     }
-    this._arrive(c.proj, next, b, null, c.rows, prev);
+    this._arrive(c.proj, next, b, null, c.rows, c.src || prev);
   }
 
   /**

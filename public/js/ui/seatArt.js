@@ -21,7 +21,7 @@ export const CARD_SKIN_PREF = 'room.cardSkin';
  * @param {any[]} chessList chess.json records
  * @returns {any[]}
  */
-export function cardOperators(chessList, catalogue = null) {
+export function cardOperators(chessList, catalogue = null, manifest = null, skins = null) {
   const by = new Map();
   for (const c of Array.isArray(chessList) ? chessList : []) {
     if (!c || c.isDiy || c.visible === false || typeof c.charId !== 'string') continue;
@@ -31,6 +31,16 @@ export function cardOperators(chessList, catalogue = null) {
   for (const c of Object.values(catalogue?.chars || {})) {
     const prev = by.get(c.charId);
     by.set(c.charId, { ...c, ...prev, choices: c.choices });
+  }
+  for (const [charId, record] of by) {
+    const choices = new Map((record.choices || []).map(choice => [choice.id, choice]));
+    for (const [skinId, installed] of Object.entries(manifest?.chars?.[charId]?.skins || {})) {
+      const portrait = installed.portrait || installed.portraitE2 || installed.illust;
+      if (!portrait) continue;
+      const metadata = skins?.chars?.[charId]?.find(skin => skin.id === skinId);
+      choices.set(skinId, { id: skinId, name: metadata?.name || installed.name || skinId, portrait });
+    }
+    if (choices.size) by.set(charId, { ...record, choices: [...choices.values()] });
   }
   return [...by.values()].sort((a, b) => ((b.rarity ?? 0) - (a.rarity ?? 0)) || String(a.name).localeCompare(String(b.name), 'zh'));
 }

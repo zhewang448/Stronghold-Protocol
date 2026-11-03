@@ -8,6 +8,44 @@ import { BAND_TURN_SECONDS } from '../../server/match/Match.js';
 
 const TURN_MS = BAND_TURN_SECONDS * 1000;
 
+test('focused random timeout and forced fallback resolve once with the same bonuses as confirmation', t => {
+  const outcomes = [];
+  for (const route of ['manual', 'timeout', 'fallback']) {
+    const h = makeMatch({ mode: 'coop', humans: 2, seed: 37, fake: true }).start();
+    t.after(() => h.m.dispose());
+    h.m.enterBandDraft();
+    const pid = h.m.draftTurn(), ps = h.ps(pid);
+    const before = ps.funds;
+    assert.deepEqual(h.m.handle(pid, { t: 'g.bandFocus', bandId: 'band_random' }), { ok: true });
+    if (route === 'manual') h.m.handle(pid, { t: 'g.band', bandId: 'band_random' });
+    else if (route === 'timeout') h.sched.advance(TURN_MS + 1);
+    else h.m._applyBand(ps, h.m.timeoutBand(pid), { dedupe: true });
+    assert.notEqual(ps.bandId, 'band_random');
+    assert.equal(ps.lp, h.m.gd.startLp(ps.bandId) + 1);
+    assert.equal(ps.funds, before + 1);
+    h.m._applyBand(ps, 'band_random');
+    assert.equal(ps.funds, before + 1, 'duplicate assignment never pays twice');
+    outcomes.push(ps.bandId);
+  }
+  assert.equal(new Set(outcomes).size, 1, 'identical draft seed and state resolve identically');
+});
+
+test('random strategy resolves from the free pool and grants the stated bonus', () => {
+  const h = makeMatch({ mode: 'coop', humans: 3, seed: 17 }).start();
+  const m = h.m;
+  for (const id of ['p_0', 'p_1', 'p_2']) m.handle(id, { t: 'g.infoReady' });
+  h.sched.advance(1);
+  const pid = m.draftTurn();
+  const ps = h.ps(pid);
+  const funds = ps.funds;
+  assert.deepEqual(m.handle(pid, { t: 'g.band', bandId: 'band_random' }), { ok: true });
+  assert.notEqual(ps.bandId, 'band_random');
+  assert.equal(ps.lp, m.gd.startLp(ps.bandId) + 1);
+  assert.equal(ps.funds, funds + 1);
+  assert.equal(new Set(Object.values(m.draft.picks)).size, Object.keys(m.draft.picks).length);
+  m.dispose();
+});
+
 test('INFO_CHECK: ends when every human confirmed (bots/departed count as ready) or at the 25 s deadline', () => {
   const h = makeMatch({ mode: 'coop', humans: 2, bots: 1, seed: 1 }).start();
   const m = h.m;

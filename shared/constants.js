@@ -24,6 +24,7 @@ export const DEFAULT_SEATS = 4;
 export const MAX_SEATS = 20;
 export const ROOM_CAPACITIES = Object.freeze([4, 8, 10, 16, 20]);
 export const MAX_DRAFT_CARDS = 6;
+export const RANDOM_BAND_ID = 'band_random';
 /**
  * Spectator seats of a co-op room (community report #26, owner's decision 2026-10-04) — a remake feature: the official
  * room has 1–4 players and no spectator seat (there only eliminated players and 联防 bystanders watch, research 09 §3.1).
@@ -150,6 +151,9 @@ export const ERR = Object.freeze({
   CHAT_MUTED: 'CHAT_MUTED',
   CHAT_DISABLED: 'CHAT_DISABLED',
   UNITE_LAYERS_LOCKED: 'UNITE_LAYERS_LOCKED',
+  ROOM_OPTION_LOCKED: 'ROOM_OPTION_LOCKED',
+  ROOM_RESET_BLOCKED: 'ROOM_RESET_BLOCKED',
+  ROOM_RESET_CHANGED: 'ROOM_RESET_CHANGED',
   SOCIAL_DISABLED: 'SOCIAL_DISABLED',
   INVITE_UNAVAILABLE: 'INVITE_UNAVAILABLE',
   INVITE_EXPIRED: 'INVITE_EXPIRED',
@@ -215,6 +219,9 @@ export const ERR_TEXT = {
   CHAT_MUTED: N_('你已被主机禁言，请联系主机解除'),
   CHAT_DISABLED: N_('主机已暂时关闭房间文字聊天'),
   UNITE_LAYERS_LOCKED: N_('主机未允许房主修改联防叠层规则'),
+  ROOM_OPTION_LOCKED: N_('主机未允许房主修改此项房间配置'),
+  ROOM_RESET_BLOCKED: N_('当前成员数量或版本限制阻止恢复默认，房间设置未改变'),
+  ROOM_RESET_CHANGED: N_('默认配置或房主权限已变化，请重新恢复默认'),
   SOCIAL_DISABLED: N_('主机未开启此在线玩家功能'),
   INVITE_UNAVAILABLE: N_('当前无法发送邀请，请检查房间空位和玩家状态'),
   INVITE_EXPIRED: N_('邀请已失效，请重新邀请'),

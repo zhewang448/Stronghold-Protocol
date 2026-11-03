@@ -129,6 +129,24 @@ test('the bond popup closes on outside presses, while its own region and toggle 
   assert.match(src, /screen\.removeEventListener\('pointerdown', onDown, true\)/);
 });
 
+test('bond members display real stock including zero and unlimited while banned or unavailable entries stay unlabelled', () => {
+  const bondId = 'yanShip', ids = data.lookup('bonds', bondId).visibleMembers;
+  assert.ok(ids.length >= 4);
+  const counts = { [ids[0]]: 0, [ids[1]]: 7, [ids[2]]: null, [ids[3]]: 12 };
+  const popup = BondPopup({ bondId, priv: { board: [], hand: [] }, stock: { counts, scope: 'shared' },
+    banned: [ids[3]], onClose() {} });
+  const labels = [...walk(popup)].filter(node => hasClass(node, 'bpop__stock'));
+  assert.equal(labels.length, 3);
+  assert.equal(labels[0].props['aria-label'], '卡池剩余 0 张');
+  assert.equal(hasClass(labels[0], 'is-empty'), true);
+  assert.equal(labels[1].props['data-stock'], 7);
+  assert.equal(labels[2].props['aria-label'], '卡池不限量');
+  assert.match(textOf(popup), /同组共享卡池/);
+  assert.match(textOf(BondPopup({ bondId, stock: { counts, scope: 'independent' }, onClose() {} })), /个人独立卡池/);
+  const legacy = BondPopup({ bondId, priv: { board: [], hand: [] }, onClose() {} });
+  assert.equal([...walk(legacy)].some(node => hasClass(node, 'bpop__stock')), false);
+});
+
 test('hidden-layer bonds show activation and tiers without a stack badge or layer count', () => {
   for (const bondId of ['maniShip', 'emptyShip', 'soloShip', 'suntShip']) {
     const entry = { bondId, active: true, count: 2, tier: 1, layers: 99 };

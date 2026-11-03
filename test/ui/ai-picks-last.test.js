@@ -28,6 +28,13 @@ test('aiLastOption: hidden in solo, editable by the host only, the state from ro
   assert.equal(aiLastOption(null, 'h'), null);
 });
 
+test('seatAvatarOption: hidden in solo, editable by the host, and off for legacy room.state', async () => {
+  const { seatAvatarOption } = await mod();
+  assert.equal(seatAvatarOption(room({ mode: 'solo' }), 'h'), null);
+  assert.deepEqual(seatAvatarOption(room(), 'h'), { on: false, editable: true });
+  assert.deepEqual(seatAvatarOption(room({ seatAvatars: true }), 'g'), { on: true, editable: false });
+});
+
 test('room.js sends room.setAiPicksLast { on } and shows the switch through t(); en.json has the English', () => {
   assert.match(SRC, /net\.request\('room\.setAiPicksLast', \{ on \}\)/);
   for (const zh of ['AI 队友最后选择', '策略与机变轮选时，所有博士先于 AI 队友选择', '由创建者设置']) {
@@ -35,4 +42,10 @@ test('room.js sends room.setAiPicksLast { on } and shows the switch through t();
     assert.equal(typeof EN[zh], 'string', `en.json: ${zh}`);
     assert.ok(EN[zh].length > 0 && !/[一-鿿]/.test(EN[zh]), `English for ${zh}`);
   }
+});
+
+test('room.js sends room.setSeatAvatars { on } and translates the seat-avatar option', () => {
+  assert.ok(SRC.includes("net.request('room.setSeatAvatars', { on })"));
+  assert.equal(typeof EN['座位卡优先显示头像'], 'string');
+  assert.equal(typeof EN['开启后显示同房间玩家上传的头像；AI 保留策略头像'], 'string');
 });

@@ -258,10 +258,21 @@ export function toggleBond(open, id, ownerId, from) {
  *   outside a battle)
  * @returns {{ bondId: string, ownerId: string, self: boolean, name: string|null, entry: any, priv: any }|null}
  */
+export function popupStock({ pub, priv, myId, ownerId }) {
+  const counts = priv?.shop?.chessStock;
+  if (!isObj(counts) || !myId || priv.playerId !== myId) return null;
+  const group = Array.isArray(pub?.poolGroups) ? pub.poolGroups.find(entry => entry.playerIds?.includes(myId)) : null;
+  if (ownerId === myId) return { counts, scope: pub?.independentPools === true ? 'independent' : group?.playerIds.length > 1 ? 'shared' : 'personal' };
+  if (pub?.independentPools === true || !group?.playerIds.includes(ownerId)) return null;
+  const privateSlots = new Set(Object.keys(priv.diy || {}));
+  return { counts: Object.fromEntries(Object.entries(counts).filter(([id]) => !privateSlots.has(id))), scope: 'shared' };
+}
+
 export function popupView({ open, pub, priv = null, myId, field = null, units = null, live = null }) {
   if (!isObj(open) || typeof open.id !== 'string' || !open.id) return null;
   const ownerId = typeof open.ownerId === 'string' && open.ownerId ? open.ownerId : myId;
   const self = ownerId === myId;
   const entry = playerBonds({ pub, priv, myId, ownerId, live }).find((b) => isObj(b) && b.bondId === open.id) || null;
-  return { bondId: open.id, ownerId, self, name: self ? null : nameOf(pub, ownerId), entry, priv: self ? priv : ownerBoard(field, ownerId, units) };
+  const stock = popupStock({ pub, priv, myId, ownerId });
+  return { bondId: open.id, ownerId, self, name: self ? null : nameOf(pub, ownerId), entry, priv: self ? priv : ownerBoard(field, ownerId, units), ...(stock ? { stock } : {}) };
 }

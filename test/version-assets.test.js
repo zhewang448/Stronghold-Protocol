@@ -9,6 +9,8 @@ import { fxFixture } from './helpers/fxFixtures.js';
 
 const root = path.resolve(import.meta.dirname, '..');
 const assets = JSON.parse(readFileSync(path.join(root, 'data/assets.json'), 'utf8'));
+const python = process.platform === 'win32' ? 'python' : 'python3';
+const pillowAvailable = spawnSync(python, ['-B', '-c', 'import PIL'], { stdio: 'ignore' }).status === 0;
 
 test('every official version declares comparable pictures, models, clips, icons and scenes without installed art', () => {
   const result = assetCoverage({ root, local: { groups: {} } });
@@ -63,7 +65,7 @@ test('fx discovery includes each season even when their chess ids collide', (t) 
   assert.deepEqual(gd.skillOverrides, { char_9002_earlier: { sk_shared: 'skchr_earlier_1' } }, 'official art overrides stay scoped to their operator');
 });
 
-test('add-only FX extraction retains shared metadata and old files while crawling only new units', (t) => {
+test('add-only FX extraction retains shared metadata and old files while crawling only new units', { skip: !pillowAvailable }, (t) => {
   const f = fxFixture(t);
   const script = `import sys,json,pathlib
 from unittest.mock import patch

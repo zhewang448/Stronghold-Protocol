@@ -33,8 +33,10 @@ export function buildSkinPlan(research, selected = [], seatArt = null) {
       const portraitUrl = seatArt?.chars?.[charId]?.choices?.find((row) => row.id === s.id)?.portrait;
       // Existing seat posters are optional local files, resolved through the same leaf format as avatars.
       const portrait = typeof portraitUrl === 'string' && portraitUrl.startsWith('/assets/')
-        ? { alts: [{ rel: portraitUrl.slice('/assets/'.length), urls: [], kind: 'png' }] } : null;
-      c.skins[s.id] = { avatar, spine, ...(portrait ? { portrait } : {}) };
+        ? { alts: [{ rel: portraitUrl.slice('/assets/'.length), urls: [], kind: 'png' }] }
+        : s.portrait ? { alts: [{ rel: `char/portrait/${safeName(s.stem)}.png`, urls: [s.portrait], kind: 'png' }] } : null;
+      const illust = s.illust ? { alts: [{ rel: `char/illust/${safeName(s.stem)}.png`, urls: [s.illust], kind: 'png' }] } : null;
+      c.skins[s.id] = { avatar, spine, ...(portrait ? { portrait, portraitE2: portrait } : {}), ...(illust ? { illust } : {}) };
     }
   }
   return { template, models };

@@ -406,7 +406,7 @@ export class FunnelFx {
     let drew = false;
     // the hit prefab carries the unit beside the target — AttachToTarget at its HitPoint: it goes where the enemy goes —,
     // moved by its FunnelHitEffect's random range (±x, ±y in the battle frame) once per hit
-    const skin = this.w.skinOf(this.w.unitOf(tgt));
+    const skin = this.w.skinOf(this.w.unitOf(tgt), tgt);
     o.seed = (o.seed || 0) + 1;
     for (const key of g) {
       const j = this._jitter(key, `${U.id}|${f.i}`, o.seed);
@@ -468,8 +468,8 @@ export class FunnelFx {
     if (!this._has(key)) return null;
     const def = this.w.ofx.lib.def(key);
     const pos = this._flyPos(dr);
-    return this.w.ofx.spawn(key, { pos, groundZ: pos[2], rootRot: [0, 0, 0, 1] }, {
-      loop: true, important: true,
+    return this.w.spawn(key, { pos, groundZ: pos[2], rootRot: [0, 0, 0, 1] }, {
+      loop: true, important: true, skinSource: U.v,
       track: (fx) => {
         const p = this._flyPos(dr);
         fx.anchor[0] = p[0]; fx.anchor[1] = p[1]; fx.anchor[2] = p[2];
@@ -484,7 +484,7 @@ export class FunnelFx {
   _flyPos(dr) {
     if (dr.phase === 'lock' && dr.t && alive(dr.t)) {
       const u = this.w.unitOf(dr.t);
-      return unitPoint(this.w.skinOf(u), 'hit', this.w.pose(dr.t), [0, 0, 0]);
+      return unitPoint(this.w.skinOf(u, dr.t), 'hit', this.w.pose(dr.t), [0, 0, 0]);
     }
     const hAt = this.w.ofx.ctx?.heightAt;
     const g = typeof hAt === 'function' ? Math.max(0, Number(hAt(Math.round(dr.y), Math.round(dr.x))) || 0) : 0;

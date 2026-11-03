@@ -59,10 +59,10 @@ test('console feedback animates manual actions, preserves records and recovers f
   assert.equal(await page.evaluate(() => globalThis.feedbackAnimations.length), 0, 'room polling does not replay animations');
   await page.click('[data-tab=settings]');
   await page.waitForSelector('#unite-layers-enabled');
-  await page.click('[data-unite-layers-save]');
-  assert.match(await page.$eval('#unite-layers-saved', el => el.textContent), /保存中/);
-  await page.waitForFunction(() => document.querySelector('#unite-layers-saved').dataset.feedbackState === 'success');
-  assert.equal(await page.evaluate(() => globalThis.feedbackAnimations.some(x => x.id === 'unite-layers-saved' && x.duration === 120)), true);
+  await page.click('[data-room-creation-save]');
+  assert.match(await page.$eval('#room-creation-saved', el => el.textContent), /保存中/);
+  await page.waitForFunction(() => document.querySelector('#room-creation-saved').dataset.feedbackState === 'success');
+  assert.equal(await page.evaluate(() => globalThis.feedbackAnimations.some(x => x.id === 'room-creation-saved' && x.duration === 120)), true);
   await page.focus('.settings-preview > summary');
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => document.querySelector('.settings-preview').open);
@@ -70,8 +70,8 @@ test('console feedback animates manual actions, preserves records and recovers f
   assert.equal(await page.evaluate(() => globalThis.feedbackAnimations.some(x => x.id === 'prep-preview' && x.duration === 140)), true, 'keyboard expansion receives the same feedback');
   await page.keyboard.press('Enter');
   failSave = true;
-  await page.click('[data-unite-layers-save]');
-  await page.waitForFunction(() => document.querySelector('#unite-layers-saved').dataset.feedbackState === 'error');
+  await page.click('[data-room-creation-save]');
+  await page.waitForFunction(() => document.querySelector('#room-creation-saved').dataset.feedbackState === 'error');
   assert.match(await page.$eval('#msg', el => el.textContent), /失败/);
   await page.waitForFunction(() => document.querySelector('#msg').style.display === 'none', { timeout: 7000 });
   assert.equal(await page.evaluate(() => globalThis.feedbackAnimations.some(x => x.id === 'msg' && x.duration === 100 && x.frames[1].opacity === 0)), true);
@@ -106,9 +106,9 @@ test('console feedback animates manual actions, preserves records and recovers f
   await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
   await page.click('[data-tab=settings]');
   await page.evaluate(() => { globalThis.feedbackAnimations.length = 0; });
-  await page.click('[data-unite-layers-save]');
-  await page.waitForFunction(() => document.querySelector('#unite-layers-saved').dataset.feedbackState === 'success');
-  assert.equal(await page.evaluate(() => globalThis.feedbackAnimations.some(x => x.id === 'unite-layers-saved' && x.duration === 70)), true);
+  await page.click('[data-room-creation-save]');
+  await page.waitForFunction(() => document.querySelector('#room-creation-saved').dataset.feedbackState === 'success');
+  assert.equal(await page.evaluate(() => globalThis.feedbackAnimations.some(x => x.id === 'room-creation-saved' && x.duration === 70)), true);
   await page.click('[data-tab=rooms]');
   await page.evaluate(() => { globalThis.feedbackAnimations.length = 0; });
   await page.click('[data-toggle]');
@@ -117,7 +117,7 @@ test('console feedback animates manual actions, preserves records and recovers f
   for (const [width, height] of [[1440, 900], [390, 844]]) {
     await page.setViewport({ width, height });
     await page.click('[data-tab=settings]');
-    await page.$eval('#unite-settings', el => el.scrollIntoView({ block: 'center' }));
+    await page.$eval('#room-defaults-settings', el => el.scrollIntoView({ block: 'center' }));
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     fs.mkdirSync('.cache/console-tab-lag-20261024', { recursive: true });
     await page.screenshot({ path: `.cache/console-tab-lag-20261024/feedback-${width}.png` });

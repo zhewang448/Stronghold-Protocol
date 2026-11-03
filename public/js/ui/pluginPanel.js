@@ -103,7 +103,7 @@ function ModePicker({ room, f, busy, onPick }) {
     <span class="plugpanel__modes-label">${t('模式')}</span>
     ${options.map((o) => html`<button key=${o.id} type="button" role="radio" aria-checked=${o.id === current ? 'true' : 'false'}
         class=${cx('dpick__opt', o.id === current && 'is-active')} data-mode=${o.id}
-        disabled=${!f.editable || !!busy} onClick=${() => o.id !== current && onPick(o.id)}>${o.name}</button>`)}
+        disabled=${!f.editable || !!busy || room.hostControls?.difficulty === false} onClick=${() => o.id !== current && onPick(o.id)}>${o.name}</button>`)}
     ${f.editable ? null : html`<span class="set-hint">${t('由创建者设置')}</span>`}
   </div>`;
 }

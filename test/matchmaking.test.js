@@ -7,7 +7,7 @@ import { StubMatch } from '../server/match/StubMatch.js';
 import { TestClient } from './helpers/wsClient.js';
 import { validateC2S } from '../shared/protocol.js';
 import { ERR } from '../shared/constants.js';
-import { setSocialSettings, resetHostSettings } from '../server/match/hostSettings.js';
+import { setSocialSettings, setRoomCreation, resetHostSettings } from '../server/match/hostSettings.js';
 
 const request = { t: 'match.queue', mode: 'coop', difficulty: 'NORMAL', version: 'act2autochess', fillBots: false };
 function fixture(t, options = {}) {
@@ -53,6 +53,24 @@ test('four solos form one waiting room: FIFO host, no bots, no start, ready gate
   assert.equal(room.seats.some(s => s?.isBot), false);
   assert.ok(players.every(p => p.frames.some(frame => frame.t === 'match.found')));
   assert.equal(f.lobby.start(players[0]).error, ERR.NOT_READY);
+  assert.equal(f.lobby.matchmaking.solo.size, 0);
+});
+
+test('locked creation defaults never change exact matchmaking preferences or discard queued players', t => {
+  const f = fixture(t), players = ['甲', '乙', '丙', '丁'].map(f.player);
+  setRoomCreation({ defaults: { difficulty: 'HARD' }, hostControls: { difficulty: false } });
+  for (const player of players) assert.deepEqual(f.queue(player), { ok: true });
+  assert.equal(f.lobby.rooms.size, 0);
+  assert.equal(f.lobby.matchmaking.solo.size, 4);
+  setRoomCreation({ hostControls: { difficulty: true }, defaults: { private: true } });
+  f.tick();
+  assert.equal(f.lobby.rooms.size, 0);
+  assert.equal(f.lobby.matchmaking.solo.size, 4);
+  setRoomCreation({ defaults: { private: false } });
+  f.tick();
+  const room = f.lobby.roomOf(players[0]);
+  assert.equal(room.difficulty, 'NORMAL');
+  assert.ok(players.every(player => f.lobby.roomOf(player) === room));
   assert.equal(f.lobby.matchmaking.solo.size, 0);
 });
 

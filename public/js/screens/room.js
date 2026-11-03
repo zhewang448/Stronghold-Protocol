@@ -65,6 +65,7 @@ import { SearchPanel, FoundPanel } from '../ui/matchFlow.js';
 import { usePresence, useRise, afterLeave } from '../ui/transitions.js';
 import { t, tc } from '../../../shared/i18n.js';
 import { BondPlanBadge, BondPlanControl } from '../ui/bondPlan.js';
+import { BondGlyph, RichText } from '../ui/gameComponents.js';
 import { CONVENIENCE_DEFAULTS, roomConvenience } from '../../../shared/roomConvenience.js';
 import { AnnouncementButton } from '../ui/announcement.js';
 
@@ -134,7 +135,7 @@ export function roomFacts(room, myId) {
  */
 export function soloUnlimitedOption(room, myId, timed) {
   if (!room || room.mode !== 'solo' || timed !== true) return null;
-  return { on: room.soloUnlimited === true, editable: room.hostId != null && room.hostId === myId };
+  return { on: room.soloUnlimited === true, editable: room.hostId != null && room.hostId === myId && room.hostControls?.['convenience.soloUnlimited'] !== false };
 }
 
 export function botNameParts(seat) {
@@ -144,7 +145,21 @@ export function botNameParts(seat) {
 
 export function aiLastOption(room, myId) {
   if (!room || room.mode === 'solo') return null;
-  return { on: room.aiPicksLast === true, editable: room.hostId != null && room.hostId === myId };
+  return { on: room.aiPicksLast === true, editable: room.hostId != null && room.hostId === myId && room.hostControls?.aiPicksLast !== false };
+}
+
+export function seatAvatarOption(room, myId) {
+  if (!room || room.mode === 'solo') return null;
+  return { on: room.seatAvatars === true, editable: room.hostId != null && room.hostId === myId && room.hostControls?.seatAvatars !== false };
+}
+
+function bondPlanTooltip(bondId) {
+  const bond = bondId ? data.lookup('bonds', bondId) : null;
+  if (!bond) return null;
+  return {
+    text: html`<span class='rseat__avatar-tiphead'><${BondGlyph} bondId=${bondId} /><b>${bond.name || bondId}</b></span>`,
+    aside: html`<${RichText} text=${bond.descRaw || bond.desc || bond.effectDescRaw || bond.effectDesc || ''} />`,
+  };
 }
 
 /** Invite link for a room code (current page URL with ?room=CODE). */
@@ -208,6 +223,7 @@ function CardPicker({ current, currentSkin, list, m, onPick, onClose }) {
 
 function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvite, onAddBot, onRemoveBot, onBotBand, searching, portraits, onPickCard = null }) {
   const seatAccount = useAccount(seat && !seat.isBot ? seat.playerId : null);
+  const bondTip = room.seatAvatars === true ? bondPlanTooltip(seat?.bondPlan) : null;
   const [bad, setBad] = useState(null);
   const flash = useRise(!!seat && (seat.ready || seat.isBot || seat.playerId === room.hostId));
   if (!seat) {
@@ -263,7 +279,11 @@ function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvi
     <div class=${`rseat__plate${seatAccount?.card ? ' has-nc' : ''}`}>
       <${NameCardLayer} card=${seatAccount?.card} />
       ${isMe ? html`<span class="rseat__me" title=${t('你')}><${Icon} name="info" /></span>` : null}
-      <${AvatarFrame} size="sm" name=${seat.name} src=${cardAvatarUrl(seat.card, seat.cardSkin, portraits.m) || seatAccount?.avatar || undefined} seat=${index} bot=${seat.isBot} self=${isMe} />
+      ${bondTip ? html`<${Tooltip} text=${bondTip.text} aside=${bondTip.aside} tap=${true} tipClass='rseat__avatar-tooltip'>
+        <button type='button' class='rseat__avatar-help' aria-label=${t('查看预选盟约')}>
+          <${AvatarFrame} size='sm' name=${seat.name} src=${seat.isBot ? undefined : seatAccount?.avatar || undefined} seat=${index} bot=${seat.isBot} self=${isMe} />
+        </button>
+      <//>` : html`<${AvatarFrame} size='sm' name=${seat.name} src=${room.seatAvatars === true ? (seat.isBot ? undefined : seatAccount?.avatar || undefined) : cardAvatarUrl(seat.card, seat.cardSkin, portraits.m) || seatAccount?.avatar || undefined} seat=${index} bot=${seat.isBot} self=${isMe} />`}
       <span class="rseat__who">
         <${TrophyBadge} count=${seatAccount?.trophies} class="tbadge--inline" /><b class=${`rseat__name${owner ? ' sp-owner-name' : ''}`}>${seat.name || t('博士')}</b><${AccountTag} playerId=${seat.isBot ? null : seat.playerId} />
         ${owner ? html`<span class="sp-owner-badge">${t('服主')}</span>` : null}
@@ -329,7 +349,7 @@ function RoomProtocol({ room, variant, onClose, onPick, busy, leaving = false })
         ${offeredDifficulties(getConfig(), room.mode).map((d) => html`<${ProtoCard} key=${d} roomMode=${room.mode} difficulty=${d} selected=${pick === d} onSelect=${setPick}
           random=${room.random === true} variant=${variant} />`)}
       </div>
-      <button type="button" class="proto-start rs-proto__ok" disabled=${!!busy} onClick=${() => (pick === room.difficulty ? onClose() : onPick(pick))}>
+      <button type="button" class="proto-start rs-proto__ok" disabled=${!!busy || room.hostControls?.difficulty === false} onClick=${() => (pick === room.difficulty ? onClose() : onPick(pick))}>
         <span class="proto-start__mark" aria-hidden="true"><span class="proto-start__rook"><i>[</i><${Icon} name="rook" /><i>]</i></span><small>STRONGHOLD<br />PROTOCOL</small></span>
         <span class="proto-start__label">${busy === 'diff' ? html`<${Spinner} size="sm" />` : null}${t('确认')}</span>
         <span class="proto-start__deco" aria-hidden="true"></span>
@@ -339,11 +359,14 @@ function RoomProtocol({ room, variant, onClose, onPick, busy, leaving = false })
 }
 
 /** ⚙ of the bottom pill: 私密房间, 人数上限, AI 队友最后选择, room-local 联防叠层, 无限火力 branch. */
-function RoomOptions({ room, facts, myId, busy, online, variant, onPrivate, onMaxSeats, onAiLast, onAiTakeover, onUniteLayerGains, onConvenience, onEnemyHpMultiplier, onIndependentPools, onRescue, onVariant, onClose, leaving = false }) {
+function RoomOptions({ room, facts, myId, busy, online, variant, onPrivate, onMaxSeats, onSpectatorLimit, onAiLast, onSeatAvatars, onAiTakeover, onUniteLayerGains, onConvenience, onEnemyHpMultiplier, onIndependentPools, onRescue, onReset, onVariant, onClose, leaving = false }) {
   const coop = room.mode !== 'solo';
   const host = facts.isHost;
+  const locked = key => room.hostControls?.[key] === false;
   const [hpMultiplier, setHpMultiplier] = useState(String(room.enemyHpMultiplier ?? 1));
   useEffect(() => setHpMultiplier(String(room.enemyHpMultiplier ?? 1)), [room.enemyHpMultiplier]);
+  const [spectatorLimit, setSpectatorLimit] = useState(String(room.spectatorLimit ?? MAX_SPECTATORS));
+  useEffect(() => setSpectatorLimit(String(room.spectatorLimit ?? MAX_SPECTATORS)), [room.spectatorLimit]);
   const choices = roomConvenience(room.convenience);
   const conveniences = [
     ['benchEquip', t('允许整备区装备'), t('第一期也可直接给整备区干员配发装备；第二期原本支持')],
@@ -360,13 +383,23 @@ function RoomOptions({ room, facts, myId, busy, online, variant, onPrivate, onMa
   }, []);
   return html`<div class=${`rs-opts${leaving ? ' is-leaving' : ''}`} role="dialog" aria-label=${t('同盟设置')}>
     <h4>${t('同盟设置')}${host ? null : html`<small>${t('由创建者设置')}</small>`}</h4>
-    ${coop && CAN_PRIVATE ? html`<label class="rs-opt"><input name="private-room" type="checkbox" checked=${room.private === true} disabled=${!host || !!busy || !online || room.inMatch === true} onChange=${(e) => onPrivate(e.currentTarget.checked)} />
+    ${Object.keys(room.hostControls || {}).length ? html`<small>${t('主机未允许房主修改此项房间配置')}</small>` : null}
+    ${coop && CAN_PRIVATE ? html`<label class="rs-opt"><input name="private-room" type="checkbox" checked=${room.private === true} disabled=${!host || !!busy || !online || room.inMatch === true || locked('private')} onChange=${(e) => onPrivate(e.currentTarget.checked)} />
       <span>${t('私密房间')}<small>${room.private ? t('不在公开大厅显示，仅通过房间码或邀请加入') : t('公开大厅可见，可直接加入或观战')}</small></span></label>` : null}
     ${coop && MAX_SEATS > DEFAULT_SEATS ? html`<label class="rs-opt rs-opt--cap"><span>${t('人数上限')}<small>${facts.seats.length > DEFAULT_SEATS ? t('扩展房间 · 固定分组卡池') : t('可搜寻队友')}</small></span>
-      <select value=${String(facts.seats.length)} disabled=${!host || !!busy || !online} onChange=${(e) => onMaxSeats(Number(e.currentTarget.value))}>
+      <select value=${String(facts.seats.length)} disabled=${!host || !!busy || !online || room.inMatch === true || locked('capacity')} onChange=${(e) => onMaxSeats(Number(e.currentTarget.value))}>
         ${SEAT_CONST.ROOM_CAPACITIES.map((n) => html`<option key=${n} value=${String(n)} selected=${n === facts.seats.length}>${t('{n} 人', { n })}</option>`)}
       </select></label>` : null}
+    ${coop && C2S['room.setSpectatorLimit'] ? html`<form class="rs-opt rs-opt--hp" onSubmit=${event => { event.preventDefault(); const limit = Number(spectatorLimit); if (Number.isInteger(limit) && limit >= 2 && limit <= 20) onSpectatorLimit(limit); }}>
+      <label for="spectator-limit">${t('观战席上限')}</label>
+      <input id="spectator-limit" name="spectator-limit" type="number" min="2" max="20" step="1" required value=${spectatorLimit}
+        disabled=${!host || !!busy || !online || room.inMatch === true || locked('spectatorLimit')}
+        onInput=${event => setSpectatorLimit(event.currentTarget.value)} />
+      <button type="submit" disabled=${!host || !!busy || !online || room.inMatch === true || locked('spectatorLimit')}>${t('确认')}</button></form>` : null}
     <${AiLastToggle} option=${aiLastOption(room, myId)} busy=${busy} onToggle=${onAiLast} />
+    ${coop ? html`<label class="rs-opt"><input name="seat-avatars" type="checkbox" checked=${room.seatAvatars === true}
+      disabled=${!host || !!busy || !online || room.inMatch === true || locked('seatAvatars')} onChange=${(e) => onSeatAvatars(e.currentTarget.checked)} />
+      <span>${t('座位卡优先显示头像')}<small>${t('开启后显示同房间玩家上传的头像；AI 保留策略头像')}</small></span></label>` : null}
     ${coop ? html`<label class="rs-opt"><input name="ai-takeover" type="checkbox" checked=${room.aiTakeoverEnabled === true} disabled=${!host || !!busy || !online || room.inMatch === true || room.canSetAiTakeover !== true} onChange=${(e) => onAiTakeover(e.currentTarget.checked)} />
       <span>${t('允许观战者接替 AI')}<small>${room.aiTakeoverAllowed !== true ? t('主机尚未允许观战接替 AI') : roomVersion(room) !== DEFAULT_VERSION || room.content?.vanilla === false ? t('仅第二期下半的原版合作房支持观战接替 AI') : room.inMatch === true ? t('开局后不可修改观战接替 AI 设置') : t('默认关闭。开启后，观战者可在休整期经同房间真人投票接替 AI；继承记录不计个人统计或奖励。')}</small></span></label>` : null}
     ${typeof room.uniteLayerGains === 'boolean' ? html`<label class="rs-opt"><input name="unite-layer-gains" type="checkbox" checked=${room.uniteLayerGains} disabled=${!host || room.canSetUniteLayerGains !== true || !!busy || !online || room.inMatch === true} onChange=${(e) => onUniteLayerGains(e.currentTarget.checked)} />
@@ -375,17 +408,17 @@ function RoomOptions({ room, facts, myId, busy, online, variant, onPrivate, onMa
       <small>${t('仅本房间生效，开局后不可修改；修改后其他博士需要重新准备')}</small>
       <form class="rs-opt rs-opt--hp" onSubmit=${e => { e.preventDefault(); const value = Number(hpMultiplier); if (Number.isFinite(value) && value >= 0.1 && value <= 100) onEnemyHpMultiplier(value); }}>
         <label for="enemy-hp-multiplier">${t('敌人血量倍率')}<small>${t('与难度及回合倍率相乘，也影响领袖血池；范围 0.1–100 倍')}</small></label>
-        <input id="enemy-hp-multiplier" name="enemy-hp-multiplier" type="number" min="0.1" max="100" step="any" required value=${hpMultiplier} disabled=${!host || !!busy || !online || room.inMatch === true} onInput=${e => setHpMultiplier(e.currentTarget.value)} />
-        <button type="submit" disabled=${!host || !!busy || !online || room.inMatch === true}>${t('确认')}</button>
+        <input id="enemy-hp-multiplier" name="enemy-hp-multiplier" type="number" min="0.1" max="100" step="any" required value=${hpMultiplier} disabled=${!host || !!busy || !online || room.inMatch === true || locked('enemyHpMultiplier')} onInput=${e => setHpMultiplier(e.currentTarget.value)} />
+        <button type="submit" disabled=${!host || !!busy || !online || room.inMatch === true || locked('enemyHpMultiplier')}>${t('确认')}</button>
       </form>
-      ${coop ? html`<label class="rs-opt"><input name="independent-pools" type="checkbox" checked=${room.independentPools === true} disabled=${!host || !!busy || !online || room.inMatch === true} onChange=${event => onIndependentPools(event.currentTarget.checked)} />
+      ${coop ? html`<label class="rs-opt"><input name="independent-pools" type="checkbox" checked=${room.independentPools === true} disabled=${!host || !!busy || !online || room.inMatch === true || locked('independentPools')} onChange=${event => onIndependentPools(event.currentTarget.checked)} />
         <span>${t('独立卡池')}<small>${t('每位博士和 AI 使用独立的干员与装备库存；本局不计入官方统计')}</small></span></label>` : null}
-      ${coop ? html`<label class="rs-opt"><input name="rescue-enabled" type="checkbox" checked=${room.rescueEnabled === true} disabled=${!host || !!busy || !online || room.inMatch === true} onChange=${event => onRescue(event.currentTarget.checked)} />
+      ${coop ? html`<label class="rs-opt"><input name="rescue-enabled" type="checkbox" checked=${room.rescueEnabled === true} disabled=${!host || !!busy || !online || room.inMatch === true || locked('rescueEnabled')} onChange=${event => onRescue(event.currentTarget.checked)} />
         <span>${t('队友救援')}<small>${t('联防后符合条件的博士可消耗 10 生命救援队友；本局不计入官方统计')}</small></span></label>` : null}
       ${conveniences.map(([key, label, hint]) => {
         const plugin = room.content?.rules && Object.hasOwn(room.content.rules, key);
         const pluginOn = key === 'prepLoadout' ? room.content?.rules?.[key] === 'prep' : key === 'unequip' ? room.content?.rules?.[key] === 'allow' : room.content?.rules?.[key] === 'plus';
-        return html`<label key=${key} class="rs-opt"><input type="checkbox" name=${`convenience-${key}`} checked=${plugin ? pluginOn : choices[key]} disabled=${!host || !!busy || !online || room.inMatch === true || !!plugin || (key === 'soloUnlimited' && coop)} onChange=${e => onConvenience(key, e.currentTarget.checked)} /><span>${label}<small>${plugin ? t('由房间玩法插件决定') : hint}</small></span></label>`;
+        return html`<label key=${key} class="rs-opt"><input type="checkbox" name=${`convenience-${key}`} checked=${plugin ? pluginOn : choices[key]} disabled=${!host || !!busy || !online || room.inMatch === true || !!plugin || locked('convenience.' + key) || (key === 'soloUnlimited' && coop)} onChange=${e => onConvenience(key, e.currentTarget.checked)} /><span>${label}<small>${plugin ? t('由房间玩法插件决定') : hint}</small></span></label>`;
       })}
     </fieldset>
     ${room.random === true ? html`<div class="rs-opt rs-opt--variant"><span>${t('模式分支')}</span>
@@ -394,6 +427,10 @@ function RoomOptions({ room, facts, myId, busy, online, variant, onPrivate, onMa
           <button key=${v} type="button" role="radio" aria-checked=${variant === v ? 'true' : 'false'} class=${`dpick__opt${variant === v ? ' is-active' : ''}`}
             disabled=${!!busy || !host} onClick=${() => variant !== v && host && onVariant(v)}>${label}</button>`)}
       </div></div>` : null}
+    ${C2S['room.resetSettings'] ? html`<div class="rs-defaults">
+      <${Button} variant="secondary" size="sm" data-testid="room-reset-settings" disabled=${!host || !!busy || !online || room.inMatch === true || !!room.versionVote} onClick=${onReset}>${t('恢复默认')}<//>
+      <small>${t('恢复主机默认配置，当前难度保持不变')}</small>
+    </div>` : null}
   </div>`;
 }
 
@@ -415,10 +452,11 @@ export function RoomScreen() {
   const inFlight = useRef(false); // synchronous guard against double clicks (state updates are async)
   const [, tick] = useState(0);
   useEffect(() => { const id = setInterval(() => tick((x) => x + 1), 1000); return () => { clearInterval(id); alive.current = false; }; }, []);
-  useData('chess', 'assets', 'seat-art', 'bands');
+  useData('chess', 'assets', 'seat-art', 'skins', 'bands', 'bonds');
   const m = data.get('assets');
   // 名片干员: the pickable operators, the default pool (5★/6★ by charId, the same order on every client), one's pick
-  const cardList = useMemo(() => cardOperators(data.list('chess'), data.get('seat-art')), [data.get('chess'), data.get('seat-art')]);
+  const cardList = useMemo(() => cardOperators(data.list('chess'), data.get('seat-art'), m, data.get('skins')),
+    [data.get('chess'), data.get('seat-art'), m, data.get('skins')]);
   const myCard = useStore(s => s[CARD_KEY], Object.is, cardStore);
   const mySkin = useStore(s => s[CARD_SKIN_KEY], Object.is, cardStore);
   const [picking, setPicking] = useState(false);
@@ -490,9 +528,18 @@ export function RoomScreen() {
   };
   const setPrivate = (isPrivate) => run('privacy', () => net.request('room.setPrivate', { private: isPrivate }));
   const setMaxSeats = (n) => run('cap', () => net.request('room.setMaxSeats', { n })); // 2026-10-12: 4–10 seats
+  const setSpectatorLimit = limit => run('spectators', () => net.request('room.setSpectatorLimit', { limit }));
   const setDifficulty = (difficulty) => run('diff', async () => { const pluginMode = room.content?.modeId ? (room.content.modes || []).find(mode => mode.id === room.content.modeId)?.name || room.content.modeId : null; await net.request('room.setDifficulty', { difficulty }); savePref('lobby.difficulty', difficulty); setPicker(false); if (pluginMode) toast(t('已退出插件模式「{name}」', { name: pluginMode }), 'info'); });
   const setAiTakeover = (on) => run('ai-takeover', () => net.request('room.setAiTakeover', { on }));
   const setAiLast = (on) => run('ailast', () => net.request('room.setAiPicksLast', { on }));
+  const setSeatAvatars = (on) => run('seat-avatars', () => net.request('room.setSeatAvatars', { on }));
+  const resetSettings = () => run('reset-defaults', async () => {
+    setOpts(false);
+    const confirmed = await confirmDialog({ title: t('恢复默认'), text: t('恢复主机设定的所有可修改房间配置，难度保持不变。版本变化需要全员同意。'), okText: t('恢复默认') });
+    if (!confirmed) return;
+    await net.request('room.resetSettings');
+    if (!store.get().room?.versionVote) toast(t('房间设置已恢复主机默认，难度保持不变'), 'info');
+  });
   const setBotBand = (seat, bandId) => run(`bot-band-${seat}`, () => net.request('room.setBotBand', { seat, bandId }));
   const setUniteLayerGains = (on) => run('unite-layers', () => net.request('room.setUniteLayerGains', { on }));
   const setConvenience = (key, on) => run(`convenience-${key}`, () => net.request('room.setConvenience', { key, on }));
@@ -554,7 +601,7 @@ export function RoomScreen() {
 
   return html`<div class=${`screen room-screen rs${coop ? '' : ' rs--solo'}${facts.seats.length > DEFAULT_SEATS ? ' rs--big' : ''}${exiting ? ' is-leaving' : ''}`} style=${`--d-color:${DIFFICULTY_COLORS[room.difficulty]}; --n:${facts.seats.length}`}>
     <div class="rs__bg" aria-hidden="true"></div>
-    ${versionOpen ? html`<${VersionPicker} mode="room" versions=${versions || []} current=${roomVersion(room)} serverDefault=${serverDefault} roomMode=${room.mode} onClose=${() => setVersionOpen(false)} note=${versionWhy} editable=${!versionWhy} onPick=${async version => { try { await net.request('room.proposeVersion', { version }); setVersionOpen(false); } catch (err) { toastError(err); } }} />` : null}
+    ${versionOpen ? html`<${VersionPicker} mode="room" versions=${versions || []} current=${roomVersion(room)} serverDefault=${serverDefault} roomMode=${room.mode} onClose=${() => setVersionOpen(false)} note=${versionWhy} editable=${!versionWhy && room.hostControls?.version !== false} onPick=${async version => { try { await net.request('room.proposeVersion', { version }); setVersionOpen(false); } catch (err) { toastError(err); } }} />` : null}
     <header class="rs-top">
       <div class="rs-top__left">
         <${Tooltip} text=${t('离开同盟')} placement="bottom">
@@ -614,15 +661,15 @@ export function RoomScreen() {
       <div class="rs-foot__center">
         <p class="rs-hint">${coop ? html`<span class="rs-ready num" title=${t('已就绪')}>${facts.humans.map((s) => html`<${Icon} key=${s.playerId} name="user" class=${facts.isReady(s) ? 'is-on' : ''} />`)}<b>${facts.readyHumans}</b>/${facts.humans.length}</span>` : null}${statusLine}</p>
         <div class="rs-pill">
-          ${Array.isArray(versions) ? html`<button type="button" class="rs-pill__ver" data-testid="room-version" disabled=${!facts.isHost || !!busy || !!room.versionVote} onClick=${() => setVersionOpen(true)}><${Icon} name="book" /><span>${versionLabel(roomVersion(room))}</span></button>` : null}
+          ${Array.isArray(versions) ? html`<button type="button" class="rs-pill__ver" data-testid="room-version" disabled=${!facts.isHost || !!busy || !!room.versionVote || room.hostControls?.version === false} onClick=${() => setVersionOpen(true)}><${Icon} name="book" /><span>${versionLabel(roomVersion(room))}</span></button>` : null}
           ${coop && CAN_QUEUE ? html`<span class="rs-pill__mode" title=${t('精确搜寻：只与选择相同难度的博士组成同盟')}><${Icon} name="search" />${t('精确搜寻')}</span><i class="rs-pill__sep"></i>` : null}
-          <button type="button" class="rs-pill__diff" disabled=${!facts.isHost || !!busy} onClick=${() => setPicker(true)}
+          <button type="button" class="rs-pill__diff" disabled=${!facts.isHost || !!busy || room.hostControls?.difficulty === false} onClick=${() => setPicker(true)}
             title=${facts.isHost ? t('更改模拟难度') : t('由创建者选择')}><${DifficultyIcon} difficulty=${room.difficulty} />${t(DIFFICULTY_NAMES[room.difficulty])}</button>
           <button type="button" class=${`rs-pill__gear${opts ? ' is-on' : ''}`} onClick=${() => setOpts((v) => !v)} title=${t('同盟设置')} aria-label=${t('同盟设置')} aria-expanded=${opts ? 'true' : 'false'}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 2h3.4l.5 2.6 1.9.8 2.2-1.5 2.4 2.4-1.5 2.2.8 1.9 2.6.5v3.4l-2.6.5-.8 1.9 1.5 2.2-2.4 2.4-2.2-1.5-1.9.8-.5 2.6h-3.4l-.5-2.6-1.9-.8-2.2 1.5-2.4-2.4 1.5-2.2-.8-1.9L2 13.7v-3.4l2.6-.5.8-1.9-1.5-2.2 2.4-2.4 2.2 1.5 1.9-.8zM12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" fill-rule="evenodd" /></svg>
           </button>
-          ${optsShown ? html`<${RoomOptions} room=${room} facts=${facts} myId=${me.playerId} busy=${busy} online=${online} variant=${variant}
-            onPrivate=${setPrivate} onMaxSeats=${setMaxSeats} onAiLast=${setAiLast} onAiTakeover=${setAiTakeover} onUniteLayerGains=${setUniteLayerGains} onConvenience=${setConvenience} onEnemyHpMultiplier=${setEnemyHpMultiplier} onIndependentPools=${setIndependentPools} onRescue=${setRescue} onVariant=${setVariant} onClose=${() => setOpts(false)} leaving=${optsLeaving} />` : null}
+          ${optsShown ? html`<${RoomOptions} room=${room} facts=${facts} myId=${me.playerId} busy=${busy || (room.versionVote?.resetSettings ? 'reset-vote' : null)} online=${online} variant=${variant}
+            onPrivate=${setPrivate} onMaxSeats=${setMaxSeats} onSpectatorLimit=${setSpectatorLimit} onAiLast=${setAiLast} onSeatAvatars=${setSeatAvatars} onAiTakeover=${setAiTakeover} onUniteLayerGains=${setUniteLayerGains} onConvenience=${setConvenience} onEnemyHpMultiplier=${setEnemyHpMultiplier} onIndependentPools=${setIndependentPools} onRescue=${setRescue} onReset=${resetSettings} onVariant=${setVariant} onClose=${() => setOpts(false)} leaving=${optsLeaving} />` : null}
         </div>
       </div>
       <div class="rs-foot__right">

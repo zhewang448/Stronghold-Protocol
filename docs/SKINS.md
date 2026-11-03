@@ -22,7 +22,7 @@ node tools/install-skins.mjs --all --offline
 支持基础下载器的 `--asset-source=direct|mirror` 和 `SP_ASSET_SOURCE`。
 完成后重启服务、刷新客户端，使冻结的数据副本和素材清单重新加载。
 目录来自 `docs/research/operator-skins.json`（原始映射版本见文件的 source），由
-`tools/build-data.mjs` 生成共享的 `data/skins.json`，覆盖四版本棋子和自选干员。当前目录 146 名干员、224 套皮肤，包含本次补齐的一期 31 名干员／50 套外观；各版本按同一 charId 共用外观偏好。
+`tools/build-data.mjs` 生成共享的 `data/skins.json`，覆盖四版本棋子和自选干员。当前目录 150 名干员、232 套皮肤，包含本次补齐的一期 35 名干员／58 套外观；各版本按同一 charId 共用外观偏好。
 
 只重建外观目录可执行 `node tools/build-data.mjs --skins-only --offline`，不重建玩法数据；完整默认版构建同样保留全部已研究的外观，不手改生成 JSON。新增映射基于缓存官方 skin_table 的皮肤 ID／名称与公开资源的实际 Front／Spine、Back 目录；模型、纹理和动画由安装器解析验证。
 资源在忽略的 `public/assets/` 中；选择器仅开放素材清单中已有头像和有效正面模型的皮肤。
@@ -32,8 +32,17 @@ node tools/install-skins.mjs --all --offline
 骨架 / 图集 / 所有纹理页，解析每套皮肤自己的动画、命中事件与边界。
 缺失纹理页、无法解析的骨架、图集缺少附件时不安装该模型。
 成功条目原子写入 `data/assets.json.chars[charId].skins[skinId]`；全部失败不改清单。
+Issue #20 的八套外观另有独立的半身像和立绘来源，安装器分别写入 `portrait/portraitE2` 与 `illust`，不把小图冒充立绘，也不依赖固定的 `.webp` 扩展名。
 `tools/fetch-assets.mjs` 重建基础资源时也会重建已安装皮肤。
 客户端没有下载或改写服务器资源的 WebSocket 接口。
+
+## 皮肤专属特效（#19）
+
+安装时装后，用本机客户端运行 `extract.py --only fx --fx-set used`，或对已有特效集运行 `--fx-add-only`。
+提取器从已安装时装的 `skinpack/<charId>.ab` 读取 `CharacterSkinHooker._replaceEffectPairs`，写入
+`fx/index.json.skins[skinId].replace/modes` 和时装挂点，并沿用特效提取流程补齐替换目标、链式及朝向变体。
+缺少客户端中的替换目标时保留原特效并报告；未安装外观不额外提取。运行端以发射者皮肤决定命中特效，
+部分模式覆盖保留未覆盖的基础模式。素材仍只写入忽略目录，不进入 Git。
 
 ## 选择和同步
 

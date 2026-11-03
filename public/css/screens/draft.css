@@ -51,6 +51,7 @@
 }
 .dband:hover { transform: translateY(-.03rem); border-color: var(--line-3); }
 .dband .bandicon { --bi: 1.1rem; border: 1px solid var(--line-2); }
+.dband__random { display: grid; place-items: center; width: 1.1rem; height: 1.1rem; border: 1px solid var(--gold); color: var(--gold); font: 900 .72rem/1 var(--font-num); }
 .dband__name { font-size: calc(.16 * var(--t)); font-weight: 700; color: var(--text-hi); white-space: nowrap; }
 .dband__lp { display: inline-flex; align-items: center; gap: .04rem; font-size: calc(.15 * var(--t)); color: var(--mint-400); }
 .dband__lp i { width: .12rem; height: .14rem; background: var(--mint-500); clip-path: polygon(0 0, 30% 0, 30% 20%, 45% 20%, 45% 0, 55% 0, 55% 20%, 70% 20%, 70% 0, 100% 0, 100% 35%, 85% 50%, 85% 80%, 100% 90%, 100% 100%, 0 100%, 0 90%, 15% 80%, 15% 50%, 0 35%); }
@@ -71,6 +72,8 @@
 }
 .draft-detail__art { position: relative; padding: .06rem; border: 1px solid var(--mint-800); background: radial-gradient(circle, rgba(78, 216, 175, .14), transparent 70%); }
 .draft-detail__art .bandicon { --bi: 2rem; }
+.draft-detail__random { display: grid; place-items: center; width: 2rem; height: 2rem; border: 2px solid var(--gold); color: var(--gold); font: 900 1.4rem/1 var(--font-num); }
+.draft-detail__random-hp { color: var(--gold); font-size: calc(.32 * var(--t)); }
 .draft-detail__hp { display: flex; align-items: center; gap: .12rem; font-size: calc(.16 * var(--t)); color: var(--text-lo); }
 .draft-detail__name { font-size: calc(.42 * var(--t)); font-weight: 900; letter-spacing: .1em; }
 .draft-detail__eff { align-self: stretch; display: flex; flex-direction: column; gap: .06rem; padding: .12rem .14rem; background: rgba(0, 0, 0, .3); border-left: 3px solid var(--mint-500); flex: 1; min-height: 0; overflow: auto; }
