@@ -19,4 +19,3 @@
 .rseat__picks { position: absolute; z-index: 3; top: .14rem; right: .12rem; display: flex; flex-direction: column; gap: .06rem; }
 .rseat__picks .rseat__pick { position: static; }
 .cardpick__op--custom { position: relative; }
-.cardpick__custom-status { font-size: max(calc(.12 * var(--t)), 10px); color: var(--mint-400); }

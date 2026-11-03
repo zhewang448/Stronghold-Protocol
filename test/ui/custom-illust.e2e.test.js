@@ -44,6 +44,16 @@ test('PR24 custom illustration compresses, shares, frames, disables, restores an
   };
   await openPicker();
   assert.equal(await host.$eval('.cardpick__grid > button:first-child', button => button.dataset.testid), 'custom-illust-entry');
+  assert.equal(await host.$$eval('[data-testid="custom-illust-entry"] .cardpick__img img', images => images.length), 0);
+  const entryIcon = await host.$eval('[data-testid="custom-illust-entry"] .icon', element => {
+    const slot = element.parentElement, auto = slot.closest('.cardpick__grid').querySelector('.cardpick__op--auto:not(.cardpick__op--custom) .cardpick__img');
+    return { ratio: element.getBoundingClientRect().width / slot.getBoundingClientRect().width,
+      color: getComputedStyle(element).color, referenceColor: getComputedStyle(auto).color, background: getComputedStyle(slot).backgroundColor, referenceBackground: getComputedStyle(auto).backgroundColor };
+  });
+  assert.ok(entryIcon.ratio > 0.4 && entryIcon.ratio < 0.5);
+  assert.equal(entryIcon.color, entryIcon.referenceColor); assert.equal(entryIcon.background, entryIcon.referenceBackground);
+  fs.mkdirSync('test/e2e/out', { recursive: true });
+  await host.screenshot({ path: 'test/e2e/out/pr24-entry-icon-empty.png' });
   await host.click('[data-testid="custom-illust-entry"]');
   const chooser = host.waitForFileChooser(); await host.click('[data-testid="illust-choose"]');
   await (await chooser).accept([file]);
@@ -68,6 +78,8 @@ test('PR24 custom illustration compresses, shares, frames, disables, restores an
   await host.screenshot({ path: 'test/e2e/out/pr24-import-crop.png' });
   await host.click('[data-testid="illust-confirm"]');
   await host.waitForSelector('.cardpick__custom-status');
+  assert.equal(await host.$eval('.cardpick__custom-status', badge => badge.classList.contains('cardpick__star')), true);
+  await host.screenshot({ path: 'test/e2e/out/pr24-entry-icon-uploaded.png' });
   await host.click('.cardpick .modal__actions button');
   const selfImage = '.rseat.is-me .rseat__art img[data-art="custom"]';
   const otherImage = '.rseat:not(.is-me) .rseat__art img[data-art="custom"]';

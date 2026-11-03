@@ -217,10 +217,10 @@ function CardPicker({ current, currentSkin, list, m, onPick, onClose, customAllo
       </div>
     </div>
     <div class="cardpick__grid">
-      <button type="button" class="cardpick__op cardpick__op--custom" data-testid="custom-illust-entry" disabled=${!customAllowed}
+      <button type="button" class="cardpick__op cardpick__op--auto cardpick__op--custom" data-testid="custom-illust-entry" disabled=${!customAllowed}
         title=${customAllowed ? t('替换立绘') : t('自定义立绘已在房间设置中关闭')} onClick=${() => setUploading(true)}>
-        <span class="cardpick__img">${ownIllust ? html`<img src=${ownIllust} alt="" />` : html`<${Icon} name="image" />`}</span>
-        <span class="cardpick__name">${t('替换立绘')}</span>${ownIllust ? html`<small class="cardpick__custom-status">${t('已上传')}</small>` : null}</button>
+        <span class="cardpick__img"><${Icon} name="image" /></span>
+        <span class="cardpick__name">${t('替换立绘')}</span>${ownIllust ? html`<span class="cardpick__star cardpick__custom-status">${t('已上传')}</span>` : null}</button>
       <button type="button" class=${`cardpick__op cardpick__op--auto${!current ? ' is-on' : ''}`} onClick=${() => onPick('')} title=${t('按博士编号自动分配')}>
         <span class="cardpick__img"><${Icon} name="refresh" /></span><span class="cardpick__name">${t('默认')}</span></button>
       ${shown.map((c) => html`<button key=${c.charId} type="button" class=${`cardpick__op${current === c.charId ? ' is-on' : ''}`} onClick=${() => setSelected(c)} title=${c.name}>
