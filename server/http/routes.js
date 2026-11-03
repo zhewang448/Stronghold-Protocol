@@ -200,6 +200,11 @@ async function avatarRemove(req, res, deps) {
 }
 
 /** GET / HEAD /avatar/<playerId>: one picture (404 when there is none — the page falls back to its default). */
+/** Tell the rooms this player sits in that a personal picture changed (best effort: the picture is already stored). */
+function notifyPersonal(deps, playerId, kind, removed = false) {
+  try { deps.lobby?.personalChanged?.(playerId, kind, removed ? { removed: true } : undefined); } catch { /* the notice is a bonus */ }
+}
+
 function avatarGet(req, res, playerId, avatars) {
   const entry = avatars.get(playerId);
   if (!entry) {
