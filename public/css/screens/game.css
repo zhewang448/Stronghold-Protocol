@@ -542,6 +542,35 @@
 .team__ai { position: absolute; right: -.04rem; bottom: -.04rem; font-family: var(--font-num); font-size: .11rem; font-weight: 700; padding: 0 .04rem; background: #a9c3d8; color: #0b1520; }
 .team__you { position: absolute; right: -.08rem; top: -.08rem; width: .22rem; height: .22rem; display: grid; place-items: center; background: var(--mint-500); color: var(--text-on-mint); clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%); }
 .team__you .icon { width: .14rem; height: .14rem; }
+/* 触摸端的策略 (ui/teamPanel.js TouchStrategyLine): a phone has no hover, so the row that is being observed (tapped open,
+   前往查看) or already on screen names its 策略 here; the rest of the list keeps the avatar, the AI tag and the side 预选盟约
+   badge exactly as before. Desktop never shows this line (the hover tip answers there). */
+.team__strategy-line { display: none; align-items: center; gap: .06rem; min-width: 0; margin-top: .01rem; }
+.team__strategy-line-icon { flex: none; width: max(.2rem, 15px); height: max(.2rem, 15px); background: none; }
+.team__strategy-line-icon img { object-fit: contain; }
+.team__strategy-line-name {
+  min-width: 0;
+  font-size: max(.12rem, 10px);
+  font-weight: 700;
+  color: var(--mint-400);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (hover: none), (pointer: coarse) {
+  .team__row.is-open .team__strategy-line, .team__row.is-watched .team__strategy-line { display: inline-flex; }
+}
+/* 桌面端的悬停提示 (ui/teamPanel.js StrategyTip): the row's 策略 — the band it plays — shown over the avatar and the name.
+   The side 预选盟约 badge (BondPlanBadge) is its own, always-visible element and never a hover target. */
+.team__avatarwrap { display: block; }
+.team__namewrap { display: inline-flex; max-width: 100%; min-width: 0; }
+.team__strategy-tip { display: flex; flex-direction: column; gap: .05rem; max-width: min(3.6rem, 60vw); text-align: left; }
+.team__strategy-tip-head { display: flex; align-items: center; gap: .08rem; }
+.team__strategy-tip-icon { flex: none; width: .34rem; height: .34rem; border: 1px solid var(--line-2); }
+.team__strategy-tip-name { font-size: calc(.18 * var(--t)); font-weight: 800; color: var(--text-hi); }
+.team__strategy-tip-label { font-size: calc(.12 * var(--t)); color: var(--text-dim); letter-spacing: .04em; }
+.team__strategy-tip-effect { font-size: calc(.13 * var(--t)); font-weight: 700; color: var(--mint-400); }
+.team__strategy-tip-desc { white-space: pre-line; font-size: calc(.14 * var(--t)); line-height: 1.55; color: var(--text); }
 .team__info { display: flex; flex-direction: column; gap: .02rem; min-width: 0; padding: .04rem .12rem .04rem .06rem; background: linear-gradient(90deg, rgba(8, 11, 10, .82), rgba(8, 11, 10, 0)); }
 .team__name { font-size: .15rem; font-weight: 500; color: var(--text-md); max-width: 1.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 2px #000; }
 .team__line { display: flex; align-items: center; gap: .1rem; }

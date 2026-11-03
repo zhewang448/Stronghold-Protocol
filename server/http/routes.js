@@ -27,6 +27,7 @@ import { clientAddress, isLocalIp } from '../net.js';
 import { readPersonalDataConfig } from './personalDataConfig.js';
 import { getShowPwaInstall } from '../match/hostSettings.js';
 import { AVATAR_BODY_LIMIT } from './avatarStore.js';
+import { ILLUST_BODY_LIMIT } from './illustStore.js';
 
 const MAX_URL_LENGTH = 4096;
 
@@ -60,7 +61,7 @@ function contentSets(lobby) {
  *   and their match hosts (DESIGN §35.23)
  * @param {boolean} [withTraffic]
  */
-export function healthReport({ startedAt, network, registry, lobby, content = null, traffic, assetIndex, views, trusted, versions = null, versionHosts = null, avatars = null }, withTraffic = false) {
+export function healthReport({ startedAt, network, registry, lobby, content = null, traffic, assetIndex, views, trusted, versions = null, versionHosts = null, avatars = null, illusts = null }, withTraffic = false) {
   const report = {
     ok: true, version: PROTOCOL_VERSION, app: APP_VERSION, uptimeSec: Math.round((Date.now() - startedAt) / 1000),
     // the runtime the server is serving right now (public/js/ui/buildGuard.js): a page whose own build is
@@ -77,6 +78,8 @@ export function healthReport({ startedAt, network, registry, lobby, content = nu
   // 自定义头像 (public/js/ui/customAvatar.js, ported from hex031): how many pictures the server holds — a server on which
   // nobody uploaded one reports nothing, and the page then requests no avatar at all (it looks exactly as before)
   if (avatars && avatars.size > 0) report.avatars = avatars.size;
+  // 自定义立绘 (public/js/ui/customIllust.js): the same count for uploaded seat-card illustrations
+  if (illusts && illusts.size > 0) report.illusts = illusts.size;
   // the official versions (DESIGN §35.23): only when another one than 第二期下半 is enabled
   if (versions && versions.nonDefault.length) {
     report.versions = { enabled: [...versions.ids], default: versions.defaultId,
@@ -266,6 +269,109 @@ async function handleAvatarRequest(req, res, rawPath, deps) {
   return true;
 }
 
+/** POST /illust: store this session's picture (自定义立绘). @returns {Promise<void>} */
+async function illustUpload(req, res, deps) {
+  const { illusts, registry } = deps;
+  const body = await readBody(req, ILLUST_BODY_LIMIT);
+  if (body === null) {
+    res.setHeader('Connection', 'close');
+    sendJson(req, res, 413, { error: 'TOO_LARGE' });
+    res.once('finish', () => { try { req.destroy(); } catch { /* already gone */ } });
+    return;
+  }
+  const session = sessionOf(req, registry);
+  if (!session) {
+    sendJson(req, res, 401, { error: 'UNAUTHORIZED' });
+    return;
+  }
+  const result = await illusts.put(session.playerId, body);
+  if (!result.ok) {
+    if (result.code === 'RATE') res.setHeader('Retry-After', '2');
+    const status = result.code === 'TOO_LARGE' ? 413 : result.code === 'BAD_TYPE' ? 415
+      : result.code === 'BAD_DIMENSIONS' ? 422 : result.code === 'RATE' ? 429 : result.code === 'STORAGE' ? 500 : 400;
+    sendJson(req, res, status, { error: result.code });
+    return;
+  }
+  const { entry } = result;
+  // 实时同步 (2026-11-03): the room's other clients must not wait for a reload to see the new 立绘
+  notifyPersonal(deps, session.playerId, 'illust');
+  sendJson(req, res, 200, { ok: true, etag: entry.etag, size: entry.bytes.length, width: entry.width, height: entry.height });
+}
+
+/** DELETE /illust: forget this session's picture (the operator's own illustration comes back). */
+async function illustRemove(req, res, deps) {
+  const { illusts, registry } = deps;
+  const body = await readBody(req, ILLUST_BODY_LIMIT);
+  if (body === null) {
+    res.setHeader('Connection', 'close');
+    sendJson(req, res, 413, { error: 'TOO_LARGE' });
+    res.once('finish', () => { try { req.destroy(); } catch { /* already gone */ } });
+    return;
+  }
+  const session = sessionOf(req, registry);
+  if (!session) {
+    sendJson(req, res, 401, { error: 'UNAUTHORIZED' });
+    return;
+  }
+  await illusts.remove(session.playerId);
+  notifyPersonal(deps, session.playerId, 'illust', true);
+  res.writeHead(204, { 'Cache-Control': 'no-store' });
+  res.end();
+}
+
+/** GET / HEAD /illust/<playerId>: one picture (404 when there is none — the seat card falls back to the operator's). */
+function illustGet(req, res, playerId, illusts) {
+  const entry = illusts.get(playerId);
+  if (!entry) {
+    sendJson(req, res, 404, { error: 'NOT_FOUND' });
+    return;
+  }
+  const headers = {
+    'Content-Type': entry.type,
+    'Content-Length': entry.bytes.length,
+    // a seat-card illustration is public (GET carries no credential) and changes rarely; the page revalidates by ETag
+    'Cache-Control': 'public, max-age=60',
+    ETag: entry.etag,
+  };
+  const inm = req.headers['if-none-match'];
+  if (typeof inm === 'string' && inm.split(',').some((tag) => tag.trim().replace(/^W\//, '') === entry.etag)) {
+    res.writeHead(304, { ETag: entry.etag, 'Cache-Control': headers['Cache-Control'] });
+    res.end();
+    return;
+  }
+  res.writeHead(200, headers);
+  res.end(req.method === 'HEAD' ? undefined : entry.bytes);
+}
+
+/**
+ * Serve an `/illust` URL. Returns false when the path is not one.
+ * @param {import('node:http').IncomingMessage} req @param {import('node:http').ServerResponse} res
+ * @param {string} rawPath @param {{ illusts: any, registry: any }} deps
+ * @returns {Promise<boolean>}
+ */
+async function handleIllustRequest(req, res, rawPath, deps) {
+  if (rawPath === '/illust') {
+    if (req.method === 'POST') { await illustUpload(req, res, deps); return true; }
+    if (req.method === 'DELETE') { await illustRemove(req, res, deps); return true; }
+    res.setHeader('Allow', 'POST, DELETE');
+    sendError(req, res, 405, '不支持的请求方法 · Method not allowed');
+    return true;
+  }
+  if (!rawPath.startsWith('/illust/')) return false;
+  const playerId = rawPath.slice('/illust/'.length);
+  if ((req.method === 'GET' || req.method === 'HEAD') && AVATAR_ID_RE.test(playerId)) {
+    illustGet(req, res, playerId, deps.illusts);
+    return true;
+  }
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    sendJson(req, res, 404, { error: 'NOT_FOUND' });
+    return true;
+  }
+  res.setHeader('Allow', 'GET, HEAD');
+  sendError(req, res, 405, '不支持的请求方法 · Method not allowed');
+  return true;
+}
+
 /**
  * The request listener for `http.createServer`.
  * @param {{ serveStatic: (req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse,
@@ -287,6 +393,10 @@ export function createRequestHandler({ serveStatic, health, log, trustProxy = 'a
     // 自定义头像 (server/http/avatarStore.js): POST / DELETE / GET, before the GET/HEAD-only rule below
     if (health.avatars && health.registry && (parts.rawPath === '/avatar' || parts.rawPath.startsWith('/avatar/'))) {
       await handleAvatarRequest(req, res, parts.rawPath, { avatars: health.avatars, registry: health.registry, lobby: health.lobby });
+      return;
+    }
+    if (health.illusts && health.registry && (parts.rawPath === '/illust' || parts.rawPath.startsWith('/illust/'))) {
+      await handleIllustRequest(req, res, parts.rawPath, { illusts: health.illusts, registry: health.registry, lobby: health.lobby });
       return;
     }
     if (studio && studio.handles(parts.rawPath)) { await studio.handle(req, res, parts.rawPath, parts.query); return; }

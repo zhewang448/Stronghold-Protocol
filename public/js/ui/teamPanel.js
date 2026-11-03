@@ -22,16 +22,68 @@
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { PHASE } from '../../../shared/constants.js';
 import { html, Icon, Tooltip } from './components.js';
-import { PlayerAvatar, LpTower, GIcon, LocalSprite } from './gameComponents.js';
+import { PlayerAvatar, LpTower, GIcon, LocalSprite, BandIcon } from './gameComponents.js';
 import { AvatarMessage } from './matchCommunication.js';
 import { EmoteBubble } from './emotes.js';
 import { STATUS_META, poolGroupSections, teamFrameIds } from './gameLogic.js';
 import { MissTag, uniteRemaining } from './hud.js';
-import { localAsset } from '../data.js';
+import { data, localAsset } from '../data.js';
 import { t } from '../../../shared/i18n.js';
 import { BondPlanBadge } from './bondPlan.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
+
+/**
+ * The 策略 a row names: the band this doctor actually chose THIS match — m.public players[].bandId, the strategy picked in
+ * 选择策略 and the one the shop and board play (server/match/match/views.js) — with its name and effect text from
+ * data/bands.json. NOT the room's 预选盟约 (players[].bondPlan): that is the side badge's job (BondPlanBadge), it stays
+ * where it always was and never moves into this tip. A seat with no band yet resolves to null — the tip then says
+ * nothing rather than showing the preset.
+ * @param {any} player m.public players[] entry
+ * @returns {{ id: string, name: string, effect: string, desc: string }|null}
+ */
+export function bandOf(player) {
+  const bandId = typeof player?.bandId === 'string' && player.bandId ? player.bandId : null;
+  if (!bandId) return null;
+  const b = data.lookup('bands', bandId);
+  return { id: bandId, name: b?.name || bandId, effect: b?.effectName || '', desc: b?.desc || b?.descRaw || '' };
+}
+
+/**
+ * 桌面端的悬停提示: the row's 策略 — band icon, name, effect name and the effect text — shown by the shared Tooltip layer
+ * when the mouse rests on a row's avatar or its name. Nothing renders before the seat has a band.
+ * @param {{ player: any }} props
+ */
+function StrategyTip({ player }) {
+  const s = bandOf(player);
+  if (!s) return null;
+  return html`<span class="team__strategy-tip" data-testid="team-strategy-tip" data-kind="band" data-band=${s.id}>
+    <span class="team__strategy-tip-head">
+      <${BandIcon} bandId=${s.id} class="team__strategy-tip-icon" />
+      <b class="team__strategy-tip-name">${s.name}</b>
+      <small class="team__strategy-tip-label">${player?.name ? `${player.name} · ` : ''}${t('策略')}</small>
+    </span>
+    ${s.effect ? html`<span class="team__strategy-tip-effect">${s.effect}</span>` : null}
+    <span class="team__strategy-tip-desc">${s.desc}</span>
+  </span>`;
+}
+
+/**
+ * 触摸端的策略: a phone has no hover, so the watched/expanded row names its 策略 in the info column instead. Rendered for
+ * the row that is being observed (`open`: the tap expanded 前往查看) or the one on screen (`watched`); css shows it only
+ * on a hover-less device, so the desktop list is untouched. Every other row keeps the avatar + AI tag + the side 预选盟约
+ * badge, exactly as before.
+ * @param {{ player: any }} props
+ */
+function TouchStrategyLine({ player }) {
+  const s = bandOf(player);
+  if (!s) return null;
+  return html`<span class="team__strategy-line" data-testid="team-strategy-line" data-band=${s.id}
+      title=${[`${t('策略')}：${s.name}`, s.effect, s.desc].filter(Boolean).join('\n')}>
+    <${BandIcon} bandId=${s.id} class="team__strategy-line-icon" />
+    <span class="team__strategy-line-name">${t('策略')}：${s.name}</span>
+  </span>`;
+}
 
 /** Official status glyphs (ui/battle) per m.public players[].status; CSS glyph fallback. */
 const STATUS_SPRITE = { ready: 'icon_ready', deciding: 'icon_waiting', done: 'icon_complete', dead: 'icon_dead' };
@@ -189,20 +241,29 @@ export function TeamPanel({ pub, myId, watching, bubbles, emotes = [], emoteNow 
       const inTeam = team.has(p.playerId);
       const groupTip = group ? t('{group}组 · 同组共享卡池', { group: group.label }) : null;
       const avatarTitle = [title, inTeam && !self && t('与你在同一战场'), groupTip].filter(Boolean).join(' · ');
+      // 悬停看策略: the band this seat actually plays (bandId); the side 预选盟约 badge stays its own thing
+      const band = bandOf(p);
+      const strategyTip = band ? html`<${StrategyTip} player=${p} />` : null;
+      // 触摸端: only the row being observed (expanded 前往查看) or watched names its 策略, in the info column
+      const showStrategyLine = !!band && (open || watched) && !self;
       return html`<div key=${p.playerId} data-player-id=${p.playerId} class=${cx('team__row', self && 'is-self', inTeam && 'is-team', watched && 'is-watched', p.alive === false && 'is-dead', open && 'is-open')}>
-        <button type="button" class="team__btn" onClick=${() => click(p, self)} onDblClick=${(e) => dblClick(e, p, self)} title=${avatarTitle} aria-label=${avatarTitle} aria-expanded=${observe && !self ? String(open) : undefined}>
-          <${PlayerAvatar} player=${p} self=${self} />
-          ${inTeam ? html`<span class=${cx('team__frame', !frameArt && 'team__frame--plain')} style=${frameArt ? `--frame:url("${frameArt}")` : undefined} aria-hidden="true"></span>` : null}
-          <span class="team__seat num">P${(p.seat ?? 0) + 1}</span>
-          ${group ? html`<${Tooltip} text=${groupTip} placement="right" class="team__group-badge">${group.label}<//>` : null}
-          ${p.isBot ? html`<span class="team__ai">AI</span>` : null}
-          ${self ? html`<span class="team__you"><${Icon} name="user" /></span>` : null}
-          ${spMarks?.get(p.playerId) === 'done' ? html`<span class="team__spmark is-done" title=${t('已完成选择')}><${Icon} name="check" /></span>`
-            : spMarks?.get(p.playerId) === 'turn' ? html`<span class="team__spmark is-turn" title=${t('正在决策…')}><i></i><i></i><i></i></span>` : null}
-        </button>
+        <${Tooltip} text=${strategyTip} placement="right" class="team__avatarwrap">
+          <button type="button" class="team__btn" onClick=${() => click(p, self)} onDblClick=${(e) => dblClick(e, p, self)} title=${avatarTitle} aria-label=${avatarTitle} aria-expanded=${observe && !self ? String(open) : undefined}>
+            <${PlayerAvatar} player=${p} self=${self} />
+            ${inTeam ? html`<span class=${cx('team__frame', !frameArt && 'team__frame--plain')} style=${frameArt ? `--frame:url("${frameArt}")` : undefined} aria-hidden="true"></span>` : null}
+            <span class="team__seat num">P${(p.seat ?? 0) + 1}</span>
+            ${group ? html`<${Tooltip} text=${groupTip} placement="right" class="team__group-badge">${group.label}<//>` : null}
+            ${p.isBot ? html`<span class="team__ai">AI</span>` : null}
+            ${self ? html`<span class="team__you"><${Icon} name="user" /></span>` : null}
+            ${spMarks?.get(p.playerId) === 'done' ? html`<span class="team__spmark is-done" title=${t('已完成选择')}><${Icon} name="check" /></span>`
+              : spMarks?.get(p.playerId) === 'turn' ? html`<span class="team__spmark is-turn" title=${t('正在决策…')}><i></i><i></i><i></i></span>` : null}
+          </button>
+        <//>
         <div class="team__info">
-          <span class="team__name">${p.name || t('博士')}</span>
+          ${strategyTip ? html`<${Tooltip} text=${strategyTip} placement="right" class="team__namewrap"><span class="team__name">${p.name || t('博士')}</span><//>`
+            : html`<span class="team__name">${p.name || t('博士')}</span>`}
           <${BondPlanBadge} bondId=${p.bondPlan} />
+          ${showStrategyLine ? html`<${TouchStrategyLine} player=${p} />` : null}
           <div class="team__line">
             <${LpTower} value=${lp.lp} size="sm" tone=${Number.isFinite(lp.lp) && lp.lp - lp.pending <= 5 ? 'danger' : null} pending=${lp.pending}
               tip=${rowLpTip(lp, cap)} />

@@ -1,6 +1,9 @@
 import { MatchEnemies } from '../ui/matchEnemies.js';
 import { cardOperators, seatOperator, seatCardSkin, seatArtSrc } from '../ui/seatArt.js';
 import { chessPortraitUrl } from '../ui/assetUrls.js';
+import { CardArtImage } from '../ui/cardArt.js';
+import { useCustomIllust } from '../ui/customIllust.js';
+import { usePersonalization } from '../ui/personalization.js';
 import { skinsStore } from '../ui/skins.js';
 import { settingsStore } from '../ui/settingsStore.js';
 // Band draft — BAND_DRAFT "2/2 选择策略" (research 06 §4.2, D1): left = draft order (avatar, name, state:
@@ -44,15 +47,32 @@ import { t, tParts, tName } from '../../../shared/i18n.js';
 import { peekStatsRecords, strategyBadgeIds, selfRowOf, aggregateStats } from '../ui/stats.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
+/**
+ * The 立绘 behind one row of 决策顺序 — the row's 名片 art.
+ *
+ * 自定义立绘 (the server's room.state.personalization.customIllust ← local/personalization.json, ui/customIllust.js):
+ * the picture this doctor uploaded with 替换立绘 (GET /illust/<playerId>) is drawn here instead of the 名片干员's own
+ * portrait, framed by the same `sp.pref.room.cardArt` 立绘调整 as the room's seat card (ui/cardArt.js CardArtImage) —
+ * this is why the row used to keep the picture from before the upload: it only ever asked for the operator portrait.
+ * Off, or no upload (or an AI seat) → exactly the portrait chain it always drew.
+ */
 function DraftPortrait({ player, players, myId }) {
   const localSkins = useStore(s => s.skins || s, Object.is, skinsStore);
   const otherSkins = useStore(s => s.otherSkins !== false, Object.is, settingsStore);
   const [failed, setFailed] = useState([]);
+  const personalization = usePersonalization();
+  const customIllust = useCustomIllust(personalization?.customIllust === true && !player?.isBot ? player?.playerId : null);
   const list = cardOperators(data.list('chess'), data.get('seat-art'));
   const context = { pool: list, byChar: new Map(list.map(op => [op.charId, op])) };
   const op = seatOperator(player, context, { myId, myCard: player.card });
   if (!op) return null;
   const skin = seatCardSkin(player, op.chess.charId, { myId, localSkins, players, otherSkins });
+  const charId = op.chess.charId;
+  const custom = customIllust && !failed.includes(customIllust) ? customIllust : null;
+  if (custom) {
+    return html`<${CardArtImage} key=${`custom|${custom}`} charId=${charId} src=${custom} class="dorder__art"
+      onError=${() => setFailed(old => (old.includes(custom) ? old : [...old, custom]))} />`;
+  }
   const arts = [chessPortraitUrl(data.get('assets'), op.chess, { skin }), skin ? chessPortraitUrl(data.get('assets'), op.chess) : null];
   const art = seatArtSrc(arts, failed);
   return art ? html`<img class="dorder__art" src=${art} alt="" onError=${() => setFailed(old => [...old, art])} />` : null;

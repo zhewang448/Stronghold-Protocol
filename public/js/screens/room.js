@@ -57,7 +57,9 @@ import { net } from '../net.js';
 import { store, useStore, shallowEqual, emptyMatch, isSpectating, serverNow, loadPref, savePref } from '../store.js';
 import { data, useData, getConfig } from '../data.js';
 import { chessAvatarUrl } from '../ui/assetUrls.js';
-import { CARD_PREF, CARD_KEY, CARD_SKIN_KEY, cardStore, setCard, cardOperators, seatPortrait, cardAvatarUrl } from '../ui/seatArt.js';
+import { CARD_PREF, CARD_KEY, CARD_SKIN_KEY, cardStore, setCard, cardOperators, seatPortrait, cardAvatarUrl, seatOperator, seatArtSrc } from '../ui/seatArt.js';
+// 名片立绘微调（移植自 Yuan 版 2026-10-28 A 项）：座位卡上的精一/精二、缩放与框内平移（ui/cardArt.js 存本机 pref）
+import { CardArt, CardArtImage } from '../ui/cardArt.js';
 import { C2S } from '../../../shared/protocol.js';
 import { difficultyInfo, ProtoCard } from './lobby.js';
 import { ProtocolScene } from '../ui/protocolScene.js';
@@ -69,6 +71,9 @@ import { CONVENIENCE_DEFAULTS, roomConvenience } from '../../../shared/roomConve
 import { AnnouncementButton } from '../ui/announcement.js';
 // 自定义头像（移植自 hex031）：房间不再有自己的入口（头像只从大厅「本机账号 → 更换头像」上传），座位卡的主人公头像
 // 由 ui/components.js 的 AvatarFrame 经 ui/customAvatar.js 取到（别人上传的那张从 GET /avatar/<playerId> 读）
+// 自定义立绘：入口在名片干员弹窗的第一格（替换立绘），弹窗本体是 ui/illustPicker.js 的 IllustDialog
+import { IllustDialog } from '../ui/illustPicker.js';
+import { useCustomIllust, useOwnIllust } from '../ui/customIllust.js';
 
 const MAX_SEATS = Number(SEAT_CONST.MAX_SEATS) || 4;
 const DEFAULT_SEATS = Number(SEAT_CONST.DEFAULT_SEATS) || MAX_SEATS;
@@ -185,11 +190,16 @@ function personalizationOf(room) {
   return { avatarFirst: room?.personalization?.avatarFirst === true, customIllust: room?.personalization?.customIllust === true };
 }
 
-/** 名片干员 picker: search, rarity, the operators' avatars; 默认 clears the pick. */
-function CardPicker({ current, currentSkin, list, m, onPick, onClose }) {
+/**
+ * 名片干员 picker: search, rarity, the operators' avatars; 默认 clears the pick. The first tile is 替换立绘 (the owner's
+ * request: the room's own 替换立绘 button is gone and its dialog opens from here), then 默认, then the operators.
+ */
+function CardPicker({ current, currentSkin, list, m, onPick, onClose, onCustomIllust }) {
   const [q, setQ] = useState('');
   const [star, setStar] = useState(0);
   const [selected, setSelected] = useState(null);
+  // 已上传过的博士：第一格角标显示「已上传」（本机这张就是座位卡立绘位正在画的那张，ui/customIllust.js）
+  const ownIllust = useOwnIllust();
   if (selected) return html`<${Modal} open=${true} title=${selected.name} onClose=${onClose} width="min(9.6rem, 94vw)" class="cardpick">
     <${Button} size="sm" onClick=${() => setSelected(null)}>${t('返回')}<//>
     <div class="cardpick__grid cardpick__grid--skins">
@@ -210,6 +220,12 @@ function CardPicker({ current, currentSkin, list, m, onPick, onClose }) {
       </div>
     </div>
     <div class="cardpick__grid">
+      <button type="button" class="cardpick__op cardpick__op--auto" data-testid="cardpick-custom-illust"
+        onClick=${() => onCustomIllust?.()}
+        title=${ownIllust ? `${t('替换立绘')} · ${t('已上传')}` : t('替换立绘')} aria-label=${t('替换立绘')}>
+        <span class="cardpick__img"><${Icon} name="image" /></span><span class="cardpick__name">${t('替换立绘')}</span>
+        ${ownIllust ? html`<span class="cardpick__star" data-testid="cardpick-custom-illust-uploaded">${t('已上传')}</span>` : null}
+      </button>
       <button type="button" class=${`cardpick__op cardpick__op--auto${!current ? ' is-on' : ''}`} onClick=${() => onPick('')} title=${t('按博士编号自动分配')}>
         <span class="cardpick__img"><${Icon} name="refresh" /></span><span class="cardpick__name">${t('默认')}</span></button>
       ${shown.map((c) => html`<button key=${c.charId} type="button" class=${`cardpick__op${current === c.charId ? ' is-on' : ''}`} onClick=${() => setSelected(c)} title=${c.name}>
@@ -220,10 +236,16 @@ function CardPicker({ current, currentSkin, list, m, onPick, onClose }) {
   <//>`;
 }
 
-function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvite, onAddBot, onRemoveBot, onBotBand, searching, portraits, onPickCard = null }) {
+function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvite, onAddBot, onRemoveBot, onBotBand, searching, portraits, onPickCard = null, illust = null, illustFirst = false, charId = null, onTuneCard = null }) {
   const seatAccount = useAccount(seat && !seat.isBot ? seat.playerId : null);
-  const [bad, setBad] = useState(null);
+  // 打不开的图片（立绘或 portrait 链上的某一张）：记下来，换下一张
+  const [badArt, setBadArt] = useState([]);
   const flash = useRise(!!seat && (seat.ready || seat.isBot || seat.playerId === room.hostId));
+  // 座位卡自定义立绘 (room.state.personalization.customIllust, the server's switch; ui/customIllust.js): the picture this
+  // doctor uploaded, drawn in the 立绘 position through the same CardArtImage / 立绘调整 framing. Off, or no upload → null,
+  // operator illustration.
+  const { avatarFirst, customIllust: customIllustOn } = personalizationOf(room);
+  const customIllust = useCustomIllust(seat && !seat.isBot && customIllustOn ? seat.playerId : null);
   if (!seat) {
     const invitable = room.mode !== 'solo' && !facts.spectating;
     return html`<article class=${`rseat rseat--empty${searching ? ' is-searching' : ''}`} style=${`--i:${index}`}>
@@ -252,10 +274,28 @@ function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvi
   // 座位卡头像位（悬停看盟约）: `avatarFirst` is the server's switch (off = the card exactly as before, covenant tag
   // included). On: the plate's avatar slot draws the doctor's own avatar (the art block below keeps its 立绘 either way)
   // the 预选盟约 badge stays on the plate (no hover tip in the room).
-  const { avatarFirst } = personalizationOf(room);
   const portrait = seat.isBot ? null : seatPortrait(seat, portraits);
   const portraitDefault = seat.isBot ? null : seatPortrait({ ...seat, cardSkin: null }, { ...portraits, mySkin: '' });
-  const src = portrait && bad !== portrait ? portrait : portraitDefault && bad !== portraitDefault ? portraitDefault : null;
+  // portrait 链（外观自己的小图 → 干员自己的小图），每张失败就换下一张；都没有就是 null（画头像框）
+  const art = seatArtSrc([portrait, portraitDefault], badArt);
+  const ownArt = art === portrait ? art : null; // 外观自己的那张小图
+  // 立绘（精二 `char/illust/<id>.webp`）优先；打不开才退回 portrait 链（精一 `_1` 缺失由 CardArtImage 自己退精二）
+  const illustOk = !!illust && !seat.isBot && !badArt.includes(illust);
+  // 自定义立绘: the server's switch and this doctor's upload; takes the 立绘 position (and its 立绘调整 framing) ahead of the
+  // operator's own illustration. A broken picture falls back to the operator's.
+  const customIllustOk = customIllustOn && !!customIllust && !badArt.includes(customIllust);
+  const canTune = isMe && (illustOk || customIllustOk) && !!onTuneCard;
+  const illustNode = customIllustOk
+    ? html`<${CardArtImage} key=${`custom|${customIllust}`} charId=${charId} src=${customIllust} class="seat__portrait"
+        onError=${() => setBadArt((b) => (b.includes(customIllust) ? b : [...b, customIllust]))} />`
+    : illustOk
+      ? html`<${CardArtImage} key=${`${illust}|${charId}`} charId=${charId} illust=${illust} class="seat__portrait"
+        onError=${() => setBadArt((b) => (b.includes(illust) ? b : [...b, illust]))} />`
+      : null;
+  const artNode = art
+    ? html`<img key=${art} class="seat__portrait" src=${art} alt="" draggable=${false} loading="lazy"
+        onError=${() => setBadArt((b) => (b.includes(art) ? b : [...b, art]))} />`
+    : null;
   const owner = isOwnerName(seat.name);
   const canPick = isMe && !seat.isBot && !!onPickCard;
   return html`<article class=${`rseat${ready ? ' is-ready' : ''}${flash ? ' is-flash' : ''}${isMe ? ' is-me' : ''}${isHostSeat ? ' is-host' : ''}${offline ? ' is-offline' : ''}${seat.isBot ? ' is-bot' : ''}`}
@@ -264,10 +304,19 @@ function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvi
     ${facts.needsContent && !seat.isBot ? html`<span class=${`seat__content is-${seat.content || 'loading'}`} data-testid="seat-content">${facts.versionRoom ? (seat.content === 'ready' ? t('版本数据就绪') : seat.content === 'failed' ? t('版本数据校验失败') : t('版本数据载入中')) : (seat.content === 'ready' ? t('插件内容就绪') : seat.content === 'failed' ? t('插件内容校验失败') : t('插件内容载入中'))}</span>` : null}
     <span class="rseat__clip" aria-hidden="true"></span>
     <header class="rseat__strip"><i></i><span class="num">P${index + 1}</span></header>
-    <div class=${`rseat__art${canPick ? ' is-pickable' : ''}`} onClick=${canPick ? onPickCard : undefined} title=${canPick ? t('点击更换名片干员') : undefined}>
-      ${src ? html`<img src=${src} alt="" draggable=${false} loading="lazy" onError=${() => setBad(src)} />`
-        : html`<span class="rseat__glyph">${seat.isBot ? html`<${Icon} name="robot" />` : [...(seat.name || '?')][0]}</span>`}
-      ${canPick ? html`<button type="button" class="rseat__pick" onClick=${(e) => { e.stopPropagation(); onPickCard(); }} aria-label=${t('更换名片干员')}><${Icon} name="edit" /><span>${t('更换立绘')}</span></button>` : null}
+    <div class=${`rseat__art${canPick ? ' is-pickable' : ''}`}
+        onClick=${canPick ? onPickCard : undefined}
+        title=${canPick ? t('点击更换名片干员') : undefined}>
+      ${(illustFirst || customIllustOk) && illustNode
+        ? illustNode
+        : ownArt && artNode
+          ? artNode
+          : illustNode || artNode
+            || html`<span class="rseat__glyph">${seat.isBot ? html`<${Icon} name="robot" />` : [...(seat.name || '?')][0]}</span>`}
+      ${canPick || canTune ? html`<span class="rseat__picks">
+        ${canPick ? html`<button type="button" class="rseat__pick" onClick=${(e) => { e.stopPropagation(); onPickCard(); }} aria-label=${t('更换名片干员')}><${Icon} name="edit" /><span>${t('更换立绘')}</span></button>` : null}
+        ${canTune ? html`<button type="button" class="rseat__pick rseat__pick--art" data-testid="seat-card-art" onClick=${(e) => { e.stopPropagation(); onTuneCard(); }} aria-label=${t('立绘调整')} title=${t('立绘调整')}><${Icon} name="image" /><span>${t('立绘调整')}</span></button>` : null}
+      </span>` : null}
       ${isHostSeat ? html`<span class="rseat__host">${t('创建者')}</span>` : null}
       ${offline ? html`<span class="rseat__lost"><${Icon} name="wifiOff" />${t('失去信号')}</span>` : null}
       <span class="rseat__state">${ready
@@ -416,6 +465,55 @@ function RoomOptions({ room, facts, myId, busy, online, variant, onPrivate, onMa
   </div>`;
 }
 
+// ---- 名片立绘：public/js/assets.js 按需加载 -------------------------------------------------------------------------
+// illustUrl 只有两处用到（座位卡的立绘、立绘调整的预览），而 assets.js 是那份大 manifest 的模块（manifest / Spine 缓存）：
+// 静态 import 会把它拖进 main.js 的静态图，所以这里改成按需 import，并把这个 Promise 缓存在模块级。拿到之前
+// illustFor 只按素材约定给地址，座位卡的立绘调整入口也不出现；拿到之后重画一次。import 失败就留着占位（刷新再试），
+// 不抛错。
+let illustModule = null;
+let illustLoading = null;
+
+/** The one import of public/js/assets.js this page makes (a failure is kept; a reload asks again). */
+function loadIllustModule() {
+  if (!illustLoading) {
+    illustLoading = import('../assets.js').then((m) => { illustModule = m; return m; }).catch(() => null);
+  }
+  return illustLoading;
+}
+
+/** What a caller gets until public/js/assets.js has loaded: no illustration from the manifest. */
+const noIllustUrl = () => null;
+
+/**
+ * assets.js' illustUrl once it has arrived (a redraw follows), `noIllustUrl` before — the same signature either way, so
+ * both call sites keep their expression.
+ * @returns {(m: any, id: string, opts?: { skin?: string | null }) => string | null}
+ */
+function useIllustUrl() {
+  const [mod, setMod] = useState(illustModule);
+  useEffect(() => {
+    if (mod) return undefined;
+    let alive = true;
+    loadIllustModule().then((m) => { if (alive && m) setMod(m); });
+    return () => { alive = false; };
+  }, [mod]);
+  return mod ? mod.illustUrl : noIllustUrl;
+}
+
+/**
+ * 立绘的地址。Yuan 版从素材清单读（`chars[<id>].illust`）；本仓的 data/assets.json **没有** illust 这一栏
+ * （docs/PLUGINS.md 说过本版清单不带立绘），而 char/illust 的素材已经整层搬过来了 —— 所以清单没有时按 Yuan 版
+ * 清单里的同一条约定回落：`/assets/char/illust/<charId>.webp`。真没有这张图的干员由 ui/cardArt.js 的
+ * CardArtImage `<img onError>` 退回 portrait 链 → 头像框，与以前完全一样。
+ * @param {(m: any, id: string, opts?: any) => string | null} illustUrl
+ * @param {any} m the assets manifest @param {string|null} charId @param {{ skin?: string | null }} [opts]
+ */
+function illustFor(illustUrl, m, charId, opts = {}) {
+  if (!charId) return null;
+  const listed = typeof illustUrl === 'function' ? illustUrl(m, charId, opts) : null;
+  return listed || `/assets/char/illust/${charId}.webp`;
+}
+
 /** Room screen component. */
 export function RoomScreen() {
   const versions = useStore(s => s.versions);
@@ -441,6 +539,12 @@ export function RoomScreen() {
   const myCard = useStore(s => s[CARD_KEY], Object.is, cardStore);
   const mySkin = useStore(s => s[CARD_SKIN_KEY], Object.is, cardStore);
   const [picking, setPicking] = useState(false);
+  // 替换立绘: the 名片干员 dialog's first tile closes the picker and opens this dialog
+  const [illustOpen, setIllustOpen] = useState(false);
+  // 名片立绘微调：座位卡上的「立绘调整」开一层预览 + 缩放/平移
+  const [artOpen, setArtOpen] = useState(false);
+  // 立绘的 URL 解析器（public/js/assets.js 按需加载：先占位，到了重画一次 — 见 useIllustUrl）
+  const illustUrl = useIllustUrl();
   const portraits = useMemo(() => ({
     pool: cardList.filter((c) => (c.rarity ?? 0) >= 5 && c.assets).sort((a, b) => (a.charId < b.charId ? -1 : 1)),
     byChar: new Map(cardList.map((c) => [c.charId, c])), m, myId: me.playerId, myCard, mySkin,
@@ -460,6 +564,12 @@ export function RoomScreen() {
   const online = conn.status === 'online';
   const coop = room ? room.mode !== 'solo' : false;
   const facts = room ? roomFacts(room, me.playerId) : null;
+  // 自己座位上的名片干员 = 立绘调整的对象（与座位卡同一套解析：ui/seatArt.js，picks 优先于服务端回显）
+  const myOp = facts ? seatOperator(facts.mine, portraits, { myId: me.playerId, myCard }) : null;
+  const myIllust = myOp ? illustFor(illustUrl, m, myOp.chess.charId, { skin: mySkin || null }) : null;
+  // 自定义立绘：立绘调整的对象（服务端开关开启时才有：room.state.personalization.customIllust；没有干员立绘也能调，
+  // 取景用同一份 sp.pref.room.cardArt）
+  const myCustomIllust = useCustomIllust(room && personalizationOf(room).customIllust && me.playerId ? me.playerId : null);
   const vote = room?.versionVote;
   const versionWhy = isModdedRoom(room) ? t('请先关闭改变玩法的插件') : null;
   const searchable = CAN_QUEUE && !!room && coop && facts.isHost && room.private !== true && !room.test && !isModdedRoom(room) && !room.versionVote && room.aiPicksLast === true && !room.aiTakeoverEnabled && !room.uniteLayerGains && !room.independentPools && !room.rescueEnabled && (room.enemyHpMultiplier ?? 1) === 1 && Object.entries(CONVENIENCE_DEFAULTS).every(([key, value]) => room.convenience?.[key] === value) && facts.seats.length === DEFAULT_SEATS && facts.humans.every(s => s.connected) && !room.inMatch;
@@ -611,9 +721,24 @@ export function RoomScreen() {
     </header>
 
     <main class="rs-seats">
-      ${facts.seats.map((s, i) => html`<${SeatCard} key=${s ? `p${s.playerId}` : `e${i}`} seat=${s} index=${i} room=${room} facts=${facts}
-        myId=${me.playerId} busy=${busy} online=${online} onKick=${kick} onInvite=${() => copy('code')} onAddBot=${addBot} onRemoveBot=${removeBot} onBotBand=${setBotBand} searching=${searching} portraits=${portraits}
-        onPickCard=${CARD_SYNC && cardList.length ? () => setPicking(true) : null} />`)}
+      ${facts.seats.map((s, i) => {
+        const op = s ? seatOperator(s, portraits, { myId: me.playerId, myCard }) : null;
+        const charId = op?.chess.charId || null;
+        // 这个座位穿的外观（座位卡里的 choices id：本机 = 自己的选择，别人 = 服务端回显）
+        const skin = s && !s.isBot ? ((s.playerId === me.playerId ? mySkin : s.cardSkin) || null) : null;
+        // 立绘（`char/illust/<id>.webp`）：名片立绘微调的画布；没有这条素材的干员照旧走 portrait → 头像框
+        const illust = charId ? illustFor(illustUrl, m, charId, { skin }) : null;
+        const ownIllust = charId ? illustFor(illustUrl, m, charId) : null;
+        // 这张卡先画哪张图（Yuan 版 2026-10-28 A 项的口径，按本仓的座位卡改写）：穿外观、且本页真有这套外观的
+        // 180×360 小图时，外观自己的小图排在干员的立绘前面（外观自带立绘的除外，立绘本来就更全）；没穿外观、
+        // 或这套外观在本页画不出来时照旧是干员自己的立绘在前。
+        const ownArt = !!skin && !!op?.chess.choices?.find((c) => c.id === skin)?.portrait;
+        const illustFirst = !ownArt || illust !== ownIllust;
+        return html`<${SeatCard} key=${s ? `p${s.playerId}` : `e${i}`} seat=${s} index=${i} room=${room} facts=${facts}
+          myId=${me.playerId} busy=${busy} online=${online} onKick=${kick} onInvite=${() => copy('code')} onAddBot=${addBot} onRemoveBot=${removeBot} onBotBand=${setBotBand} searching=${searching} portraits=${portraits}
+          illust=${illust} illustFirst=${illustFirst} charId=${charId} onTuneCard=${() => setArtOpen(true)}
+          onPickCard=${CARD_SYNC && cardList.length ? () => setPicking(true) : null} />`;
+      })}
       ${coop ? null : html`<aside class="solo-brief rs-brief brackets">
         <${MicroLabel} tone="mint">BRIEFING<//>
         <h2>${DIFFICULTY_NAMES[room.difficulty] ? t(DIFFICULTY_NAMES[room.difficulty]) : ''}<span class="num t-dim"> ${info.code}</span></h2>
@@ -670,7 +795,13 @@ export function RoomScreen() {
       tags=${[{ key: 'mode', label: t('精确搜寻'), icon: html`<${Icon} name="search" />` },
         { key: 'diff', label: t(DIFFICULTY_NAMES[room.difficulty]), color: DIFFICULTY_COLORS[room.difficulty], icon: html`<${DifficultyIcon} difficulty=${room.difficulty} />` }]} />` : null}
     ${foundShown ? html`<${FoundPanel} class=${foundLeaving ? 'is-leaving' : ''} seats=${facts.seats.length} text=${t('同盟集结完毕')} />` : null}
-    ${picking ? html`<${CardPicker} current=${myCard} currentSkin=${mySkin} list=${cardList} m=${m} onPick=${pickCard} onClose=${() => setPicking(false)} />` : null}
+    ${picking ? html`<${CardPicker} current=${myCard} currentSkin=${mySkin} list=${cardList} m=${m} onPick=${pickCard}
+      onCustomIllust=${() => { setPicking(false); setIllustOpen(true); }} onClose=${() => setPicking(false)} />` : null}
+    ${illustOpen ? html`<${IllustDialog} open=${true} onClose=${() => setIllustOpen(false)} />` : null}
+    ${artOpen && (myCustomIllust || (myOp && myIllust)) ? html`<${Modal} open=${true} title=${t('立绘调整')} micro="CARD ART" width="min(9.6rem, 96vw)"
+      onClose=${() => setArtOpen(false)} actions=${html`<${Button} variant="ghost" onClick=${() => setArtOpen(false)}>${t('关闭')}<//>`}>
+      <${CardArt} charId=${myOp?.chess.charId || ''} illust=${myCustomIllust || myIllust} />
+    <//>` : null}
     ${protoShown ? html`<${RoomProtocol} room=${room} variant=${variant} busy=${busy} onClose=${() => setPicker(false)} onPick=${setDifficulty} leaving=${protoLeaving} />` : null}
   </div>`;
 }

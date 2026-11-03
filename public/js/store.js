@@ -88,6 +88,9 @@ export const initialState = Object.freeze({
   // how many 自定义头像 pictures the server holds (/healthz `avatars`, ported from hex031; ui/customAvatar.js): 0 until a
   // check says otherwise — with none, no avatar is ever requested and every avatar draws exactly as before
   serverAvatars: 0,
+  // how many 自定义立绘 pictures the server holds (/healthz `illusts`, ui/customIllust.js): 0 until a check says
+  // otherwise — with none, no illustration is ever requested and every seat card draws the operator's own illustration
+  serverIllusts: 0,
   // A language-only installation may have announcements without an unofficial plugin count.
   installedNotices: false,
   session: { entered: false },

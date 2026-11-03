@@ -72,6 +72,7 @@ import { recordResult, installStatsRecorder } from './ui/stats.js';
 import { installSettingsViews, loadoutStore, installLoadoutSync, installOwnershipSync, installDiySync, installSkinsSync, installCardSync } from './ui/loadoutSync.js';
 import { installBondPlanSync } from './ui/bondPlan.js';
 import { syncOwnAvatar, refreshRemoteAvatar } from './ui/customAvatar.js';
+import { syncOwnIllust, refreshRemoteIllust } from './ui/customIllust.js';
 
 import { startBuildGuard, fetchBuild } from './ui/buildGuard.js';
 import { initLang, useLang, tickerText } from './ui/lang.js';
@@ -201,6 +202,7 @@ function onWelcome(msg) {
   // 自定义头像 (ported from hex031): a new server session (e.g. the server restarted) has no picture under this
   // playerId — publish this browser's locally kept one again, so a teammate still reads it (ui/customAvatar.js).
   void syncOwnAvatar(store.get().me.token, store.get().me.playerId);
+  void syncOwnIllust(store.get().me.token, store.get().me.playerId);
 
   if (prevId != null && prevId !== msg.playerId) {
     // A brand-new server session (the server restarted — crashed / killed, so no room.closed arrived — or this session
@@ -282,6 +284,7 @@ function wireNet() {
     const at = Number.isFinite(msg.at) ? msg.at : Date.now();
     const removed = msg.removed === true;
     if (msg.kind === 'avatar') refreshRemoteAvatar(playerId, at, { removed });
+    else if (msg.kind === 'illust') refreshRemoteIllust(playerId, at, { removed });
   });
   net.on('match.state', msg => { store.set({ matchmaking: payload(msg) }); if (msg.error) toastError({ code: msg.error }); });
   net.on('match.found', msg => store.set({ matchmaking: { ...payload(msg), status: 'found' } }));
@@ -464,8 +467,9 @@ async function boot() {
   const installPolicyReady = fetchBuild((...args) => fetch(...args), {
     onHealth: h => {
       pwaInstall.setEnabled(h.siteSettings?.showPwaInstall);
-      // how many 自定义头像 pictures the server holds (ui/customAvatar.js): 0 → no avatar request is made at all
-      store.set({ serverAvatars: Number(h.avatars) || 0 });
+      // how many 自定义头像 / 自定义立绘 pictures the server holds (ui/customAvatar.js, ui/customIllust.js): 0 → no picture
+      // request is made at all
+      store.set({ serverAvatars: Number(h.avatars) || 0, serverIllusts: Number(h.illusts) || 0 });
     },
   });
   installChatSync({ net, store });
@@ -559,9 +563,11 @@ async function boot() {
         pwaInstall.setEnabled(h.siteSettings?.showPwaInstall);
         const n = pluginCount(h.content), notices = h.content?.notices === true;
         if (n !== store.get().installedPlugins || notices !== store.get().installedNotices) store.set({ installedPlugins: n, installedNotices: notices });
-        // 自定义头像 (ui/customAvatar.js): how many pictures the server holds now
+        // 自定义头像/立绘 (ui/customAvatar.js, ui/customIllust.js): how many pictures the server holds now
         const avatars = Number(h.avatars) || 0;
+        const illusts = Number(h.illusts) || 0;
         if (avatars !== store.get().serverAvatars) store.set({ serverAvatars: avatars });
+        if (illusts !== store.get().serverIllusts) store.set({ serverIllusts: illusts });
       },
     });
   } catch (err) {

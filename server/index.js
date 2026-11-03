@@ -60,6 +60,7 @@ import { MIME, COMPRESSIBLE, acceptsGzip, pickEncoding, parseRange } from './htt
 import { BUILD_INPUTS, computeBuildTag, buildTag, resetBuildTag } from './http/buildTag.js';
 import { createRequestHandler } from './http/routes.js';
 import { createAvatarStore } from './http/avatarStore.js';
+import { createIllustStore } from './http/illustStore.js';
 import { createTrafficCounter } from './http/traffic.js';
 import { createAssetIndex } from './http/assetIndex.js';
 import { createManifestViews } from './http/assetViews.js';
@@ -93,6 +94,7 @@ export {
  *   studio: the plugin studio at /studio/ (default on for this machine and the local network — SP_STUDIO=local|off;
  *   false: none);
  *   avatarDir: the 自定义头像 directory (default `.cache/avatars/`, or SP_AVATAR_DIR; a test uses a temporary one)
+ *   illustDir: the 自定义立绘 directory (default `.cache/illusts/`, or SP_ILLUST_DIR; a test uses a temporary one)
  *   matchHost: options of the match hosts (server/match/host/index.js — watchdogMs, matchOptions …; tests)
  * @returns {Promise<{ port: number, host: string, url: string, server: http.Server, wss: import('ws').WebSocketServer,
  *                     lobby: import('./lobby.js').Lobby, network: import('./net.js').Network,
@@ -181,7 +183,12 @@ export async function startServer(opts = {}) {
   const avatarDir = opts.avatarDir !== undefined ? opts.avatarDir
     : (process.env.SP_AVATAR_DIR || path.join(ROOT, '.cache', 'avatars'));
   const avatars = createAvatarStore({ dir: avatarDir, log });
-  const server = http.createServer(createRequestHandler({ serveStatic, csp: process.env.SP_CSP === 'off' ? null : siteCsp(publicDir, cdn), health: { startedAt, network, registry, lobby, content, traffic, assetIndex, views, trusted:trustedRuntime?.health, versions, versionHosts, avatars }, log, trustProxy: network.opts.trustProxy, studio, trustedRuntime }));
+  // 自定义立绘 (ui/illustPicker.js, ported with the avatar store): the same idea for the seat card's illustration —
+  // `.cache/illusts/`, 2 MB, served at /illust; `SP_ILLUST_DIR` / startServer's `illustDir` override the directory
+  const illustDir = opts.illustDir !== undefined ? opts.illustDir
+    : (process.env.SP_ILLUST_DIR || path.join(ROOT, '.cache', 'illusts'));
+  const illusts = createIllustStore({ dir: illustDir, log });
+  const server = http.createServer(createRequestHandler({ serveStatic, csp: process.env.SP_CSP === 'off' ? null : siteCsp(publicDir, cdn), health: { startedAt, network, registry, lobby, content, traffic, assetIndex, views, trusted:trustedRuntime?.health, versions, versionHosts, avatars, illusts }, log, trustProxy: network.opts.trustProxy, studio, trustedRuntime }));
   server.on('clientError', answerClientError);
   const wss = attachWebSocket(server, { network, log, traffic });
 
@@ -280,7 +287,7 @@ export async function startServer(opts = {}) {
     return closing;
   }
 
-  return { port: actualPort, host: boundHost, url, server, wss, lobby, network, registry, packs, content, visual, contents, hosts, versions, versionHosts, traffic, avatars, assetIndex, views, studio, eventLoop, simPool, close };
+  return { port: actualPort, host: boundHost, url, server, wss, lobby, network, registry, packs, content, visual, contents, hosts, versions, versionHosts, traffic, avatars, illusts, assetIndex, views, studio, eventLoop, simPool, close };
 }
 
 export function roomCodeFromArgv(argv = process.argv.slice(2)) {

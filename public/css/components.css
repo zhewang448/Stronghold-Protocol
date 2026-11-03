@@ -1522,3 +1522,18 @@
 
 /* the 替换头像 button beside the room's tools (ui/avatarCrop.js AvatarButton) */
 .avatar-entry { white-space: nowrap; }
+
+/* ---- 自定义立绘 upload (ui/illustPicker.js) -------------------------------------------------------------- */
+/* the picked picture as it will be uploaded: shown whole (contain), the real slot crops with object-fit: cover */
+.illustpic { position: relative; display: grid; place-items: center; width: 100%; height: min(3.4rem, 46vh); margin: .1rem 0;
+  overflow: hidden; background: repeating-linear-gradient(45deg, rgba(255, 255, 255, .025) 0 2px, transparent 2px 8px), #070a09;
+  border: 1px solid var(--line-2); }
+.illustpic.is-ready { background: #050807; }
+.illustpic__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.illustpic__empty { display: flex; flex-direction: column; align-items: center; gap: .1rem; color: var(--text-dim);
+  font-size: calc(.15 * var(--t)); }
+.illustpic__meta { margin-left: auto; max-width: 55%; text-align: right; color: var(--text-dim);
+  font-size: calc(.13 * var(--t)); line-height: 1.4; }
+.illustpic__own { width: .22rem; height: .34rem; display: inline-block; overflow: hidden; border: 1px solid var(--line); }
+.illustpic__own img { width: 100%; height: 100%; object-fit: cover; }
+.illust-entry { white-space: nowrap; }
