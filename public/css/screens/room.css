@@ -345,3 +345,21 @@
 .trusted-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 90; padding: 5px 16px; background: #9b202b; color: #fff; display: flex; justify-content: space-between; gap: 12px; }
 .trusted-banner button { color: inherit; text-decoration: underline; }
 .trusted-hash { overflow-wrap: anywhere; font-family: monospace; }
+
+/* ---- 座位卡头像位（悬停看盟约）(ported from hex031; room.js SeatCard / BondTip) -------------------------------
+   With the server's room.state.personalization.avatarFirst on (local/personalization.json — there is no room switch),
+   the small AvatarFrame in the name plate is the avatar slot: it draws the doctor's own uploaded picture. The 预选盟约
+   (BondTip) is a tooltip on the WHOLE name plate — the same `<${Tooltip} class="rseat__plate">` anchor as the avatar, the
+   name and the doctor number, so hovering anywhere on the plate (or the avatar) names the strategy, as before the art
+   area stopped doubling as the avatar. The art area above is NOT touched — it keeps its 立绘 (the operator's own, or the
+   uploaded 自定义立绘), so an avatar and an illustration are on the card at the same time and never take each other's
+   place. Off, this changes nothing: the plate draws the default avatar (first letter / 名片干员 / AI) as before. */
+/* 悬停/长按看盟约: the tooltip content (BondTip, rendered in the shared Tooltip layer) */
+.rseat__btip { display: flex; flex-direction: column; gap: .06rem; max-width: min(4.4rem, 62vw); text-align: left; }
+.rseat__btip-head { display: flex; align-items: center; gap: .08rem; }
+.rseat__btip-glyph { flex: none; width: .3rem; height: .3rem; }
+.rseat__btip-name { font-size: calc(.17 * var(--utility-text, var(--t))); font-weight: 800; color: var(--text-hi); }
+.rseat__btip-owner { font-size: calc(.12 * var(--utility-text, var(--t))); color: var(--text-dim); letter-spacing: .04em; }
+.rseat__btip-desc { white-space: pre-line; font-size: calc(.14 * var(--utility-text, var(--t))); line-height: 1.55; color: var(--text); }
+/* 2026-11-03: the room's own 替换头像 / 替换立绘 top-bar buttons are gone (avatar: lobby 本机账号 → 更换头像; illustration:
+   the 名片干员 dialog's first tile), so their `.room-avatar / .room-illust` sizing rule went with them. */

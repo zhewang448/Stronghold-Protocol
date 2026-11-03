@@ -60,7 +60,10 @@ scripts/service.env.cmd
 
 # --- private local state: never publish match exports, credentials or machine profiles -----------
 /private/
-/local/
+# /local/ is private per-machine state (personal-data.json, personalization.json …); the 个性化 template is the one
+# file of it that ships (server/http/personalizationConfig.js reads local/personalization.json, which it copies).
+/local/*
+!/local/personalization.json.example
 /secrets/
 /handoff/
 .codex/

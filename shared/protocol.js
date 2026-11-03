@@ -680,6 +680,11 @@ export const S2C = [
   'social.state',
   'match.state', 'match.found', 'match.counts',
   'room.state', 'room.closed', 'chat.message', 'chat.history', 'site.announcement', 'site.settings',
+  // room.personal { playerId, kind: 'avatar'|'illust', at, removed? } — that doctor's own picture changed (POST/DELETE /avatar or
+  // /illust, server/http/routes.js → server/lobby.js personalChanged): the room's other clients drop the cached picture
+  // and read it again (ui/customAvatar.js, ui/customIllust.js). One light frame per change — not a room.state rewrite,
+  // not part of a match, never replayed.
+  'room.personal',
   'm.public', 'm.private', 'm.state', 'm.field', 'm.toast', 'm.ticker', 'm.emote', 'm.ping', 'm.result',
   // m.layer { playerId, bondId, add } — own live prep layer gain; ephemeral, never replayed on resync.
   'm.layer',

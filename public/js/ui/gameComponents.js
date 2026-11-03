@@ -10,6 +10,9 @@ import { t as tr } from '../../../shared/i18n.js';
 import { useStore } from '../store.js';
 import { skinsStore, ownerSkin } from './skins.js';
 import { settingsStore } from './settingsStore.js';
+// 自定义头像 / 座位卡外观的服务器开关（ui/personalization.js）：PlayerAvatar 的“头像位”用它们决定画谁的头像
+import { useCustomAvatar } from './customAvatar.js';
+import { usePersonalization } from './personalization.js';
 import {
   uiUrl, chessAvatarUrl, chessPortraitUrl, itemIconUrl, tokenAvatarUrl, enemyIconUrl, bondIconUrl, bandIconUrl,
 } from './assetUrls.js';
@@ -284,17 +287,23 @@ export function RichTip({ text, children, placement = 'top' }) {
 }
 
 /**
- * Seat-coloured player avatar: band icon when a band is picked, else glyph/robot.
- * @param {{ player: any, size?: 'sm'|'md', self?: boolean, class?: string }} props
+ * Seat-coloured player avatar: the doctor's own 自定义头像 when the server's personalization.avatarFirst is on (the same
+ * picture the room's seat card draws, ui/customAvatar.js → GET /avatar/<playerId>), else the band icon once a band is
+ * picked, else the glyph/robot. An AI seat never takes the custom picture; with the switch off, or no room state, this is
+ * exactly the avatar of the version before the switch existed.
+ * @param {{ player: any, size?: 'sm'|'md', self?: boolean, class?: string, avatar?: string|null }} props
  */
 export function PlayerAvatar({ player, size = 'md', self = false, class: cls, avatar = null }) {
-  const src = avatar || (player?.bandId ? bandIconUrl(data.get('assets'), player.bandId) : null);
+  const personalization = usePersonalization();
+  // 自定义头像 (server/http/avatarStore.js, ui/customAvatar.js): 头像位 only — same rule as the room's seat card
+  const custom = useCustomAvatar(personalization?.avatarFirst === true && !player?.isBot ? player?.playerId : null);
+  const src = custom || avatar || (player?.bandId ? bandIconUrl(data.get('assets'), player.bandId) : null);
   const glyph = [...(player?.name || '').trim()][0] || '?';
   const dead = player?.alive === false || player?.status === 'dead';
   const left = player?.status === 'left';
   const color = playerSeatColor(player?.seat);
-  return html`<span class=${cx('pavatar', `pavatar--${size}`, self && 'is-self', dead && 'is-dead', left && 'is-left', player?.isBot && 'is-bot',
-      player?.connected === false && !player?.isBot && 'is-offline', cls)} style=${`--seat-color:${color}`}>
+  return html`<span class=${cx('pavatar', `pavatar--${size}`, self && 'is-self', custom && 'is-custom', dead && 'is-dead', left && 'is-left',
+      player?.isBot && 'is-bot', player?.connected === false && !player?.isBot && 'is-offline', cls)} style=${`--seat-color:${color}`}>
     <span class="pavatar__img">
       <${Img} src=${src} fallback=${player?.isBot ? html`<${Icon} name="robot" class="pavatar__bot" />` : html`<span class="pavatar__glyph">${glyph}</span>`} />
     </span>

@@ -180,6 +180,9 @@ import { ServerSocial } from './social.js';
 import { Matchmaking } from './matchmaking.js';
 import { KITTED_CHARS } from './sim/content/kits/index.js';
 import { SiteAnnouncements } from './announcements.js';
+// 座位卡头像优先 / 自定义立绘 are the server's switches, not a room option (server/http/personalizationConfig.js):
+// local/personalization.json, read once at startup, sent to every room as room.state.personalization
+import { getPersonalization } from './http/personalizationConfig.js';
 
 const VANILLA_KITTED = new Set(KITTED_CHARS);
 const UNVERIFIED_CS = 'unverified';
@@ -398,6 +401,11 @@ export class Room {
       capacity: this.capacity,
       maxSeats: this.capacity,
       aiPicksLast: this.aiPicksLast,
+      // 座位卡头像优先（悬停看盟约）/ 座位卡自定义立绘: the server's switches for every room and every player
+      // (server/http/personalizationConfig.js ← local/personalization.json), never a room option. Always in the frame —
+      // a page that just entered the room renders the seat cards from it, no second request. Both false = exactly the
+      // rendering of the version before these switches existed (covenant icon, operator illustration).
+      personalization: { ...getPersonalization() },
       uniteLayerGains: this.uniteLayerGains,
       convenience: { ...this.convenience },
       ...(this.enemyHpMultiplier !== 1 ? { enemyHpMultiplier: this.enemyHpMultiplier } : {}),
@@ -2269,6 +2277,30 @@ export class Lobby {
       else sendRaw(session.ws, data, { droppable });
     }
     return data;
+  }
+
+  /**
+   * 自定义头像 / 自定义立绘 changed for a player (server/http/routes.js after a successful POST/DELETE /avatar or /illust):
+   * one light `room.personal { playerId, kind, at, removed? }` frame to the room that player sits in (a spectator seat counts), so
+   * every other client drops its cached picture and reads it again — the seat card redraws without a reload. It is not a
+   * room.state rewrite (nothing else changed), not a match frame, not replayable, and it never fetches anything itself.
+   * @param {string} playerId the uploader (a `p_…` session id)
+   * @param {'avatar'|'illust'} kind
+   * @returns {number} how many rooms heard it (0 = they are not in a room)
+   */
+  personalChanged(playerId, kind, { removed = false } = {}) {
+    if (typeof playerId !== 'string' || !playerId) return 0;
+    if (kind !== 'avatar' && kind !== 'illust') return 0;
+    const at = this.now();
+    const msg = removed ? { t: 'room.personal', playerId, kind, at, removed: true } : { t: 'room.personal', playerId, kind, at };
+    let rooms = 0;
+    for (const room of this.rooms.values()) {
+      if (room.disposed) continue;
+      if (!room.seatOf(playerId) && !room.spectatorOf(playerId)) continue;
+      this.broadcastRoom(room, msg);
+      rooms += 1;
+    }
+    return rooms;
   }
 
   /** Match unicast. @returns {boolean} */

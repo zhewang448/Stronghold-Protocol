@@ -43,6 +43,7 @@ import { getShowPwaInstall, setShowPwaInstall } from './match/hostSettings.js';
 import { getAllowAiTakeover, setAllowAiTakeover } from './match/hostSettings.js';
 import { resetAiTakeover } from './aiTakeover.js';
 import { readPersonalDataConfig, writePersonalDataConfig } from './http/personalDataConfig.js';
+import { getPersonalization, reloadPersonalization, writePersonalizationConfig, PERSONALIZATION_FIELDS } from './http/personalizationConfig.js';
 import { AnnouncementDrafts } from './announcement-drafts.js';
 import { getSocialSettings, setSocialSettings, normalizeSocialSettings } from './match/hostSettings.js';
 import { DEFAULT_SOCIAL_SETTINGS } from '../shared/social.js';
@@ -893,6 +894,8 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
         res.setHeader('Set-Cookie', `sp_admin=${token}; HttpOnly; SameSite=Strict; Path=/`);
         return send(200, page, 'text/html; charset=utf-8');
       }
+      // The console page declares a data: icon, but Chromium still probes /favicon.ico once; answer it quietly.
+      if (req.method === 'GET' && url.pathname === '/favicon.ico') return send(204, '');
       if (req.method === 'GET' && ['/wall', '/resources'].includes(url.pathname) && session(req)) {
         return send(200, fs.readFileSync(path.join(DIR, 'monitor.html'), 'utf8').replace('__TOKEN__', token), 'text/html; charset=utf-8');
       }
@@ -1087,6 +1090,29 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
           log.error('[admin] announcement drafts failed', e);
           return send(500, { error: '读取或保存公告草稿失败，请检查磁盘空间和草稿文件权限后重试' });
         }
+      }
+      if (url.pathname === '/api/host/personalization') {
+        // The two server-level 座位卡 switches (server/http/personalizationConfig.js ← local/personalization.json).
+        // Host-only by construction: this whole server is bound to 127.0.0.1, checks its own Host header, and every
+        // /api request above needs the per-process console token. Players never reach either method.
+        if (req.method === 'GET') return send(200, { ...getPersonalization() });
+        if (req.method === 'POST') {
+          const body = await readJson(req);
+          if (!body || typeof body !== 'object' || Array.isArray(body)) return send(400, { error: '请求格式错误' });
+          for (const field of PERSONALIZATION_FIELDS) {
+            if (typeof body[field] !== 'boolean') return send(400, { error: `${field} 必须是 true 或 false` });
+          }
+          let saved;
+          try { saved = writePersonalizationConfig(body); }
+          catch (e) { log.error('[admin] saving personalization failed', e); return send(400, { error: `写入 local/personalization.json 失败：${e.message}` }); }
+          // No restart: Room.toState reads this on its next frame, so every room re-broadcasts now (the clients'
+          // seat cards follow from the new room.state.personalization).
+          reloadPersonalization();
+          for (const room of lobby.rooms.values()) lobby.broadcastState?.(room);
+          log.info(`[admin] personalization ${JSON.stringify(saved)} → ok`);
+          return send(200, { ok: true, ...saved });
+        }
+        return send(405, { error: 'method not allowed' });
       }
       if (req.method === 'GET' && url.pathname === '/api/catalog') return send(200, await catalogView(lobby, url.searchParams.get('room')));
       if (req.method === 'GET' && url.pathname === '/api/results-summary') return send(200, summarizeResults(Object.fromEntries(url.searchParams)));

@@ -228,9 +228,19 @@ function avatarGet(req, res, playerId, avatars) {
 }
 
 /**
+ * Tell the uploader's room that their picture changed (server/lobby.js personalChanged → one light `room.personal` frame),
+ * so every other client drops the cached copy and reads it again. Best effort: a broadcast can never fail an upload, and a
+ * server without a lobby (tests) simply has nothing to tell.
+ * @param {{ lobby?: any }} deps @param {string} playerId @param {'avatar'|'illust'} kind
+ */
+function notifyPersonal(deps, playerId, kind, removed = false) {
+  try { deps.lobby?.personalChanged?.(playerId, kind, removed ? { removed: true } : undefined); } catch { /* the picture is stored; the notice is a bonus */ }
+}
+
+/**
  * Serve an `/avatar` URL. Returns false when the path is not one (the request then falls through as before).
  * @param {import('node:http').IncomingMessage} req @param {import('node:http').ServerResponse} res
- * @param {string} rawPath @param {{ avatars: any, registry: any }} deps
+ * @param {string} rawPath @param {{ avatars: any, registry: any, lobby?: any }} deps
  * @returns {Promise<boolean>}
  */
 async function handleAvatarRequest(req, res, rawPath, deps) {
@@ -276,7 +286,7 @@ export function createRequestHandler({ serveStatic, health, log, trustProxy = 'a
     if (trustedRuntime && parts.rawPath.startsWith('/x/') && await trustedRuntime.route(req,res,parts.rawPath)) return;
     // 自定义头像 (server/http/avatarStore.js): POST / DELETE / GET, before the GET/HEAD-only rule below
     if (health.avatars && health.registry && (parts.rawPath === '/avatar' || parts.rawPath.startsWith('/avatar/'))) {
-      await handleAvatarRequest(req, res, parts.rawPath, { avatars: health.avatars, registry: health.registry });
+      await handleAvatarRequest(req, res, parts.rawPath, { avatars: health.avatars, registry: health.registry, lobby: health.lobby });
       return;
     }
     if (studio && studio.handles(parts.rawPath)) { await studio.handle(req, res, parts.rawPath, parts.query); return; }

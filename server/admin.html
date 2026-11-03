@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="data:," />
 <title>卫戍协议 · 主机控制台</title>
 <style>
   :root { color-scheme: dark; --bg: #0c0f0e; --panel: #141816; --line: #2f3a35; --mint: #4ed8af; --text: #dfe6e2; --dim: #8a9a92; --warn: #f6a329; --red: #e85a4a; }
@@ -1525,12 +1526,16 @@ function drawPrepPreview() {
 
 async function showSettings() {
   const host = $('#settings');
-  const [d, domains] = await Promise.all([
+  const [d, domains, personalization] = await Promise.all([
     api('/api/settings').catch(() => null),
     api('/api/domain-recovery').catch(() => null),
+    api('/api/host/personalization').catch(() => null),
   ]);
   if (!d || d.error) { host.innerHTML = `<p class="empty">${esc((d && d.error) || '读取设置失败')}</p>`; return; }
   settingsData = d;
+  const pers = personalization && typeof personalization.avatarFirst === 'boolean' && typeof personalization.customIllust === 'boolean'
+    ? personalization : { avatarFirst: true, customIllust: true };
+  d.personalization = pers;
   const p = d.prep;
   const n = Math.max(0, ...d.defaults.map((x) => x.rounds.length));
   const base = (r) => { const v = d.defaults.map((x) => x.rounds[r - 1]).filter((s) => s > 0); return v.length ? Math.max(...v) : ''; };
@@ -1547,6 +1552,17 @@ async function showSettings() {
         <div class="row"><button type="button" data-domain-add>添加旧网址</button><button type="button" class="primary" data-domain-save>保存域名设置</button><button type="button" data-domain-reset>撤销修改</button></div>
         <p class="meta">智能跳转：有存档先提示迁移，无存档前往新站。直接跳转：普通访问立即前往新站，保留找回专用入口。首次访问正式站提示找回，首页和大厅可再次打开。</p>
         <p id="domain-feedback" class="meta" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+    <section class="room" id="personalization-settings"><h2>个性化 <small>PERSONALIZATION</small></h2>
+      <p class="meta" id="personalization-help">服务端级开关：对本服所有房间、所有玩家统一生效，保存后立即生效，无需重启。配置写入 local/personalization.json，重启服务器后保留；两个开关都只改变座位卡的显示，不进入对局、回放或协议。</p>
+      ${personalization ? '' : '<p class="note">读取个性化设置失败，下面显示的是默认值；保存会覆盖 local/personalization.json。</p>'}
+      <form id="personalization-form" class="stats-body" onsubmit="return false">
+        <label><input id="personalization-avatar-first" type="checkbox" ${pers.avatarFirst ? 'checked' : ''}> 座位卡头像优先</label>
+        <p class="meta">座位卡的画框显示每位博士自己的头像，悬停可看盟约；仅改变座位卡显示，不影响对局。关闭后恢复名片立绘与盟约图标。</p>
+        <label><input id="personalization-custom-illust" type="checkbox" ${pers.customIllust ? 'checked' : ''}> 允许自定义立绘</label>
+        <p class="meta">座位卡的立绘位显示玩家上传的立绘；仅改变座位卡显示，不影响对局。关闭后恢复干员立绘。</p>
+        <div class="row"><button class="primary" data-personalization-save>保存</button><button data-personalization-reset>撤销修改</button><span class="meta" id="personalization-saved" role="status"></span></div>
       </form>
     </section>
     <section class="room" id="ai-takeover-settings"><h2>观战接替 AI</h2>
@@ -1667,6 +1683,7 @@ function arrangeSettings(domains) {
   sections.set(chat.id, chat);
   const groups = [
     ['game', '对局设置', ['prep-settings', 'unite-settings', 'ai-takeover-settings', 'round-charts-settings']],
+    ['personalization', '个性化 · PERSONALIZATION', ['personalization-settings']],
     ['chat', '交流管理', ['social-settings', 'chat-policy-settings', 'chat-settings']],
     ['history', '记录与恢复', ['replay-settings', 'recovery-settings']],
     ['system', '维护与扩展', ['release-update', 'update-backups-settings', 'domain-recovery-settings', 'pwa-install-settings', 'plugin-settings', 'issue-feedback']],
@@ -1994,6 +2011,28 @@ document.addEventListener('click', (e) => {
       settingsData.allowAiTakeover = result.allowAiTakeover;
       $('#ai-takeover-allowed').checked = result.allowAiTakeover;
       status.textContent = '已保存，房间权限立即生效；重启后保留';
+    }).catch(error => { status.textContent = '保存失败：' + error.message; })
+      .finally(() => { controls.forEach(control => { control.disabled = false; }); });
+    return;
+  }
+  if (e.target.closest('[data-personalization-reset]')) {
+    const saved = settingsData.personalization || {};
+    $('#personalization-avatar-first').checked = saved.avatarFirst === true;
+    $('#personalization-custom-illust').checked = saved.customIllust === true;
+    $('#personalization-saved').textContent = ''; return;
+  }
+  if (e.target.closest('[data-personalization-save]')) {
+    const controls = [...$('#personalization-form').querySelectorAll('input,button')];
+    const status = $('#personalization-saved');
+    const avatarFirst = $('#personalization-avatar-first').checked;
+    const customIllust = $('#personalization-custom-illust').checked;
+    controls.forEach(control => { control.disabled = true; }); status.textContent = '保存中…';
+    api('/api/host/personalization', { avatarFirst, customIllust }).then(result => {
+      if (!result.ok) throw new Error(result.error || '保存失败');
+      settingsData.personalization = { avatarFirst: result.avatarFirst, customIllust: result.customIllust };
+      $('#personalization-avatar-first').checked = result.avatarFirst;
+      $('#personalization-custom-illust').checked = result.customIllust;
+      status.textContent = '已保存，所有房间立即生效；重启后保留';
     }).catch(error => { status.textContent = '保存失败：' + error.message; })
       .finally(() => { controls.forEach(control => { control.disabled = false; }); });
     return;

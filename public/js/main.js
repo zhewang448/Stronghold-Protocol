@@ -71,7 +71,7 @@ import { installRehearsal } from './battle/rehearsal.js';
 import { recordResult, installStatsRecorder } from './ui/stats.js';
 import { installSettingsViews, loadoutStore, installLoadoutSync, installOwnershipSync, installDiySync, installSkinsSync, installCardSync } from './ui/loadoutSync.js';
 import { installBondPlanSync } from './ui/bondPlan.js';
-import { syncOwnAvatar } from './ui/customAvatar.js';
+import { syncOwnAvatar, refreshRemoteAvatar } from './ui/customAvatar.js';
 
 import { startBuildGuard, fetchBuild } from './ui/buildGuard.js';
 import { initLang, useLang, tickerText } from './ui/lang.js';
@@ -273,6 +273,16 @@ function wireNet() {
   net.on('replaced', () => toast(t('该身份已在其他页面登录，本页已断开'), 'warn', { ttl: 6000 }));
   net.on('unhandledError', (err) => toastError(err));
   net.on('room.state', onRoomState);
+  // 自定义头像 实时同步 (2026-11-03): a roommate changed their picture (server/http/routes.js → server/lobby.js
+  // personalChanged): drop the cached copy and read it again now, so the seat card redraws without a reload. One frame per
+  // change — never a poll — and the room screen redraws through the store's own listener (ui/customAvatar.js).
+  net.on('room.personal', (msg) => {
+    const playerId = typeof msg?.playerId === 'string' ? msg.playerId : '';
+    if (!playerId) return;
+    const at = Number.isFinite(msg.at) ? msg.at : Date.now();
+    const removed = msg.removed === true;
+    if (msg.kind === 'avatar') refreshRemoteAvatar(playerId, at, { removed });
+  });
   net.on('match.state', msg => { store.set({ matchmaking: payload(msg) }); if (msg.error) toastError({ code: msg.error }); });
   net.on('match.found', msg => store.set({ matchmaking: { ...payload(msg), status: 'found' } }));
   net.on('match.counts', msg => {

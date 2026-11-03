@@ -1479,6 +1479,13 @@
 .bplan__check { position: absolute; top: 4px; right: 6px; color: var(--mint-400); }
 .bplan__foot { display: flex; justify-content: flex-start; margin-top: 12px; }
 @media (max-width: 560px) {.bplan__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }}
+
+/* ---- 自定义头像 (ported from hex031): the uploaded picture is the avatar -------------------------------- */
+/* (ui/customAvatar.js; ui/components.js AvatarFrame) — the seat-hue gradient behind a default glyph is gone, so nothing
+   tints the picture. The offline / eliminated dimming stays: it is a status, not the filter. */
+.avatar.is-custom .avatar__img { background: none; }
+
+/* ---- 自定义头像 cropper (ported from hex031; ui/avatarCrop.js) ------------------------------------------ */
 .avcrop__intro { margin: 0 0 .16rem; color: var(--text-dim); font-size: calc(.15 * var(--t)); line-height: 1.6; }
 .avcrop__stage {
   position: relative;
@@ -1513,5 +1520,5 @@
 .avcrop__own-pic { width: .22rem; height: .22rem; display: inline-block; overflow: hidden; border-radius: 50%; border: 1px solid var(--line); }
 .avcrop__own-pic img { width: 100%; height: 100%; object-fit: cover; }
 
-/* the 替换头像 entry (ui/avatarCrop.js AvatarButton) */
+/* the 替换头像 button beside the room's tools (ui/avatarCrop.js AvatarButton) */
 .avatar-entry { white-space: nowrap; }
