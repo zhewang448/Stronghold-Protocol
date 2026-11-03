@@ -288,7 +288,7 @@
 .bpop__sec--now { padding: .1rem .12rem; background: rgba(78, 216, 175, .06); border-left: 3px solid var(--mint-500); }
 .bpop__desc { font-size: calc(.15 * var(--t)); line-height: 1.7; color: var(--text-md); }
 .bpop__members { display: grid; grid-template-columns: repeat(5, 1fr); gap: .08rem; }
-.bpop__members.has-stock { grid-template-columns: repeat(auto-fit, minmax(max(.8rem, 64px), 1fr)); }
+.bpop__members.has-stock { grid-template-columns: repeat(auto-fit, minmax(max(.8rem, 32px, calc(64px * var(--sp-ui, 1))), 1fr)); }
 .bpop__member { position: relative; display: flex; flex-direction: column; align-items: center; gap: .03rem; padding: .04rem 0; background: none; border: 1px solid transparent; }
 .bpop__member:hover { border-color: var(--line-2); background: rgba(255, 255, 255, .03); }
 .bpop__member.is-on .uthumb__art { border-color: var(--mint-400); box-shadow: 0 0 .1rem rgba(23, 249, 183, .45); }
