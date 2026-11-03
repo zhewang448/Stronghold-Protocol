@@ -69,7 +69,6 @@ import { CONVENIENCE_DEFAULTS, roomConvenience } from '../../../shared/roomConve
 import { AnnouncementButton } from '../ui/announcement.js';
 // 自定义头像（移植自 hex031）：房间不再有自己的入口（头像只从大厅「本机账号 → 更换头像」上传），座位卡的主人公头像
 // 由 ui/components.js 的 AvatarFrame 经 ui/customAvatar.js 取到（别人上传的那张从 GET /avatar/<playerId> 读）
-import { BondGlyph } from '../ui/gameComponents.js';
 
 const MAX_SEATS = Number(SEAT_CONST.MAX_SEATS) || 4;
 const DEFAULT_SEATS = Number(SEAT_CONST.DEFAULT_SEATS) || MAX_SEATS;
@@ -175,26 +174,6 @@ const CAN_PRIVATE = !!C2S && Object.hasOwn(C2S, 'room.setPrivate');
 
 
 /**
- * 座位卡头像优先（悬停看盟约，ported from hex031）：what a doctor's avatar says on hover / long-press / tap — the 预选盟约
- * they announced (room.state seats[].bondPlan), its name and its effect from this build's own data/bonds.json
- * (`desc`, the plain official text; falling back to `effectDesc`). Rendered inside the shared Tooltip layer, so it is
- * viewport-clamped over the 8 / 10 / 16 / 20-seat layouts too.
- * @param {{ bondId: string, playerName?: string }} props
- */
-function BondTip({ bondId, playerName }) {
-  const b = data.lookup('bonds', bondId);
-  if (!b) return null;
-  return html`<span class="rseat__btip" data-testid="seat-bond-tip" data-bond=${bondId}>
-    <span class="rseat__btip-head">
-      <${BondGlyph} bondId=${bondId} class="rseat__btip-glyph" />
-      <b class="rseat__btip-name">${b.name || bondId}</b>
-      <small class="rseat__btip-owner">${playerName ? `${playerName} · ` : ''}${t('预选盟约')}</small>
-    </span>
-    <span class="rseat__btip-desc">${b.desc || b.effectDesc || ''}</span>
-  </span>`;
-}
-
-/**
  * The server's 座位卡 appearance switches (server/http/personalizationConfig.js ← local/personalization.json), which every
  * room.state frame carries as `personalization`: one answer for every room and every player of this server. There is no
  * room option and no host control, and nothing to send — the page only reads it. A server that never sends it (or a
@@ -272,9 +251,8 @@ function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvi
   const ready = seat.ready || seat.isBot || isHostSeat;
   // 座位卡头像位（悬停看盟约）: `avatarFirst` is the server's switch (off = the card exactly as before, covenant tag
   // included). On: the plate's avatar slot draws the doctor's own avatar (the art block below keeps its 立绘 either way)
-  // and the 预选盟约 is read off that avatar on hover / long-press / tap (BondTip).
+  // the 预选盟约 badge stays on the plate (no hover tip in the room).
   const { avatarFirst } = personalizationOf(room);
-  const bondTip = !seat.isBot && seat.bondPlan ? html`<${BondTip} bondId=${seat.bondPlan} playerName=${seat.name} />` : null;
   const portrait = seat.isBot ? null : seatPortrait(seat, portraits);
   const portraitDefault = seat.isBot ? null : seatPortrait({ ...seat, cardSkin: null }, { ...portraits, mySkin: '' });
   const src = portrait && bad !== portrait ? portrait : portraitDefault && bad !== portraitDefault ? portraitDefault : null;
@@ -300,8 +278,7 @@ function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvi
       onClick=${() => onRemoveBot(index)} title=${t('移除 AI 队友')} aria-label=${t('移除 AI 队友')}><${Icon} name="robot" /><${Icon} name="close" /></button>` : null}
     ${!seat.isBot && !isMe && facts.isHost ? html`<button type="button" class="rseat__kick" disabled=${busy === `kick${index}`}
       onClick=${() => onKick(index, seat.name, seat.playerId)} title=${t('将该博士移出同盟')} aria-label=${t('移出该博士')}><${Icon} name="user" /><${Icon} name="close" /></button>` : null}
-    <${Tooltip} text=${avatarFirst ? bondTip : null} placement="top" tap=${true}
-        class=${`rseat__plate${seatAccount?.card ? ' has-nc' : ''}`} tipClass="rseat__btipbox">
+    <div class=${`rseat__plate${seatAccount?.card ? ' has-nc' : ''}`}>
       <${NameCardLayer} card=${seatAccount?.card} />
       ${isMe ? html`<span class="rseat__me" title=${t('你')}><${Icon} name="info" /></span>` : null}
       <${AvatarFrame} size="sm" playerId=${avatarFirst && !seat.isBot ? seat.playerId : null} name=${seat.name}
@@ -309,10 +286,10 @@ function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvi
       <span class="rseat__who">
         <${TrophyBadge} count=${seatAccount?.trophies} class="tbadge--inline" /><b class=${`rseat__name${owner ? ' sp-owner-name' : ''}`}>${seat.name || t('博士')}</b><${AccountTag} playerId=${seat.isBot ? null : seat.playerId} />
         ${owner ? html`<span class="sp-owner-badge">${t('服主')}</span>` : null}
-        ${avatarFirst ? null : html`<${BondPlanBadge} bondId=${seat.bondPlan} />`}
+        <${BondPlanBadge} bondId=${seat.bondPlan} />
       </span>
       <small class="rseat__doc">${seat.isBot ? 'AUTONOMOUS UNIT' : `DOCTOR #${doctorNo(seat.playerId)}`}</small>
-    <//>
+    </div>
     ${seat.isBot ? html`<label class="rseat__bot-band"><span>${t('AI 开局策略')}</span>
       <select aria-label=${t('AI 开局策略')} value=${seat.botBand || ''} disabled=${!facts.isHost || !!busy || !online || room.inMatch === true}
         onChange=${event => onBotBand(index, event.currentTarget.value || null)}>
