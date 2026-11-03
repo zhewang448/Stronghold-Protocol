@@ -42,19 +42,20 @@ async function encodedBlob(canvas, type, quality) {
   return new Promise(resolve => { try { canvas.toBlob(resolve, type, quality); } catch { resolve(null); } });
 }
 
-export async function encodeIllust(image) {
+export async function encodeIllust(image, crop = null) {
   const canvas = document.createElement('canvas'), drawing = canvas.getContext('2d');
   if (!drawing || !image?.naturalWidth || !image.naturalHeight) return null;
+  const area = crop || { x: 0, y: 0, width: image.naturalWidth, height: image.naturalHeight };
   for (const [maximum, quality] of [[ILLUST_MAX_SIDE, 0.85], [ILLUST_MAX_SIDE, 0.75], [ILLUST_MAX_SIDE, 0.65], [1024, 0.85], [1024, 0.75]]) {
-    const scale = Math.min(1, maximum / Math.max(image.naturalWidth, image.naturalHeight));
-    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const scale = Math.min(1, maximum / Math.max(area.width, area.height));
+    canvas.height = Math.max(crop ? 128 : 1, Math.round(area.height * scale));
+    canvas.width = crop ? Math.round(canvas.height / 2) : Math.max(1, Math.round(area.width * scale));
     drawing.imageSmoothingEnabled = true; drawing.imageSmoothingQuality = 'high';
-    drawing.drawImage(image, 0, 0, canvas.width, canvas.height);
+    drawing.drawImage(image, area.x, area.y, area.width, area.height, 0, 0, canvas.width, canvas.height);
     const webp = await encodedBlob(canvas, 'image/webp', quality);
     if (webp?.type === 'image/webp' && webp.size > 0 && webp.size <= ILLUST_MAX_BYTES) return { blob: webp, width: canvas.width, height: canvas.height };
     drawing.fillStyle = '#0c0f0e'; drawing.fillRect(0, 0, canvas.width, canvas.height);
-    drawing.drawImage(image, 0, 0, canvas.width, canvas.height);
+    drawing.drawImage(image, area.x, area.y, area.width, area.height, 0, 0, canvas.width, canvas.height);
     const jpeg = await encodedBlob(canvas, 'image/jpeg', quality);
     if (jpeg?.type === 'image/jpeg' && jpeg.size > 0 && jpeg.size <= ILLUST_MAX_BYTES) return { blob: jpeg, width: canvas.width, height: canvas.height };
   }

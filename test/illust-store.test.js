@@ -5,8 +5,24 @@ import os from 'node:os';
 import path from 'node:path';
 import { createIllustStore } from '../server/http/illustStore.js';
 import { readImageInfo } from '../server/http/imageInfo.js';
-import { ILLUST_MAX_BYTES } from '../shared/illustration.js';
+import { ILLUST_MAX_BYTES, illustrationCropRect } from '../shared/illustration.js';
 import { png } from './helpers/pluginFixtures.js';
+
+test('illustration import keeps a 1:2 source crop, pans toward the drag and never reveals outside pixels', () => {
+  const centered = illustrationCropRect({ width: 4000, height: 6000 });
+  assert.deepEqual({ x: centered.x, y: centered.y, width: centered.width, height: centered.height }, { x: 500, y: 0, width: 3000, height: 6000 });
+  const zoomed = illustrationCropRect({ width: 4000, height: 6000, zoom: 2, ox: 60, oy: 20 });
+  assert.equal(zoomed.width, 1500); assert.equal(zoomed.height, 3000);
+  assert.equal(zoomed.x, 350); assert.equal(zoomed.y, 900);
+  for (const source of [{ width: 3000, height: 1000 }, { width: 1000, height: 3000 }, { width: 64, height: 64 }]) {
+    for (const sign of [-1, 1]) {
+      const rect = illustrationCropRect({ ...source, zoom: 3, ox: sign * 1e6, oy: sign * 1e6 });
+      assert.equal(rect.height / rect.width, 2);
+      assert.ok(rect.x >= 0 && rect.y >= 0);
+      assert.ok(rect.x + rect.width <= source.width + 1e-9 && rect.y + rect.height <= source.height + 1e-9);
+    }
+  }
+});
 
 test('illustration store validates containers, bounds, rate, total capacity and atomic persistence', async testContext => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-illust-'));

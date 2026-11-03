@@ -3679,5 +3679,6 @@
   "选择立绘图片": "Choose illustration",
   "正在压缩…": "Compressing…",
   "长边最多 1536 px，压缩后不超过 2 MB": "Long side up to 1536 px; compressed size up to 2 MB",
-  "策略：{name}": "Strategy: {name}"
+  "策略：{name}": "Strategy: {name}",
+  "导入时可拖动取景，使用滑块、滚轮或双指缩放；确认后按 1:2 裁切并分享给同房间成员。": "Drag to frame the picture before importing; use the slider, wheel or pinch to zoom. Confirm to crop it to 1:2 and share it with room members."
 }

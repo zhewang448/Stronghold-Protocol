@@ -277,7 +277,7 @@ function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvi
     <span class="rseat__clip" aria-hidden="true"></span>
     <header class="rseat__strip"><i></i><span class="num">P${index + 1}</span></header>
     <div class=${`rseat__art${canPick ? ' is-pickable' : ''}`} onClick=${canPick ? onPickCard : undefined} title=${canPick ? t('点击更换名片干员') : undefined}>
-      ${custom ? html`<${CardArtImage} frameKey=${frameKey} src=${custom} custom=${true} onError=${() => setBadCustom(custom)} />`
+      ${custom ? html`<${CardArtImage} frameKey=${frameKey} src=${custom} custom=${true} interactive=${canPick} onError=${() => setBadCustom(custom)} />`
         : src ? html`<img src=${src} alt="" draggable=${false} loading="lazy" onError=${() => setBad(src)} />`
         : html`<span class="rseat__glyph">${seat.isBot ? html`<${Icon} name="robot" />` : [...(seat.name || '?')][0]}</span>`}
       ${canPick ? html`<span class="rseat__picks"><button type="button" class="rseat__pick" onClick=${(e) => { e.stopPropagation(); onPickCard(); }} aria-label=${t('更换名片干员')}><${Icon} name="edit" /><span>${t('更换立绘')}</span></button>

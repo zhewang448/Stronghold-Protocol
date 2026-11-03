@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
+import { useEffect, useRef } from '../../vendor/hooks.module.js';
 import { html, Button, Modal } from './components.js';
 import { createStore, loadPref, savePref, useStore } from '../store.js';
 import { t } from '../../../shared/i18n.js';
@@ -18,50 +18,80 @@ export function setCardArt(key, value) {
   const values = { ...frames.get().values, [key]: normalizeCardArt(value) };
   savePref('room.cardArt', values); frames.set({ values });
 }
-export function CardArtImage({ frameKey, src, class: className = '', custom = false, onError = null }) {
+export function useArtGestures(elementRef, value, onChange, { enabled = true, minimum = 0.8, maximum = 2, parentBounds = false } = {}) {
+  const latest = useRef(null), pointers = useRef(new Map()), gesture = useRef(null), moved = useRef(false);
+  latest.current = { value, onChange };
+  const update = patch => {
+    const next = { ...latest.current.value, ...patch };
+    next.zoom = clamp(next.zoom, minimum, maximum);
+    latest.current.value = latest.current.onChange(next) || next;
+  };
+  useEffect(() => {
+    const element = elementRef.current;
+    if (!enabled || !element) return;
+    const wheel = event => {
+      if (!event.deltaY) return;
+      event.preventDefault(); update({ zoom: latest.current.value.zoom - Math.sign(event.deltaY) * 0.1 });
+    };
+    element.addEventListener('wheel', wheel, { passive: false });
+    return () => element.removeEventListener('wheel', wheel);
+  }, [enabled, minimum, maximum]);
+  const resetGesture = () => {
+    const points = [...pointers.current.values()];
+    gesture.current = { points, value: { ...latest.current.value } };
+  };
+  const down = event => {
+    if (!enabled || event.button > 0) return;
+    if (!pointers.current.size) moved.current = false;
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    event.currentTarget.setPointerCapture?.(event.pointerId); resetGesture();
+  };
+  const move = event => {
+    if (!enabled || !pointers.current.has(event.pointerId)) return;
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const points = [...pointers.current.values()], start = gesture.current;
+    if (!start?.points.length) return;
+    const distance = items => Math.hypot(items[0].x - items[1].x, items[0].y - items[1].y);
+    if (points.length === 2 && start.points.length === 2 && distance(start.points) > 0) {
+      moved.current = true; update({ zoom: start.value.zoom * distance(points) / distance(start.points) });
+    } else if (points.length === 1) {
+      const dx = points[0].x - start.points[0].x, dy = points[0].y - start.points[0].y;
+      if (Math.hypot(dx, dy) < 3 && !moved.current) return;
+      const element = parentBounds ? elementRef.current.parentElement : elementRef.current;
+      const bounds = element.getBoundingClientRect();
+      moved.current = true; update({ ox: start.value.ox + dx / bounds.width * 100, oy: start.value.oy + dy / bounds.height * 100 });
+    }
+  };
+  const up = event => { pointers.current.delete(event.pointerId); resetGesture(); };
+  return { onPointerDown: down, onPointerMove: move, onPointerUp: up, onPointerCancel: up, onLostPointerCapture: up,
+    onClickCapture: event => { if (enabled && moved.current) { event.preventDefault(); event.stopPropagation(); moved.current = false; } },
+    onKeyDown: event => {
+      if (!enabled || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+      event.preventDefault(); const frame = latest.current.value;
+      update({ ox: frame.ox + (event.key === 'ArrowLeft' ? -2 : event.key === 'ArrowRight' ? 2 : 0),
+        oy: frame.oy + (event.key === 'ArrowUp' ? -2 : event.key === 'ArrowDown' ? 2 : 0) });
+    } };
+}
+export function CardArtImage({ frameKey, src, class: className = '', custom = false, onError = null, interactive = false }) {
   ensureCardArtCss();
   const value = useStore(state => state.values[frameKey], Object.is, frames);
   const frame = normalizeCardArt(value);
-  return html`<img src=${src} class=${`cardart__still ${className}`} alt="" draggable=${false} data-art=${custom ? 'custom' : 'operator'}
+  const image = useRef(null);
+  const gestures = useArtGestures(image, frame, next => setCardArt(frameKey, next), { enabled: interactive, parentBounds: true });
+  return html`<img ref=${image} src=${src} class=${`cardart__still ${interactive ? 'is-interactive' : ''} ${className}`} alt="" draggable=${false} data-art=${custom ? 'custom' : 'operator'}
+    tabindex=${interactive ? '0' : undefined} aria-label=${interactive ? t('拖拽调整位置') : undefined} ...${gestures}
     style=${`object-fit:cover;transform:translate(${frame.ox}%,${frame.oy}%) scale(${frame.zoom})`} onError=${onError} />`;
 }
 export function CardArt({ frameKey, src, onClose }) {
   ensureCardArtCss();
   const current = useStore(state => state.values[frameKey], Object.is, frames), value = normalizeCardArt(current);
-  const preview = useRef(null), latest = useRef(value);
-  latest.current = value;
-  const update = patch => setCardArt(frameKey, { ...latest.current, ...patch });
-  const [drag, setDrag] = useState(null);
-  const pointers = useRef(new Map()), pinch = useRef(null);
-  useEffect(() => {
-    const element = preview.current;
-    const wheel = event => { event.preventDefault(); update({ zoom: latest.current.zoom - Math.sign(event.deltaY) * 0.1 }); };
-    element.addEventListener('wheel', wheel, { passive: false }); return () => element.removeEventListener('wheel', wheel);
-  }, [frameKey]);
-  const spread = () => { const points = [...pointers.current.values()]; return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y); };
-  const down = event => {
-    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY }); event.currentTarget.setPointerCapture(event.pointerId);
-    if (pointers.current.size === 2) pinch.current = { distance: spread(), zoom: latest.current.zoom };
-    else setDrag({ x: event.clientX, y: event.clientY, value: latest.current });
-  };
-  const move = event => {
-    if (!pointers.current.has(event.pointerId)) return;
-    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-    if (pointers.current.size === 2 && pinch.current?.distance) update({ zoom: pinch.current.zoom * spread() / pinch.current.distance });
-    else if (drag) {
-      const bounds = preview.current.getBoundingClientRect();
-      update({ ox: drag.value.ox + (event.clientX - drag.x) / bounds.width * 100, oy: drag.value.oy + (event.clientY - drag.y) / bounds.height * 100 });
-    }
-  };
-  const up = event => { pointers.current.delete(event.pointerId); pinch.current = null; setDrag(null); };
+  const preview = useRef(null);
+  const gestures = useArtGestures(preview, value, next => setCardArt(frameKey, next));
   return html`<${Modal} open=${true} title=${t('立绘调整')} class="cardart-dialog" width="min(430px,94vw)" onClose=${onClose}
       actions=${html`<${Button} onClick=${() => setCardArt(frameKey, {})} data-testid="card-art-reset">${t('重置')}<//><${Button} variant="primary" onClick=${onClose}>${t('完成')}<//>`}>
     <div class="cardart-frame" ref=${preview} tabindex="0" role="region" aria-label=${t('拖拽调整位置')} data-testid="card-art-frame"
-      onPointerDown=${down} onPointerMove=${move} onPointerUp=${up} onPointerCancel=${up}
-      onKeyDown=${event => { if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
-        event.preventDefault(); update({ ox: value.ox + (event.key === 'ArrowLeft' ? -2 : event.key === 'ArrowRight' ? 2 : 0), oy: value.oy + (event.key === 'ArrowUp' ? -2 : event.key === 'ArrowDown' ? 2 : 0) });
-      } }}><${CardArtImage} frameKey=${frameKey} src=${src} custom=${true} /></div>
-    <label>${t('缩放')} <input type="range" min="0.8" max="2" step="0.01" value=${value.zoom} data-testid="card-art-zoom" onInput=${event => update({ zoom: Number(event.currentTarget.value) })} /></label>
+      ...${gestures}><${CardArtImage} frameKey=${frameKey} src=${src} custom=${true} /></div>
+    <label>${t('缩放')} <input type="range" min="0.8" max="2" step="0.01" value=${value.zoom} data-testid="card-art-zoom" onInput=${event => setCardArt(frameKey, { ...value, zoom: Number(event.currentTarget.value) })} /></label>
     <p>${t('拖动调整位置，滑块、滚轮或双指缩放；取景仅保存在本机。')}</p>
   <//>`;
 }

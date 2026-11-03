@@ -1,11 +1,18 @@
 .illust-picker .modal__body, .cardart-dialog .modal__body { overflow-y: auto; min-height: 0; }
 .illust-picker .modal__title, .cardart-dialog .modal__title { font-size: max(calc(.28 * var(--t)), 18px); }
 .illust-picker .btn, .cardart-dialog .btn { min-height: 32px; height: auto; padding: 6px 10px; font-size: max(calc(.16 * var(--t)), 12px); }
-.illust-picker__preview { width: min(180px, 42vw, 21dvh); aspect-ratio: 1 / 2; margin: 12px auto; background: var(--bg-2); display: grid; place-items: center; overflow: hidden; }
+.illust-picker__preview { position: relative; width: min(180px, 42vw, 21dvh); aspect-ratio: 1 / 2; margin: 12px auto; background: var(--bg-2); display: grid; place-items: center; overflow: hidden; }
 .illust-picker__preview img { width: 100%; height: 100%; object-fit: cover; }
+.illust-picker__preview.is-editable { cursor: grab; touch-action: none; user-select: none; }
+.illust-picker__preview.is-editable img { pointer-events: none; }
+.illust-picker__preview.is-editable:active, .cardart__still.is-interactive:active { cursor: grabbing; }
+.illust-picker__preview:focus-visible { outline: 2px solid var(--mint-400); outline-offset: 3px; }
+.illust-picker__zoom { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+.illust-picker__zoom input { flex: 1; min-width: 0; min-height: 32px; }
 .illust-picker__error { color: var(--red); }
 .cardart-frame { position: relative; width: min(200px, 44vw, 22.5dvh); aspect-ratio: 1 / 2; margin: 8px auto 14px; overflow: hidden; touch-action: none; background: var(--bg-2); outline-offset: 3px; }
 .cardart__still { width: 100%; height: 100%; object-fit: cover; transform-origin: center; }
+.cardart__still.is-interactive { cursor: grab; touch-action: none; user-select: none; }
 .cardart-dialog label { display: flex; align-items: center; gap: 12px; font-size: 14px; }
 .cardart-dialog input { flex: 1; min-width: 0; }
 .cardart-dialog p, .illust-picker p { font-size: max(calc(.15 * var(--t)), 12px); line-height: 1.6; }

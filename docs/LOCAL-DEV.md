@@ -974,3 +974,6 @@ PR #24 的自定义立绘以会话 token 鉴权，上传前长边缩到 1536、W
 服务器 `.cache/illusts` 保存压缩副本，房间座位只同步 ETag，客户端独立获取并防止迟到请求覆盖新图。
 显示开关纳入第 19 项 `roomCreation` 配置，不重复创建 PR #23 的 personalization 配置或另一套头像服务。
 回归入口 `test/illust-store.test.js`、`test/illust-http.test.js` 及 `SP_E2E=1 node --test test/ui/custom-illust.e2e.test.js`。
+
+立绘导入参照 `accounts.js` 的头像裁剪，在 1:2 框中预先拖动和缩放；`shared/illustration.js` 的 `illustrationCropRect` 同时约束预览与编码窗口，确认才上传裁切结果。
+`cardArt.js` 共用手势覆盖导入、调整弹窗和房间本人图片。导入后重置本机旧取景，避免二次偏移；取消不修改图片或已有取景。
