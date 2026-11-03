@@ -121,6 +121,8 @@ under GPL-3.0-or-later. Adaptation keeps the current room API, four-player rules
 
 ## DoraCat 社区方案（2026-11-03）
 
+感谢 [DoraCat（@DuolaCCCCat）](https://github.com/DuolaCCCCat) 的问题反馈、方案设计、PR 实现与验收记录。
+
 库存显示、皮肤特效映射和自定义座位立绘参考 DuolaCCCCat 为本库提交的
 [PR #14](https://github.com/zhewang448/Stronghold-Protocol/pull/14)、[PR #15](https://github.com/zhewang448/Stronghold-Protocol/pull/15) 和
 [PR #24](https://github.com/zhewang448/Stronghold-Protocol/pull/24)；分别固定于 c501530d、f31cab1a、198bc185，沿用本库 GPL-3.0-or-later 代码许可。
