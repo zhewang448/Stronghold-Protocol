@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
-import { html, Button, Icon, confirmDialog } from './components.js';
+import { html, Button, Icon, Modal } from './components.js';
 import { normalizeCardArt } from './cardArt.js';
 import { t } from '../../../shared/i18n.js';
 import { ILLUST_MAX_BYTES } from '../../../shared/illustration.js';
@@ -70,6 +70,7 @@ export function PicturePresets({ scope, kind, capture, onUse, disabled = false, 
   ensureCss();
   const [records, setRecords] = useState([null, null, null]), [selected, setSelected] = useState(0);
   const [busy, setBusy] = useState(false), [loaded, setLoaded] = useState(false), [error, setError] = useState(''), [status, setStatus] = useState('');
+  const [confirmation, setConfirmation] = useState(null);
   const generation = useRef(0), urls = useRef([]), alive = useRef(true);
   const reload = async () => {
     const current = ++generation.current;
@@ -96,8 +97,9 @@ export function PicturePresets({ scope, kind, capture, onUse, disabled = false, 
     const record = records[selected];
     setBusy(true); onBusyChange?.(true); setError(''); setStatus('');
     try {
-      if (action === 'save' && record && !await confirmDialog({ title: t('覆盖预设'), text: t('覆盖预设 {n}？原图片和取景将被替换。', { n: selected + 1 }), danger: true })) return;
-      if (action === 'clear' && !await confirmDialog({ title: t('清空预设'), text: t('清空预设 {n}？当前使用的图片不会改变。', { n: selected + 1 }), danger: true })) return;
+      const confirm = (title, text) => new Promise(resolve => setConfirmation({ title, text, resolve }));
+      if (action === 'save' && record && !await confirm(t('覆盖预设'), t('覆盖预设 {n}？原图片和取景将被替换。', { n: selected + 1 }))) return;
+      if (action === 'clear' && !await confirm(t('清空预设'), t('清空预设 {n}？当前使用的图片不会改变。', { n: selected + 1 }))) return;
       if (action === 'save') { const value = await capture(); await savePicturePreset(scope, kind, selected, value); await reload(); setStatus(t('预设 {n} 已保存', { n: selected + 1 })); }
       else if (action === 'clear') { await clearPicturePreset(scope, kind, selected); await reload(); setStatus(t('预设 {n} 已清空', { n: selected + 1 })); }
       else if (record) { await onUse(record); if (alive.current) setStatus(t('已使用预设 {n}', { n: selected + 1 })); }
@@ -105,6 +107,7 @@ export function PicturePresets({ scope, kind, capture, onUse, disabled = false, 
     finally { if (alive.current) { setBusy(false); onBusyChange?.(false); } }
   };
   const locked = busy || disabled || !loaded;
+  const closeConfirmation = accepted => { confirmation?.resolve(accepted); setConfirmation(null); };
   return html`<section class=${`picture-presets picture-presets--${kind}`} data-testid=${kind + '-presets'} aria-label=${t('本机预设')}>
     <h3>${t('本机预设')}</h3><p>${t('选择预设可预览，点击使用后切换；3 个槽位只保存在这台设备。')}</p>
     <div class="picture-presets__slots" role="group" aria-label=${t('本机预设')}>
@@ -121,5 +124,8 @@ export function PicturePresets({ scope, kind, capture, onUse, disabled = false, 
       <${Button} size="sm" variant="ghost" disabled=${locked || !records[selected]} data-testid=${kind + '-preset-clear'} onClick=${() => operate('clear')}>${t('清空')}<//>
     </div>
     ${error ? html`<p role="alert" class="picture-presets__error">${error}</p>${!loaded ? html`<${Button} size="sm" onClick=${reload}>${t('重试')}<//>` : null}` : html`<p role="status">${busy ? t('正在处理…') : status}</p>`}
+    ${confirmation ? html`<${Modal} open=${true} title=${confirmation.title} onClose=${() => closeConfirmation(false)}
+      actions=${html`<${Button} onClick=${() => closeConfirmation(false)}>${t('取消')}<//><${Button} variant="danger" onClick=${() => closeConfirmation(true)}>${t('确认')}<//>`}>
+      <p>${confirmation.text}</p><//>` : null}
   </section>`;
 }

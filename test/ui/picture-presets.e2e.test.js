@@ -49,10 +49,12 @@ test('three local avatar and illustration presets survive reload, isolate slots,
   };
   const respond = async (title, confirm) => {
     await host.waitForFunction(text => [...document.querySelectorAll('[role="dialog"]')].some(element => element.querySelector('h2')?.textContent === text), {}, title);
-    await host.evaluate(({ text, accept }) => {
+    const button = await host.evaluateHandle(({ text, accept }) => {
       const dialog = [...document.querySelectorAll('[role="dialog"]')].find(element => element.querySelector('h2')?.textContent === text);
-      dialog.querySelector('.modal__actions button:' + (accept ? 'last-child' : 'first-child')).click();
+      return dialog.querySelector('.modal__actions button:' + (accept ? 'last-child' : 'first-child'));
     }, { text: title, accept: confirm });
+    await button.click();
+    await host.waitForFunction(text => ![...document.querySelectorAll('[role="dialog"]')].some(element => element.querySelector('h2')?.textContent === text), { timeout: 5000 }, title);
   };
   const avatars = [];
   await openAccount(); await waitPreset('avatar');
