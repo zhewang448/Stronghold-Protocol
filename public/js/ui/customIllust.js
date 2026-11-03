@@ -37,6 +37,9 @@ export function ensureOwnIllust() {
   }).catch(() => {});
   return loaded;
 }
+export async function ownIllustSnapshot() {
+  await ensureOwnIllust(); return own.blob ? { blob: own.blob } : null;
+}
 
 async function encodedBlob(canvas, type, quality) {
   return new Promise(resolve => { try { canvas.toBlob(resolve, type, quality); } catch { resolve(null); } });

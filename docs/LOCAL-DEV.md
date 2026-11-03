@@ -977,3 +977,8 @@ PR #24 的自定义立绘以会话 token 鉴权，上传前长边缩到 1536、W
 
 立绘导入参照 `accounts.js` 的头像裁剪，在 1:2 框中预先拖动和缩放；`shared/illustration.js` 的 `illustrationCropRect` 同时约束预览与编码窗口，确认才上传裁切结果。
 `cardArt.js` 共用手势覆盖导入、调整弹窗和房间本人图片。导入后重置本机旧取景，避免二次偏移；取消不修改图片或已有取景。
+
+头像与立绘各 3 个本机预设由 `ui/picturePresets.js` 管理，IndexedDB 为 `sp-picture-presets/pictures`，键由本机账号、avatar/illust 和 0–2 槽位组成。
+每项保存压缩 Blob 和规范化取景，头像不超过共享头像长度边界，立绘不超过 2 MiB；只在 IndexedDB 事务提交后显示成功，失败提供重试。
+列表通过 BroadcastChannel 通知同源标签页重读；选择或保存不改变当前图片，应用复用既有头像更新或立绘上传，清空预设不移除当前图片。
+回归入口 `test/ui/picture-presets.e2e.test.js`，与已有头像/立绘导入浏览器用例一起运行。

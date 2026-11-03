@@ -11,6 +11,7 @@ import { render } from '../../vendor/preact.module.js';
 import { store } from '../store.js';
 import { t } from '../../../shared/i18n.js';
 import { isSharedAvatar, MAX_AVATAR_LENGTH } from '../../../shared/avatar.js';
+import { PicturePresets, pictureDataUrl, pictureBlobFromDataUrl } from './picturePresets.js';
 
 /** This module keeps the account in the browser (other modules may check it to word their notes). */
 export const LOCAL_ACCOUNT = true;
@@ -274,6 +275,9 @@ function AccountPanel({ onStats, onClose }) {
         ${me.avatar ? html`<${Button} size="sm" variant="ghost" onClick=${clear}>${t('移除头像')}<//>` : null}
         ${onStats ? html`<${Button} size="sm" variant="primary" icon="chart" onClick=${() => { onClose(); onStats(); }}>${t('统计数据')}<//>` : null}
       </div>
+      <${PicturePresets} scope=${me.id} kind="avatar" canSave=${!!me.avatar}
+        capture=${async () => { const avatar = await avatarForShare(); if (!avatar) throw new Error('No avatar'); return { blob: pictureBlobFromDataUrl(avatar) }; }}
+        onUse=${async preset => saveAvatar(await pictureDataUrl(preset.blob))} />
     </div>
   <//>`;
 }

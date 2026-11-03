@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { html, Button, Modal } from './components.js';
 import { toast } from './toasts.js';
 import { t } from '../../../shared/i18n.js';
-import { ILLUST_SOURCE_MAX_BYTES, encodeIllust, uploadOwnIllust, removeOwnIllust, useOwnIllust } from './customIllust.js';
-import { ensureCardArtCss, setCardArt, useArtGestures } from './cardArt.js';
+import { ILLUST_SOURCE_MAX_BYTES, encodeIllust, uploadOwnIllust, removeOwnIllust, useOwnIllust, ownIllustSnapshot } from './customIllust.js';
+import { ensureCardArtCss, cardArtOf, setCardArt, useArtGestures } from './cardArt.js';
 import { illustrationCropRect } from '../../../shared/illustration.js';
+import { PicturePresets } from './picturePresets.js';
+import { currentAccount } from './accounts.js';
 
 export function IllustDialog({ onClose }) {
   ensureCardArtCss();
@@ -82,6 +84,13 @@ export function IllustDialog({ onClose }) {
     <input type="file" accept="image/*" ref=${fileRef} hidden data-testid="illust-file" onChange=${choose} />
     <${Button} disabled=${busy || decoding} data-testid="illust-choose" onClick=${() => fileRef.current.click()}>${t('选择立绘图片')}<//>
     <p role="status">${encoding || decoding ? t('正在压缩…') : prepared ? `${prepared.width} × ${prepared.height} · ${Math.ceil(prepared.blob.size / 1024)} KB` : t('长边最多 1536 px，压缩后不超过 2 MB')}</p>
+    <${PicturePresets} scope=${currentAccount().id} kind="illust" disabled=${busy || decoding || encoding} canSave=${!!(picture ? prepared : own)} onBusyChange=${setBusy}
+      capture=${async () => {
+        if (!picture) { const current = await ownIllustSnapshot(); return current ? { ...current, frame: cardArtOf('custom') } : null; }
+        const area = illustrationCropRect({ width: picture.width, height: picture.height, ...frame });
+        const encoded = await encodeIllust(picture.image, area); return encoded ? { blob: encoded.blob } : null;
+      }}
+      onUse=${async preset => { await uploadOwnIllust(preset.blob); setCardArt('custom', preset.frame); toast(t('自定义立绘已更新'), 'info'); onClose(); }} />
     ${error ? html`<p class="illust-picker__error" role="alert">${error}</p>` : null}
   <//>`;
 }

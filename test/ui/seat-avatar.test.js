@@ -8,6 +8,20 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const ROOM = readFileSync(path.join(ROOT, 'public/js/screens/room.js'), 'utf8');
 const ACCOUNT = readFileSync(path.join(ROOT, 'public/js/ui/accounts.js'), 'utf8');
 
+test('local picture presets bound each image and decode avatar bytes without a data URL network request', async () => {
+  const { PICTURE_PRESET_SLOTS, pictureBlobFromDataUrl, validPicturePreset, savePicturePreset } = await import('../../public/js/ui/picturePresets.js');
+  assert.equal(PICTURE_PRESET_SLOTS, 3);
+  const blob = pictureBlobFromDataUrl('data:image/jpeg;base64,AQIDBA==');
+  assert.deepEqual([...new Uint8Array(await blob.arrayBuffer())], [1, 2, 3, 4]);
+  assert.equal(validPicturePreset({ blob }, 'avatar'), true);
+  assert.equal(validPicturePreset({ blob }, 'unknown'), false);
+  assert.equal(validPicturePreset({ blob: new Blob([new Uint8Array(32769)], { type: 'image/jpeg' }) }, 'avatar'), false);
+  assert.equal(validPicturePreset({ blob: new Blob([new Uint8Array(2 * 1024 * 1024 + 1)], { type: 'image/webp' }) }, 'illust'), false);
+  assert.equal(validPicturePreset({ blob: new Blob(['text'], { type: 'text/html' }) }, 'illust'), false);
+  assert.throws(() => pictureBlobFromDataUrl('https://example.invalid/picture.jpg'), /Invalid/);
+  await assert.rejects(savePicturePreset('local-test', 'avatar', 3, { blob }), /Invalid picture preset key/);
+});
+
 test('avatar crop geometry keeps a square source window and responds to zoom/offset', async () => {
   const { avatarCropRect } = await import(pathToFileURL(path.join(ROOT, 'public/js/ui/accounts.js')).href);
   const centered = avatarCropRect({ width: 1600, height: 900 });

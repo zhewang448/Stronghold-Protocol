@@ -3680,5 +3680,21 @@
   "正在压缩…": "Compressing…",
   "长边最多 1536 px，压缩后不超过 2 MB": "Long side up to 1536 px; compressed size up to 2 MB",
   "策略：{name}": "Strategy: {name}",
-  "导入时可拖动取景，使用滑块、滚轮或双指缩放；确认后按 1:2 裁切并分享给同房间成员。": "Drag to frame the picture before importing; use the slider, wheel or pinch to zoom. Confirm to crop it to 1:2 and share it with room members."
+  "导入时可拖动取景，使用滑块、滚轮或双指缩放；确认后按 1:2 裁切并分享给同房间成员。": "Drag to frame the picture before importing; use the slider, wheel or pinch to zoom. Confirm to crop it to 1:2 and share it with room members.",
+  "本机预设": "Local presets",
+  "选择预设可预览，点击使用后切换；3 个槽位只保存在这台设备。": "Select a preset to preview it, then choose Use to switch. The 3 slots stay on this device.",
+  "预设 {n}": "Preset {n}",
+  "已保存": "Saved",
+  "空槽位": "Empty slot",
+  "保存当前到此槽": "Save current to slot",
+  "使用此预设": "Use this preset",
+  "覆盖预设": "Replace preset",
+  "覆盖预设 {n}？原图片和取景将被替换。": "Replace preset {n}? Its picture and framing will be overwritten.",
+  "清空预设": "Clear preset",
+  "清空预设 {n}？当前使用的图片不会改变。": "Clear preset {n}? Your current picture will stay unchanged.",
+  "预设 {n} 已保存": "Preset {n} saved",
+  "预设 {n} 已清空": "Preset {n} cleared",
+  "已使用预设 {n}": "Using preset {n}",
+  "正在处理…": "Working…",
+  "预设操作失败，请检查浏览器存储空间、权限或网络后重试": "Could not update presets. Check browser storage, permissions or your connection, then try again."
 }
