@@ -21,6 +21,7 @@ import { data, useData, localAsset } from '../data.js';
 import { uiUrl } from './assetUrls.js';
 import { PixBot } from './pixbots.js';
 import { playerSeatColor } from './playerSeries.js';
+import { useCustomAvatar } from './customAvatar.js';
 
 /**
  * h() for htm with its static-subtree cache switched off. htm keeps the vnode it built for a fully static subtree in
@@ -830,20 +831,24 @@ export function Spinner({ size = 'md', label, tone = 'mint', class: cls }) {
 // ---- Avatar frame ------------------------------------------------------------------------------
 
 /**
- * Square avatar frame with bracket corners. Falls back to a glyph (first letter / robot).
- * @param {{ name?: string, src?: string, size?: 'sm'|'md'|'lg'|'xl', seat?: number, host?: boolean, bot?: boolean,
- *   self?: boolean, ready?: boolean, offline?: boolean, dead?: boolean, empty?: boolean, class?: string }} props
+ * Square avatar frame with bracket corners. Falls back to a glyph (first letter / robot). A player with a 自定义头像
+ * (ported from hex031, ui/customAvatar.js): the picture `playerId` uploaded, from the server, wins over `src` — no seat-hue
+ * gradient behind it — and the glyph / robot is drawn exactly as before when there is none or it fails to load.
+ * @param {{ name?: string, src?: string, playerId?: string|null, size?: 'sm'|'md'|'lg'|'xl', seat?: number, host?: boolean,
+ *   bot?: boolean, self?: boolean, ready?: boolean, offline?: boolean, dead?: boolean, empty?: boolean, class?: string }} props
  */
-export function AvatarFrame({ name = '', src, size = 'md', seat = 0, host, bot, self, ready, offline, dead, empty, class: cls }) {
+export function AvatarFrame({ name = '', src, playerId, size = 'md', seat = 0, host, bot, self, ready, offline, dead, empty, class: cls }) {
   const [badSrc, setBadSrc] = useState(null);
-  const imgOk = !!src && badSrc !== src;
+  const custom = useCustomAvatar(empty || bot ? null : playerId);
+  const shown = custom || src;
+  const imgOk = !!shown && badSrc !== shown;
   const color = playerSeatColor(seat);
   const glyph = [...(name || '').trim()][0] || '?';
-  return html`<div class=${cx('avatar', `avatar--${size}`, 'brackets', host && 'is-host', bot && 'is-bot', self && 'is-self',
+  return html`<div class=${cx('avatar', `avatar--${size}`, 'brackets', custom && 'is-custom', host && 'is-host', bot && 'is-bot', self && 'is-self',
       ready && 'is-ready', offline && 'is-offline', dead && 'is-dead', empty && 'is-empty', cls)} style=${`--seat-color:${color}`}>
     <div class="avatar__img">
       ${empty ? html`<${Icon} name="plus" class="avatar__empty" />`
-        : imgOk ? html`<img src=${src} alt="" draggable=${false} onError=${() => setBadSrc(src)} />`
+        : imgOk ? html`<img src=${shown} alt="" draggable=${false} onError=${() => setBadSrc(shown)} />`
         : bot ? html`<${Icon} name="robot" class="avatar__bot" />`
         : html`<span class="avatar__glyph">${glyph}</span>`}
     </div>

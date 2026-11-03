@@ -71,6 +71,7 @@ import { installRehearsal } from './battle/rehearsal.js';
 import { recordResult, installStatsRecorder } from './ui/stats.js';
 import { installSettingsViews, loadoutStore, installLoadoutSync, installOwnershipSync, installDiySync, installSkinsSync, installCardSync } from './ui/loadoutSync.js';
 import { installBondPlanSync } from './ui/bondPlan.js';
+import { syncOwnAvatar } from './ui/customAvatar.js';
 
 import { startBuildGuard, fetchBuild } from './ui/buildGuard.js';
 import { initLang, useLang, tickerText } from './ui/lang.js';
@@ -197,6 +198,9 @@ function onWelcome(msg) {
     versions: sanitizeVersions(msg.versions),
   });
   welcomeAt = Date.now();
+  // 自定义头像 (ported from hex031): a new server session (e.g. the server restarted) has no picture under this
+  // playerId — publish this browser's locally kept one again, so a teammate still reads it (ui/customAvatar.js).
+  void syncOwnAvatar(store.get().me.token, store.get().me.playerId);
 
   if (prevId != null && prevId !== msg.playerId) {
     // A brand-new server session (the server restarted — crashed / killed, so no room.closed arrived — or this session
@@ -448,7 +452,11 @@ function installGlobalErrorHandlers() {
 async function boot() {
   if (await bootDomainGate()) return;
   const installPolicyReady = fetchBuild((...args) => fetch(...args), {
-    onHealth: h => pwaInstall.setEnabled(h.siteSettings?.showPwaInstall),
+    onHealth: h => {
+      pwaInstall.setEnabled(h.siteSettings?.showPwaInstall);
+      // how many 自定义头像 pictures the server holds (ui/customAvatar.js): 0 → no avatar request is made at all
+      store.set({ serverAvatars: Number(h.avatars) || 0 });
+    },
   });
   installChatSync({ net, store });
   installGlobalErrorHandlers();
@@ -541,6 +549,9 @@ async function boot() {
         pwaInstall.setEnabled(h.siteSettings?.showPwaInstall);
         const n = pluginCount(h.content), notices = h.content?.notices === true;
         if (n !== store.get().installedPlugins || notices !== store.get().installedNotices) store.set({ installedPlugins: n, installedNotices: notices });
+        // 自定义头像 (ui/customAvatar.js): how many pictures the server holds now
+        const avatars = Number(h.avatars) || 0;
+        if (avatars !== store.get().serverAvatars) store.set({ serverAvatars: avatars });
       },
     });
   } catch (err) {

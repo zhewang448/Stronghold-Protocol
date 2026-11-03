@@ -85,6 +85,9 @@ export const initialState = Object.freeze({
   content: null,
   // how many unofficial plugins the server has (DESIGN §32 P1a: /healthz or welcome `content.plugins`; content.js)
   installedPlugins: 0,
+  // how many 自定义头像 pictures the server holds (/healthz `avatars`, ported from hex031; ui/customAvatar.js): 0 until a
+  // check says otherwise — with none, no avatar is ever requested and every avatar draws exactly as before
+  serverAvatars: 0,
   // A language-only installation may have announcements without an unofficial plugin count.
   installedNotices: false,
   session: { entered: false },

@@ -26,8 +26,12 @@ import { setSecurityHeaders, sendError, sendJson, splitUrl } from './common.js';
 import { clientAddress, isLocalIp } from '../net.js';
 import { readPersonalDataConfig } from './personalDataConfig.js';
 import { getShowPwaInstall } from '../match/hostSettings.js';
+import { AVATAR_BODY_LIMIT } from './avatarStore.js';
 
 const MAX_URL_LENGTH = 4096;
+
+/** A session's playerId as server/net.js mints it (`p_` + 10 hex). Anything else is not an avatar route at all. */
+const AVATAR_ID_RE = /^p_[0-9a-f]{10}$/;
 
 /** `{ plugins: n }` when the server has n > 0 unofficial plugins (the lobby's visual sets count them), else nothing. */
 function pluginCount(lobby) {
@@ -56,7 +60,7 @@ function contentSets(lobby) {
  *   and their match hosts (DESIGN §35.23)
  * @param {boolean} [withTraffic]
  */
-export function healthReport({ startedAt, network, registry, lobby, content = null, traffic, assetIndex, views, trusted, versions = null, versionHosts = null }, withTraffic = false) {
+export function healthReport({ startedAt, network, registry, lobby, content = null, traffic, assetIndex, views, trusted, versions = null, versionHosts = null, avatars = null }, withTraffic = false) {
   const report = {
     ok: true, version: PROTOCOL_VERSION, app: APP_VERSION, uptimeSec: Math.round((Date.now() - startedAt) / 1000),
     // the runtime the server is serving right now (public/js/ui/buildGuard.js): a page whose own build is
@@ -70,6 +74,9 @@ export function healthReport({ startedAt, network, registry, lobby, content = nu
     sockets: network.connectionCount, sessions: registry.size, ...lobby.stats(),
   };
   if (trusted && Object.keys(trusted).length) report.plugins = trusted;
+  // 自定义头像 (public/js/ui/customAvatar.js, ported from hex031): how many pictures the server holds — a server on which
+  // nobody uploaded one reports nothing, and the page then requests no avatar at all (it looks exactly as before)
+  if (avatars && avatars.size > 0) report.avatars = avatars.size;
   // the official versions (DESIGN §35.23): only when another one than 第二期下半 is enabled
   if (versions && versions.nonDefault.length) {
     report.versions = { enabled: [...versions.ids], default: versions.defaultId,
@@ -83,6 +90,166 @@ export function healthReport({ startedAt, network, registry, lobby, content = nu
 
 /** Does the query ask for the traffic counters (`traffic`, `traffic=1`, `traffic=true`)? */
 const wantsTraffic = (query) => /(?:^|&)traffic(?:=(?:1|true|yes))?(?:&|$)/i.test(query || '');
+
+// ---------------------------------------------------------------------------------------------------
+// 自定义头像 (/avatar, ported from hex031): the pictures themselves, outside the room / match / protocol state
+// ---------------------------------------------------------------------------------------------------
+
+/**
+ * The reconnect token a write request carries, as `Authorization: Bearer <token>` (the token the WebSocket's `hello`
+ * already gave this session — no second credential exists).
+ * @param {import('node:http').IncomingMessage} req
+ * @returns {string|null}
+ */
+function bearerToken(req) {
+  const header = req.headers.authorization;
+  if (typeof header !== 'string') return null;
+  const m = /^Bearer\s+([0-9A-Za-z_-]{1,128})$/.exec(header.trim());
+  return m ? m[1] : null;
+}
+
+/** The authenticated session of a write request, or null (an unknown/expired token, or none). */
+function sessionOf(req, registry) {
+  const token = bearerToken(req);
+  if (!token || !registry || typeof registry.byToken !== 'function') return null;
+  const session = registry.byToken(token);
+  return session && typeof session.playerId === 'string' ? session : null;
+}
+
+/**
+ * Read at most `limit` bytes of a request body. Resolves null as soon as the limit is exceeded (the rest is not
+ * buffered; the caller answers 413 and closes the connection).
+ * @param {import('node:http').IncomingMessage} req @param {number} limit
+ * @returns {Promise<Buffer|null>}
+ */
+function readBody(req, limit) {
+  return new Promise((resolve) => {
+    const chunks = [];
+    let total = 0;
+    let done = false;
+    const finish = (value) => {
+      if (done) return;
+      done = true;
+      req.removeListener('data', onData);
+      req.removeListener('end', onEnd);
+      req.removeListener('error', onError);
+      resolve(value);
+    };
+    const onData = (chunk) => {
+      total += chunk.length;
+      if (total > limit) { finish(null); return; }
+      chunks.push(chunk);
+    };
+    const onEnd = () => finish(Buffer.concat(chunks));
+    const onError = () => finish(null);
+    req.on('data', onData);
+    req.once('end', onEnd);
+    req.once('error', onError);
+  });
+}
+
+/** POST /avatar: store this session's picture. @returns {Promise<void>} */
+async function avatarUpload(req, res, deps) {
+  const { avatars, registry } = deps;
+  // the body is bounded before anything else, so an unauthenticated caller cannot stream without a limit either
+  const body = await readBody(req, AVATAR_BODY_LIMIT);
+  if (body === null) {
+    res.setHeader('Connection', 'close');
+    sendJson(req, res, 413, { error: 'TOO_LARGE' });
+    res.once('finish', () => { try { req.destroy(); } catch { /* already gone */ } });
+    return;
+  }
+  const session = sessionOf(req, registry);
+  if (!session) {
+    sendJson(req, res, 401, { error: 'UNAUTHORIZED' });
+    return;
+  }
+  const result = await avatars.put(session.playerId, body);
+  if (!result.ok) {
+    if (result.code === 'RATE') res.setHeader('Retry-After', '2');
+    const status = result.code === 'TOO_LARGE' ? 413 : result.code === 'BAD_TYPE' ? 415
+      : result.code === 'BAD_DIMENSIONS' ? 422 : result.code === 'RATE' ? 429 : result.code === 'STORAGE' ? 500 : 400;
+    sendJson(req, res, status, { error: result.code });
+    return;
+  }
+  const { entry } = result;
+  // 实时同步 (2026-11-03): the room's other clients must not wait for a reload to see the new 头像
+  notifyPersonal(deps, session.playerId, 'avatar');
+  sendJson(req, res, 200, { ok: true, etag: entry.etag, size: entry.bytes.length, width: entry.width, height: entry.height });
+}
+
+/** DELETE /avatar: forget this session's picture (the default avatar comes back). */
+async function avatarRemove(req, res, deps) {
+  const { avatars, registry } = deps;
+  const body = await readBody(req, AVATAR_BODY_LIMIT);
+  if (body === null) {
+    res.setHeader('Connection', 'close');
+    sendJson(req, res, 413, { error: 'TOO_LARGE' });
+    res.once('finish', () => { try { req.destroy(); } catch { /* already gone */ } });
+    return;
+  }
+  const session = sessionOf(req, registry);
+  if (!session) {
+    sendJson(req, res, 401, { error: 'UNAUTHORIZED' });
+    return;
+  }
+  await avatars.remove(session.playerId);
+  notifyPersonal(deps, session.playerId, 'avatar', true);
+  res.writeHead(204, { 'Cache-Control': 'no-store' });
+  res.end();
+}
+
+/** GET / HEAD /avatar/<playerId>: one picture (404 when there is none — the page falls back to its default). */
+function avatarGet(req, res, playerId, avatars) {
+  const entry = avatars.get(playerId);
+  if (!entry) {
+    sendJson(req, res, 404, { error: 'NOT_FOUND' });
+    return;
+  }
+  const headers = {
+    'Content-Type': entry.type,
+    'Content-Length': entry.bytes.length,
+    'Cache-Control': 'private, max-age=15',
+    ETag: entry.etag,
+  };
+  const inm = req.headers['if-none-match'];
+  if (typeof inm === 'string' && inm.split(',').some((tag) => tag.trim().replace(/^W\//, '') === entry.etag)) {
+    res.writeHead(304, { ETag: entry.etag, 'Cache-Control': headers['Cache-Control'] });
+    res.end();
+    return;
+  }
+  res.writeHead(200, headers);
+  res.end(req.method === 'HEAD' ? undefined : entry.bytes);
+}
+
+/**
+ * Serve an `/avatar` URL. Returns false when the path is not one (the request then falls through as before).
+ * @param {import('node:http').IncomingMessage} req @param {import('node:http').ServerResponse} res
+ * @param {string} rawPath @param {{ avatars: any, registry: any }} deps
+ * @returns {Promise<boolean>}
+ */
+async function handleAvatarRequest(req, res, rawPath, deps) {
+  if (rawPath === '/avatar') {
+    if (req.method === 'POST') { await avatarUpload(req, res, deps); return true; }
+    if (req.method === 'DELETE') { avatarRemove(req, res, deps); return true; }
+    res.setHeader('Allow', 'POST, DELETE');
+    sendError(req, res, 405, '不支持的请求方法 · Method not allowed');
+    return true;
+  }
+  if (!rawPath.startsWith('/avatar/')) return false;
+  const playerId = rawPath.slice('/avatar/'.length);
+  if ((req.method === 'GET' || req.method === 'HEAD') && AVATAR_ID_RE.test(playerId)) {
+    avatarGet(req, res, playerId, deps.avatars);
+    return true;
+  }
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    sendJson(req, res, 404, { error: 'NOT_FOUND' }); // a malformed id: indistinguishable from a missing picture
+    return true;
+  }
+  res.setHeader('Allow', 'GET, HEAD');
+  sendError(req, res, 405, '不支持的请求方法 · Method not allowed');
+  return true;
+}
 
 /**
  * The request listener for `http.createServer`.
@@ -102,6 +269,11 @@ export function createRequestHandler({ serveStatic, health, log, trustProxy = 'a
     const parts = splitUrl(url);
     if (!parts) { sendError(req, res, 400, '请求地址无效 · Bad request'); return; }
     if (trustedRuntime && parts.rawPath.startsWith('/x/') && await trustedRuntime.route(req,res,parts.rawPath)) return;
+    // 自定义头像 (server/http/avatarStore.js): POST / DELETE / GET, before the GET/HEAD-only rule below
+    if (health.avatars && health.registry && (parts.rawPath === '/avatar' || parts.rawPath.startsWith('/avatar/'))) {
+      await handleAvatarRequest(req, res, parts.rawPath, { avatars: health.avatars, registry: health.registry });
+      return;
+    }
     if (studio && studio.handles(parts.rawPath)) { await studio.handle(req, res, parts.rawPath, parts.query); return; }
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.setHeader('Allow', 'GET, HEAD');

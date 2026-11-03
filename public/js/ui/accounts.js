@@ -2,20 +2,25 @@
 // The original deployment has player accounts kept by its own accounts service (login, avatar, #tag, name cards, the
 // same records on every device). This module is the LOCAL stand-in: one "本机账号" per browser, everything in
 // localStorage — the profile (avatar, #tag) under `sp.pref.localAccount`, the match records in the game's own
-// `sp.pref.stats` (ui/stats.js). Nothing is sent to the server, and only the player on this browser has an account:
-// teammates show no #tag. To connect a real account system later, replace this file with a module that has the same
-// exports (AGENTS.md §3.2 lists them and what each must return).
+// `sp.pref.stats` (ui/stats.js). Only the player on this browser has an account here: teammates show no #tag. The avatar
+// is the exception: 更换头像 opens the client's 1:1 cropper (ui/avatarCrop.js `openAvatarCropper`, the maintainer's
+// report of 2026-11-03 — this entry used to pick a file and silently centre-crop it) and the cropped picture is uploaded
+// to the server (`POST /avatar`, server/http/avatarStore.js), so teammates' seat cards draw it too. To connect a real
+// account system later, replace this file with a module that has the same exports (AGENTS.md §3.2 lists them and what
+// each must return).
 import { html, AvatarFrame, MicroLabel, Icon, Modal, Button } from './components.js';
 import { useEffect, useState } from '../../vendor/hooks.module.js';
 import { render } from '../../vendor/preact.module.js';
 import { store } from '../store.js';
 import { t } from '../../../shared/i18n.js';
+import { identity } from '../net.js';
+import { openAvatarCropper } from './avatarCrop.js';
+import { removeOwnAvatar, useOwnAvatar } from './customAvatar.js';
 
 /** This module keeps the account in the browser (other modules may check it to word their notes). */
 export const LOCAL_ACCOUNT = true;
 
 const KEY = 'sp.pref.localAccount';
-const AVATAR_MAX = 160_000; // the stored data: URL (a 128×128 JPEG is ~10 kB)
 const listeners = new Set();
 const read = () => { try { const v = JSON.parse(localStorage.getItem(KEY) || 'null'); return v && typeof v === 'object' ? v : null; } catch { return null; } };
 const write = (v) => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch { /* private mode / quota: kept for this page only */ } };
@@ -76,18 +81,6 @@ export function decorateChatName(element, playerId) {
   return element;
 }
 
-// ---- avatar file → 128×128 square ------------------------------------------------------------------------------------
-async function squareAvatar(file) {
-  const url = URL.createObjectURL(file);
-  try {
-    const img = await new Promise((ok, fail) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => fail(new Error('图片读取失败')); i.src = url; });
-    const s = Math.min(img.naturalWidth, img.naturalHeight);
-    const c = document.createElement('canvas'); c.width = c.height = 128;
-    c.getContext('2d').drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, 128, 128);
-    return c.toDataURL('image/jpeg', 0.86);
-  } finally { URL.revokeObjectURL(url); }
-}
-
 // ---- the panel (opened from the hub's top-right chip) -------------------------------------------------------------------
 function ensureStyle() {
   if (document.getElementById('local-acct-style')) return;
@@ -106,30 +99,32 @@ function ensureStyle() {
 let host = null;
 function AccountPanel({ onStats, onClose }) {
   const { me } = useCurrentAccount();
+  // 服务器上的自定义头像（1:1 裁剪后上传的那张，ui/customAvatar.js）——本机账号的老头像仍作退路
+  const ownUrl = useOwnAvatar();
   const [busy, setBusy] = useState(false);
-  const pick = () => {
-    const input = document.createElement('input');
-    input.type = 'file'; input.accept = 'image/*';
-    input.onchange = async () => {
-      const f = input.files?.[0];
-      if (!f) return;
-      setBusy(true);
-      try { const d = await squareAvatar(f); if (d.length <= AVATAR_MAX) { profile = { ...load(), avatar: d }; write(profile); emit(); } }
-      catch { /* not an image */ } finally { setBusy(false); }
-    };
-    input.click();
+  // 更换头像: the maintainer's report of 2026-11-03 — this used to open a bare file picker and centre-crop the file with no
+  // UI at all ("头像设置没有裁剪选择"). It now opens the client's 1:1 cropper (ui/avatarCrop.js AvatarDialog through
+  // `openAvatarCropper`): 选图 → 拖动 / 滚轮缩放 → 确认使用 → 上传 → every avatar slot redraws. The dialog is its own
+  // body-level modal, so the panel closes first (nothing of it can clip or cover the stage).
+  const change = () => { onClose(); openAvatarCropper(); };
+  const clear = async () => {
+    if (busy) return;
+    setBusy(true);
+    try { await removeOwnAvatar(ownUrl ? identity.getToken() : null); } catch { /* local removal stands */ }
+    try { profile = { ...load(), avatar: null }; write(profile); emit(); } catch { /* private mode / quota */ }
+    setBusy(false);
   };
-  const clear = () => { profile = { ...load(), avatar: null }; write(profile); emit(); };
+  const shown = ownUrl || me.avatar;
   return html`<${Modal} open=${true} title=${t('本机账号')} micro="LOCAL ACCOUNT" onClose=${onClose}>
     <div class="lacct">
       <div class="lacct__who">
-        <span class="lacct__pic">${me.avatar ? html`<img src=${me.avatar} alt="" />` : [...me.name][0]}</span>
+        <span class="lacct__pic">${shown ? html`<img src=${shown} alt="" />` : [...me.name][0]}</span>
         <span><b class="lacct__name">${me.name}<span class="acct-tag">#${me.tag}</span></b><br /><${MicroLabel}>${t('LOCAL · 本机')}<//></span>
       </div>
-      <p class="lacct__note">${t('头像、编号和战绩都保存在这台设备的浏览器里，不上传服务器；换设备或清除浏览器数据后不会保留。昵称跟随游戏里的名字。')}</p>
+      <p class="lacct__note">${t('头像会先裁成 1:1 再上传到服务器，同盟里的其他博士也能看到；编号与战绩保存在这台设备的浏览器里，换设备或清除浏览器数据后不会保留。昵称跟随游戏里的名字。')}</p>
       <div class="lacct__btns">
-        <${Button} size="sm" variant="secondary" icon="edit" loading=${busy} onClick=${pick}>${t('更换头像')}<//>
-        ${me.avatar ? html`<${Button} size="sm" variant="ghost" onClick=${clear}>${t('移除头像')}<//>` : null}
+        <${Button} size="sm" variant="secondary" icon="image" loading=${busy} onClick=${change} data-testid="avatar-change">${t('更换头像')}<//>
+        ${shown ? html`<${Button} size="sm" variant="ghost" disabled=${busy} onClick=${clear}>${t('移除头像')}<//>` : null}
         ${onStats ? html`<${Button} size="sm" variant="primary" icon="chart" onClick=${() => { onClose(); onStats(); }}>${t('统计数据')}<//>` : null}
       </div>
     </div>
@@ -149,7 +144,7 @@ export function AccountMeChip({ player, onStats }) {
   useEffect(ensureStyle, []);
   const name = player?.name || me.name || t('博士');
   return html`<button type="button" class="me-chip me-chip--btn stats-entry" onClick=${() => openAccountPanel({ onStats })} title=${t('本机账号 · 统计数据')} aria-label=${t('本机账号')}>
-    <${AvatarFrame} size="sm" name=${name} seat=${0} self=${true} src=${me.avatar || undefined} />
+    <${AvatarFrame} size="sm" name=${name} seat=${0} self=${true} src=${me.avatar || undefined} playerId=${store.get().me?.playerId || null} />
     <span class="me-chip__text"><span class="me-chip__name">${name}<span class="acct-tag">#${me.tag}</span></span><${MicroLabel}>${t('LOCAL · 本机账号')}<//></span>
     <${Icon} name="user" class="me-chip__stats" />
   </button>`;
