@@ -969,3 +969,8 @@ AI 接替只适用于第二期下半原版合作房；编辑锁只限制房主�
 普通卡池与个人自选库存由服务器合成，只发接收者；客户端按本人/同组/独立语义决定显示，缺少数据则不显示数字。
 回归入口为 `test/match/economy.test.js`、`test/match/diy-shop.test.js`、`test/match/independent-pools-integration.test.js`、
 `test/ui/watch-bonds.test.js`、`test/ui/feedback1b-bonds.test.js` 和 `SP_E2E=1 node --test test/ui/bond-stock.e2e.test.js`。
+
+PR #24 的自定义立绘以会话 token 鉴权，上传前长边缩到 1536、WebP/JPEG 压缩至 2 MiB；原图不上传。
+服务器 `.cache/illusts` 保存压缩副本，房间座位只同步 ETag，客户端独立获取并防止迟到请求覆盖新图。
+显示开关纳入第 19 项 `roomCreation` 配置，不重复创建 PR #23 的 personalization 配置或另一套头像服务。
+回归入口 `test/illust-store.test.js`、`test/illust-http.test.js` 及 `SP_E2E=1 node --test test/ui/custom-illust.e2e.test.js`。

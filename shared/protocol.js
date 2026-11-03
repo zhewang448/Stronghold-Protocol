@@ -545,6 +545,7 @@ export const C2S = {
   'room.setAiPicksLast': { on: isBool },
   'room.setSeatAvatars': { on: isBool },
   'room.setSpectatorLimit': { limit: value => isInt(value, 2, 20) },
+  'room.setCustomIllust': { on: isBool },
   'room.resetSettings': {},
   'room.avatar': { avatar: isSharedAvatar },
   'room.setBotBand': { seat: v => isInt(v, 0, MAX_SEATS - 1), bandId: v => v == null || isId(v), $optional: ['bandId'] },

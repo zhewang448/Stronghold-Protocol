@@ -43,14 +43,19 @@ import { modeOffBonds, bandOffBonds, bandOffLine } from '../ui/gameLogic.js';
 import { t, tParts, tName } from '../../../shared/i18n.js';
 import { RANDOM_BAND_ID } from '../../../shared/constants.js';
 import { peekStatsRecords, strategyBadgeIds, selfRowOf, aggregateStats } from '../ui/stats.js';
+import { useCustomIllust } from '../ui/customIllust.js';
+import { CardArtImage } from '../ui/cardArt.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 function DraftPortrait({ player, players, myId }) {
+  const customIllust = useCustomIllust(player?.isBot ? null : player?.playerId);
   const localSkins = useStore(s => s.skins || s, Object.is, skinsStore);
   const otherSkins = useStore(s => s.otherSkins !== false, Object.is, settingsStore);
   const [failed, setFailed] = useState([]);
   const list = cardOperators(data.list('chess'), data.get('seat-art'), data.get('assets'), data.get('skins'));
   const context = { pool: list, byChar: new Map(list.map(op => [op.charId, op])) };
+  if (customIllust && !failed.includes(customIllust)) return html`<${CardArtImage} frameKey=${player.playerId === myId ? 'custom' : 'custom:' + player.playerId}
+    src=${customIllust} custom=${true} class="dorder__art" onError=${() => setFailed(old => [...old, customIllust])} />`;
   const op = seatOperator(player, context, { myId, myCard: player.card });
   if (!op) return null;
   const skin = seatCardSkin(player, op.chess.charId, { myId, localSkins, players, otherSkins });

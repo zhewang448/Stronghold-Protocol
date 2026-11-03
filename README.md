@@ -12,7 +12,7 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 [下载正式版](https://github.com/zhewang448/Stronghold-Protocol/releases/latest) · [开始运行](#开始运行) · [本库特色](#本库特色) · [和朋友一起玩](#和朋友一起玩) · [更新记录](docs/LOCAL-CHANGELOG.md) · [反馈问题](https://github.com/zhewang448/Stronghold-Protocol/issues)
 
-> 当前版本为 **`v0.3.3-extended.8`**（源码发布准备），基于上游 0.3.3。新增随机盟约、商店及盟约成员库存、可裁剪并分享的玩家头像，补齐八套时装和皮肤特效；控制台可搜索并逐项管理房间默认值与房主权限。正式下载以 Releases 中已发布版本为准，详情见[扩展更新记录](docs/LOCAL-CHANGELOG.md)。
+> 当前版本为 **`v0.3.3-extended.8`**（源码发布准备），基于上游 0.3.3。新增随机盟约、商店及盟约成员库存、可裁剪分享的头像与个人立绘，补齐八套时装和皮肤特效；控制台可搜索并逐项管理房间默认值与房主权限。正式下载以 Releases 中已发布版本为准，详情见[扩展更新记录](docs/LOCAL-CHANGELOG.md)。
 >
 > 非官方、非商业同人项目，与《明日方舟》官方无隶属或授权关系。游戏素材与数据的权利归原权利人；代码、素材及截图的许可边界见 [NOTICE.md](NOTICE.md)。
 

@@ -1,0 +1,52 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { startServer } from '../server/index.js';
+import { TestClient } from './helpers/wsClient.js';
+import { png } from './helpers/pluginFixtures.js';
+import { ILLUST_MAX_BYTES } from '../shared/illustration.js';
+import { setRoomCreation, resetHostSettings } from '../server/match/hostSettings.js';
+
+test('illustrations use authenticated own writes, same-room reads, live metadata, permissions and fallback', async testContext => {
+  resetHostSettings();
+  const server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, recovery: false, assetIndex: false, illustDir: null, heavyBurst: 100 });
+  const peers = [];
+  testContext.after(async () => { for (const peer of peers) await peer.terminate(); await server.close(); resetHostSettings(); });
+  const player = async name => {
+    const peer = await TestClient.connect(server.url.replace('http', 'ws') + '/ws'); peers.push(peer);
+    const welcome = await peer.hello(name); peer.playerId = welcome.playerId; peer.token = welcome.token; return peer;
+  };
+  const host = await player('Host'), guest = await player('Guest'), outsider = await player('Outside');
+  const picture = png(128, 256);
+  const request = (peer, route, options = {}) => fetch(server.url + route, { ...options,
+    headers: { ...(peer ? { Authorization: 'Bearer ' + peer.token } : {}), ...(options.headers || {}) } });
+  assert.equal((await request(null, '/illust', { method: 'POST', body: picture })).status, 401);
+  assert.equal((await request(host, '/illust', { method: 'POST', body: Buffer.from('not a picture') })).status, 415);
+  assert.equal((await request(host, '/illust', { method: 'POST', body: Buffer.alloc(ILLUST_MAX_BYTES + 1) })).status, 413);
+  const uploaded = await request(host, '/illust', { method: 'POST', body: picture });
+  assert.equal(uploaded.status, 200);
+  const metadata = await uploaded.json();
+  assert.equal(metadata.width, 128); assert.equal(metadata.height, 256);
+  assert.equal((await request(outsider, '/illust/' + host.playerId)).status, 404);
+  await host.request({ t: 'room.create', mode: 'coop' });
+  const room = [...server.lobby.rooms.values()][0];
+  await guest.request({ t: 'room.join', code: room.code });
+  const joined = await guest.waitFor('room.state', state => state.seats.some(seat => seat?.illust === metadata.etag));
+  assert.equal(joined.seats[0].illust, metadata.etag);
+  const shown = await request(guest, '/illust/' + host.playerId);
+  assert.equal(shown.status, 200); assert.equal(shown.headers.get('content-type'), 'image/png');
+  assert.deepEqual(Buffer.from(await shown.arrayBuffer()), picture);
+  assert.equal((await request(guest, '/illust/' + host.playerId, { headers: { 'If-None-Match': metadata.etag } })).status, 304);
+  assert.equal((await (await fetch(server.url + '/healthz')).json()).illusts, 1);
+  assert.equal((await guest.request({ t: 'room.setCustomIllust', on: false })).code, 'NOT_HOST');
+  setRoomCreation({ hostControls: { customIllust: false } });
+  assert.equal((await host.request({ t: 'room.setCustomIllust', on: false })).code, 'ROOM_OPTION_LOCKED');
+  setRoomCreation({ hostControls: { customIllust: true } });
+  assert.equal((await host.request({ t: 'room.setCustomIllust', on: false })).t, 'ok');
+  assert.equal(room.customIllust, false);
+  assert.equal((await request(host, '/illust', { method: 'DELETE' })).status, 204);
+  await guest.waitFor('room.state', state => !state.seats[0]?.illust);
+  assert.equal((await request(guest, '/illust/' + host.playerId)).status, 404);
+  assert.equal((await (await request(host, '/illust')).json()).etag, null);
+  assert.equal((await host.request({ t: 'room.resetSettings' })).t, 'ok');
+  assert.equal(room.customIllust, true);
+});

@@ -1,0 +1,134 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { startServer } from '../../server/index.js';
+import { png } from '../helpers/pluginFixtures.js';
+import { CHROME, hasChrome } from '../e2e/client.mjs';
+
+test('PR24 custom illustration compresses, shares, frames, disables, restores and removes on two real clients', {
+  skip: process.env.SP_E2E !== '1' || !hasChrome(), timeout: 120000,
+}, async testContext => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-illust-ui-'));
+  const file = path.join(directory, 'large.png'); fs.writeFileSync(file, png(4000, 6000, [40, 150, 90, 255]));
+  const server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, recovery: false, assetIndex: false, illustDir: path.join(directory, 'server'), heavyBurst: 100 });
+  const browser = await (await import('puppeteer-core')).default.launch({ executablePath: CHROME, headless: true,
+    args: ['--no-sandbox', '--disable-background-timer-throttling', '--disable-renderer-backgrounding'] });
+  testContext.after(async () => { await browser.close(); await server.close(); fs.rmSync(directory, { recursive: true, force: true }); });
+  const errors = [];
+  const login = async name => {
+    const context = await browser.createBrowserContext(), page = await context.newPage();
+    page.on('pageerror', error => errors.push(error.message)); await page.setViewport({ width: 1440, height: 900 });
+    await page.goto(server.url, { waitUntil: 'domcontentloaded' }); await page.waitForSelector('.title-login input');
+    await page.type('.title-login input', name);
+    await page.evaluate(() => [...document.querySelectorAll('.title-login button')].find(button => button.textContent.includes('开始')).click());
+    await page.waitForSelector('.lobby-screen'); return page;
+  };
+  const host = await login('Illust host'), guest = await login('Illust guest');
+  await host.evaluate(() => globalThis.__SP__.net.request('room.create', { mode: 'coop', difficulty: 'NORMAL' }));
+  const room = [...server.lobby.rooms.values()][0];
+  await guest.evaluate(code => globalThis.__SP__.net.request('room.join', { code }), room.code);
+  const openPicker = async () => {
+    await host.bringToFront(); await host.click('.rseat.is-me [aria-label="更换名片干员"]');
+    await host.waitForSelector('[data-testid="custom-illust-entry"]');
+  };
+  await openPicker();
+  assert.equal(await host.$eval('.cardpick__grid > button:first-child', button => button.dataset.testid), 'custom-illust-entry');
+  await host.click('[data-testid="custom-illust-entry"]');
+  const chooser = host.waitForFileChooser(); await host.click('[data-testid="illust-choose"]');
+  await (await chooser).accept([file]);
+  await host.waitForFunction(() => !document.querySelector('[data-testid="illust-confirm"]').disabled);
+  assert.match(await host.$eval('.illust-picker', element => element.textContent), /1024 × 1536/);
+  await host.click('[data-testid="illust-confirm"]');
+  await host.waitForSelector('.cardpick__custom-status');
+  await host.click('.cardpick .modal__actions button');
+  const selfImage = '.rseat.is-me .rseat__art img[data-art="custom"]';
+  const otherImage = '.rseat:not(.is-me) .rseat__art img[data-art="custom"]';
+  await host.waitForSelector(selfImage); await guest.waitForSelector(otherImage);
+  assert.deepEqual(await guest.$eval(otherImage, image => ({ width: image.naturalWidth, height: image.naturalHeight, fit: getComputedStyle(image).objectFit })), { width: 1024, height: 1536, fit: 'cover' });
+  const stored = server.lobby.illusts.get(room.hostId);
+  assert.ok(stored.bytes.length <= 2 * 1024 * 1024); assert.equal(stored.type, 'image/webp');
+  await host.click('[data-testid="seat-card-art"]');
+  await host.waitForSelector('[data-testid="card-art-frame"]');
+  const frame = await (await host.$('[data-testid="card-art-frame"]')).boundingBox();
+  assert.ok(Math.abs(frame.height / frame.width - 2) < 0.03);
+  await host.$eval('[data-testid="card-art-zoom"]', input => { input.value = '1.4'; input.dispatchEvent(new Event('input', { bubbles: true })); });
+  await host.mouse.move(frame.x + frame.width / 2, frame.y + frame.height / 2); await host.mouse.down();
+  await host.mouse.move(frame.x + frame.width * 0.7, frame.y + frame.height / 2, { steps: 5 }); await host.mouse.up();
+  const savedFrame = await host.evaluate(() => JSON.parse(localStorage.getItem('sp.pref.room.cardArt')).custom);
+  assert.equal(savedFrame.zoom, 1.4); assert.ok(savedFrame.ox > 0);
+  await host.click('.cardart-dialog .modal__actions button:last-child');
+  await host.evaluate(() => globalThis.__SP__.net.request('room.setCustomIllust', { on: false }));
+  await guest.waitForFunction(selector => !document.querySelector(selector), {}, otherImage);
+  await host.evaluate(() => globalThis.__SP__.net.request('room.setCustomIllust', { on: true }));
+  await guest.waitForSelector(otherImage);
+  await host.reload({ waitUntil: 'domcontentloaded' }); await host.waitForSelector(selfImage);
+  assert.match(await host.$eval(selfImage, image => image.style.transform), /scale\(1.4\)/);
+  await host.setViewport({ width: 844, height: 390 });
+  await host.click('[data-testid="seat-card-art"]'); await host.waitForSelector('.cardart-dialog');
+  await host.$eval('.cardart-dialog', element => Promise.all([...element.getAnimations(), ...element.parentElement.getAnimations()]
+    .filter(animation => animation.effect?.getTiming().iterations !== Infinity).map(animation => animation.finished.catch(() => {}))));
+  assert.ok(await host.$eval('.cardart-dialog', element => element.scrollWidth <= element.clientWidth + 1));
+  fs.mkdirSync('test/e2e/out', { recursive: true });
+  await host.screenshot({ path: 'test/e2e/out/pr24-framing-mobile.png' });
+  await host.click('.cardart-dialog .modal__actions button:last-child');
+  await openPicker(); await host.click('[data-testid="custom-illust-entry"]');
+  await host.click('[data-testid="illust-remove"]');
+  await guest.waitForFunction(selector => !document.querySelector(selector), {}, otherImage);
+  assert.equal(server.lobby.illusts.get(room.hostId), null);
+  await host.waitForSelector('[data-testid="custom-illust-entry"]');
+  await host.click('[data-testid="custom-illust-entry"]');
+  const secondChooser = host.waitForFileChooser(); await host.click('[data-testid="illust-choose"]');
+  await (await secondChooser).accept([file]);
+  await host.waitForFunction(() => !document.querySelector('[data-testid="illust-confirm"]').disabled);
+  await host.click('[data-testid="illust-confirm"]'); await host.waitForSelector('.cardpick__custom-status');
+  await host.click('.cardpick .modal__actions button');
+  await host.evaluate(() => globalThis.__SP__.net.request('room.addBot'));
+  await guest.evaluate(() => globalThis.__SP__.net.request('room.ready', { ready: true }));
+  await host.evaluate(() => globalThis.__SP__.net.request('room.start'));
+  room.match.enterBandDraft(); room.match.flush(true);
+  await host.waitForSelector('.dorder.is-self img[data-art="custom"]');
+  assert.equal(await host.$$eval('.dorder .pavatar.is-bot', elements => elements.some(element => element.closest('.dorder').querySelector('img[data-art="custom"]'))), false);
+  await host.screenshot({ path: 'test/e2e/out/pr24-draft-custom.png' });
+  assert.deepEqual(errors, []);
+});
+
+test('PR24 strategy tooltips show the actual strategy and touch text follows only the expanded row', {
+  skip: process.env.SP_E2E !== '1' || !hasChrome(), timeout: 60000,
+}, async testContext => {
+  const server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, recovery: false, assetIndex: false, illustDir: null });
+  const browser = await (await import('puppeteer-core')).default.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox'] });
+  testContext.after(async () => { await browser.close(); await server.close(); });
+  const page = await browser.newPage(), errors = [];
+  page.on('pageerror', error => errors.push(error.message)); await page.setViewport({ width: 1440, height: 900 });
+  await page.goto(server.url + '/dev/game-mock.html?shot=1&phase=PREP&render=fallback', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => !!globalThis.__MOCK__);
+  const strategyName = await page.evaluate(async () => {
+    const [{ render, h }, { UiHosts }, { TeamPanel }, { data }] = await Promise.all([
+      import('/vendor/preact.module.js'), import('/js/ui/components.js'), import('/js/ui/teamPanel.js'), import('/js/data.js'),
+    ]);
+    const { store } = globalThis.__MOCK__, state = store.get(), pub = state.match.public;
+    store.set({ room: { ...state.room, seatAvatars: true } });
+    render(h('div', {}, h(TeamPanel, { pub, myId: state.me.playerId, watching: null, bubbles: new Map(),
+      onWatch() {}, observe: { observing: false, canObserve: player => ({ fieldId: 'n:' + player.playerId }), onBack() {} } }), h(UiHosts)), document.getElementById('app'));
+    return data.lookup('bands', pub.players.find(player => player.playerId === 'p3').bandId).name;
+  });
+  await page.hover('.team__row[data-player-id="p3"] .team__name');
+  await page.waitForSelector('.team-strategy-tip.is-shown');
+  assert.match(await page.$eval('.team-strategy-tip', element => element.textContent), new RegExp(strategyName));
+  assert.doesNotMatch(await page.$eval('.team-strategy-tip', element => element.textContent), /预选/);
+  await page.mouse.move(1000, 700);
+  await page.setViewport({ width: 844, height: 390, isMobile: true, hasTouch: true });
+  const visible = () => page.$$eval('[data-testid="team-touch-strategy"]', elements => elements.filter(element => getComputedStyle(element).display !== 'none').length);
+  assert.equal(await visible(), 0);
+  await page.click('.team__row[data-player-id="p3"] .team__btn');
+  await page.waitForSelector('.team__row[data-player-id="p3"] [data-testid="team-touch-strategy"]');
+  assert.equal(await visible(), 1);
+  await page.click('.team__row[data-player-id="ai_2"] .team__btn');
+  await page.waitForSelector('.team__row[data-player-id="ai_2"] [data-testid="team-touch-strategy"]');
+  assert.equal(await visible(), 1);
+  await page.waitForFunction(() => !document.querySelector('.pbanner--overlay'));
+  await page.screenshot({ path: 'test/e2e/out/pr24-touch-strategy.png' });
+  assert.deepEqual(errors, []);
+});

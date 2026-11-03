@@ -530,6 +530,10 @@
 /* ---- team panel ------------------------------------------------------------------------------------------- */
 .team { position: absolute; left: .22rem; top: 2.36rem; display: flex; flex-direction: column; gap: .14rem; pointer-events: none; }
 .team__row { position: relative; display: flex; align-items: center; gap: .1rem; pointer-events: auto; }
+.team__avatarwrap, .team__namewrap { display: inline-flex; min-width: 0; }
+.team__avatarwrap { flex: none; }
+.team__strategy-touch { display: none; font-size: max(calc(.13 * var(--t)), 10px); color: var(--mint-400); line-height: 1.4; }
+@media (hover: none), (pointer: coarse) { .team__strategy-touch { display: block; } }
 .team__btn {
   position: relative; padding: 0; background: none; border: 0;
   transition: transform var(--t-fast);

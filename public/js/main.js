@@ -71,6 +71,7 @@ import { installRehearsal } from './battle/rehearsal.js';
 import { recordResult, installStatsRecorder } from './ui/stats.js';
 import { installSettingsViews, loadoutStore, installLoadoutSync, installOwnershipSync, installDiySync, installSkinsSync, installCardSync, installAvatarSync } from './ui/loadoutSync.js';
 import { installBondPlanSync } from './ui/bondPlan.js';
+import { installIllustSync } from './ui/customIllust.js';
 
 import { startBuildGuard, fetchBuild } from './ui/buildGuard.js';
 import { initLang, useLang, tickerText } from './ui/lang.js';
@@ -496,6 +497,7 @@ async function boot() {
   installDiySync({ net });
   installCardSync({ net });
   installAvatarSync({ net });
+  installIllustSync({ net });
   // 干员皮肤 (docs/SKINS.md): keeps the server's copy of this browser's chosen appearances current (room.skins), from
   // ui/skins.js' own store — its 皮肤 section is rendered by screens/loadout.js.
   // the room's cosmetic plugins and the player's own over the art manifest (content.js; nothing is fetched without them)

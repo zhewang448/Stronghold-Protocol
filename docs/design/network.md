@@ -578,3 +578,11 @@ The WebSocket handshake records only a bounded, valid HTTP(S) Origin host (inclu
 包含未在商店展示的干员；耗尽为 0，无限量使用 null，禁用/无库存记录不包含该键。
 只随私有视图发送，不进入 `m.public`；同池变化刷新相关接收者并沿用 JSON 去重。
 客户端只在本人或同组共享卡池的盟约展开页使用这些读数，同组视图排除接收者的个人自选槽，独立卡池及跨组视图不挪用读数。
+
+### 自定义座位立绘（PR #24，2026-11-03）
+
+`POST /illust`、`DELETE /illust` 和 `GET /illust` 由现有重连 token 的 Bearer 头鉴权，写入身份只取会话自身。
+`GET/HEAD /illust/<playerId>` 只向本人或同房间成员提供图片，支持 ETag/304；不把 token 放入 URL。
+服务端校验 PNG/WebP/JPEG 魔数、64–2048 px 尺寸、最大 3:1 比例与 2 MiB 上限，原子写入并限制频率和总内存。
+房间真人座位仅携带 `illust` ETag；上传/删除后广播原 `room.state` 元数据，图片独立读取，不进入对局公共帧或 battleSpec。
+`room.setCustomIllust { on }` 为第 19 项房间配置，沿用默认值、逐项权限、开局锁和恢复默认；不另建个性化配置文件。

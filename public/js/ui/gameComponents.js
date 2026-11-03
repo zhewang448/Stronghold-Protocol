@@ -288,7 +288,7 @@ export function RichTip({ text, children, placement = 'top' }) {
  * Seat-coloured player avatar: band icon when a band is picked, else glyph/robot.
  * @param {{ player: any, size?: 'sm'|'md', self?: boolean, class?: string }} props
  */
-export function PlayerAvatar({ player, size = 'md', self = false, class: cls, avatar = null }) {
+export function PlayerAvatar({ player, size = 'md', self = false, class: cls, avatar = null, strategyTip = true }) {
   const avatarFirst = useStore(state => state.room?.seatAvatars === true) && !player?.isBot;
   const account = useAccount(player?.isBot ? null : player?.playerId);
   const src = avatar || (avatarFirst ? (player?.isBot ? null : account?.avatar) : player?.bandId ? bandIconUrl(data.get('assets'), player.bandId) : null);
@@ -305,7 +305,7 @@ export function PlayerAvatar({ player, size = 'md', self = false, class: cls, av
     ${left ? html`<span class="pavatar__door" aria-label=${tr('已离开')}><${Icon} name="exit" /></span>` : null}
   </span>`;
   const band = avatarFirst && player?.bandId ? data.lookup('bands', player.bandId) : null;
-  if (!band) return face;
+  if (!band || !strategyTip) return face;
   return html`<${Tooltip} tap=${true} text=${html`<${BandIcon} bandId=${band.bandId} size="sm" /> <b>${band.name}</b>`}
       aside=${html`<${RichText} text=${band.descRaw || band.desc || ''} />`}>
     <span tabindex="0" role="button" aria-label=${band.name} onKeyDown=${event => {

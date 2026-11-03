@@ -39,6 +39,7 @@ import { releaseIgnoresExternalAi, noteLlmIgnored, validateExternalConfig } from
 
 import http from 'node:http';
 import { createRecovery } from './recovery.js';
+import { createIllustStore } from './http/illustStore.js';
 import path from 'node:path';
 import { getData, loadData } from './data.js';
 import { ROOT, listenAddress, bindCandidates, serveDirs, makeLogger, parseTrustProxy, parseRoomCode, assetIndexOptionsFrom, versionsFrom } from './http/config.js';
@@ -173,7 +174,9 @@ export async function startServer(opts = {}) {
   buildTag(ROOT, { servedVersionDirs: versions.servedDirs() });
 
   const traffic = createTrafficCounter();
-  const server = http.createServer(createRequestHandler({ serveStatic, csp: process.env.SP_CSP === 'off' ? null : siteCsp(publicDir, cdn), health: { startedAt, network, registry, lobby, content, traffic, assetIndex, views, trusted:trustedRuntime?.health, versions, versionHosts }, log, trustProxy: network.opts.trustProxy, studio, trustedRuntime }));
+  const illusts = createIllustStore({ dir: opts.illustDir === undefined ? path.join(ROOT, '.cache/illusts') : opts.illustDir, log });
+  lobby.illusts = illusts;
+  const server = http.createServer(createRequestHandler({ serveStatic, csp: process.env.SP_CSP === 'off' ? null : siteCsp(publicDir, cdn), health: { startedAt, network, registry, lobby, content, traffic, assetIndex, views, trusted:trustedRuntime?.health, versions, versionHosts, illusts }, log, trustProxy: network.opts.trustProxy, studio, trustedRuntime }));
   server.on('clientError', answerClientError);
   const wss = attachWebSocket(server, { network, log, traffic });
 

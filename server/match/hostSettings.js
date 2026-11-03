@@ -25,6 +25,7 @@ export const ROOM_CONFIG_FIELDS = Object.freeze([
   { key: 'spectatorLimit', label: '观战席上限', min: MAX_SPECTATORS, max: SPECTATOR_LIMIT_MAX, nullable: true, default: null },
   { key: 'aiPicksLast', label: 'AI 队友最后选择', default: true },
   { key: 'seatAvatars', label: '真人座位头像优先（AI 保留策略头像）', default: false },
+  { key: 'customIllust', label: '显示玩家自定义立绘', default: true },
   { key: 'aiTakeoverEnabled', label: '允许观战者接替 AI', default: false },
   { key: 'uniteLayerGains', label: '允许联防叠层', default: false, hostControl: false },
   { key: 'enemyHpMultiplier', label: '敌人血量倍率', min: 0.1, max: 100, default: 1 },

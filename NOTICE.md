@@ -118,3 +118,10 @@ under GPL-3.0-or-later. Adaptation keeps the current room API, four-player rules
 [Stardust-minus/Stronghold-Protocol](https://github.com/Stardust-minus/Stronghold-Protocol/tree/3dbdbc25c9cf372b31d95e48546e23ad907e8ebb)
 提交 `3dbdbc25c9cf372b31d95e48546e23ad907e8ebb` 的公开实现及测试，代码许可 GPL-3.0-or-later。
 本库按 0.3.3 的分组轮选、版本数据、个人预设和恢复机制重新适配；不引入参考仓库素材。
+
+## DoraCat 社区方案（2026-11-03）
+
+库存显示、皮肤特效映射和自定义座位立绘参考 DuolaCCCCat 为本库提交的
+[PR #14](https://github.com/zhewang448/Stronghold-Protocol/pull/14)、[PR #15](https://github.com/zhewang448/Stronghold-Protocol/pull/15) 和
+[PR #24](https://github.com/zhewang448/Stronghold-Protocol/pull/24)；分别固定于 c501530d、f31cab1a、198bc185，沿用本库 GPL-3.0-or-later 代码许可。
+本库按分组/个人库存、资源提取、现有头像同步及统一房间设置重新适配，不包含贡献者截图或用户上传图片。

@@ -309,6 +309,7 @@ export class Room {
      */
     this.aiPicksLast = mode !== 'solo' && defaults.aiPicksLast;
     this.seatAvatars = getSeatAvatars();
+    this.customIllust = defaults.customIllust;
     this.avatarFrameKey = null;
     this.sharedAvatarsSeen = false;
     this.aiTakeoverEnabled = getAllowAiTakeover() && mode !== 'solo' && version === DEFAULT_VERSION && defaults.aiTakeoverEnabled;
@@ -416,11 +417,13 @@ export class Room {
       inMatch: !!this.match,
       ...(this.matching ? { matching: { startedAt: this.matching.startedAt, target: DEFAULT_SEATS } } : {}),
       ...(this.private ? { private: true } : {}),
+      ...(this.customIllust === false ? { customIllust: false } : {}),
       textChat: true,
       seats: this.seats.map((s) => (s
         ? { seat: s.seat, playerId: s.playerId, name: s.name, isBot: s.isBot, ready: s.ready, connected: s.connected && !s.left, bondPlan: s.bondPlan || null,
           ...(s.isBot && s.botBand ? { botBand: s.botBand } : {}),
           ...(!s.isBot && Object.hasOwn(s, 'card') ? { card: s.card || null, cardSkin: s.cardSkin || null } : {}),
+          ...(!s.isBot && s.illust ? { illust: s.illust } : {}),
           ...(s.skins && Object.keys(s.skins).length ? { skins: s.skins } : {}),
           // a room with gameplay plugins (header "Gameplay plugins"): has this player's page loaded and checked its content?
           ...(this.needsContent && !s.isBot ? { content: s.content || 'loading' } : {}) }
@@ -645,6 +648,7 @@ export class Lobby {
     session.pendingResult = null;
     // a player seat, or a spectator seat (header): both carry `connected` / `name`
     const seat = room.seatOf(session.playerId) || room.spectatorOf(session.playerId);
+    if (seat) seat.illust = this.illusts?.get(session.playerId)?.etag || null;
     this.clearGrace(session.playerId);
     // Only a visible change (reconnect, rename, new host) is broadcast; a plain resync (repeated hello on a
     // live socket) answers the requester alone, so hello spam cannot amplify into room-wide traffic.
@@ -737,6 +741,7 @@ export class Lobby {
       'room.setIndependentPools': 'independentPools', 'room.setRescue': 'rescueEnabled',
       'room.setSoloUnlimited': 'convenience.soloUnlimited', 'room.setPlugins': 'plugins',
       'room.setSpectatorLimit': 'spectatorLimit',
+      'room.setCustomIllust': 'customIllust',
     }[msg.t];
     const configured = option ? this.roomOf(session) : null;
     if (configured?.versionVote?.resetSettings && configured.hostId === session.playerId && !configured.match) return fail(ERR.VERSION_VOTE);
@@ -771,6 +776,7 @@ export class Lobby {
       case 'room.setCapacity': return this.setCapacity(session, msg);
       case 'room.setMaxSeats': return this.setCapacity(session, { capacity: msg.n });
       case 'room.setSpectatorLimit': return this.setSpectatorLimit(session, msg);
+      case 'room.setCustomIllust': return this.setCustomIllust(session, msg);
       case 'room.resetSettings': return this.resetSettings(session);
       case 'room.setAiTakeover': return this.setAiTakeover(session, msg);
       case 'room.aiRequest':
@@ -1154,6 +1160,16 @@ export class Lobby {
       content?.rules && Object.hasOwn(content.rules, key) ? room.convenience[key] : choose('convenience.' + key, room.convenience[key])]));
     values.soloUnlimited = room.mode === 'solo' && this.versionSoloTimed(version) && values.convenience.soloUnlimited;
     return { values, content, difficulty: room.difficulty, sourceVersion: room.version, policy: JSON.stringify(policy) };
+  }
+
+  setCustomIllust(session, { on }) {
+    const room = this.roomOf(session);
+    if (!room) return fail(ERR.NOT_IN_ROOM);
+    if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
+    if (room.match) return fail(ERR.ROOM_STARTED);
+    if (typeof on !== 'boolean') return fail(ERR.BAD_MSG);
+    room.customIllust = on;
+    this.broadcastState(room); return OK;
   }
 
   resetSettings(session) {
@@ -2205,6 +2221,7 @@ export class Lobby {
       seat: idx, playerId: session.playerId, name: session.name, isBot: false, ready: false, connected: session.connected, left: false,
       loadout: session.loadout || null,
       ...cardFields,
+      ...(this.illusts?.get(session.playerId)?.etag ? { illust: this.illusts.get(session.playerId).etag } : {}),
       bondPlan: session.bondPlan || null,
       ops: session.ops || null,
       notOwned: session.notOwned || null,

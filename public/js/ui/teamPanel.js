@@ -27,7 +27,7 @@ import { AvatarMessage } from './matchCommunication.js';
 import { EmoteBubble } from './emotes.js';
 import { STATUS_META, poolGroupSections, teamFrameIds } from './gameLogic.js';
 import { MissTag, uniteRemaining } from './hud.js';
-import { localAsset } from '../data.js';
+import { data, localAsset } from '../data.js';
 import { t } from '../../../shared/i18n.js';
 import { BondPlanBadge } from './bondPlan.js';
 
@@ -189,9 +189,11 @@ export function TeamPanel({ pub, myId, watching, bubbles, emotes = [], emoteNow 
       const inTeam = team.has(p.playerId);
       const groupTip = group ? t('{group}组 · 同组共享卡池', { group: group.label }) : null;
       const avatarTitle = [title, inTeam && !self && t('与你在同一战场'), groupTip].filter(Boolean).join(' · ');
+      const strategy = p.bandId ? data.lookup('bands', p.bandId) : null;
+      const strategyText = strategy ? html`<b>${t('策略：{name}', { name: strategy.name })}</b>` : null;
       return html`<div key=${p.playerId} data-player-id=${p.playerId} class=${cx('team__row', self && 'is-self', inTeam && 'is-team', watched && 'is-watched', p.alive === false && 'is-dead', open && 'is-open')}>
-        <button type="button" class="team__btn" onClick=${() => click(p, self)} onDblClick=${(e) => dblClick(e, p, self)} title=${avatarTitle} aria-label=${avatarTitle} aria-expanded=${observe && !self ? String(open) : undefined}>
-          <${PlayerAvatar} player=${p} self=${self} />
+        <${Tooltip} text=${strategyText} placement="right" class="team__avatarwrap" tipClass="team-strategy-tip"><button type="button" class="team__btn" onClick=${() => click(p, self)} onDblClick=${(e) => dblClick(e, p, self)} title=${avatarTitle} aria-label=${avatarTitle} aria-expanded=${observe && !self ? String(open) : undefined}>
+          <${PlayerAvatar} player=${p} self=${self} strategyTip=${false} />
           ${inTeam ? html`<span class=${cx('team__frame', !frameArt && 'team__frame--plain')} style=${frameArt ? `--frame:url("${frameArt}")` : undefined} aria-hidden="true"></span>` : null}
           <span class="team__seat num">P${(p.seat ?? 0) + 1}</span>
           ${group ? html`<${Tooltip} text=${groupTip} placement="right" class="team__group-badge">${group.label}<//>` : null}
@@ -199,10 +201,11 @@ export function TeamPanel({ pub, myId, watching, bubbles, emotes = [], emoteNow 
           ${self ? html`<span class="team__you"><${Icon} name="user" /></span>` : null}
           ${spMarks?.get(p.playerId) === 'done' ? html`<span class="team__spmark is-done" title=${t('已完成选择')}><${Icon} name="check" /></span>`
             : spMarks?.get(p.playerId) === 'turn' ? html`<span class="team__spmark is-turn" title=${t('正在决策…')}><i></i><i></i><i></i></span>` : null}
-        </button>
+        </button><//>
         <div class="team__info">
-          <span class="team__name">${p.name || t('博士')}</span>
+          <${Tooltip} text=${strategyText} placement="right" class="team__namewrap" tipClass="team-strategy-tip"><span class="team__name">${p.name || t('博士')}</span><//>
           <${BondPlanBadge} bondId=${p.bondPlan} />
+          ${strategy && !self && (open || watched) ? html`<span class="team__strategy-touch" data-testid="team-touch-strategy">${t('策略：{name}', { name: strategy.name })}</span>` : null}
           <div class="team__line">
             <${LpTower} value=${lp.lp} size="sm" tone=${Number.isFinite(lp.lp) && lp.lp - lp.pending <= 5 ? 'danger' : null} pending=${lp.pending}
               tip=${rowLpTip(lp, cap)} />
