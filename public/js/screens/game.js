@@ -116,6 +116,8 @@ import { openGuide } from '../ui/guide.js';
 import { actions, onRefreshBusy } from '../ui/gameActions.js';
 import { PingIcon, activePings, pingTileAt, pingFieldTile, pingViewTile, pingRect } from '../ui/fieldPings.js';
 import { PingTools } from '../ui/pingTools.js';
+import { EmoteBarrageRain } from '../ui/emoteBarrage.js';
+import { barrageSide } from '../ui/gameLogic/barrage.js';
 import { useHudMeasure } from '../ui/hudDock.js';
 import { FacingWheel, holdPiece, setPieceDir, syncPieceDirs, showRange, useTileScreen } from '../ui/facingWheel.js';
 import { Underframe, underframeRect, TempRowNotice } from '../ui/underframe.js';
@@ -288,6 +290,9 @@ function MatchScreen() {
   const myId = useStore((s) => s.me.playerId);
   const conn = useStore((s) => s.connection, shallowEqual);
   const emotes = useStore((s) => s.emotes);
+  // 主机控制台 (server/match/hostSettings.js): 表情弹幕 + 信号条, live through welcome / site.settings
+  const emoteBarrage = useStore((s) => s.emoteBarrage !== false);
+  const signalBar = useStore((s) => s.signalBar !== false);
   const pings = useStore((s) => s.pings);
   const roomSolo = useStore((s) => s.room?.mode === 'solo');
   const spectator = useStore((s) => isSpectating(s.room, s.me.playerId));
@@ -1142,11 +1147,7 @@ function MatchScreen() {
   const bubbleMs = (gd.config?.timers?.chatBubble ?? 3) * 1000;
   const bubbles = activeBubbles(emotes, Date.now(), bubbleMs);
   useTicker(bubbles.size ? 500 : 0); // re-render only while a bubble is showing (to expire it)
-  const lastEmote = useRef(emotes.length ? emotes[emotes.length - 1].seq : 0);
-  useEffect(() => {
-    const e = emotes[emotes.length - 1];
-    if (e && e.seq > lastEmote.current) { lastEmote.current = e.seq; if (e.playerId !== myId) audio.sfx('emote', { volume: 0.6 }); }
-  }, [emotes]);
+  const lastEmoteSound = useRef(emotes.length ? emotes[emotes.length - 1].seq : 0);
 
   // ---- actions ----------------------------------------------------------------------------------------------
   const buy = useCallback(async (i) => {
@@ -1834,6 +1835,26 @@ function MatchScreen() {
   const observingName = cc && combat && watchedFid ? (!strip.self && stripFid === watchedFid ? strip.name : (players.find((p) => p.fieldId === watchedFid || ownFieldId(p.playerId) === watchedFid)?.name || t('队友'))) : null;
   const watchedP = watchingOther ? (players.find((p) => p.playerId !== myId && (watching === ownFieldId(p.playerId) || (watching === p.fieldId && String(watching).startsWith('n:')))) || null) : null;
   const watchedName = watchingOther ? (watchedP?.name || players.find((p) => watching === p.fieldId)?.name || t('队友')) : null;
+  // 表情弹幕: the id of the player whose board is on screen (the `watch` of every pulse and the replay target).
+  const watchedPid = watchingOther
+    ? (watchWho?.fieldId === watching && watchWho?.playerId
+      ? watchWho.playerId
+      : typeof watching === 'string' && watching.startsWith('n:') ? watching.slice(2)
+        : watchedP?.playerId || null)
+    : null;
+  // 表情弹幕的声音: only when this client actually shows that barrage (the same rule as the rain layer) —
+  // a pulse the viewer cannot see (someone else's battlefield) stays silent.
+  // An ordinary 交流 emote (no `watch`) still plays its teammate-bubble sound: that predates the barrage and is not
+  // governed by the host's 表情弹幕 switch.
+  useEffect(() => {
+    const e = emotes[emotes.length - 1];
+    if (!e || e.seq <= lastEmoteSound.current) return;
+    lastEmoteSound.current = e.seq;
+    if (e.playerId === myId) return;
+    if (!e.watch) { audio.sfx('emote', { volume: 0.6 }); return; }
+    if (!emoteBarrage) return;
+    if (barrageSide(e, { myId, watchingOther, watchedPid })) audio.sfx('emote', { volume: 0.6 });
+  }, [emotes, emoteBarrage, myId, watchingOther, watchedPid]);
   const stripBonds = strip.bonds;
   // a popup opened from the strip closes when the strip changes hands (another teammate scouted / a ‹ › half / back to
   // the own bonds); one opened from a card's chip keeps its unit owner (it carries its own player either way)
@@ -1956,6 +1977,7 @@ function MatchScreen() {
     ${pingToolsVisible && pingArmed ? html`<div class="gm__ping-target" onPointerDown=${placePing} onContextMenu=${(e) => e.preventDefault()}></div>` : null}
     ${viewKind === 'loading' ? html`<div class="gm__loading"><${Spinner} label="LOADING FIELD" /></div>` : null}
     <div class="gm__vignette" aria-hidden="true"></div>
+    <${EmoteBarrageRain} events=${emotes} myId=${myId} watchingOther=${watchingOther} watchedPid=${watchedPid} enabled=${emoteBarrage} />
     ${tempNotice ? html`<${TempRowNotice} view=${view} count=${temp.count} items=${temp.items} label=${!drag && !facing}
       ready=${phase === PHASE.PREP && !!priv?.ready} />` : null}
     ${showPrep && view && viewKind !== 'loading' && priv && !pen ? html`<${StandInTags} view=${view} priv=${priv} getChess=${gd.chess} backups=${gd.backups} diyData=${{ chess: data.get('chess'), backups: data.get('backups') }} />` : null}
@@ -2029,8 +2051,10 @@ function MatchScreen() {
 
       <div class="gm__corner">
         <${AiTakeoverPanel} />
-        ${pingToolsVisible ? html`<${PingTools} collapsed=${pingsCollapsed} onCollapse=${collapsePings} kind=${pingKind}
+        ${pingToolsVisible && (signalBar || emoteBarrage) ? html`<${PingTools} collapsed=${pingsCollapsed} onCollapse=${collapsePings} kind=${pingKind}
           armed=${pingArmed} view=${view} rect=${combat ? field?.rect || GEO.NORMAL_RECT : GEO.NORMAL_RECT} prep=${!combat}
+          signalBar=${signalBar} barrage=${emoteBarrage} barrageDisabled=${spectator || conn.status !== 'online' || !myId}
+          onBarrage=${(id, count) => actions.barrage(id, watchedPid || myId, count)}
           onDrag=${() => setPingArmed(false)} onSelect=${kind => { setPingKind(kind); setPingArmed(!pingArmed || pingKind !== kind); }} />` : null}
         ${showMetrics && metricsOpen ? html`<${CombatMetricsPanel} myId=${myId} onClose=${() => setMetricsOpen(false)} />` : null}
         ${showHistory && historyOpen ? html`<${RoundHistoryPanel} history=${pub.roundHistory} players=${pub.players} poolGroups=${pub.poolGroups} viewerId=${myId} onClose=${() => setHistoryOpen(false)} />` : null}

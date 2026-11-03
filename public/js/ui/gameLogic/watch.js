@@ -111,7 +111,8 @@ export function fieldLabel(field, pub, myId) {
 export function activeBubbles(emotes, now, ttl = 3000) {
   const out = new Map();
   for (const e of Array.isArray(emotes) ? emotes : []) {
-    if (!isObj(e) || !(now - e.at < ttl) || e.at > now + 1000) continue;
+    // 表情弹幕 (`watch`): it falls over the field (ui/emoteBarrage.js), never a team-panel bubble
+    if (!isObj(e) || e.watch || !(now - e.at < ttl) || e.at > now + 1000) continue;
     const cur = out.get(e.playerId);
     if (!cur || cur.seq < e.seq) out.set(e.playerId, { id: e.id, seq: e.seq, at: e.at });
   }

@@ -5,10 +5,12 @@
 // Installed on Match.prototype by server/match/Match.js (a method container: never instantiated; `this` is the match).
 
 import { unitStatsEntry } from '../../../shared/protocol.js';
-import { PHASE, ERR, EMOTE_IDS, EMOTE_COOLDOWN_MS, PING_KINDS, PING_COOLDOWN_MS, GEO } from '../../../shared/constants.js';
+import { PHASE, ERR, EMOTE_IDS, EMOTE_COOLDOWN_MS, EMOTE_BARRAGE_COUNT_MAX, PING_KINDS, PING_COOLDOWN_MS, GEO } from '../../../shared/constants.js';
 import { deriveSeed } from '../../sim/rng.js';
 import { OK, fail } from './common.js';
 import { onHumanEmote } from '../botEmotes.js';
+import { takeBarrageBudget } from '../barrage.js';
+import { getEmoteBarrage, getEmoteBarrageRate } from '../hostSettings.js';
 
 export class MatchIntents {
   _handle(ps, msg) {
@@ -44,7 +46,7 @@ export class MatchIntents {
       case 'g.offer': return this.requestOffer(ps, msg.offerId, msg.idx, msg);
       case 'g.offerRefresh': return this.requestOfferRefresh(ps, msg.offerId, msg.idx, msg);
       case 'g.ready': return ps.setReady(!!msg.ready);
-      case 'g.emote': return this.emote(ps, msg.id);
+      case 'g.emote': return this.emote(ps, msg.id, msg.watch ?? null, msg.count ?? 1);
       case 'g.ping': return this.ping(ps, msg.fieldId, msg.area, msg.row, msg.col, msg.kind);
       // playerId: the player tapped (a shared field names two) — the watch preference (item 56)
       case 'g.watch': return this.watch(ps, msg.fieldId, msg.playerId ?? null);
@@ -66,8 +68,29 @@ export class MatchIntents {
     }
   }
 
-  emote(ps, id) {
+  /**
+   * g.emote { id, watch?, count? } — an ordinary 交流 emote, or a 表情弹幕 pulse. A pulse (`watch` names the board the
+   * pictures fall on, `count` the clicks its client pulse merged) is relayed to every screen; each screen expands it
+   * itself. No life gate (usable whenever another player's board is on screen), and the host's per-second cap is
+   * applied here (server/match/barrage.js) — over the cap the pulse is truncated, or dropped when nothing is left.
+   * During 联防 everyone watches the shared field, so the broadcast carries `all` and every screen plays the falls.
+   * With the console switch off a pulse is a silent no-op (the client does not show the controls at all).
+   */
+  emote(ps, id, watch = null, count = 1) {
     if (!EMOTE_IDS.includes(id)) return fail(ERR.BAD_MSG, 'unknown emote');
+    const n = Math.max(1, Math.trunc(Number(count) || 1));
+    if (n > EMOTE_BARRAGE_COUNT_MAX) return fail(ERR.BAD_MSG, 'emote count out of range');
+    if (watch != null) {
+      if (!getEmoteBarrage()) return OK;
+      if (typeof watch !== 'string' || !watch) return fail(ERR.BAD_TARGET, 'no watch target');
+      const target = this.players.get(watch);
+      if (!target) return fail(ERR.BAD_TARGET, 'unknown watch target');
+      const allowed = takeBarrageBudget(ps, this.sched.now(), n, getEmoteBarrageRate());
+      if (allowed <= 0) return OK;
+      const all = this.phase === PHASE.UNITE;
+      this.broadcast({ t: 'm.emote', playerId: ps.playerId, id, watch, count: allowed, ...(all ? { all: true } : {}) });
+      return OK;
+    }
     const now = this.sched.now();
     if (now - ps.lastEmoteAt < EMOTE_COOLDOWN_MS) return fail(ERR.RATE);
     ps.lastEmoteAt = now;

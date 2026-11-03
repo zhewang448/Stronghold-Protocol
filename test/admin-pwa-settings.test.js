@@ -40,13 +40,13 @@ test('console installation visibility persists, broadcasts, survives unrelated s
   peer = await TestClient.connect(`ws://127.0.0.1:${server.port}/ws`); await peer.hello('Visibility');
   anonymous = await TestClient.connect(`ws://127.0.0.1:${server.port}/ws`);
   assert.equal((await api()).showPwaInstall, true);
-  assert.deepEqual(await health(), { showPwaInstall: true });
+  assert.deepEqual(await health(), { showPwaInstall: true, emoteBarrage: true, signalBar: true, emoteBarrageRate: 20 });
   const unauth = await fetch(admin.url + '/api/settings', { method: 'POST', body: JSON.stringify({ showPwaInstall: false }) });
   assert.equal(unauth.status, 403);
   assert.equal((await api({ showPwaInstall: false })).showPwaInstall, false);
   assert.deepEqual(await peer.waitFor('site.settings'), { t: 'site.settings', showPwaInstall: false });
   assert.deepEqual(await anonymous.waitFor('site.settings'), { t: 'site.settings', showPwaInstall: false });
-  assert.deepEqual(await health(), { showPwaInstall: false });
+  assert.deepEqual(await health(), { showPwaInstall: false, emoteBarrage: true, signalBar: true, emoteBarrageRate: 20 });
   assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).showPwaInstall, false);
   const saved = fs.readFileSync(file, 'utf8');
   for (const value of [null, 'true', 1, {}]) {

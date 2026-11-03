@@ -198,6 +198,10 @@ function onWelcome(msg) {
     testMode: msg.testMode === true,
     versions: sanitizeVersions(msg.versions),
     roomCreation: msg.roomCreation || null,
+    // 主机控制台 (表情弹幕 / 信号条): an absent key is the default (on / on / 20 per second)
+    emoteBarrage: msg.emoteBarrage !== false,
+    signalBar: msg.signalBar !== false,
+    emoteBarrageRate: Number.isInteger(msg.emoteBarrageRate) && msg.emoteBarrageRate >= 0 ? msg.emoteBarrageRate : 20,
   });
   welcomeAt = Date.now();
 
@@ -299,6 +303,12 @@ function wireNet() {
   net.on('site.settings', (message) => {
     pwaInstall.setEnabled(message.showPwaInstall);
     if (Object.hasOwn(message, 'roomCreation')) store.set({ roomCreation: message.roomCreation });
+    // 表情弹幕 / 信号条 (host console): live, no reload — an open match re-renders its signal bar in place
+    const patch = {};
+    if (Object.hasOwn(message, 'emoteBarrage')) patch.emoteBarrage = message.emoteBarrage !== false;
+    if (Object.hasOwn(message, 'signalBar')) patch.signalBar = message.signalBar !== false;
+    if (Object.hasOwn(message, 'emoteBarrageRate')) patch.emoteBarrageRate = Number.isInteger(message.emoteBarrageRate) && message.emoteBarrageRate >= 0 ? message.emoteBarrageRate : 20;
+    if (Object.keys(patch).length) store.set(patch);
   });
   net.on('room.closed', (msg) => {
     backToLobby();
@@ -345,7 +355,11 @@ function wireNet() {
     store.set((s) => ({ ticker: [...s.ticker.slice(-(TICKER_KEEP - 1)), { id: ++seq, text, at: Date.now(), type, playerId, round: s.match?.public?.round ?? null, priority }] }));
   });
   net.on('m.emote', (msg) => {
-    store.set((s) => ({ emotes: [...s.emotes.slice(-(EMOTE_KEEP - 1)), { seq: ++seq, playerId: msg.playerId, id: msg.id, at: Date.now() }] }));
+    // 表情弹幕: `watch` is the board the pictures fall on, `count` the clicks the sender's 200 ms pulse merged, `all`
+    // the server's 联防 broadcast (every screen plays it). An ordinary 交流 emote carries none of them (a bubble).
+    const watch = typeof msg.watch === 'string' && msg.watch ? msg.watch : null;
+    const count = Number.isInteger(msg.count) && msg.count > 0 ? Math.min(msg.count, 1000) : 1;
+    store.set((s) => ({ emotes: [...s.emotes.slice(-(EMOTE_KEEP - 1)), { seq: ++seq, playerId: msg.playerId, id: msg.id, at: Date.now(), watch, count, all: msg.all === true }] }));
   });
   net.on('m.ping', (msg) => {
     if (!validPing(msg)) return;

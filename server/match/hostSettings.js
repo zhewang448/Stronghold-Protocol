@@ -13,7 +13,7 @@
 //   { mode: 'untimed' }                     no timer: the prep ends when every player is ready (or the console ends it)
 
 import { DEFAULT_SOCIAL_SETTINGS } from '../../shared/social.js';
-import { ROOM_CAPACITIES, DIFFICULTIES, MAX_SPECTATORS, SPECTATOR_LIMIT_MAX } from '../../shared/constants.js';
+import { ROOM_CAPACITIES, DIFFICULTIES, MAX_SPECTATORS, SPECTATOR_LIMIT_MAX, EMOTE_BARRAGE_RATE_MAX } from '../../shared/constants.js';
 import { VERSIONS } from '../../shared/versions.js';
 import { CONVENIENCE_DEFAULTS } from '../../shared/roomConvenience.js';
 
@@ -116,6 +116,50 @@ export function setShowPwaInstall(value) {
   showPwaInstall = value;
   return { ok: true };
 }
+
+// ---- 表情弹幕 + 信号条 (the host's console, 2026-11-03) -----------------------------------------------------------
+// The in-match signal bar (ui/pingTools.js) grows two cells when the barrage is allowed: a 表情弹幕 picker and a
+// 表情设置 panel. `signalBar` decides whether the original 标点 buttons stay beside them. The rate cap is enforced by
+// the match (server/match/barrage.js) per player per rolling second; 0 = unlimited.
+let emoteBarrage = true;
+let signalBar = true;
+let emoteBarrageRate = 20;
+export function getEmoteBarrage() { return emoteBarrage; }
+export function setEmoteBarrage(value) {
+  if (typeof value !== 'boolean') return { error: '表情弹幕设置必须为开或关' };
+  emoteBarrage = value;
+  return { ok: true };
+}
+export function getSignalBar() { return signalBar; }
+export function setSignalBar(value) {
+  if (typeof value !== 'boolean') return { error: '信号条设置必须为开或关' };
+  signalBar = value;
+  return { ok: true };
+}
+export function getEmoteBarrageRate() { return emoteBarrageRate; }
+/**
+ * Validate a 每秒弹幕上限 value: blank / 0 = no cap; otherwise a whole number from 1 to EMOTE_BARRAGE_RATE_MAX.
+ * @param {unknown} value
+ * @returns {{ rate: number } | { error: string }}
+ */
+export function normalizeEmoteBarrageRate(value) {
+  if (value === '' || value == null) return { rate: 0 };
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < 0 || n > EMOTE_BARRAGE_RATE_MAX) {
+    return { error: `每秒弹幕上限必须为 0（不限）到 ${EMOTE_BARRAGE_RATE_MAX} 的整数` };
+  }
+  return { rate: n };
+}
+export function setEmoteBarrageRate(value) {
+  const r = normalizeEmoteBarrageRate(value);
+  if (r.error) return r;
+  emoteBarrageRate = r.rate;
+  return { ok: true };
+}
+/** The live frame every connected client receives when these three change (`site.settings`). */
+export function emoteBarrageFrame() {
+  return { emoteBarrage, signalBar, emoteBarrageRate };
+}
 export function getLiveRoundDamage() { return liveRoundDamage; }
 export function setLiveRoundDamage(v) {
   if (typeof v !== 'boolean') return { error: '实时伤害设置必须为开或关' };
@@ -187,7 +231,7 @@ export function setPrep(v) {
 }
 
 /** Back to the data's timers and the official 联防 rule (tests). */
-export function resetHostSettings() { prep = DEFAULT_PREP; roomCreation = initialRoomCreation(); roundCharts = true; liveRoundDamage = true; showPwaInstall = true; allowAiTakeover = null; social = DEFAULT_SOCIAL_SETTINGS; }
+export function resetHostSettings() { prep = DEFAULT_PREP; roomCreation = initialRoomCreation(); roundCharts = true; liveRoundDamage = true; showPwaInstall = true; allowAiTakeover = null; social = DEFAULT_SOCIAL_SETTINGS; emoteBarrage = true; signalBar = true; emoteBarrageRate = 20; }
 
 /** The 休整期 seconds of round r for a match whose data gives `base` (null = untimed stays untimed). */
 export function prepSecondsFor(round, base, p = prep) {

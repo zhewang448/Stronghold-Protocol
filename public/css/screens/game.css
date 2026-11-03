@@ -46,6 +46,27 @@
     radial-gradient(120% 90% at 45% 50%, transparent 60%, rgba(0, 0, 0, .5) 100%);
 }
 .gm__loading { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; pointer-events: none; }
+/* 表情弹幕 (ui/emoteBarrage.js): the falling pictures over the field, under the HUD. Each drop animates `top` (a
+   percentage of the layer height, so it fits every aspect ratio); the inner box carries the sway / spin and the fade.
+   Parameters arrive inline from rainBurst(): --rain-delay / --rain-dur / --rain-sway / --rain-spin / --rain-size. */
+.gm__emote-rain { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; }
+.gm__emote-rain__drop {
+  position: absolute; top: -14%; left: 0; width: var(--rain-size, .56rem); height: var(--rain-size, .56rem);
+  animation: wem-fall var(--rain-dur, 3200ms) cubic-bezier(.32, .06, .72, .45) var(--rain-delay, 0ms) forwards;
+  will-change: top;
+}
+.gm__emote-rain__inner {
+  display: block; width: 100%; height: 100%;
+  animation: wem-sway 1.15s ease-in-out infinite alternate, wem-fade var(--rain-dur, 3200ms) linear var(--rain-delay, 0ms) forwards;
+}
+.gm__emote-rain__inner .eart { filter: drop-shadow(0 .02rem .05rem rgba(0, 0, 0, .55)); }
+@keyframes wem-fall { from { top: -14%; } to { top: 112%; } }
+@keyframes wem-sway {
+  from { transform: translateX(calc(-1 * var(--rain-sway, .2rem))) rotate(calc(-1 * var(--rain-spin, 0deg))); }
+  to { transform: translateX(var(--rain-sway, .2rem)) rotate(var(--rain-spin, 0deg)); }
+}
+@keyframes wem-fade { 0%, 68% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .gm__emote-rain { display: none; } }
 .gm__hud { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
 .gm__hud > * { pointer-events: auto; }
 .gload { align-items: center; justify-content: center; gap: .2rem; }
@@ -1320,6 +1341,53 @@
 .gm__ping-btn--retreat.is-on { color: #b8b8ff; }
 .gm__ping-btn--question.is-on { color: #e9a7ff; }
 .gm__ping-btn--heart.is-on { color: #ff9fbc; }
+/* 表情弹幕 cells (ui/emoteBarrage.js): the same .gm__ping-btn box as the 标点 keys, with the emote picture instead of
+   an icon. Both cells are ordered AFTER the original keys in the row (the host console switches decide whether the
+   keys themselves are shown). */
+.gm__ping-btn--barrage { padding: 5px; overflow: hidden; }
+.gm__ping-btn--barrage .eart { width: 100%; height: 100%; }
+.gm__ping-btn--barrage .eart--glyph .icon { width: 70%; height: 70%; }
+.gm__ping-btn--barrage-settings .icon { width: 70%; height: 70%; }
+.gm__ping-btn--barrage.is-on, .gm__ping-btn--barrage-settings.is-on { color: #fff; border-color: var(--mint-500); background: rgba(255, 255, 255, .12); }
+/* the random face: a dashed frame +「?」, the same look the old watch button used */
+.gm__ping-btn--barrage.is-random { border-style: dashed; }
+.gbar__q { font-size: 22px; font-weight: 900; line-height: 1; color: var(--mint-400); }
+/* On the compact (touch) bar the two cells are the last items of the scrolling row: keep them above the collapse
+   toggle's enlarged 44 px hit halo, or a tap near the row's end lands on the toggle instead. */
+.gm__ping-tools[data-compact] .gm__ping-btn { z-index: 2; }
+.gm__ping-tools[data-compact] .gm__ping-toggle { z-index: 1; }
+/* the settings panel: position: fixed (inline left/bottom from the cell's rect) so the compact bar's horizontal
+   scroll can never clip it. Sized in px, not rem: the root font is ~40 px on a phone landscape. */
+.gbar__panel {
+  position: fixed; z-index: 60; width: min(360px, calc(100vw - 16px)); max-height: min(70vh, 380px);
+  overflow: auto; padding: 10px 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px;
+  background: rgba(10, 14, 12, .97); border: 1px solid var(--line-2); box-shadow: 0 .04rem .16rem rgba(0, 0, 0, .55);
+  color: var(--text-md); font-size: 13px; line-height: 1.4;
+}
+.gbar__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--text-hi); font-size: 15px; font-weight: 700; }
+.gbar__x { width: 26px; height: 26px; display: grid; place-items: center; padding: 3px; border: 0; background: none; color: var(--text-lo); cursor: pointer; }
+.gbar__x:hover { color: var(--mint-400); }
+.gbar__current { margin: 0; padding: 6px 8px; border-radius: 5px; background: rgba(23, 249, 183, .10); color: var(--text-hi); font-size: 13px; }
+.gbar__label { margin-top: 3px; font-size: 12px; color: var(--text-lo); }
+.gbar__sub { margin-left: 8px; color: var(--text-dim); }
+.gbar__row { display: flex; flex-wrap: wrap; gap: 6px; }
+.gbar__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; }
+.gbar__choice {
+  display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px 0 10px; box-sizing: border-box;
+  background: rgba(255, 255, 255, .1); border: 1px solid transparent; border-radius: 5px;
+  color: var(--text-md); font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.gbar__choice:hover { background: rgba(255, 255, 255, .2); }
+.gbar__choice.is-on { border-color: var(--mint-500); background: rgba(23, 249, 183, .12); color: var(--text-hi); }
+.gbar__emote, .gbar__chip {
+  position: relative; width: 44px; height: 44px; padding: 3px; box-sizing: border-box;
+  display: grid; place-items: center; background: rgba(255, 255, 255, .1); border: 1px solid transparent;
+  border-radius: 5px; cursor: pointer;
+}
+.gbar__emote:hover, .gbar__chip:hover { background: rgba(255, 255, 255, .2); }
+.gbar__emote.is-on, .gbar__chip.is-on { border-color: var(--mint-500); background: rgba(23, 249, 183, .12); box-shadow: inset 0 0 0 2px var(--mint-400); }
+.gbar__emote .eart, .gbar__chip .eart { width: 100%; height: 100%; }
+.gbar__hint { margin: 2px 0 0; font-size: 11.5px; line-height: 1.4; color: var(--text-dim); }
 @keyframes gm-ping-drop { from { opacity: .65; transform: translateY(-100px) scale(1.2); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes gm-ping-lift { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 @keyframes gm-ping-ring { from { opacity: .95; transform: scale(.25, .12); } to { opacity: 0; transform: scale(1.6, .72); } }

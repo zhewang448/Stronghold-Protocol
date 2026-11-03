@@ -42,6 +42,7 @@ import { getAllowRoomUniteLayerGains, setAllowRoomUniteLayerGains } from './matc
 import { getShowPwaInstall, setShowPwaInstall } from './match/hostSettings.js';
 import { getAllowAiTakeover, setAllowAiTakeover } from './match/hostSettings.js';
 import { getSeatAvatars, setSeatAvatars } from './match/hostSettings.js';
+import { getEmoteBarrage, setEmoteBarrage, getSignalBar, setSignalBar, getEmoteBarrageRate, setEmoteBarrageRate, normalizeEmoteBarrageRate, emoteBarrageFrame } from './match/hostSettings.js';
 import { ROOM_CONFIG_FIELDS, getRoomCreation, normalizeRoomCreation, setRoomCreation } from './match/hostSettings.js';
 import { resetAiTakeover } from './aiTakeover.js';
 import { readPersonalDataConfig, writePersonalDataConfig } from './http/personalDataConfig.js';
@@ -702,6 +703,12 @@ export function loadSettings(file, log) {
     if (live.error) log.error(`[admin] ${file}: liveRoundDamage ignored (${live.error})`);
     const install = setShowPwaInstall(saved.showPwaInstall ?? true);
     if (install.error) log.error(`[admin] ${file}: showPwaInstall ignored (${install.error})`);
+    const barrage = setEmoteBarrage(saved.emoteBarrage ?? true);
+    if (barrage.error) log.error(`[admin] ${file}: emoteBarrage ignored (${barrage.error})`);
+    const signal = setSignalBar(saved.signalBar ?? true);
+    if (signal.error) log.error(`[admin] ${file}: signalBar ignored (${signal.error})`);
+    const rate = setEmoteBarrageRate(saved.emoteBarrageRate ?? 20);
+    if (rate.error) log.error(`[admin] ${file}: emoteBarrageRate ignored (${rate.error})`);
     if (typeof saved.allowAiTakeover === 'boolean') setAllowAiTakeover(saved.allowAiTakeover);
     setSeatAvatars(saved.seatAvatars ?? false);
     if (saved.roomCreation) {
@@ -731,6 +738,12 @@ function saveSettings(file, body) {
   if (typeof liveRoundDamage !== 'boolean') return { error: '实时伤害设置必须为开或关' };
   const showPwaInstall = Object.hasOwn(body, 'showPwaInstall') ? body.showPwaInstall : getShowPwaInstall();
   if (typeof showPwaInstall !== 'boolean') return { error: '桌面安装按钮设置必须为开或关' };
+  const emoteBarrage = Object.hasOwn(body, 'emoteBarrage') ? body.emoteBarrage : getEmoteBarrage();
+  if (typeof emoteBarrage !== 'boolean') return { error: '表情弹幕设置必须为开或关' };
+  const signalBar = Object.hasOwn(body, 'signalBar') ? body.signalBar : getSignalBar();
+  if (typeof signalBar !== 'boolean') return { error: '信号条设置必须为开或关' };
+  const barrageRate = normalizeEmoteBarrageRate(Object.hasOwn(body, 'emoteBarrageRate') ? body.emoteBarrageRate : getEmoteBarrageRate());
+  if (barrageRate.error) return barrageRate;
   let allowAiTakeover = Object.hasOwn(body, 'allowAiTakeover') ? body.allowAiTakeover : getAllowAiTakeover();
   if (typeof allowAiTakeover !== 'boolean') return { error: '观战接替 AI 权限必须为开或关' };
   const seatAvatars = Object.hasOwn(body, 'seatAvatars') ? body.seatAvatars : getSeatAvatars();
@@ -756,6 +769,7 @@ function saveSettings(file, body) {
   const tmp = `${file}.tmp`;
   fs.writeFileSync(tmp, JSON.stringify({ prep: r.prep, uniteLayerGains: creation.config.defaults.uniteLayerGains,
     allowRoomUniteLayerGains: creation.config.hostControls.uniteLayerGains, roundCharts, liveRoundDamage, showPwaInstall,
+    emoteBarrage, signalBar, emoteBarrageRate: barrageRate.rate,
     allowAiTakeover, seatAvatars: creation.config.defaults.seatAvatars, roomCreation: creation.config,
     chat: chat.settings, blockedWords: blocked.words, replay, social: social.settings }, null, 2));
   fs.renameSync(tmp, file);
@@ -766,6 +780,9 @@ function saveSettings(file, body) {
   setRoundCharts(roundCharts);
   setLiveRoundDamage(liveRoundDamage);
   setShowPwaInstall(showPwaInstall);
+  setEmoteBarrage(emoteBarrage);
+  setSignalBar(signalBar);
+  setEmoteBarrageRate(barrageRate.rate);
   setAllowAiTakeover(allowAiTakeover);
   setSeatAvatars(seatAvatars);
   setRoomCreation(creation.config);
@@ -777,6 +794,9 @@ function saveSettings(file, body) {
   if (Object.hasOwn(body, 'social')) out.social = getSocialSettings();
   if (Object.hasOwn(body, 'liveRoundDamage')) out.liveRoundDamage = getLiveRoundDamage();
   if (Object.hasOwn(body, 'showPwaInstall')) out.showPwaInstall = getShowPwaInstall();
+  if (Object.hasOwn(body, 'emoteBarrage')) out.emoteBarrage = getEmoteBarrage();
+  if (Object.hasOwn(body, 'signalBar')) out.signalBar = getSignalBar();
+  if (Object.hasOwn(body, 'emoteBarrageRate')) out.emoteBarrageRate = getEmoteBarrageRate();
   if (Object.hasOwn(body, 'allowAiTakeover')) out.allowAiTakeover = getAllowAiTakeover();
   if (Object.hasOwn(body, 'seatAvatars')) out.seatAvatars = getSeatAvatars();
   if (Object.hasOwn(body, 'roomCreation')) out.roomCreation = getRoomCreation();
@@ -1117,7 +1137,7 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
       if (req.method === 'GET' && url.pathname === '/api/catalog') return send(200, await catalogView(lobby, url.searchParams.get('room')));
       if (req.method === 'GET' && url.pathname === '/api/results-summary') return send(200, summarizeResults(Object.fromEntries(url.searchParams)));
       if (req.method === 'GET' && url.pathname === '/api/results') return send(200, { records: listRecords(resultsDir) });
-      if (req.method === 'GET' && url.pathname === '/api/settings') return send(200, { social: getSocialSettings(), prep: getPrep(), uniteLayerGains: getUniteLayerGains(), allowRoomUniteLayerGains: getAllowRoomUniteLayerGains(), roundCharts: getRoundCharts(), liveRoundDamage: getLiveRoundDamage(), showPwaInstall: getShowPwaInstall(), allowAiTakeover: getAllowAiTakeover(), seatAvatars: getSeatAvatars(), roomCreation: getRoomCreation(), roomConfigFields: ROOM_CONFIG_FIELDS, chat: getChatSettings(), blockedWords: getBlockedWords(), replay: { enabled: getReplayConfig().enabled, keep: 50, forcedOff: process.env.SP_REPLAY === '0' }, file: settingsFile, defaults: prepDefaults(lobby.safeData()) });
+      if (req.method === 'GET' && url.pathname === '/api/settings') return send(200, { social: getSocialSettings(), prep: getPrep(), uniteLayerGains: getUniteLayerGains(), allowRoomUniteLayerGains: getAllowRoomUniteLayerGains(), roundCharts: getRoundCharts(), liveRoundDamage: getLiveRoundDamage(), showPwaInstall: getShowPwaInstall(), emoteBarrage: getEmoteBarrage(), signalBar: getSignalBar(), emoteBarrageRate: getEmoteBarrageRate(), allowAiTakeover: getAllowAiTakeover(), seatAvatars: getSeatAvatars(), roomCreation: getRoomCreation(), roomConfigFields: ROOM_CONFIG_FIELDS, chat: getChatSettings(), blockedWords: getBlockedWords(), replay: { enabled: getReplayConfig().enabled, keep: 50, forcedOff: process.env.SP_REPLAY === '0' }, file: settingsFile, defaults: prepDefaults(lobby.safeData()) });
       if (req.method === 'POST' && url.pathname === '/api/settings') {
         const body = await readJson(req);
         if (!body) return send(400, { error: '请求格式错误' });
@@ -1145,6 +1165,11 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
           } else for (const session of lobby.registry?.all?.() || []) {
             if (session.connected) sendSession(session, frame);
           }
+        }
+        if (r.ok && (Object.hasOwn(body, 'emoteBarrage') || Object.hasOwn(body, 'signalBar') || Object.hasOwn(body, 'emoteBarrageRate'))) {
+          // 表情弹幕 / 信号条: every connected screen re-renders its signal bar at once (no reload, no restart)
+          const frame = { t: 'site.settings', ...emoteBarrageFrame() };
+          if (network?.conns) for (const connection of network.conns.values()) sendSocket(connection.ws, frame);
         }
         if (r.ok && Object.hasOwn(body, 'allowRoomUniteLayerGains')) {
           for (const room of lobby.rooms.values()) lobby.broadcastState?.(room);
