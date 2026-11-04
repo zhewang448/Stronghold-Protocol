@@ -91,6 +91,7 @@ export const initialState = Object.freeze({
   room: null,
   roomCreation: null,
   roomAvatars: null,
+  avatarCache: {}, // validated shared avatars by playerId; retained while a room enters its match
   announcement: null,
   social: null,
   matchmaking: { status: 'idle' },

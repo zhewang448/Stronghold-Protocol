@@ -105,8 +105,8 @@ export function randomBandCard() {
     bandId: RANDOM_BAND_ID,
     random: true,
     name: '?',
-    effectName: t('随机盟约'),
-    desc: t('确认后随机抽取一个未被队友选择的盟约，并额外获得 1 生命值和 1 资金。'),
+    effectName: t('随机策略'),
+    desc: t('随机抽取一个未被队友选择的策略，并额外获得 1 生命值和 1 资金。'),
     totalHp: null,
   };
 }

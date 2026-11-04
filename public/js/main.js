@@ -173,7 +173,7 @@ function backToLobby() {
   clearTimeout(restoreTimer);
   const s = store.get();
   if (s.room || s.match.public) closeAllDialogs();
-  store.set({ room: null, roomAvatars: null, match: emptyMatch(), ticker: [], emotes: [], pings: [] });
+  store.set({ room: null, roomAvatars: null, avatarCache: {}, match: emptyMatch(), ticker: [], emotes: [], pings: [] });
   store.patch('ui', { restoring: false });
 }
 
@@ -214,7 +214,7 @@ function onWelcome(msg) {
     restoreTimer = setTimeout(() => {
       const s = store.get();
       const patch = {};
-      if (s.room && roomStateAt < welcomeAt) patch.room = null;
+      if (s.room && roomStateAt < welcomeAt) { patch.room = null; patch.roomAvatars = null; patch.avatarCache = {}; }
       if (s.match.public && matchAt < welcomeAt) patch.match = emptyMatch();
       store.set(patch);
       store.patch('ui', { restoring: false });
@@ -231,14 +231,15 @@ function onRoomState(msg) {
   if (myId != null && seats.length && !seats.some((s) => s && s.playerId === myId) && !isSpectating(room, myId)) {
     // We are no longer seated (kicked / left elsewhere) — neither in a player seat nor a spectator seat.
     if (store.get().room) toast(t('你已不在该同盟中'), 'warn');
-    store.set({ room: null, match: emptyMatch(), pings: [] });
+    store.set({ room: null, roomAvatars: null, avatarCache: {}, match: emptyMatch(), pings: [] });
     return;
   }
   const prevRoom = store.get().room;
   // A (new) match starts: forget the previous match's state so stale results never show.
   if (room.inMatch && !(prevRoom && prevRoom.inMatch && prevRoom.code === room.code)) store.set({ match: emptyMatch(), pings: [] });
   if (prevRoom && prevRoom.code === room.code && !room.inMatch && roomVersion(prevRoom) !== roomVersion(room) && store.get().match.public) store.set({ match: emptyMatch(), pings: [] });
-  store.set({ room, ...(prevRoom?.code !== room.code ? { roomAvatars: null } : {}) });
+  const newRoom = prevRoom?.code !== room.code && !prevRoom?.inMatch && !room.inMatch;
+  store.set({ room, ...(newRoom ? { roomAvatars: null, avatarCache: {} } : {}) });
   identity.rememberMatch(room.inMatch && seats.some((seat) => seat?.playerId === myId)
     ? { name: store.get().me.name, code: room.code || '' } : null);
   if (room.mode === 'coop' && typeof room.code === 'string') rememberRoom(room.code, room.test === true);
@@ -273,9 +274,11 @@ function wireNet() {
   net.on('unhandledError', (err) => toastError(err));
   net.on('room.state', onRoomState);
   net.on('room.avatars', message => {
-    if (message.code !== store.get().room?.code) return;
+    const state = store.get();
+    if (message.code !== state.room?.code && !(state.room?.inMatch && message.code === state.roomAvatars?.code)) return;
     const avatars = Object.fromEntries(Object.entries(message.avatars || {}).filter(([, avatar]) => avatar && isSharedAvatar(avatar)));
-    store.set({ roomAvatars: { code: message.code, avatars } });
+    // The frame is a full snapshot: replacing by playerId also removes avatars deleted during the match.
+    store.set({ roomAvatars: { code: message.code, avatars }, avatarCache: avatars });
   });
   net.on('match.state', msg => { store.set({ matchmaking: payload(msg) }); if (msg.error) toastError({ code: msg.error }); });
   net.on('match.found', msg => store.set({ matchmaking: { ...payload(msg), status: 'found' } }));

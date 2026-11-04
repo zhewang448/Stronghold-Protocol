@@ -62,8 +62,9 @@ const isMe = (playerId) => !!playerId && playerId === store.get().me?.playerId;
 export function accountOf(playerId) {
   if (isMe(playerId)) return currentAccount();
   const state = store.get();
-  if (!playerId || state.roomAvatars?.code !== state.room?.code) return null;
-  const avatar = state.roomAvatars?.avatars?.[playerId];
+  if (!playerId) return null;
+  const avatar = state.avatarCache?.[playerId]
+    || (state.roomAvatars?.code === state.room?.code ? state.roomAvatars?.avatars?.[playerId] : null);
   return avatar && isSharedAvatar(avatar) ? { avatar, local: false, tag: null, card: null } : null;
 }
 export function useAccount(playerId) {

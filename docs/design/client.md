@@ -128,6 +128,8 @@ lobby, waiting room and in-match avatar components; local image bytes are never 
 avatar preference sets the default for new rooms and defaults off; existing rooms retain their selected value. With it enabled,
 human seats without a locally known avatar use a name glyph, while in-match AI keeps its strategy icon (robot fallback before
 selection). Strategy/planned-bond details retain their icon and description through hover/focus/tap.
+During the 协议启动 transition, shared avatars remain cached by playerId even if the room code changes; the boot cards
+show the avatar directly without a strategy tooltip wrapper. A full avatar frame replaces the cache, including removals.
 
 `public/js/render/vfx/` plays the official battle effect prefabs that `tools/local-extract/fx.py` extracts from the
 player's own client (the format: DESIGN §33, docs/design/vfx-format.md) on the 3D board. It is client-only: it draws

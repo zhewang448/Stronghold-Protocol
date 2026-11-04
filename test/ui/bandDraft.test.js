@@ -21,6 +21,8 @@ test('random strategy stays hidden until assignment and a focused timeout accept
   assert.equal(bandRecord({ band: id => ({ bandId: id }) }, 'band_random').random, true);
   assert.equal(timeoutBand([random, { bandId: 'band_bldsk' }], new Map()), 'band_bldsk');
   assert.equal(random.name, '?');
+  assert.equal(random.effectName, '随机策略');
+  assert.equal(random.desc, '随机抽取一个未被队友选择的策略，并额外获得 1 生命值和 1 资金。');
   assert.equal(draftSelection('band_random', { bands: [random, { bandId: 'band_bldsk' }], taken: new Map(), myPick: 'band_bldsk', myTurn: false }), 'band_bldsk');
   assert.equal(autoPickBand('band_random', { bands: [random, { bandId: 'band_bldsk' }], taken: new Map() }), 'band_random');
 });

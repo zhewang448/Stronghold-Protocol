@@ -35,6 +35,21 @@ test('avatar crop geometry keeps a square source window and responds to zoom/off
   assert.ok(moved.x < centered.x, 'dragging right moves the source window left');
 });
 
+test('shared avatar cache survives a room-to-match code transition and honors removal', async () => {
+  const { store } = await import('../../public/js/store.js');
+  const { accountOf } = await import('../../public/js/ui/accounts.js');
+  const avatar = 'data:image/jpeg;base64,/9j/AA==';
+  try {
+    store.set({ me: { playerId: 'self' }, room: { code: 'ROOM' },
+      roomAvatars: { code: 'ROOM', avatars: { peer: avatar } }, avatarCache: { peer: avatar } });
+    assert.equal(accountOf('peer')?.avatar, avatar);
+    store.set({ room: { code: 'MATCH', inMatch: true }, roomAvatars: null });
+    assert.equal(accountOf('peer')?.avatar, avatar);
+    store.set({ avatarCache: {} });
+    assert.equal(accountOf('peer'), null);
+  } finally { store.reset(); }
+});
+
 test('issue #21 uses an interactive crop and accessible bond tooltip', () => {
   assert.match(ACCOUNT, /data-testid='avatar-crop'/);
   assert.match(ACCOUNT, /onPointerMove=\$\{pointerMove\}/);

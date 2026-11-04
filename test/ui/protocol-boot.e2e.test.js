@@ -205,6 +205,30 @@ describe('协议启动！ screen (headless Chrome)', { skip: !ENABLED && 'set SP
     await context.close();
   });
 
+  test('a cached seat avatar fills the boot card after the room state changes', async () => {
+    const { page, problems, context } = await open({ reduce: true });
+    await page.evaluate(() => {
+      const { store, setPhase } = globalThis.__MOCK__;
+      const canvas = document.createElement('canvas'); canvas.width = canvas.height = 128;
+      const drawing = canvas.getContext('2d'); drawing.fillStyle = '#279c54'; drawing.fillRect(0, 0, 128, 128);
+      store.set({ room: { ...store.get().room, code: 'MATCH', seatAvatars: true }, roomAvatars: null,
+        avatarCache: { p3: canvas.toDataURL('image/jpeg', 0.86) } });
+      setPhase('BATTLE_CHECK');
+    });
+    await page.waitForSelector('[data-testid="protocol-boot"] .pboot__card');
+    await page.waitForFunction(() => document.querySelectorAll('.pboot__card')[2]?.querySelector('.pavatar img')?.naturalWidth === 128);
+    const face = await page.evaluate(() => {
+      const root = document.querySelectorAll('.pboot__card')[2].querySelector('.pboot__face');
+      const image = root.querySelector('img'), rect = image.getBoundingClientRect();
+      return { src: image.src, width: rect.width, height: rect.height, tooltip: !!root.querySelector('.tt-anchor') };
+    });
+    assert.ok(face.src.startsWith('data:image/jpeg;base64,'));
+    assert.ok(face.width >= 80 && face.height >= 80, JSON.stringify(face));
+    assert.equal(face.tooltip, false);
+    assert.deepEqual(problems, []);
+    await context.close();
+  });
+
   test('twenty doctors: the whole roster and the last-seat self card remain visible', async () => {
     for (const [width, height] of [[1440, 900], [844, 390], [640, 360]]) {
       const { page, problems, context } = await open({ reduce: true,

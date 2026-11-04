@@ -148,7 +148,7 @@ export function ProtocolBoot({ players, myId, leaving = false }) {
             <span class="pboot__done">COMPLETE</span>
             <i class="pboot__check"><${Icon} name="check" /></i>
           </span>
-          <span class="pboot__face"><${PlayerAvatar} player=${p} self=${p.playerId === myId} /></span>
+          <span class="pboot__face"><${PlayerAvatar} player=${p} self=${p.playerId === myId} strategyTip=${false} /></span>
         </div>`;
       })}
       <h2 class="pboot__title">${t('协议启动！')}</h2>

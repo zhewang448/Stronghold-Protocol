@@ -45,6 +45,7 @@ one extra LP and one Fund. A player who highlights it and times out receives the
 forced assignment accepts the sentinel too. AI and unhighlighted timeouts retain their existing choices. This is an
 `[ASSUMED]` extension rule. Shop-stock changes also refresh other players' private views within the affected pool;
 remaining counts never enter public views, battle inputs or results.
+The card's effect label is 「随机策略」; its description names an unselected 策略, not a 盟约.
 
 Shop layouts are version-specific (`config.modes[modeId].shopSlots`, official
 `activity.AUTOCHESS_SEASON[season].shopLevelDataDict[modeId][level].charChessCount` / `itemCount`). Both 第一期
