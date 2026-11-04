@@ -8,6 +8,8 @@
 - `golden`：独立 Ubuntu / Node 22，全量 `npm run golden`，有差异则失败，绝不更新期望。
 
 本机 `npm run ci`（`node tools/ci.mjs`）依次复跑 setup、全量测试、冒烟、CI 守卫、lint、导入边界和类型检查。
+独立 Python 3.8 提取器语法检查固定 `ubuntu-22.04`：2026-11-04 的 `ubuntu-latest` 已为 Ubuntu 26.04，
+setup-python 无该平台的 3.8 构建；保留原解释器版本与全部编译范围。
 `--only`、`--keep-going`、`--list` 见 [CONTRIBUTING.md](../CONTRIBUTING.md)。本地测试步骤清除继承的 `SHARD` 和 `JUNIT`，保证全量且不意外写报告；全量黄金另跑 `npm run golden`。本地不复制 CI 的系统或 Node 版本矩阵。
 
 ## 分片契约

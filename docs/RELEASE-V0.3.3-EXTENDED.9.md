@@ -1,6 +1,9 @@
-# v0.3.3-extended.9 发布准备
+# v0.3.3-extended.9 发布记录
 
 日期：2026-11-03（Asia/Shanghai）。基础游戏 0.3.3，启动器保持 1.3.0。
+
+已于 2026-11-03 发布，标签绑定 `4e6a8b4e`；[正式 Release](https://github.com/zhewang448/Stronghold-Protocol/releases/tag/v0.3.3-extended.9)
+保留当时的签名与附件。以下内容记录该版的候选递增和验证过程。
 
 ## 内容和版本递增
 

@@ -11,7 +11,7 @@ permissions:
 jobs:
   compile:
     name: local-extract (Python 3.8 syntax)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     # [ASSUMED] Five minutes covers interpreter setup and syntax compilation (DESIGN §35.2).
     timeout-minutes: 5
     steps:
