@@ -58,7 +58,10 @@ test('PR24 custom illustration compresses, shares, frames, disables, restores an
   const chooser = host.waitForFileChooser(); await host.click('[data-testid="illust-choose"]');
   await (await chooser).accept([file]);
   await host.waitForSelector('[data-testid="illust-crop"]', { timeout: 3000 });
-  await host.waitForFunction(() => !document.querySelector('[data-testid="illust-confirm"]').disabled);
+  await host.waitForFunction(() => document.querySelector('[data-testid="illust-confirm"]')?.disabled === false).catch(async error => {
+    await host.screenshot({ path: 'test/e2e/out/pr24-import-error.png' });
+    throw new Error(await host.$eval('.illust-picker', element => element.textContent), { cause: error });
+  });
   assert.match(await host.$eval('.illust-picker', element => element.textContent), /768 × 1536/);
   const crop = await (await host.$('[data-testid="illust-crop"]')).boundingBox();
   const importSlider = await (await host.$('[data-testid="illust-crop-zoom"]')).boundingBox();
@@ -100,9 +103,11 @@ test('PR24 custom illustration compresses, shares, frames, disables, restores an
   await host.mouse.down(); await host.mouse.move(seatArt.x + seatArt.width * 0.7, seatArt.y + seatArt.height * 0.4, { steps: 5 }); await host.mouse.up();
   assert.equal(await host.$('.cardpick'), null, 'dragging the room picture does not open its picker');
   await host.waitForFunction(selector => new DOMMatrixReadOnly(getComputedStyle(document.querySelector(selector)).transform).e > 0, {}, selfImage);
-  await host.click('[data-testid="seat-card-art"]');
+  assert.equal(await host.$$eval('.rseat.is-me .rseat__pick', buttons => buttons.length), 1, 'the room has one portrait entry');
+  assert.equal(await host.$('[data-testid="seat-card-art"]'), null, 'local adjustment is inside replacement');
+  await openPicker(); await host.click('[data-testid="custom-illust-entry"]');
   await host.waitForSelector('[data-testid="card-art-frame"]');
-  await host.$eval('.cardart-dialog', element => Promise.all([...element.getAnimations(), ...element.parentElement.getAnimations()]
+  await host.$eval('.illust-picker', element => Promise.all([...element.getAnimations(), ...element.parentElement.getAnimations()]
     .filter(animation => animation.effect?.getTiming().iterations !== Infinity).map(animation => animation.finished.catch(() => {}))));
   const frame = await (await host.$('[data-testid="card-art-frame"]')).boundingBox();
   assert.ok(Math.abs(frame.height / frame.width - 2) < 0.03);
@@ -116,7 +121,8 @@ test('PR24 custom illustration compresses, shares, frames, disables, restores an
   const savedFrame = await host.evaluate(() => JSON.parse(localStorage.getItem('sp.pref.room.cardArt')).custom);
   assert.equal(savedFrame.zoom, chosenZoom); assert.ok(savedFrame.ox > 0);
   await host.waitForFunction(() => new DOMMatrixReadOnly(getComputedStyle(document.querySelector('.cardart-frame img')).transform).e > 0);
-  await host.click('.cardart-dialog .modal__actions button:last-child');
+  assert.equal(server.lobby.illusts.get(room.hostId).etag, stored.etag, 'local framing does not upload another image');
+  await host.click('[data-testid="illust-done"]'); await host.waitForSelector('.cardpick'); await host.keyboard.press('Escape');
   await host.waitForFunction(selector => new DOMMatrixReadOnly(getComputedStyle(document.querySelector(selector)).transform).e > 0, {}, selfImage);
   const priorEtag = stored.etag;
   await openPicker(); await host.click('[data-testid="custom-illust-entry"]');
@@ -133,14 +139,17 @@ test('PR24 custom illustration compresses, shares, frames, disables, restores an
   await host.reload({ waitUntil: 'domcontentloaded' }); await host.waitForSelector(selfImage);
   assert.ok(Math.abs(await host.$eval(selfImage, image => new DOMMatrixReadOnly(getComputedStyle(image).transform).a) - chosenZoom) < 0.01);
   await host.setViewport({ width: 844, height: 390 });
-  await host.click('[data-testid="seat-card-art"]'); await host.waitForSelector('.cardart-dialog');
-  await host.$eval('.cardart-dialog', element => Promise.all([...element.getAnimations(), ...element.parentElement.getAnimations()]
+  await openPicker(); await host.click('[data-testid="custom-illust-entry"]'); await host.waitForSelector('[data-testid="card-art-frame"]');
+  await host.$eval('.illust-picker', element => Promise.all([...element.getAnimations(), ...element.parentElement.getAnimations()]
     .filter(animation => animation.effect?.getTiming().iterations !== Infinity).map(animation => animation.finished.catch(() => {}))));
-  assert.ok(await host.$eval('.cardart-dialog', element => element.scrollWidth <= element.clientWidth + 1));
+  assert.ok(await host.$eval('.illust-picker', element => {
+    const box = element.getBoundingClientRect();
+    return element.scrollWidth <= element.clientWidth + 1 && box.top >= 0 && box.bottom <= innerHeight + 1;
+  }));
   fs.mkdirSync('test/e2e/out', { recursive: true });
   await host.screenshot({ path: 'test/e2e/out/pr24-framing-mobile.png' });
-  await host.click('.cardart-dialog .modal__actions button:last-child');
-  await openPicker(); await host.click('[data-testid="custom-illust-entry"]');
+  await host.click('[data-testid="card-art-reset"]');
+  assert.deepEqual(await host.evaluate(() => JSON.parse(localStorage.getItem('sp.pref.room.cardArt')).custom), { zoom: 1, ox: 0, oy: 0 });
   await host.click('[data-testid="illust-remove"]');
   await guest.waitForFunction(selector => !document.querySelector(selector), {}, otherImage);
   assert.equal(server.lobby.illusts.get(room.hostId), null);

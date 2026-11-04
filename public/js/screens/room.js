@@ -4,7 +4,7 @@ import { DEFAULT_VERSION, roomVersion, serverDefaultVersion, versionLabel, needs
 import { useAccount, AccountTag } from '../ui/accounts.js';
 import { useCustomIllust, useOwnIllust } from '../ui/customIllust.js';
 import { IllustDialog } from '../ui/illustPicker.js';
-import { CardArt, CardArtImage } from '../ui/cardArt.js';
+import { CardArtImage } from '../ui/cardArt.js';
 import { TrophyBadge } from '../ui/trophies.js';
 import { isOwnerName, decorateOwnerName } from '../ui/ownerName.js';
 import { enabled as federationEnabled, currentNode } from '../federation.js';
@@ -231,7 +231,7 @@ function CardPicker({ current, currentSkin, list, m, onPick, onClose, customAllo
   <//>`;
 }
 
-function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvite, onAddBot, onRemoveBot, onBotBand, searching, portraits, onPickCard = null, onTuneCard = null }) {
+function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvite, onAddBot, onRemoveBot, onBotBand, searching, portraits, onPickCard = null }) {
   const seatAccount = useAccount(seat && !seat.isBot ? seat.playerId : null);
   const customIllust = useCustomIllust(seat && !seat.isBot ? seat.playerId : null);
   const [badCustom, setBadCustom] = useState(null);
@@ -280,8 +280,7 @@ function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvi
       ${custom ? html`<${CardArtImage} frameKey=${frameKey} src=${custom} custom=${true} interactive=${canPick} onError=${() => setBadCustom(custom)} />`
         : src ? html`<img src=${src} alt="" draggable=${false} loading="lazy" onError=${() => setBad(src)} />`
         : html`<span class="rseat__glyph">${seat.isBot ? html`<${Icon} name="robot" />` : [...(seat.name || '?')][0]}</span>`}
-      ${canPick ? html`<span class="rseat__picks"><button type="button" class="rseat__pick" onClick=${(e) => { e.stopPropagation(); onPickCard(); }} aria-label=${t('更换名片干员')}><${Icon} name="edit" /><span>${t('更换立绘')}</span></button>
-        ${custom && onTuneCard ? html`<button type="button" class="rseat__pick" data-testid="seat-card-art" onClick=${event => { event.stopPropagation(); onTuneCard({ frameKey, src: custom }); }}>${t('立绘调整')}</button>` : null}</span>` : null}
+      ${canPick ? html`<button type="button" class="rseat__pick" onClick=${(e) => { e.stopPropagation(); onPickCard(); }} aria-label=${t('更换名片干员')}><${Icon} name="edit" /><span>${t('更换立绘')}</span></button>` : null}
       ${isHostSeat ? html`<span class="rseat__host">${t('创建者')}</span>` : null}
       ${offline ? html`<span class="rseat__lost"><${Icon} name="wifiOff" />${t('失去信号')}</span>` : null}
       <span class="rseat__state">${ready
@@ -479,7 +478,6 @@ export function RoomScreen() {
   const myCard = useStore(s => s[CARD_KEY], Object.is, cardStore);
   const mySkin = useStore(s => s[CARD_SKIN_KEY], Object.is, cardStore);
   const [picking, setPicking] = useState(false);
-  const [tuning, setTuning] = useState(null);
   const portraits = useMemo(() => ({
     pool: cardList.filter((c) => (c.rarity ?? 0) >= 5 && c.assets).sort((a, b) => (a.charId < b.charId ? -1 : 1)),
     byChar: new Map(cardList.map((c) => [c.charId, c])), m, myId: me.playerId, myCard, mySkin,
@@ -662,7 +660,7 @@ export function RoomScreen() {
     <main class="rs-seats">
       ${facts.seats.map((s, i) => html`<${SeatCard} key=${s ? `p${s.playerId}` : `e${i}`} seat=${s} index=${i} room=${room} facts=${facts}
         myId=${me.playerId} busy=${busy} online=${online} onKick=${kick} onInvite=${() => copy('code')} onAddBot=${addBot} onRemoveBot=${removeBot} onBotBand=${setBotBand} searching=${searching} portraits=${portraits}
-        onPickCard=${CARD_SYNC && cardList.length ? () => setPicking(true) : null} onTuneCard=${setTuning} />`)}
+        onPickCard=${CARD_SYNC && cardList.length ? () => setPicking(true) : null} />`)}
       ${coop ? null : html`<aside class="solo-brief rs-brief brackets">
         <${MicroLabel} tone="mint">BRIEFING<//>
         <h2>${DIFFICULTY_NAMES[room.difficulty] ? t(DIFFICULTY_NAMES[room.difficulty]) : ''}<span class="num t-dim"> ${info.code}</span></h2>
@@ -720,7 +718,6 @@ export function RoomScreen() {
         { key: 'diff', label: t(DIFFICULTY_NAMES[room.difficulty]), color: DIFFICULTY_COLORS[room.difficulty], icon: html`<${DifficultyIcon} difficulty=${room.difficulty} />` }]} />` : null}
     ${foundShown ? html`<${FoundPanel} class=${foundLeaving ? 'is-leaving' : ''} seats=${facts.seats.length} text=${t('同盟集结完毕')} />` : null}
     ${picking ? html`<${CardPicker} current=${myCard} currentSkin=${mySkin} list=${cardList} m=${m} customAllowed=${room.customIllust !== false} onPick=${pickCard} onClose=${() => setPicking(false)} />` : null}
-    ${tuning ? html`<${CardArt} frameKey=${tuning.frameKey} src=${tuning.src} onClose=${() => setTuning(null)} />` : null}
     ${protoShown ? html`<${RoomProtocol} room=${room} variant=${variant} busy=${busy} onClose=${() => setPicker(false)} onPick=${setDifficulty} leaving=${protoLeaving} />` : null}
   </div>`;
 }

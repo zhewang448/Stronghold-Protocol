@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
-import { html, Button, Modal } from './components.js';
+import { html, Button, Icon, Modal } from './components.js';
 import { toast } from './toasts.js';
 import { t } from '../../../shared/i18n.js';
 import { ILLUST_SOURCE_MAX_BYTES, encodeIllust, uploadOwnIllust, removeOwnIllust, useOwnIllust, ownIllustSnapshot } from './customIllust.js';
-import { ensureCardArtCss, cardArtOf, setCardArt, useArtGestures } from './cardArt.js';
+import { ensureCardArtCss, cardArtOf, setCardArt, useArtGestures, useCardArt, CardArtImage } from './cardArt.js';
 import { illustrationCropRect } from '../../../shared/illustration.js';
 import { PicturePresets } from './picturePresets.js';
 import { currentAccount } from './accounts.js';
@@ -15,11 +15,16 @@ export function IllustDialog({ onClose }) {
   const [decoding, setDecoding] = useState(false), [prepared, setPrepared] = useState(null), [frame, setFrame] = useState({ zoom: 1, ox: 0, oy: 0 });
   const preview = useRef(null);
   const [error, setError] = useState('');
+  const localFrame = useCardArt('custom');
   const update = next => {
     const rect = illustrationCropRect({ width: picture?.width, height: picture?.height, ...next });
     const value = { zoom: rect.zoom, ox: rect.ox, oy: rect.oy }; setFrame(value); return value;
   };
-  const gestures = useArtGestures(preview, frame, update, { enabled: !!picture && !busy && !decoding, minimum: 1, maximum: 3 });
+  // [ASSUMED] User-requested layout: local framing lives beside replacement, sharing its preview and controls.
+  const activeFrame = picture ? frame : localFrame;
+  const adjust = next => picture ? update(next) : setCardArt('custom', next);
+  const editable = !!(picture || own) && !busy && !decoding;
+  const gestures = useArtGestures(preview, activeFrame, adjust, { enabled: editable, minimum: picture ? 1 : 0.8, maximum: picture ? 3 : 2 });
   useEffect(() => () => { generation.current++; }, []);
   useEffect(() => () => { if (picture?.url) URL.revokeObjectURL(picture.url); }, [picture]);
   useEffect(() => {
@@ -68,22 +73,36 @@ export function IllustDialog({ onClose }) {
     finally { setBusy(false); }
   };
   const rect = picture ? illustrationCropRect({ width: picture.width, height: picture.height, ...frame }) : null;
-  return html`<${Modal} open=${true} title=${t('替换立绘')} width="min(620px, 94vw)" class="illust-picker" onClose=${() => { if (!busy) onClose(); }}
-      actions=${html`${own ? html`<${Button} variant="secondary" disabled=${busy || decoding} data-testid="illust-remove" onClick=${() => save(true)}>${t('移除自定义立绘')}<//>` : null}
-        <${Button} disabled=${busy} onClick=${onClose}>${t('取消')}<//>
-        <${Button} variant="primary" disabled=${!prepared || busy || encoding || decoding} loading=${busy} data-testid="illust-confirm" onClick=${() => save(false)}>${t('确认使用')}<//>`}>
-    <p>${t('导入时可拖动取景，使用滑块、滚轮或双指缩放；确认后按 1:2 裁切并分享给同房间成员。')}</p>
-    <div class=${`illust-picker__preview${picture ? ' is-editable' : ''}`} ref=${preview} data-testid="illust-crop"
-      tabindex=${picture ? '0' : undefined} role="region" aria-label=${t('拖拽调整位置')} ...${gestures}>
-      ${picture ? html`<img src=${picture.url} alt="" draggable=${false} style=${`position:absolute;max-width:none;width:${picture.width / rect.width * 100}%;height:${picture.height / rect.height * 100}%;left:${50 + frame.ox}%;top:${50 + frame.oy}%;transform:translate(-50%,-50%);object-fit:fill`} />`
-        : own ? html`<img src=${own} alt="" />` : html`<span>${t('还没有选择立绘')}</span>`}
+  return html`<${Modal} open=${true} title=${t('替换立绘')} width="min(720px, 94vw)" class="illust-picker" onClose=${() => { if (!busy) onClose(); }}
+      actions=${picture ? html`<${Button} disabled=${busy} onClick=${onClose}>${t('取消')}<//>
+        <${Button} variant="primary" disabled=${!prepared || busy || encoding || decoding} loading=${busy} data-testid="illust-confirm" onClick=${() => save(false)}>${t('确认使用')}<//>`
+        : html`<${Button} variant=${own ? 'primary' : 'secondary'} disabled=${busy} data-testid="illust-done" onClick=${onClose}>${own ? t('完成') : t('返回')}<//>`}>
+    <div class="illust-picker__workspace">
+      <div class=${`illust-picker__preview${picture || own ? ' is-editable' : ''}${own && !picture ? ' cardart-frame' : ''}`} ref=${preview}
+        data-testid=${own && !picture ? 'card-art-frame' : 'illust-crop'} tabindex=${editable ? '0' : undefined}
+        role="region" aria-label=${t('拖拽调整位置')} ...${gestures}>
+        ${picture ? html`<img src=${picture.url} alt="" draggable=${false} style=${`position:absolute;max-width:none;width:${picture.width / rect.width * 100}%;height:${picture.height / rect.height * 100}%;left:${50 + frame.ox}%;top:${50 + frame.oy}%;transform:translate(-50%,-50%);object-fit:fill`} />`
+          : own ? html`<${CardArtImage} frameKey="custom" src=${own} custom=${true} />`
+            : html`<span class="illust-picker__empty"><${Icon} name="image" /><span>${t('还没有选择立绘')}</span></span>`}
+      </div>
+      <div class="illust-picker__controls">
+        <h3><${Icon} name=${picture ? 'expand' : own ? 'edit' : 'image'} />${picture ? t('上传裁切') : own ? t('立绘调整') : t('替换立绘')}</h3>
+        <p class="illust-picker__hint">${own && !picture ? t('拖动调整位置，滑块、滚轮或双指缩放；取景仅保存在本机。')
+          : t('导入时可拖动取景，使用滑块、滚轮或双指缩放；确认后按 1:2 裁切并分享给同房间成员。')}</p>
+        ${picture || own ? html`<div class="illust-picker__adjust">
+          <label class="illust-picker__zoom" for="illust-zoom"><span>${t('缩放')}</span><output for="illust-zoom">${Math.round(activeFrame.zoom * 100)}%</output>
+            <input id="illust-zoom" type="range" min=${picture ? '1' : '0.8'} max=${picture ? '3' : '2'} step="0.01" value=${activeFrame.zoom}
+              disabled=${busy || decoding} data-testid=${picture ? 'illust-crop-zoom' : 'card-art-zoom'} onInput=${event => adjust({ ...activeFrame, zoom: Number(event.currentTarget.value) })} /></label>
+          <${Button} size="sm" icon="refresh" disabled=${busy || decoding} data-testid=${picture ? 'illust-crop-reset' : 'card-art-reset'} onClick=${() => adjust({ zoom: 1, ox: 0, oy: 0 })}>${t('重置')}<//>
+        </div>` : null}
+        <div class="illust-picker__files">
+          <input type="file" accept="image/*" ref=${fileRef} hidden data-testid="illust-file" onChange=${choose} />
+          <${Button} icon="image" variant=${own || picture ? 'secondary' : 'primary'} disabled=${busy || decoding} data-testid="illust-choose" onClick=${() => fileRef.current.click()}>${t('选择立绘图片')}<//>
+          ${own && !picture ? html`<${Button} variant="ghost" class="illust-picker__remove" disabled=${busy || decoding} data-testid="illust-remove" onClick=${() => save(true)}>${t('移除自定义立绘')}<//>` : null}
+          <p role="status">${encoding || decoding ? t('正在压缩…') : prepared ? `${prepared.width} × ${prepared.height} · ${Math.ceil(prepared.blob.size / 1024)} KB` : t('长边最多 1536 px，压缩后不超过 2 MB')}</p>
+        </div>
+      </div>
     </div>
-    ${picture ? html`<label class="illust-picker__zoom">${t('缩放')} <input type="range" min="1" max="3" step="0.01" value=${frame.zoom}
-      disabled=${busy || decoding} data-testid="illust-crop-zoom" onInput=${event => update({ ...frame, zoom: Number(event.currentTarget.value) })} /></label>
-      <${Button} disabled=${busy || decoding} data-testid="illust-crop-reset" onClick=${() => update({ zoom: 1, ox: 0, oy: 0 })}>${t('重置')}<//>` : null}
-    <input type="file" accept="image/*" ref=${fileRef} hidden data-testid="illust-file" onChange=${choose} />
-    <${Button} disabled=${busy || decoding} data-testid="illust-choose" onClick=${() => fileRef.current.click()}>${t('选择立绘图片')}<//>
-    <p role="status">${encoding || decoding ? t('正在压缩…') : prepared ? `${prepared.width} × ${prepared.height} · ${Math.ceil(prepared.blob.size / 1024)} KB` : t('长边最多 1536 px，压缩后不超过 2 MB')}</p>
     <${PicturePresets} scope=${currentAccount().id} kind="illust" disabled=${busy || decoding || encoding} canSave=${!!(picture ? prepared : own)} onBusyChange=${setBusy}
       capture=${async () => {
         if (!picture) { const current = await ownIllustSnapshot(); return current ? { ...current, frame: cardArtOf('custom') } : null; }
