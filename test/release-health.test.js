@@ -11,7 +11,12 @@ import { APP_VERSION } from '../shared/constants.js';
 import { put, read, manifest, healthServerSource, tag } from './helpers/release-fixture.js';
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
-function temp(t) { const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-release-health-')); t.after(() => fs.rmSync(root, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 })); return root; }
+function temp(t) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-release-health-'));
+  // Let installer exit/close events run while Windows releases the temporary working directory.
+  t.after(async () => { await fs.promises.rm(root, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }); });
+  return root;
+}
 async function port() { const s = net.createServer(); await new Promise((r) => s.listen(0, '127.0.0.1', r)); const p = s.address().port; await new Promise((r) => s.close(r)); return p; }
 async function terminal(root) {
   for (let i = 0; i < 150; i++) {
