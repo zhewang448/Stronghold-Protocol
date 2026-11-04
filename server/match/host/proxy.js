@@ -23,7 +23,7 @@ import { serialize, deserialize } from 'node:v8';
 // 'version-crash' | 'version-hang' | 'version-start', told with the version msgids). A request the worker leaves unanswered for
 // REQUEST_TIMEOUT_MS is answered INTERNAL too (a living worker never takes that long: the watchdog acts first).
 
-import { getPrep, getUniteLayerGains, getRoundCharts, getLiveRoundDamage } from '../hostSettings.js';
+import { getPrep, getUniteLayerGains, getRoundCharts, getLiveRoundDamage, getEmoteBarrage, getEmoteBarrageRate } from '../hostSettings.js';
 import { getReplayConfig } from '../replay.js';
 import { ERR } from '../../../shared/constants.js';
 import { msg, wireMessage } from '../../../shared/i18n.js';
@@ -66,7 +66,8 @@ export function wireOptions(opts) {
   }
   // Rule switches ride with the content set. A room that declares none keeps today's worker payload.
   if (opts.rules && typeof opts.rules === 'object' && !Array.isArray(opts.rules)) out.rules = opts.rules;
-  out.extensionSettings = { prep: getPrep(), uniteLayerGains: getUniteLayerGains(), roundCharts: getRoundCharts(), liveRoundDamage: getLiveRoundDamage(), replay: getReplayConfig() };
+  out.extensionSettings = { prep: getPrep(), uniteLayerGains: getUniteLayerGains(), roundCharts: getRoundCharts(), liveRoundDamage: getLiveRoundDamage(),
+    emoteBarrage: getEmoteBarrage(), emoteBarrageRate: getEmoteBarrageRate(), replay: getReplayConfig() };
   return out;
 }
 

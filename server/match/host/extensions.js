@@ -3,7 +3,7 @@
 import { matchView, catalogView, handleAction, resultRecord } from '../../admin.js';
 import { liveState, liveIntent, matchId } from '../../admin-live.js';
 import { wallView } from '../../admin-wall.js';
-import { setPrep, setUniteLayerGains, setRoundCharts, setLiveRoundDamage } from '../hostSettings.js';
+import { setPrep, setUniteLayerGains, setRoundCharts, setLiveRoundDamage, setEmoteBarrage, setEmoteBarrageRate } from '../hostSettings.js';
 import { setReplayConfig, replayRecord } from '../replay.js';
 import { stockView, diagnosticEvents } from '../../admin-observability.js';
 
@@ -24,6 +24,8 @@ export function syncExtensionSettings(config) {
   setUniteLayerGains(config.uniteLayerGains);
   setRoundCharts(config.roundCharts ?? true);
   setLiveRoundDamage(config.liveRoundDamage ?? true);
+  setEmoteBarrage(config.emoteBarrage ?? true);
+  setEmoteBarrageRate(config.emoteBarrageRate ?? 20);
   setReplayConfig(config.replay);
 }
 export function extensionAdmin(match, kind, value, config) {

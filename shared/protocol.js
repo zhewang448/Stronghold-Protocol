@@ -1,7 +1,7 @@
 // Normative message catalogue (DESIGN §8). Used by server (validation) and client (building requests).
 // Every client→server message is `{ t, rid?, ...fields }`. Unknown `t` or invalid fields ⇒ ERR.BAD_MSG.
 
-import { DIFFICULTIES, NAME_MAX_LEN, ROOM_CODE_LEN, MAX_SEATS, ROOM_CAPACITIES, EMOTE_IDS, PING_KINDS, GEO } from './constants.js';
+import { DIFFICULTIES, NAME_MAX_LEN, ROOM_CODE_LEN, MAX_SEATS, ROOM_CAPACITIES, EMOTE_IDS, EMOTE_BARRAGE_COUNT_MAX, PING_KINDS, GEO } from './constants.js';
 import { isDroppableChess } from './standIn.js';
 import { diySlotIds, validateDiyPicks } from './diy.js';
 import { cultivatedStats, isPotential, isCultivate, POTENTIAL_DEFAULT, CULTIVATE_DEFAULT, hasPotentialData } from './potential.js';
@@ -623,7 +623,14 @@ export const C2S = {
   'g.offer': { offerId: isId, pluginId: isId, seq: (v) => isInt(v, 0, 1000000), cardId: optional(isId), idx: (v) => isInt(v, 0, PLUGIN_OFFER_SLOTS - 1) },
   'g.offerRefresh': { offerId: isId, pluginId: isId, seq: (v) => isInt(v, 0, 1000000), cardId: optional(isId), idx: (v) => isInt(v, 0, PLUGIN_OFFER_SLOTS - 1) },
   'g.ready': { ready: isBool },
-  'g.emote': { id: (v) => EMOTE_IDS.includes(v) },
+  // 表情弹幕 (host console switch, 2026-11-03): `watch` names the player whose screen the pictures fall on (the sender
+  // itself for a solo board, the watched teammate otherwise; a 联防 broadcast carries `all` from the server), `count`
+  // the clicks one client pulse merged. The server caps the pictures per second and may truncate `count`.
+  'g.emote': {
+    id: (v) => EMOTE_IDS.includes(v), watch: isId,
+    count: (v) => isInt(v, 1, EMOTE_BARRAGE_COUNT_MAX),
+    $optional: ['watch', 'count'],
+  },
   'g.ping': {
     fieldId: (v) => isStr(v, 32), area: (v) => v === 'board',
     row: (v) => isInt(v, 0, GEO.ROWS - 1), col: (v) => isInt(v, 0, GEO.COLS - 1),

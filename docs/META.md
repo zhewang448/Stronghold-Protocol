@@ -984,6 +984,12 @@ gets the table value of its own rounds. `onEnd(summary)` receives the same objec
 `m.emote { playerId, id }`: `id` must be one of `shared/constants.js EMOTES` (`BAD_MSG` otherwise, also when `handle()`
 is called without protocol validation); 1 per second per player (`RATE`).
 
+PR #25 adds the optional entertainment pulse `g.emote { id, watch, count? }`: `watch` names an existing player and
+`count` is 1–1000 (default 1). It broadcasts `m.emote { playerId, id, watch, count, all? }` without a team bubble;
+UNITE sets `all`. The host's `emoteBarrage` switch and `emoteBarrageRate` apply to main-process and isolated version/plugin
+matches, at creation and after a settings save. The default budget is 20 pictures per player per one-second window;
+0 means unlimited, excess pictures are truncated or dropped. Ordinary emotes keep the cooldown above. [ASSUMED] Cosmetic extension.
+
 Tickers (`m.ticker { text, id, type, priority, playerId }`) from `config.broadcasts`: SHOP_LEVEL, GOLDEN_CHAR,
 CHAR_DAMAGE (per board unit per battle, highest threshold; summons created in battle once per unit type — a client
 result may only name the unit types its lineup can field, fields.js validateClientResult), BOSS_HIT (20/50/80 % of the

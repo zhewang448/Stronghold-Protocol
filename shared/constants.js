@@ -435,6 +435,14 @@ export const emoteArtPath = (id) => { const e = emoteInfo(id); return e ? `/asse
 export const CUSTOM_EMOTE_ART = Object.freeze(ALL_EMOTE_CATALOG.filter((e) => e.custom).map((e) => emoteArtPath(e.id)));
 export const EMOTE_COOLDOWN_MS = 1000; // activity_table autoChessData.constData.chatCD (s)
 export const EMOTE_BUBBLE_MS = 3000;   // constData.chatTime (s): how long a bubble stays up
+// 表情弹幕 (emote barrage, host console): a pulse is `g.emote { id, watch, count }` — it never shows a bubble, only the
+// falling pictures over the watched board. The host console caps how many pictures one player may send per rolling
+// second (0 = no cap). The client merges rapid clicks into one pulse, so `count` is bounded here as a sanity check.
+export const EMOTE_BARRAGE_RATE_DEFAULT = 20;
+export const EMOTE_BARRAGE_RATE_MAX = 1000;
+export const EMOTE_BARRAGE_COUNT_MAX = 1000;
+// A watcher switching to a teammate replays that teammate's last second of barrage (the 观战脉冲).
+export const EMOTE_BARRAGE_REPLAY_MS = 1000;
 
 // [ASSUMED] Remake-only field pings. They are ephemeral room events, independent of the official emote wheel.
 export const PING_KINDS = Object.freeze(['attention', 'attack', 'danger', 'retreat', 'question', 'heart']);

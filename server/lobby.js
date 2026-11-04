@@ -164,7 +164,7 @@
 import { randomBytes, randomInt } from 'node:crypto';
 import { DEFAULT_VERSION } from '../shared/versions.js';
 import { aiTakeover, resetAiTakeover, reconcileAiTakeover } from './aiTakeover.js';
-import { DIFFICULTIES, ERR, DEFAULT_SEATS, MAX_SEATS, ROOM_CAPACITIES, MAX_SPECTATORS, SPECTATOR_LIMIT_MAX, ROOM_CODE_LEN, modeIdFor } from '../shared/constants.js';
+import { DIFFICULTIES, ERR, DEFAULT_SEATS, MAX_SEATS, ROOM_CAPACITIES, MAX_SPECTATORS, SPECTATOR_LIMIT_MAX, ROOM_CODE_LEN, modeIdFor, EMOTE_BARRAGE_RATE_DEFAULT } from '../shared/constants.js';
 import { checkLoadout, checkLoadoutOps, cultivationCharIds, checkNotOwned, checkDiyPicks, charPotentialChanges, checkSkinSelection, operatorCharIds } from '../shared/protocol.js';
 import { encode, isDroppable, isErrCode, sendRaw, sendSession, sendSessionFrame } from './net.js';
 import { isStateKind } from '../shared/stateDelta.js';
@@ -176,6 +176,7 @@ import { Match as DefaultMatch } from './match/Match.js';
 import { GameData } from './match/gamedata.js';
 import { getUniteLayerGains, getAllowRoomUniteLayerGains, getSocialSettings } from './match/hostSettings.js';
 import { getShowPwaInstall, getAllowAiTakeover, getSeatAvatars } from './match/hostSettings.js';
+import { getEmoteBarrage, getSignalBar, getEmoteBarrageRate } from './match/hostSettings.js';
 import { ROOM_CONFIG_FIELDS, getRoomCreation, roomHostCanChange, roomCreationFrame } from './match/hostSettings.js';
 import { isSharedAvatar } from '../shared/avatar.js';
 import { ServerSocial } from './social.js';
@@ -1807,6 +1808,11 @@ export class Lobby {
     if (this.testEnabled === true) info.testMode = true;
     // Default-on is omitted for compatibility with older servers and clients.
     if (!getShowPwaInstall()) info.showPwaInstall = false;
+    // 表情弹幕 / 信号条 (host console): default on / 20 per second, so a default server's welcome stays tiny; the
+    // client treats an absent key as on / 20 (public/js/store.js initialState). `site.settings` carries live changes.
+    if (!getEmoteBarrage()) info.emoteBarrage = false;
+    if (!getSignalBar()) info.signalBar = false;
+    if (getEmoteBarrageRate() !== EMOTE_BARRAGE_RATE_DEFAULT) info.emoteBarrageRate = getEmoteBarrageRate();
     const creation = roomCreationFrame();
     if (creation) info.roomCreation = creation;
     const versions = this.versions?.welcome?.();

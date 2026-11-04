@@ -1608,6 +1608,14 @@ async function showSettings() {
       <p class="meta">实时伤害默认开启。关闭后仅显示已结算回合，累计与结算记录继续保存；不影响玩家本机的 DPS / HPS 作战统计。</p>
       <div class="row"><button class="primary" data-round-charts-save>保存</button><button data-round-charts-reset>撤销修改</button><span class="meta" id="round-charts-saved" role="status"></span></div>
     </form></section>
+    <section class="room" id="emote-barrage-settings"><h2>表情弹幕与信号条</h2>
+    <p class="meta" id="emote-barrage-help">局内交流区上方的信号条（问号、爱心等快速标点）在「允许表情弹幕」打开时会按顺序多出两格：表情弹幕按钮和表情设置。关闭表情弹幕后两格不出现，信号条与原来完全一致；关闭信号条后只保留这两格。保存后立即对所有进行中的对局生效，重启服务器后保留。</p>
+    <form id="emote-barrage-form" class="stats-body" onsubmit="return false">
+      <label>每秒弹幕上限 <input id="emote-barrage-rate" type="number" min="0" max="1000" step="1" value="${esc(String(d.emoteBarrageRate ?? 20))}" aria-describedby="emote-barrage-help" style="max-width:8em"> 条/秒（0 或留空 = 不设限，默认 20；超出部分由服务端丢弃）</label>
+      <label><input id="emote-barrage-enabled" type="checkbox" ${d.emoteBarrage !== false ? 'checked' : ''}> 允许表情弹幕</label>
+      <label><input id="signal-bar-enabled" type="checkbox" ${d.signalBar !== false ? 'checked' : ''}> 显示原有信号按钮</label>
+      <div class="row"><button class="primary" data-emote-barrage-save>保存</button><button data-emote-barrage-reset>撤销修改</button><span class="meta" id="emote-barrage-saved" role="status"></span></div>
+    </form></section>
     <section class="room" id="social-settings"><h2>在线玩家与邀请</h2>
     <p class="meta">仅管理当前服务器的会话，无需注册账号。保存后立即生效；隐身玩家始终从名单和可见人数中排除，也不能发送或接收邀请。关闭隐身选择不会强制公开已隐身玩家。</p>
     <form id="social-form" class="stats-body" onsubmit="return false">
@@ -1682,7 +1690,7 @@ function arrangeSettings(domains) {
   sections.set(blocked.id, blocked);
   sections.set(chat.id, chat);
   const groups = [
-    ['game', '对局设置', ['room-defaults-settings', 'prep-settings', 'round-charts-settings']],
+    ['game', '对局设置', ['room-defaults-settings', 'prep-settings', 'round-charts-settings', 'emote-barrage-settings']],
     ['chat', '交流管理', ['social-settings', 'chat-policy-settings', 'chat-settings']],
     ['history', '记录与恢复', ['replay-settings', 'recovery-settings']],
     ['system', '维护与扩展', ['release-update', 'update-backups-settings', 'domain-recovery-settings', 'pwa-install-settings', 'plugin-settings', 'issue-feedback']],
@@ -2171,6 +2179,35 @@ document.addEventListener('click', (e) => {
       if (r.ok) { settingsData.blockedWords = r.blockedWords; input.value = r.blockedWords.join('\n'); status.textContent = '已保存，所有房间的新消息立即生效'; }
       else { status.textContent = '保存失败：' + r.error; say(status.textContent, true); }
     }).finally(() => { blockedSave.disabled = input.disabled = reset.disabled = false; });
+    return;
+  }
+  if (e.target.closest('button[data-emote-barrage-reset]')) {
+    $('#emote-barrage-rate').value = String(settingsData.emoteBarrageRate ?? 20);
+    $('#emote-barrage-enabled').checked = settingsData.emoteBarrage !== false;
+    $('#signal-bar-enabled').checked = settingsData.signalBar !== false;
+    $('#emote-barrage-saved').textContent = '';
+    return;
+  }
+  const barrageSave = e.target.closest('button[data-emote-barrage-save]');
+  if (barrageSave) {
+    const rateInput = $('#emote-barrage-rate');
+    const saved = $('#emote-barrage-saved');
+    const raw = rateInput.value.trim();
+    const rate = raw === '' ? 0 : Number(raw);
+    if (!Number.isInteger(rate) || rate < 0 || rate > 1000) { saved.textContent = '每秒弹幕上限必须为 0（不限）到 1000 的整数'; say(saved.textContent, true); return; }
+    const emoteBarrage = $('#emote-barrage-enabled').checked;
+    const signalBar = $('#signal-bar-enabled').checked;
+    barrageSave.disabled = true;
+    saved.textContent = '保存中…';
+    api('/api/settings', { emoteBarrage, signalBar, emoteBarrageRate: rate }).catch(() => ({ error: '连接服务器失败' })).then((r) => {
+      if (r.ok) {
+        settingsData.emoteBarrage = r.emoteBarrage;
+        settingsData.signalBar = r.signalBar;
+        settingsData.emoteBarrageRate = r.emoteBarrageRate;
+        rateInput.value = String(r.emoteBarrageRate);
+        saved.textContent = '已保存，所有对局立即生效';
+      } else { saved.textContent = `保存失败：${r.error}`; say(saved.textContent, true); }
+    }).finally(() => { barrageSave.disabled = false; });
     return;
   }
   if (e.target.closest('button[data-round-charts-reset]')) {

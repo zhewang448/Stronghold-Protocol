@@ -100,6 +100,11 @@ export const initialState = Object.freeze({
   matchmakingFeatures: null,
   // welcome.testMode (DESIGN §34.8). The server omits the key when the switch is off; the client cannot set it.
   testMode: false,
+  // 主机控制台 (server/match/hostSettings.js): 表情弹幕 / 信号条 for the in-match signal bar, live through
+  // welcome + `site.settings`; the defaults match the console's (on / on / 20 per second).
+  emoteBarrage: true,
+  signalBar: true,
+  emoteBarrageRate: 20,
 
   match: emptyMatch(),
   ticker: [],

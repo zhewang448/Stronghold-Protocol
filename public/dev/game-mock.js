@@ -721,7 +721,10 @@ async function mockRequest(t, f = {}) {
       p.ready = !!f.ready; refreshPrivate(); return {};
     }
     case 'g.emote': {
-      store.set((s) => ({ emotes: [...s.emotes.slice(-19), { seq: Date.now(), playerId: ME, id: f.id, at: Date.now() }] }));
+      // like the server's relay (Match.emote): a watch pulse echoes `watch` / `count`, expanded by the screens themselves
+      const watch = typeof f.watch === 'string' && f.watch ? f.watch : null;
+      const count = Number.isInteger(f.count) && f.count > 1 ? f.count : 1;
+      store.set((s) => ({ emotes: [...s.emotes.slice(-19), { seq: Date.now(), playerId: ME, id: f.id, at: Date.now(), watch, count }] }));
       return {};
     }
     case 'g.ping': {
@@ -787,6 +790,42 @@ function applyUiVariants() {
       store.set({ emotes: [{ seq: now, playerId: 'p3', id: 'autochess_battle_nice_cooperate', at: now }, { seq: now + 1, playerId: 'ai_2', id: 'slug_autochess_battle_thanks', at: now }] });
     }, 300);
   }
+  // 表情弹幕: push pulses (host console on by default; ?barrage=0 turns the feature off)
+  if (VARIANTS.has('barrage')) {
+    setTimeout(() => {
+      const now = Date.now();
+      const ids = ['custom_battle_kaguya_cheer', 'custom_battle_kaguya_wink', 'custom_battle_xingfei_01', 'slug_autochess_battle_nice_work'];
+      store.set((s) => ({ emotes: [...s.emotes, ...Array.from({ length: 10 }, (_, i) => ({ seq: now + i, playerId: 'p3', id: ids[i % ids.length], at: now, watch: ME, count: 1 }))] }));
+    }, 800);
+    setTimeout(() => {
+      const now = Date.now();
+      store.set((s) => ({ emotes: [...s.emotes, { seq: now, playerId: 'p3', id: 'custom_battle_kaguya_cheer', at: now, watch: ME, count: 10 }] }));
+    }, 1700);
+  }
+  if (VARIANTS.has('barragesettings')) clickSel('.gm__ping-btn--barrage-settings', 700);
+  // one pulse with an explicit picture count (screenshots next to the server's rate-cap test)
+  if (VARIANTS.has('barrage10') || VARIANTS.has('barrage3')) {
+    const count = VARIANTS.has('barrage3') ? 3 : 10;
+    setTimeout(() => {
+      const now = Date.now();
+      store.set((s) => ({ emotes: [...s.emotes, { seq: now, playerId: 'p3', id: 'custom_battle_kaguya_cheer', at: now, watch: ME, count }] }));
+    }, 600);
+  }
+  // 联防: the server marks `all` — this screen is neither the sender nor the target and still plays the falls
+  if (VARIANTS.has('barrageall')) {
+    setTimeout(() => {
+      const now = Date.now();
+      store.set((s) => ({ emotes: [...s.emotes, { seq: now, playerId: 'p3', id: 'custom_battle_kaguya_cheer', at: now, watch: 'p2', count: 10, all: true }] }));
+    }, 600);
+  }
+  // load: ten pulses of ten pictures = 100 at once (the layer's soft cap is 300)
+  if (VARIANTS.has('barrage100')) {
+    setTimeout(() => {
+      const now = Date.now();
+      const ids = ['custom_battle_kaguya_cheer', 'custom_battle_kaguya_wink', 'custom_battle_xingfei_01', 'slug_autochess_battle_nice_work'];
+      store.set((s) => ({ emotes: [...s.emotes, ...Array.from({ length: 10 }, (_, i) => ({ seq: now + i, playerId: 'p3', id: ids[i % ids.length], at: now, watch: ME, count: 10 }))] }));
+    }, 600);
+  }
   if (VARIANTS.has('settings')) clickSel('.gm__gear', 400);
   if (VARIANTS.has('collapsed')) clickSel('.funds__collapse', 400);
   // the first tap on a shop card selects it and opens its detail (there is no ⓘ corner)
@@ -816,6 +855,8 @@ function Switcher() {
   return html`<h4>PHASE</h4>${SWITCH.map(([label, ph, v]) => html`<button class=${cur === ph ? 'on' : ''} onClick=${() => { VARIANTS.clear(); setPhase(ph, v); renderBar(); }}>${label}</button>`)}
     <h4>EVENTS</h4>
     <button onClick=${() => { const now = Date.now(); store.set((s) => ({ emotes: [...s.emotes, { seq: now, playerId: pick(['p3', 'ai_2', 'p4']), id: pick(['autochess_battle_happy', 'slug_autochess_battle_thanks', 'autochess_battle_call', 'autochess_battle_fooldoctor_05', 'autochess_battle_foolamiya_03', 'autochess_battle_foolwisdel_01']), at: now }] })); }}>teammate emote</button>
+    <button onClick=${() => { const now = Date.now(); store.set((s) => ({ emotes: [...s.emotes, { seq: now, playerId: 'p3', id: 'autochess_battle_happy', at: now, watch: ME, count: 6 }] })); }}>表情弹幕 ×6</button>
+    <button onClick=${() => { const now = Date.now(); store.set((s) => ({ emotes: [...s.emotes, { seq: now, playerId: 'p3', id: 'autochess_battle_thanks', at: now, watch: ME, count: 10, all: true }] })); }}>联防弹幕 ×10</button>
     <button onClick=${() => store.set((s) => ({ ticker: [...s.ticker, { id: Date.now(), text: `<@ba.vup>${pick(['Doctor·B', '灰烬'])}博士</>将调度中心等级提升为5级`, at: Date.now() }] }))}>ticker</button>
     <button onClick=${() => toast('资金不足', 'error')}>error toast</button>
     <button onClick=${() => { if (S.priv) { S.priv.shop.rewardOffer = { tier: 5, slots: shuffle(visibleChess(5)).slice(0, 3).map((c) => ({ kind: 'chess', id: c.chessId, price: 0, sold: false })) }; refreshPrivate(); } }}>merge reward</button>
@@ -841,6 +882,10 @@ async function boot() {
     },
   });
   await data.loadAll(GAME_FILES);
+  // 主机控制台 switches (store.js defaults: barrage on, signal bar on); ?barrage=0 / ?signal=0 reproduce the four
+  // combinations without a server, exactly as a `site.settings` frame would set them.
+  if (params.get('barrage') === '0') store.set({ emoteBarrage: false });
+  if (params.get('signal') === '0') store.set({ signalBar: false });
   installDeviceSupport();
   installAudio({ getManifest: () => data.get('assets'), subscribe: store.subscribe, getState: store.get, selectRoute, settings: settingsStore.get() });
   const phase = params.get('phase') || 'PREP';

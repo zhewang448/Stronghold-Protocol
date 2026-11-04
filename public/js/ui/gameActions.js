@@ -109,6 +109,9 @@ export const actions = {
   choice: (idx, opts = {}) => act('g.choice', { idx, ...choiceRequestScope(opts) }),
   ready: (ready) => act('g.ready', { ready }, { sfx: ready ? 'ready' : 'back' }),
   emote: (id) => act('g.emote', { id }, { quiet: true }),
+  // 表情弹幕 (host console): `watch` names the board the pictures fall on (own board when nothing is watched),
+  // `count` the clicks one pulse merged; the server caps it and may truncate or drop the pulse.
+  barrage: (id, watch, count = 1) => act('g.emote', { id, watch, ...(count > 1 ? { count } : {}) }, { quiet: true }),
   ping: (fieldId, row, col, kind = 'attention') => act('g.ping', { fieldId, area: 'board', row, col, kind }, { quiet: true }),
   // `playerId`: the player tapped in the team panel (a shared field shows two) — what an eliminated viewer follows
   watch: (fieldId, playerId = null) => act('g.watch', typeof playerId === 'string' && playerId ? { fieldId, playerId } : { fieldId }, { sfx: 'tab' }),
