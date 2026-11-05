@@ -110,6 +110,7 @@ import { CombatHud } from '../ui/combatHud.js';
 import { CombatMetricsPanel } from '../ui/combatMetrics.js';
 import { RoundHistoryPanel } from '../ui/roundHistory.js';
 import { SettingsModal, settingsStore, useSettings } from '../ui/settings.js';
+import { setCursorDragging } from '../ui/cursor.js';
 import { ExitModal, AwayOverlay, awayStore } from '../ui/matchChrome.js';
 import { RoundPopup, PhasePopup, phasePopupOf, roundsToBoss, preloadPopupArt } from '../ui/matchPopups.js';
 import { openGuide } from '../ui/guide.js';
@@ -361,6 +362,7 @@ function MatchScreen() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [exitOpen, setExitOpen] = useState(false);
   const [drag, setDrag] = useState(null);                // { uid, kind, id } while dragging a piece
+  useEffect(() => { setCursorDragging(!!drag); return () => setCursorDragging(false); }, [drag]);
   const [facing, setFacing] = useState(null);            // direction step: { uid, piece, row, col, grid, name }
   const [sel, setSel] = useState(null);                  // tapped own piece: { uid }
   const [selBusy, setSelBusy] = useState(false);

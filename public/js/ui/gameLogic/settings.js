@@ -7,6 +7,7 @@ import { clamp, isObj } from './shared.js';
 import { normalizeFrameRate } from '../../frameRate.js';
 import { normalizePreloadVoiceLang } from '../../resources/common.js';
 import { DEFAULT_HOTKEYS, sanitizeHotkeys } from './shortcuts.js';
+import { normalizeCursorSize, DEFAULT_CURSOR_SIZE } from '../../../../shared/cursor.js';
 
 
 // ---- settings ------------------------------------------------------------------------------------------------------
@@ -45,7 +46,7 @@ export const TEXT_SIZES = Object.freeze(['sm', 'md', 'lg', 'xl']);
  *  otherSkins: 设置「显示其他玩家的皮肤」 (docs/SKINS.md), ON by default — draw the appearance another player chose instead
  *  of the operator's own model. A pure client preference (never sent): off, only this player's own pieces wear a skin.
  */
-export const DEFAULT_SETTINGS = Object.freeze({ bgm: 0.6, sfx: 0.8, voice: 0.8, voiceLang: 'cn', voiceNative: false, voiceOverrides: Object.freeze({}), muted: false, damageNumbers: true, officialDamageNumbers: false, ammoEnergyCount: false, fullscreenWakeLock: false, bondTimers: false, combatMetrics: true, chatBubbles: true, deploymentZoom: false, prepDeployFold: false, fpsLimit: 0, showFps: true, preload: false, preloadOptional: false, preloadVoiceLang: Object.freeze(['cn', 'jp']), quality: 'high', officialFx: 'auto', otherSkins: true, dynamicIllustrations: 'auto', upstreamReleaseNotes: true, extensionReleaseNotes: true, textSize: 'sm', keys: DEFAULT_HOTKEYS });
+export const DEFAULT_SETTINGS = Object.freeze({ bgm: 0.6, sfx: 0.8, voice: 0.8, voiceLang: 'cn', voiceNative: false, voiceOverrides: Object.freeze({}), muted: false, damageNumbers: true, officialDamageNumbers: false, ammoEnergyCount: false, fullscreenWakeLock: false, bondTimers: false, combatMetrics: true, chatBubbles: true, deploymentZoom: false, prepDeployFold: false, fpsLimit: 0, showFps: true, preload: false, preloadOptional: false, preloadVoiceLang: Object.freeze(['cn', 'jp']), quality: 'high', officialFx: 'auto', otherSkins: true, dynamicIllustrations: 'auto', upstreamReleaseNotes: true, extensionReleaseNotes: true, textSize: 'sm', cursorTheme: 'system', cursorSize: DEFAULT_CURSOR_SIZE, keys: DEFAULT_HOTKEYS });
 const QUALITIES = ['high', 'medium', 'low'];
 /** The values of 设置「官方特效」 (render/vfx/tier.js OFFICIAL_FX). Display order in the dialog is low / medium / high. */
 export const OFFICIAL_FX_MODES = Object.freeze(['auto', 'off', 'lite', 'full']);
@@ -100,6 +101,8 @@ export function sanitizeSettings(raw) {
     upstreamReleaseNotes: r.upstreamReleaseNotes !== false,
     extensionReleaseNotes: r.extensionReleaseNotes !== false,
     textSize: TEXT_SIZES.includes(r.textSize) ? r.textSize : DEFAULT_SETTINGS.textSize,
+    cursorTheme: r.cursorTheme === 'arknights' ? 'arknights' : 'system',
+    cursorSize: normalizeCursorSize(r.cursorSize),
     keys: sanitizeHotkeys(r.keys),
   };
 }

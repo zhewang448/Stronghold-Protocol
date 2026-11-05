@@ -742,3 +742,35 @@ SOFTWARE.
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+
+## DoingStone/Arknights-Mouse — optional browser cursor reference
+
+Source: https://github.com/DoingStone/Arknights-Mouse/tree/e1249037536f46e0f39ad93e359cf29bf61aae80
+
+The optional installer follows the AKPT1 container in `artpack.py`; the browser adapter
+references the press timing and poses documented in `prtsfx.py`. The code is MIT:
+
+Copyright (c) 2026 Arknights Mouse contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+**Artwork is excluded from that license.** The source identifies it as third-party
+PRTS Replica v8 96x art, and prohibits commercial use. No artwork is committed here;
+explicit local installation does not grant redistribution rights. The adapter is
+a browser adaptation, not a claim of official PC-client fidelity. See docs/CURSOR.md.

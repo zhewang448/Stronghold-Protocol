@@ -29,6 +29,7 @@ import { html, Modal, Button, Icon, MicroLabel, Tooltip, confirmDialog } from '.
 import { GIcon } from './gameComponents.js';
 import { useStore, store } from '../store.js';
 import { settingsStore } from './settingsStore.js';
+import { installCursor, cursorState, cursorImage } from './cursor.js';
 import { ClientPreference } from './clientPreference.js';
 import { clientPreferencePolicy } from '../clientPreferences.js';
 export { settingsStore } from './settingsStore.js';
@@ -88,6 +89,7 @@ audio.setVoiceLang(settingsStore.get().voiceLang, settingsStore.get().voiceOverr
 audio.setVoiceNative(settingsStore.get().voiceNative);
 // before the first render (main.js boot renders after its imports ran): the stored step is on screen without a flash
 applyTextSize(settingsStore.get().textSize);
+installCursor({ settings: settingsStore });
 
 /** @param {Partial<ReturnType<typeof sanitizeSettings>>} patch */
 export function updateSettings(patch) {
@@ -120,6 +122,33 @@ function Toggle({ label, micro, value, onChange, setting }) {
     <button type="button" class=${`set-toggle${value ? ' is-on' : ''}`} role="switch" aria-label=${label} aria-checked=${value ? 'true' : 'false'}
       onClick=${() => onChange(!value)}><i></i><span>${value ? tc('toggle', '开启') : tc('toggle', '关闭')}</span></button>
   </div><//>`;
+}
+
+function CursorSection({ value, size }) {
+  const { status, size: loadedSize } = useStore(s => s, Object.is, cursorState);
+  return html`<${ClientPreference} name="settings.cursorTheme"><div class="set-row">
+    <span class="set-row__label">${t('鼠标指针')}<${MicroLabel}>CURSOR<//></span>
+    <div class="set-seg set-cursor" role="radiogroup" aria-label=${t('鼠标指针')} data-testid="cursor-theme">
+      <button type="button" role="radio" aria-checked=${value === 'system' ? 'true' : 'false'}
+        class=${value === 'system' ? 'is-on' : ''} onClick=${() => updateSettings({ cursorTheme: 'system' })}>${t('系统鼠标')}</button>
+      <button type="button" role="radio" aria-checked=${value === 'arknights' ? 'true' : 'false'}
+        class=${value === 'arknights' ? 'is-on' : ''} onClick=${() => updateSettings({ cursorTheme: 'arknights' })}>
+        ${loadedSize ? html`<img src=${cursorImage('normal', loadedSize)} width="32" height="32" alt="" />` : null}${t('方舟鼠标')}</button>
+    </div>
+  </div><//>
+  ${value === 'arknights' ? html`<${ClientPreference} name="settings.cursorSize"><label class="set-row set-cursor-size">
+    <span class="set-row__label">${t('鼠标大小')}<${MicroLabel}>CURSOR SIZE<//></span>
+    <input class="set-range" data-testid="cursor-size" aria-label=${t('鼠标大小')} type="range" min="32" max="128" step="16" value=${size}
+      style=${`--pct:${(size - 32) / 96 * 100}%`} onInput=${e => updateSettings({ cursorSize: Number(e.currentTarget.value) })} />
+    <output class="set-row__val num" data-testid="cursor-size-value">${size} px</output>
+  </label><//>
+  <p class="set-hint set-cursor-note">${t('调节后立即生效并保存在本机，默认 96 px。')}</p>
+  ${loadedSize ? html`<div class="set-cursor-preview"><span>${t('实际大小预览')}</span><img src=${cursorImage('normal', loadedSize)}
+    width=${loadedSize} height=${loadedSize} style=${`width:${loadedSize}px;height:${loadedSize}px`} alt="" aria-hidden="true" data-testid="cursor-size-preview" /></div>` : null}` : null}
+  <p class="set-hint set-cursor-note" data-testid="cursor-status">${status === 'unavailable' ? t('此服务器尚未提供方舟鼠标素材，当前使用系统指针。')
+    : status === 'loading' ? t('正在加载鼠标素材…')
+    : status === 'unsupported' ? t('当前输入设备或显示模式使用系统指针。')
+    : t('仅影响本机；拖动干员时切换抓取形态，触屏与高对比度模式使用系统指针。')}</p>`;
 }
 
 /** Display order only: 低 / 中 / 高, the same direction as 官方特效 关 / 精简 / 完整. Stored values stay high | medium | low. */
@@ -572,6 +601,7 @@ export function SettingsModal({ open, onClose }) {
       <p class="set-hint">${t('在对局延迟旁显示实际渲染帧率。')}</p>
       </section>
       <section class="set-group" aria-labelledby="settings-controls"><h3 id="settings-controls">${t('界面与操作')}</h3>
+      <${CursorSection} value=${s.cursorTheme} size=${s.cursorSize} />
       <${ScreenFitSection} />
       <${ClientPreference} name="settings.keys"><${HotkeySection} keys=${s.keys} touchUi=${touchUi} /><//>
       </section>

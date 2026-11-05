@@ -11,6 +11,18 @@ Host-console refresh keeps existing interaction and scroll containers, unfinishe
 
 ## 9. Client rendering contract (public/js/render)
 
+### 可选网页方舟鼠标（2026-11-05）
+
+设置 → 界面与操作的 `settings.cursorTheme` 为 `system`（默认）或 `arknights`，只影响本机。
+后者使用原生 CSS 图片指针，按真实干员拖拽状态切换抓取形态；无软件跟随层。
+2026-11-06 按用户实测放大默认指针至 96 px，新增 `settings.cursorSize`，支持 32–128 px、每档 16 px，
+附实际大小预览，即时应用并保存。旧偏好无尺寸字段使用 96 px；每档独立素材及同比热点，加载乱序不覆盖新选择。
+同日按抓握图偏下的实测反馈，将 grab / grabbing 的 96 px 热点设为 28,68 并同比缩放；
+其他形态热点保持原值。只移动光标图形，不改变指针坐标或拖放判定，属于 [ASSUMED] 视觉对齐。
+缺素材、触屏及强制高对比度回退到系统指针，减少动画停用点击姿态切换。
+可选第三方素材只写入被忽略的 `public/assets/`，来源、安装与适配边界见 [鼠标说明](../CURSOR.md)。
+第一版的 75 ms 按压姿态为 [ASSUMED] 网页适配，不宣称逐帧复刻当前官方 PC 端。
+
 **Operator skins (§34.23, [SKINS.md](../SKINS.md)).** [ASSUMED] Retain received skin IDs separately from displayed
 skins so the other-player switch restores loaded units when re-enabled, including boss prep partners. Any-phase
 `room.skins` refreshes owner/private and existing scout views; public seat choices update current battle rendering

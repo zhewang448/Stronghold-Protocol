@@ -5,6 +5,7 @@
 import { SKIN_LIMITS, isCharId } from './protocol.js';
 import { UI_LIMITS } from './plugins/ui.js';
 import { isPluginId } from './plugins/manifest.js';
+import { CURSOR_SIZES, DEFAULT_CURSOR_SIZE } from './cursor.js';
 const bool = (key, label, value, group) => ({ key, label, default: value, type: 'boolean', group });
 const number = (key, label, value, min, max, step, group) => ({ key, label, default: value, type: 'number', min, max, step, group });
 const choice = (key, label, value, options, group) => ({ key, label, default: value, type: 'choice', options, group });
@@ -29,6 +30,8 @@ export const CLIENT_PREFERENCE_FIELDS = Object.freeze([
   choice('settings.officialFx', '官方特效', 'auto', ['auto', 'off', 'lite', 'full'], settings),
   choice('settings.dynamicIllustrations', '动态立绘', 'auto', ['auto', 'static'], settings),
   choice('settings.textSize', '文字大小', 'sm', ['sm', 'md', 'lg', 'xl'], settings),
+  choice('settings.cursorTheme', '鼠标指针', 'system', ['system', 'arknights'], settings),
+  choice('settings.cursorSize', '鼠标大小', DEFAULT_CURSOR_SIZE, CURSOR_SIZES, settings),
   { key: 'settings.preloadVoiceLang', label: '预载语音语言', default: ['cn', 'jp'], type: 'voiceLanguages', group: settings },
   { key: 'settings.keys', label: '快捷键', type: 'keys', default: { buy: 'KeyW', refresh: 'KeyR', freeze: 'KeyF', levelUp: 'KeyD', retreat: 'KeyQ', sell: 'KeyX', ready: 'Space' }, group: '界面、语言与操作' },
   { key: 'language', label: '界面语言', type: 'language', default: 'zh', group: '界面、语言与操作' },

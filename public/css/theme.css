@@ -10,6 +10,8 @@
    same factor, a size floor never below min(its px, 32px), the font-size floors never (test/ui/ui-size.test.js).
    ========================================================================================== */
 
+@import url('./cursor.css');
+
 :root {
   color-scheme: dark;
 

@@ -1448,6 +1448,8 @@ export async function createFieldView(host, options = {}) {
     if (mode === 'battle') {
       if (e.pointerType === 'touch') return;
       const v = battleUnitAt(ev.x, ev.y);
+      const role = v ? 'pointer' : '';
+      if (canvas.dataset.cursorRole !== role) canvas.dataset.cursorRole = role;
       if (v !== hoverUnit) {
         hoverUnit = v;
         const info = v ? infos.get(v.id) || v.info : null;
@@ -1456,10 +1458,12 @@ export async function createFieldView(host, options = {}) {
       return;
     }
     drag.pointerMove(ev);
+    const role = drag.hoverUid == null ? '' : drag.editable ? 'grab' : 'pointer';
+    if (canvas.dataset.cursorRole !== role) canvas.dataset.cursorRole = role;
   };
   const onPointerUp = (e) => { if (!destroyed && mode !== 'battle') drag.pointerUp(evPayload(e)); try { canvas.releasePointerCapture(e.pointerId); } catch { /* ignore */ } };
   const onPointerCancel = (e) => { if (!destroyed) drag.pointerCancel(evPayload(e)); };
-  const onPointerLeave = (e) => { if (!destroyed && !drag.dragging) drag.pointerLeave(evPayload(e)); if (hoverUnit) { hoverUnit = null; emit('pieceHover', { uid: null, unitId: null }); } };
+  const onPointerLeave = (e) => { delete canvas.dataset.cursorRole; if (!destroyed && !drag.dragging) drag.pointerLeave(evPayload(e)); if (hoverUnit) { hoverUnit = null; emit('pieceHover', { uid: null, unitId: null }); } };
   const onContext = (e) => e.preventDefault();
   // A finger is handled through the pointer events above only. The compatibility mouse events + click of a tap come
   // after touchend, hit-tested at the finger again — where the tap may just have opened DOM UI: a tap on a unit's tile

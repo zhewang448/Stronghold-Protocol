@@ -1,0 +1,33 @@
+/* Third-party PRTS Replica art, optional and local. Browser-managed position,
+   Sized images and proportional hotspots. No software pointer or tracking loop. */
+@media (any-pointer: fine) and (forced-colors: none) {
+  :root[data-cursor-theme="arknights"] {
+    --cursor-normal: var(--cursor-image-normal, default);
+    --cursor-pointer: var(--cursor-image-pointer, pointer);
+    --cursor-grab: var(--cursor-image-grab, grab);
+    --cursor-grabbing: var(--cursor-image-grabbing, grabbing);
+    --cursor-text: var(--cursor-image-text, text);
+    --cursor-disabled: var(--cursor-image-disabled, not-allowed);
+  }
+  :root[data-cursor-theme="arknights"][data-cursor-pressed] {
+    --cursor-normal: var(--cursor-image-pressed, default);
+    --cursor-pointer: var(--cursor-image-pointer-pressed, pointer);
+  }
+  :root[data-cursor-theme="arknights"] body { cursor: var(--cursor-normal); }
+  :root[data-cursor-theme="arknights"] :is(button, a[href], summary, select, [role="button"], [role="radio"], [role="tab"], [role="switch"], input[type="checkbox"], input[type="radio"], input[type="range"], :where(.bond.is-clickable), [data-cursor-role="pointer"]) { cursor: var(--cursor-pointer); }
+  :root[data-cursor-theme="arknights"] :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]), textarea, [contenteditable="true"], .selectable) { cursor: var(--cursor-text); }
+  :root[data-cursor-theme="arknights"] :is(.ff-piece.is-draggable, [data-cursor-role="grab"], .chat__drag, .chat__toggle, .testconsole__head) { cursor: var(--cursor-grab); }
+  :root[data-cursor-theme="arknights"] :is([data-cursor-role="grabbing"], .chat--dragging .chat__drag, .chat--dragging .chat__toggle, .testconsole__head:active) { cursor: var(--cursor-grabbing); }
+  :root[data-cursor-theme="arknights"] :is(button:disabled, input:disabled, select:disabled, textarea:disabled, [aria-disabled="true"]) { cursor: var(--cursor-disabled); }
+  :root[data-cursor-theme="arknights"] :is(.btn.is-loading, .set-key.is-fixed) { cursor: var(--cursor-normal); }
+  /* Pixi writes an inline cursor. Override only the engine's explicit hit-test roles. */
+  :root[data-cursor-theme="arknights"] canvas[data-cursor-role="grab"] { cursor: var(--cursor-grab) !important; }
+  :root[data-cursor-theme="arknights"] canvas[data-cursor-role="pointer"] { cursor: var(--cursor-pointer) !important; }
+  :root[data-cursor-theme="arknights"][data-cursor-dragging] :is(body, body *) { cursor: var(--cursor-grabbing) !important; }
+}
+.set-cursor [role="radio"] { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; }
+.set-cursor img { flex: none; width: 32px; height: 32px; object-fit: contain; }
+.set-hint.set-cursor-note { color: var(--text-md); }
+.set-cursor-size .set-row__val { min-width: 6ch; white-space: nowrap; }
+.set-cursor-preview { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; color: var(--text-md); font-size: calc(.16 * var(--t)); }
+.set-cursor-preview img { flex: none; max-width: none; object-fit: contain; }

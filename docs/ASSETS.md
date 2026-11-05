@@ -2,6 +2,10 @@
 
 Owner: `tools/fetch-assets.mjs` and `tools/assets/*`. Research background: `docs/research/07-assets.md`.
 
+可选网页方舟鼠标由 `node tools/install-cursors.mjs` 单独安装，固定源提交与 SHA-256，
+输出七档 32–128 px 静态姿态及来源清单到被忽略的 `public/assets/cursor/`，默认 96 px；非游戏启动依赖。
+这是第三方 PRTS Replica 美术，未包含在其代码 MIT 授权内。来源、用途与回退规则见 [鼠标说明](CURSOR.md)。
+
 All official game art, Spine models and audio are **downloaded at install time**. They are never committed; `public/assets/` is git-ignored.
 
 Setup and explicit Forge imports also fetch official JSON tables on demand for plugin operators outside the shipped
