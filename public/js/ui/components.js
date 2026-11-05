@@ -21,6 +21,7 @@ import { data, useData, localAsset } from '../data.js';
 import { uiUrl } from './assetUrls.js';
 import { PixBot } from './pixbots.js';
 import { playerSeatColor } from './playerSeries.js';
+import { LiveArt } from './dynamicIllustration.js';
 
 /**
  * h() for htm with its static-subtree cache switched off. htm keeps the vnode it built for a fully static subtree in
@@ -834,7 +835,7 @@ export function Spinner({ size = 'md', label, tone = 'mint', class: cls }) {
  * @param {{ name?: string, src?: string, size?: 'sm'|'md'|'lg'|'xl', seat?: number, host?: boolean, bot?: boolean,
  *   self?: boolean, ready?: boolean, offline?: boolean, dead?: boolean, empty?: boolean, class?: string }} props
  */
-export function AvatarFrame({ name = '', src, size = 'md', seat = 0, host, bot, self, ready, offline, dead, empty, class: cls }) {
+export function AvatarFrame({ name = '', src, size = 'md', seat = 0, host, bot, self, ready, offline, dead, empty, class: cls, m = null, charId = null, skin = null }) {
   const [badSrc, setBadSrc] = useState(null);
   const imgOk = !!src && badSrc !== src;
   const color = playerSeatColor(seat);
@@ -846,6 +847,7 @@ export function AvatarFrame({ name = '', src, size = 'md', seat = 0, host, bot, 
         : imgOk ? html`<img src=${src} alt="" draggable=${false} onError=${() => setBadSrc(src)} />`
         : bot ? html`<${Icon} name="robot" class="avatar__bot" />`
         : html`<span class="avatar__glyph">${glyph}</span>`}
+      ${imgOk && !empty && !bot && charId ? html`<${LiveArt} m=${m} charId=${charId} skin=${skin} kind="avatar" posY=${50} />` : null}
     </div>
     ${host ? html`<span class="avatar__badge avatar__badge--host" title=${t('创建者')}><${Icon} name="crown" /></span>` : null}
     ${self ? html`<span class="avatar__badge avatar__badge--self" title=${t('你')}><${Icon} name="user" /></span>` : null}

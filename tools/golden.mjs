@@ -985,10 +985,17 @@ function diyLayout(stageId, wanted) {
  */
 export function diyScenarios() {
   const configs = diyConfigs();
+  // Append the scoped November extension after complete historical chunks. Inserting
+  // operators ahead of the prototypes would reshuffle all existing seed/lineup pairs.
+  const extension = new Set(['char_4247_oxi', 'char_4246_dminon', 'char_4244_tocka']);
+  const old = configs.filter(c => !extension.has(c.pick.charId));
+  const added = configs.filter(c => extension.has(c.pick.charId)).map(c => ({ ...c, group: 'extension' }));
+  const chunks = [];
+  for (const list of [old, added]) for (let i = 0; i < list.length; i += 12) chunks.push(list.slice(i, i + 12));
   const scenarios = [];
   const firstOf = new Set();
-  for (let i = 0, n = 0; i < configs.length; i += 12, n++) {
-    const chunk = configs.slice(i, i + 12);
+  for (let n = 0; n < chunks.length; n++) {
+    const chunk = chunks[n];
     const stageId = STAGES[n % STAGES.length];
     const modeId = ROSTER_MODES[n % ROSTER_MODES.length];
     const gd = gdFor(modeId);

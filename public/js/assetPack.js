@@ -377,7 +377,8 @@ function isObj(value) {
 }
 
 function isSpine(value) {
-  return isObj(value) && typeof value.skel === 'string' && value.skel.startsWith('/') && /\.skel$/.test(value.skel);
+  return isObj(value) && typeof value.skel === 'string' && value.skel.startsWith('/')
+    && (/\.skel$/.test(value.skel) || (/\.json$/.test(value.skel) && typeof value.atlas === 'string'));
 }
 
 /** Skeleton, atlas, then pages. No pages listed → the default `<skel>.png` under the same hash, as the server does. */
@@ -385,7 +386,7 @@ function spineMemberUrls(obj) {
   const out = [obj.skel];
   if (typeof obj.atlas === 'string' && obj.atlas) out.push(obj.atlas);
   const pages = Array.isArray(obj.textures) ? obj.textures.filter((url) => typeof url === 'string' && url) : [];
-  out.push(...(pages.length ? pages : [obj.skel.replace(/\.skel$/, '.png')]));
+  out.push(...(pages.length ? pages : [obj.skel.replace(/\.(?:skel|json)$/, '.png')]));
   return out;
 }
 

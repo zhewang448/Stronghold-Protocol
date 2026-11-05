@@ -902,3 +902,17 @@ The 40th local token model is the original champagne bomb (`token_10031_swire2_g
 `packProgress` 的 download 提供 loaded / totalBytes 与约 200ms 采样的 speedBytesPerSecond；切换镜像重新计速。
 ZIP 流读完后进入 verify 校验整包 SHA-1，不制造百分比；通过才进入 import，显示 done / totalFiles。
 成功、失败或取消均清除活动分包进度，原有镜像重试及逐文件回退继续生效，缓存只接收已验证文件。
+
+## 动态立绘与三位新干员
+
+动态安装、全页图集验证、可选资源分组与发布依赖见 [实施说明](DYNAMIC-ILLUSTRATIONS-IMPLEMENTATION.md)。游戏素材保留在忽略目录中。
+
+本机完整动态提取：`tools/local-extract/dynamic.py --game <目录>`，随后加 `--stills-only` 导出完整静态图，
+最后运行 `node tools/install-dynamic-illustrations.mjs --all`。骨架 JSON/二进制按实际内容选择解析器；
+原生相机边界、额外动画轨和源包 SHA-256 随安装记录保存。官方差集与实际显示验证见
+[支持矩阵](DYNAMIC-ILLUSTRATIONS-SUPPORT.md)。404 不代表官方无资源。
+三位新干员的固定音频输入由 `tools/prepare-operator-audio.mjs` 生成，普通资源刷新复用同一输入，
+CN/JP/本土配音、攻击与技能声音同原有语种回退。完整包和精简包均携带所需研究输入和提取/安装工具。
+最终合并清单的 `installationFiles` 与显示资源一起进入引用集合；只在隔离副本验证 `--prune`。
+
+异客「今昔须臾之梦」的脸部附件半透明边缘会形成不属于人物线稿的深色接缝。安装器只对研究清单明确列出的五个脸部区域扩展邻近不透明颜色，生成独立 `.edges.png` / `.edges.atlas`；全部 alpha、不透明线稿、骨架与原始下载文件保持原字节。直通透明贴图在上传时预乘，防止线性采样放大边缘污染；已预乘素材仍遵循自身 PMA 标记。显示 URL 改变后使用新缓存身份。

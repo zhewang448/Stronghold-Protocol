@@ -155,11 +155,12 @@ test('onHealth: told every /healthz body a check reads — what else the page re
   let state = { installedPlugins: 0, installedNotices: false };
   let writes = 0;
   // Execute the actual callback with a small store; changes in formatting do not change this contract.
-  const policies = [];
-  const onHealth = new Function('pluginCount', 'store', 'pwaInstall', `return (${callback});`)(
+  const policies = [], clientPolicies = [];
+  const onHealth = new Function('pluginCount', 'store', 'pwaInstall', 'setClientPreferencePolicy', `return (${callback});`)(
     (content) => Number.isInteger(content?.plugins) && content.plugins > 0 ? content.plugins : 0,
     { get: () => state, set: (patch) => { state = { ...state, ...patch }; writes++; } },
     { setEnabled: value => policies.push(value) },
+    value => clientPolicies.push(value),
   );
   onHealth({ content: { plugins: 2, notices: true } });
   assert.deepEqual(state, { installedPlugins: 2, installedNotices: true });
@@ -172,4 +173,7 @@ test('onHealth: told every /healthz body a check reads — what else the page re
   onHealth({ siteSettings: { showPwaInstall: false } });
   onHealth({ siteSettings: { showPwaInstall: true } });
   assert.deepEqual(policies.slice(-2), [false, true], 'the existing health check refreshes host installation policy');
+  const policy = { defaults: { 'settings.bgm': 0.8 }, userControls: { 'settings.bgm': false } };
+  onHealth({ siteSettings: { clientPreferences: policy } }); onHealth({});
+  assert.deepEqual(clientPolicies.slice(-2), [policy, undefined], 'health applies current preferences and clears a prior host policy when omitted');
 });

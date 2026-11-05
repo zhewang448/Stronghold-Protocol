@@ -108,7 +108,7 @@ export function createRecovery({ lobby, root, dir = path.join(root, 'logs', 'rec
         .map(s => lobby.registry.byId(s.playerId)).filter(Boolean)
         .map(s => Object.fromEntries(['playerId', 'token', 'name', 'loadout', 'ops', 'skins', 'card', 'cardSkin', 'notOwned', 'diy', 'resumeWindowMs', 'presenceStatus'].map(k => [k, s[k]])));
       const record = { ...payload, format: 1, identity, matchNo: room.matchCount, sessions,
-        room: { ...(room.private ? { private: true } : {}), code: room.code, mode: room.mode, difficulty: room.difficulty, capacity: room.capacity, version: room.version, soloUnlimited: room.soloUnlimited, convenience: room.convenience, enemyHpMultiplier: room.enemyHpMultiplier, independentPools: room.independentPools, rescueEnabled: room.rescueEnabled, hostId: room.hostId, seats: room.seats, spectators: room.spectators, aiPicksLast: room.aiPicksLast, uniteLayerGains: room.uniteLayerGains, customIllust: room.customIllust, createdAt: room.createdAt } };
+        room: { ...(room.private ? { private: true } : {}), code: room.code, mode: room.mode, difficulty: room.difficulty, capacity: room.capacity, version: room.version, soloUnlimited: room.soloUnlimited, convenience: room.convenience, enemyHpMultiplier: room.enemyHpMultiplier, independentPools: room.independentPools, allowDuplicateBands: room.allowDuplicateBands, rescueEnabled: room.rescueEnabled, hostId: room.hostId, seats: room.seats, spectators: room.spectators, aiPicksLast: room.aiPicksLast, uniteLayerGains: room.uniteLayerGains, customIllust: room.customIllust, createdAt: room.createdAt } };
       fs.mkdirSync(dir, { recursive: true });
       const file = path.join(dir, `room-${room.code}.bin`);
       fs.writeFileSync(file + '.tmp', serialize(record), { mode: 0o600 }); fs.renameSync(file + '.tmp', file);
@@ -137,6 +137,7 @@ export function createRecovery({ lobby, root, dir = path.join(root, 'logs', 'rec
           room.spectatorLimit = lobby.opts.maxSpectators;
           // Old recovery records predate the new-room on-by-default setting; preserve their historical off default.
           if (!Object.hasOwn(r.room, 'aiPicksLast')) room.aiPicksLast = false;
+          room.allowDuplicateBands = room.mode !== 'solo' && r.room.allowDuplicateBands === true;
           if (!lobby.versionEnabled(room.version) || !lobby.versionAvailable(room.version)) throw new Error('该历史版本未启用或不可用');
           room.content = lobby.baseContent(room.version);
           room.matchCount = r.matchNo - 1;

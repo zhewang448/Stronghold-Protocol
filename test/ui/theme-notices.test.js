@@ -150,7 +150,7 @@ test('settings renders a dependent theme as active while keeping its notice-only
     catalog: { get: () => ({ plugins }) }, personal: { get: () => ({ ids: ['dependent'] }) },
     useStore: (select, _equal, store) => select(store ? store.get() : { installedPlugins: 2 }), useEffect() {},
     loadCatalog() {}, cosmeticPlugins, isPersonalCosmetic, personalSet, resolveThemeVars, themeVarsOf, installedCount, pluginName,
-    pluginMicro: (p) => p.id, MicroLabel: 'span',
+    pluginMicro: (p) => p.id, MicroLabel: 'span', ClientPreference: 'fieldset',
     // the 显示其他玩家的皮肤 row (PR #686) sits in the same section: inert here
     useSettings: () => ({ otherSkins: true }), updateSettings() {}, OtherSkinsRow: 'span', hasAnySkinChoices: () => false,
     html: (strings, ...values) => strings.reduce((out, text, i) => out + text + (values[i] ?? ''), ''),

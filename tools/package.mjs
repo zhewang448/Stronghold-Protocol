@@ -121,7 +121,7 @@ export const AUTHOR_TEST_FILES = ['test/helpers/battleHarness.js'];
 /** Only these repository-owned plugin resources ship, even if an owner's plugin was accidentally tracked. */
 export const isPluginResource = (rel) => rel === 'plugins/README.md' || rel === 'plugins/AGENTS.md' || rel.startsWith('plugins/_template/');
 /** Research tables read at run time: server/sim/nodeData.js (the Node sim's fallback) and tools/fetch-assets.mjs. */
-export const RUNTIME_RESEARCH = ['docs/research/03-operators.json', 'docs/research/05-enemies.json', 'docs/research/05-maps.json', 'docs/research/07-assets.json', 'docs/research/operator-skins.json', 'docs/research/seat-art-portraits.json'];
+export const RUNTIME_RESEARCH = ['docs/research/03-operators.json', 'docs/research/05-enemies.json', 'docs/research/05-maps.json', 'docs/research/07-assets.json', 'docs/research/operator-skins.json', 'docs/research/seat-art-portraits.json', 'docs/research/dynamic-illustrations.json', 'docs/research/new-operators-20261101.json', 'docs/research/new-operator-audio-20261101.json'];
 /** The start scripts (scripts/make-windows-bundle.mjs is the maintainer's Windows pack, docs/WINDOWS.md). */
 export const PLAYER_SCRIPTS = ['scripts/install-service-windows.ps1', 'scripts/launch.mjs', 'scripts/open-browser.mjs',
   'scripts/apply-release-update.mjs', 'scripts/host-launcher.mjs',
@@ -129,7 +129,7 @@ export const PLAYER_SCRIPTS = ['scripts/install-service-windows.ps1', 'scripts/l
   'scripts/start-tunnel.bat', 'scripts/start-tunnel.mjs', 'scripts/stop-server.bat', 'scripts/free-port.mjs',
   'scripts/host-runtime.mjs', 'scripts/recover-release.mjs'];
 /** The tools a player runs (npm run setup / doctor / assets, the postinstall) and the ones setup starts. */
-export const PLAYER_TOOLS = ['tools/build-resource-manifest.mjs', 'tools/crop-board-atlas.mjs', 'tools/doctor.mjs', 'tools/fetch-assets.mjs', 'tools/install-skins.mjs', 'tools/build-seat-art.mjs', 'tools/install-seat-art.mjs', 'tools/setup.mjs', 'tools/vendor.mjs', 'tools/fetch-stats-assets.mjs', 'tools/plugin.mjs'];
+export const PLAYER_TOOLS = ['tools/build-resource-manifest.mjs', 'tools/crop-board-atlas.mjs', 'tools/doctor.mjs', 'tools/fetch-assets.mjs', 'tools/install-skins.mjs', 'tools/install-dynamic-illustrations.mjs', 'tools/cache-dynamic-illustrations.mjs', 'tools/install-new-operators.mjs', 'tools/update-dynamic-catalogue.mjs', 'tools/prepare-operator-audio.mjs', 'tools/build-seat-art.mjs', 'tools/install-seat-art.mjs', 'tools/setup.mjs', 'tools/vendor.mjs', 'tools/fetch-stats-assets.mjs', 'tools/plugin.mjs'];
 /** Whole tool directories: fetch-assets' modules, the local-client extraction setup runs. */
 export const PLAYER_TOOL_DIRS = ['tools/assets/', 'tools/local-extract/'];
 /** Whole runtime directories (their tracked files). */
@@ -540,7 +540,17 @@ export function scanFiles(root, files, { home = true, names = [], strip = null }
     try { text = fs.readFileSync(path.join(root, rel)).toString('latin1'); } catch { continue; }
     if (strip) text = text.replace(strip, '');
     if (home && (HOME_POSIX.test(text) || HOME_WIN.test(text))) hits.push(`${rel} (home-directory path)`);
-    else if (nameRe && nameRe.test(text)) hits.push(`${rel} (account name)`);
+    else if (nameRe) {
+      let nameText = text;
+      // JSON mesh/particle data contains decimal values, not account names.
+      // A numeric Windows account can otherwise match digits inside 0.123456.
+      // Preserve every key and string (including paths/names); binaries and
+      // unparsable JSON retain the full-byte scan.
+      if (rel.endsWith('.json')) {
+        try { nameText = JSON.stringify(JSON.parse(text), (_key, value) => typeof value === 'number' ? null : value); } catch { /* full bytes */ }
+      }
+      if (nameRe.test(nameText)) hits.push(`${rel} (account name)`);
+    }
   }
   return hits;
 }

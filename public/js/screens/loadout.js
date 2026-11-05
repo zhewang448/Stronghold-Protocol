@@ -44,6 +44,8 @@ import { profGlyphUrl, subProfIconUrl, bondIconUrl, uiUrl, itemIconUrl } from '.
 import { GarrisonBlock } from '../ui/detailPanel.js';
 import { data, useData, localAsset, DATA_FILES } from '../data.js';
 import { useStore, loadPref, savePref } from '../store.js';
+import { clientPreferencePolicy, resolveClientPreference, canChangeClientPreference } from '../clientPreferences.js';
+import { ClientPreference } from '../ui/clientPreference.js';
 import { PHASE } from '../../../shared/constants.js';
 import { ruleOption } from '../../../shared/plugins/rules.js';
 import { effectiveRoomRules } from '../../../shared/roomConvenience.js';
@@ -313,8 +315,8 @@ function Filters({ m, filters, onFilters, bonds, onDeck = null, versionRosters =
       </label>
       <button type="button" class=${cx('lo-toggle', filters.changedOnly && 'is-on')} aria-pressed=${filters.changedOnly ? 'true' : 'false'}
         onClick=${() => set({ changedOnly: !filters.changedOnly })}><i class="lo-toggle__box"><${Icon} name="check" /></i>${t('仅看已调整')}</button>
-      ${onDeck ? html`<button type="button" class="lo-tbtn lo-viewbtn" data-testid="loadout-view-deck" onClick=${onDeck}
-        title=${t('切换为卡片视图（物资调配处）')}><${Icon} name="expand" /><span class="lo-tbtn__l">${t('卡片视图')}</span></button>` : null}
+      ${onDeck ? html`<${ClientPreference} name="loadout.view"><button type="button" class="lo-tbtn lo-viewbtn" data-testid="loadout-view-deck" onClick=${onDeck}
+        title=${t('切换为卡片视图（物资调配处）')}><${Icon} name="expand" /><span class="lo-tbtn__l">${t('卡片视图')}</span></button><//>` : null}
     </div>
     <div class="lo-version-filter" data-testid="loadout-version-filter">
       <label class="lo-select"><span class="lo-select__k">${t('干员范围')}</span>
@@ -344,7 +346,7 @@ function Filters({ m, filters, onFilters, bonds, onDeck = null, versionRosters =
 
 const VIEW_PREF = 'loadout.view';
 /** The stored view: 'list' (the aligned rows, the default) or 'deck' (the cards). */
-export const loadoutViewPref = () => (loadPref(VIEW_PREF, 'deck') === 'list' ? 'list' : 'deck');
+export const loadoutViewPref = () => (resolveClientPreference('loadout.view', loadPref(VIEW_PREF, undefined)) === 'list' ? 'list' : 'deck');
 const DECK_TIERS = [1, 2, 3, 4, 5, 6];
 
 /** 潜能 as six pips (the card's star row). */
@@ -764,10 +766,12 @@ function LoadoutScreen({ st }) {
   }, [io?.scopeMode, versionRosters, versionError]);
   // 卡片视图: the view, 快速配置, the detail drawer, the 筛选 / 更多 popovers, ⓘ, the tier at the deck's left edge
   const [view, setViewState] = useState(loadoutViewPref);
+  const viewPolicy = useStore(s => s.config.defaults['loadout.view'] + ':' + s.config.userControls['loadout.view'], Object.is, clientPreferencePolicy);
+  useEffect(() => { setViewState(loadoutViewPref()); setDrawer(false); setQuick(null); setMenu(null); }, [viewPolicy]);
   const [quick, setQuick] = useState(null);                // null | 'skill' | 'module' | 'cult'
   const [drawer, setDrawer] = useState(false);
   const [menu, setMenu] = useState(null);                  // null | 'filter' | 'more'
-  const setView = (v) => { setViewState(v); savePref(VIEW_PREF, v); setDrawer(false); setQuick(null); setMenu(null); };
+  const setView = (v) => { if (!canChangeClientPreference('loadout.view')) return; setViewState(v); savePref(VIEW_PREF, v); setDrawer(false); setQuick(null); setMenu(null); };
   const [help, setHelp] = useState(false);
   const tierSink = useRef(null);                           // the bottom bar's tier (DeckBarLive), set without a redraw here
   const setActiveTier = (tier) => tierSink.current?.(tier);
@@ -1123,10 +1127,10 @@ function LoadoutScreen({ st }) {
                 versionRosters=${versionRosters} versionError=${versionError} onRetry=${() => setVersionError(false)} roster=${roster} />
               <div class="lo-pop__row">
                 <span class="lo-pop__k">${t('显示方式')}</span>
-                <div class="lo-seg" role="tablist">
+                <${ClientPreference} name="loadout.view"><div class="lo-seg" role="tablist">
                   <button type="button" role="tab" aria-selected="true" class="is-on">${t('卡片')}</button>
                   <button type="button" role="tab" aria-selected="false" data-testid="loadout-view-list" onClick=${() => setView('list')}>${t('列表')}</button>
-                </div>
+                </div><//>
                 ${nFilters ? html`<button type="button" class="lo-tbtn" onClick=${clearFilters}>${t('清除筛选')}</button>` : null}
               </div>
             </div>` : null}

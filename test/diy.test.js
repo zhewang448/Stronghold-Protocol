@@ -40,7 +40,7 @@ test('diyPool: tier 5 = 15 prototypes + 79 owned 6★, tier 6 = 9 + 79 (local-to
   const p5 = diyPool(5, { data: DATA }), p6 = diyPool(6, { data: DATA });
   assert.deepEqual(p5, [...RESERVES5, ...ELITES, ...ownedPool]);
   assert.deepEqual(p6, [...ELITES, ...ownedPool]);
-  assert.deepEqual([p5.length, p6.length], [94, 88]);
+  assert.deepEqual([p5.length, p6.length], [97, 91]);
   const roster = new Set(Object.values(chess).map((c) => c.charId).filter(Boolean));
   for (const id of p5) assert.ok(!roster.has(id), id);
   for (const id of COLLAB) assert.ok(p5.includes(id) && p6.includes(id), id);

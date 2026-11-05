@@ -1479,3 +1479,13 @@
 .bplan__check { position: absolute; top: 4px; right: 6px; color: var(--mint-400); }
 .bplan__foot { display: flex; justify-content: flex-start; margin-top: 12px; }
 @media (max-width: 560px) {.bplan__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }}
+
+/* Host-managed client preferences keep the original values readable. */
+.client-preference { min-width: 0; }
+.client-preference__control { border: 0; padding: 0; margin: 0; min-inline-size: 0; }
+.client-preference__control:disabled { opacity: .8; }
+.client-preference__hint { color: var(--text-md); margin-top: .04rem; }
+.set-voice > .client-preference { display: flex; }
+.set-voice > .client-preference > .client-preference__control { display: flex; flex-wrap: wrap; }
+.set-voice .client-preference__hint { max-width: 24ch; }
+.client-preference input:disabled, .client-preference button:disabled, .client-preference select:disabled { cursor: not-allowed; }

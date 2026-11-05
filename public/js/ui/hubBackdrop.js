@@ -5,7 +5,9 @@ import { audio } from '../audio.js';
 // stronghold silhouette are generated from fixed seeds, so every visit draws the same skyline.
 import { html } from './components.js';
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
-import { loadPref, savePref } from '../store.js';
+import { loadPref, useStore } from '../store.js';
+import { createClientPreferenceStore, canChangeClientPreference } from '../clientPreferences.js';
+import { ClientPreference } from './clientPreference.js';
 import { toast } from './toasts.js';
 import { t, N_ } from '../../../shared/i18n.js';
 
@@ -24,8 +26,7 @@ const num = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 /** The saved backdrop choice, sanitised. */
-export function loadBackdropPref() {
-  const raw = loadPref(PREF_KEY, null);
+export function loadBackdropPref(raw = loadPref(PREF_KEY, null)) {
   const o = raw && typeof raw === 'object' ? raw : {};
   return {
     theme: THEME_IDS.includes(o.theme) || o.theme === 'custom' ? o.theme : 'night',
@@ -36,6 +37,7 @@ export function loadBackdropPref() {
     videoSound: o.videoSound === true,videoPaused: o.videoPaused === true,
   };
 }
+export const backdropPreferences = createClientPreferenceStore({ prefix: 'hubBackdrop', preference: PREF_KEY, normalize: loadBackdropPref });
 
 // ---- the picture store (IndexedDB: a Blob, no base64 bloat, no localStorage quota) ------------------------------
 const DB_NAME = 'sp-hub-backdrop';
@@ -92,7 +94,7 @@ async function shrink(file) {
  */
 export function useHubBackdrop() {
   const [mediaKind,setMediaKind]=useState('image');const revision=useRef(0);
-  const [pref, setPref] = useState(loadBackdropPref);
+  const pref = useStore(value => value, Object.is, backdropPreferences);
   const [imageUrl, setImageUrl] = useState(null);
   const [ready, setReady] = useState(false);
   useEffect(() => {
@@ -103,13 +105,10 @@ export function useHubBackdrop() {
     return () => { dead = true; };
   }, []);
   useEffect(() => () => { if (imageUrl) URL.revokeObjectURL(imageUrl); }, [imageUrl]);
-  const update = (patch) => setPref((p) => {
-    const next = { ...p, ...patch };
-    savePref(PREF_KEY, next);
-    return next;
-  });
+  const update = patch => backdropPreferences.set(patch);
   /** @returns {Promise<boolean>} false when the picture is shown but could not be stored on this device */
   const setImage = async (file) => {
+    if (!canChangeClientPreference('hubBackdrop.theme')) return false;
     ++revision.current;const video=file.type.startsWith('video/')||/\.(mp4|webm|m4v)$/i.test(file.name||'');
     const blob = video?await validateVideo(file):await shrink(file);
     let saved = true;
@@ -119,6 +118,7 @@ export function useHubBackdrop() {
     return saved;
   };
   const clearImage = async () => {
+    if (!canChangeClientPreference('hubBackdrop.theme')) return;
     ++revision.current;setMediaKind('image');
     try { await idbDel(); } catch { /* nothing stored */ }
     setImageUrl(null);
@@ -358,7 +358,7 @@ export function BackdropSettings({ bg }) {
   };
   const custom = pref.theme === 'custom';
   return html`<div class="bgset">
-    <div class="bgset__themes" role="radiogroup" aria-label=${t('背景主题')}>
+    <${ClientPreference} name="hubBackdrop.theme"><div class="bgset__themes" role="radiogroup" aria-label=${t('背景主题')}>
       ${HUB_THEMES.map((x) => html`<button key=${x.id} type="button" role="radio" aria-checked=${pref.theme === x.id ? 'true' : 'false'}
           class=${`bgset__theme${pref.theme === x.id ? ' is-selected' : ''}`} onClick=${() => update({ theme: x.id })}>
         <${Swatch} theme=${x.id} />
@@ -372,22 +372,22 @@ export function BackdropSettings({ bg }) {
         <span class="bgset__name">${t('自定义背景')}</span><span class="bgset__en">CUSTOM</span>
       </button>
     </div>
-    <input ref=${fileRef} type="file" accept="image/*,video/mp4,video/webm,.mp4,.webm,.m4v" hidden onChange=${onFile} />
+    <//><input ref=${fileRef} type="file" accept="image/*,video/mp4,video/webm,.mp4,.webm,.m4v" hidden onChange=${onFile} />
     ${custom && imageUrl ? html`<div class="bgset__custom">
       <div class="bgset__row">
         <button type="button" class="btn btn--secondary btn--sm" disabled=${busy} onClick=${browse}><span class="btn__label">${busy ? t('处理中…') : t('更换背景')}</span></button>
         <button type="button" class="btn btn--ghost btn--sm" disabled=${busy} onClick=${() => bg.clearImage()}><span class="btn__label">${t('移除背景')}</span></button>
       </div>
-      ${bg.mediaKind==='video'?html`<label class="bgset__check"><input type="checkbox" checked=${pref.videoSound} onChange=${e=>{audio._unlock();update({videoSound:e.currentTarget.checked});}} /><span>${t('播放视频声音（暂停大厅 BGM）')}</span></label><button type="button" class="btn btn--secondary btn--sm" onClick=${()=>update({videoPaused:!pref.videoPaused})}>${pref.videoPaused?t('播放视频'):t('暂停视频')}</button>`:null}
-      <label class="bgset__slider"><span>${t('暗化')}</span>
+      ${bg.mediaKind==='video'?html`<${ClientPreference} name="hubBackdrop.videoSound"><label class="bgset__check"><input type="checkbox" checked=${pref.videoSound} onChange=${e=>{audio._unlock();update({videoSound:e.currentTarget.checked});}} /><span>${t('播放视频声音（暂停大厅 BGM）')}</span></label><//><${ClientPreference} name="hubBackdrop.videoPaused"><button type="button" class="btn btn--secondary btn--sm" onClick=${()=>update({videoPaused:!pref.videoPaused})}>${pref.videoPaused?t('播放视频'):t('暂停视频')}</button><//>`:null}
+      <${ClientPreference} name="hubBackdrop.dim"><label class="bgset__slider"><span>${t('暗化')}</span>
         <input type="range" min="0" max="85" step="1" value=${pref.dim} onInput=${(e) => update({ dim: Number(e.currentTarget.value) })} />
-        <b class="num">${pref.dim}%</b></label>
-      <label class="bgset__slider"><span>${t('模糊')}</span>
+        <b class="num">${pref.dim}%</b></label><//>
+      <${ClientPreference} name="hubBackdrop.blur"><label class="bgset__slider"><span>${t('模糊')}</span>
         <input type="range" min="0" max="16" step="1" value=${pref.blur} onInput=${(e) => update({ blur: Number(e.currentTarget.value) })} />
-        <b class="num">${pref.blur}px</b></label>
-      <label class="bgset__check"><input type="checkbox" checked=${pref.overlay} onChange=${(e) => update({ overlay: e.currentTarget.checked })} /><span>${t('叠加战术网格')}</span></label>
+        <b class="num">${pref.blur}px</b></label><//>
+      <${ClientPreference} name="hubBackdrop.overlay"><label class="bgset__check"><input type="checkbox" checked=${pref.overlay} onChange=${(e) => update({ overlay: e.currentTarget.checked })} /><span>${t('叠加战术网格')}</span></label><//>
     </div>` : busy ? html`<p class="bgset__note">${t('图片处理中…')}</p>` : null}
-    <label class="bgset__check"><input type="checkbox" checked=${pref.motion} onChange=${(e) => update({ motion: e.currentTarget.checked })} /><span>${t('动态效果（云层、粒子、雷达扫描）')}</span></label>
+    <${ClientPreference} name="hubBackdrop.motion"><label class="bgset__check"><input type="checkbox" checked=${pref.motion} onChange=${(e) => update({ motion: e.currentTarget.checked })} /><span>${t('动态效果（云层、粒子、雷达扫描）')}</span></label><//>
     <p class="bgset__note">${t('图片上限 30MB；视频上限 60MB、最高 1080p，推荐横版 H.264 MP4 / WebM。仅保存在当前浏览器。视频默认静音，可搭配 ♫ 大厅音乐；切出大厅或隐藏网页会暂停视频。')}</p>
   </div>`;
 }

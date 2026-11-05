@@ -72,6 +72,13 @@ export class FxSim {
     const p = chest(at.v);
     const s = p.s;
     switch (spec.a) {
+      case 'heatwave':
+        this.heatwave(at.x, at.y, num(ex.tx, at.x), num(ex.ty, at.y), Math.max(0.04, num(ex.t, 1) / ts), ex.flame);
+        break;
+      case 'heatwaveHit':
+        this.endHeatwave(ex.flame);
+        this.explosion(at.x, at.y, at.z, r, col, { smoke: 0x39251d });
+        break;
       case 'blast': {
         if (r >= 12) { this.flashScreen(col, 0.5); break; }
         if (kind === 'bombard') { this._touchLocks(ex.id ?? ex.src ?? null); this._landed(ex.id ?? ex.src ?? null, at.x, at.y, r); }

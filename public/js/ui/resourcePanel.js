@@ -1,6 +1,7 @@
 // Compact entry points share one global resource manager; closing it leaves background downloads running.
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { html, Button, MicroLabel, Modal, ProgressBar } from './components.js';
+import { ClientPreference } from './clientPreference.js';
 import { createStore, useStore } from '../store.js';
 import { formatBytes, resourcePackPercent, PRELOAD_VOICE_LANGS, normalizePreloadVoiceLang } from '../resources/common.js';
 import { clearResources, exportResources, importResources, inspectResources, pauseResources,
@@ -108,10 +109,10 @@ function ResourceTier({ st, tier, optional, onOptional, voiceLang, onVoiceLang, 
     <header class="resource-tier__head">
       <div><h3>${tier === 1 ? t('必备资源') : t('可选资源')}</h3>
         <p>${tier === 1 ? t('地图、干员图片与 Spine 等画面资源') : t('角色语音、官方特效、音效、背景音乐与玩法说明图片')}</p></div>
-      ${tier === 2 ? html`<label class="resource-choice"><input type="checkbox" checked=${optional} disabled=${disabled}
-        onChange=${(e) => onOptional(e.currentTarget.checked)} />${t('同时预载')}</label>` : html`<${MicroLabel}>REQUIRED<//>`}
+      ${tier === 2 ? html`<${ClientPreference} name="settings.preloadOptional"><label class="resource-choice"><input type="checkbox" checked=${optional} disabled=${disabled}
+        onChange=${(e) => onOptional(e.currentTarget.checked)} />${t('同时预载')}</label><//>` : html`<${MicroLabel}>REQUIRED<//>`}
     </header>
-    ${tier === 2 ? html`<fieldset class="resource-voice-choice" disabled=${disabled}>
+    ${tier === 2 ? html`<${ClientPreference} name="settings.preloadVoiceLang"><fieldset class="resource-voice-choice" disabled=${disabled}>
       <legend>${t('预载语音语言')}</legend>
       <div class="resource-voice-choice__options" role="group" aria-label=${t('预载语音语言')} data-testid="preload-voice-lang">
         ${PRELOAD_VOICE_LANGS.map((lang) => html`<label class="resource-choice" key=${lang}>
@@ -120,7 +121,7 @@ function ResourceTier({ st, tier, optional, onOptional, voiceLang, onVoiceLang, 
       </div>
       <p>${t('仅影响预载范围；播放语言仍在设置中选择。切换后保留已有缓存。')}</p>
       ${!optional ? html`<p>${t('勾选“同时预载”后下载所选语音。')}</p>` : null}
-    </fieldset>` : null}
+    </fieldset><//>` : null}
     <div class="resource-tier__summary"><span class="num">${t('{done} / {total} 个文件', { done, total })}</span>
       <span class="num">${unknown ? t('部分大小未知') : `${formatBytes(bytes)} / ${formatBytes(totalBytes)}`}</span></div>
     <${ProgressBar} value=${done} max=${Math.max(1, total)} size="sm" tone=${tier === 1 ? 'mint' : 'amber'} />
@@ -167,8 +168,8 @@ export function ResourceHost({ enabled, optional, voiceLang = 'cn', onVoiceLang,
     actions=${html`
       ${compatibility ? html`<${Button} variant="primary" icon="play" data-testid="resource-download" onClick=${() => { closeResources(); openAssetDownload(); }}>${t('开始下载')}<//>`
         : busy(st) ? html`<${Button} variant="secondary" icon="hourglass" onClick=${pauseResources}>${archiveBusy ? t('取消处理') : t('暂停下载')}<//>`
-        : html`<${Button} variant="primary" icon="play" data-testid="resource-download" disabled=${!st.supported}
-          onClick=${() => enabled ? startResources() : onChange(true)}>${st.selectionComplete ? t('检查资源') : enabled ? t('继续下载') : t('开始预载')}<//>`}
+        : html`<${ClientPreference} name="settings.preload"><${Button} variant="primary" icon="play" data-testid="resource-download" disabled=${!st.supported}
+          onClick=${() => enabled ? startResources() : onChange(true)}>${st.selectionComplete ? t('检查资源') : enabled ? t('继续下载') : t('开始预载')}<//><//>`}
       <${Button} variant="secondary" onClick=${closeResources}>${t('关闭')}<//>`}>
     <div class="resource-manager">
       <p class="resource-manager__intro">${compatibility ? t('当前浏览器使用兼容下载：下载全部素材到浏览器缓存，关闭下载窗口会暂停。预载、缓存 ZIP 和本地导入需要 HTTPS 或 localhost 及浏览器缓存支持。') : t('先预载必备资源；可选资源可按需加载。关闭此窗口后，下载会在后台继续。')}</p>
@@ -201,7 +202,7 @@ export function ResourceHost({ enabled, optional, voiceLang = 'cn', onVoiceLang,
       </section>
       <div class="resource-manager__maintenance">
         <button type="button" class="res-link" disabled=${compatibility || archiveBusy} onClick=${() => { void clearResources(); }}>${t('清理缓存')}</button>
-        ${enabled && !compatibility ? html`<button type="button" class="res-link" onClick=${() => onChange(false)}>${t('关闭预载')}</button>` : null}
+        ${enabled && !compatibility ? html`<${ClientPreference} name="settings.preload"><button type="button" class="res-link" onClick=${() => onChange(false)}>${t('关闭预载')}</button><//>` : null}
         <span>${t('关闭预载会保留已缓存资源。')}</span>
       </div>
     </div>

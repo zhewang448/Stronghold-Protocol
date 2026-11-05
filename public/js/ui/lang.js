@@ -23,14 +23,20 @@ import {
 import { canonicalLang, computeChain, scriptOf } from '../../../shared/i18nPacks.js';
 import { PACKS_URL, PACK_INDEX_FILE, readPackIndex, langMetaOf } from '../../../shared/packs.js';
 import { DEV_BUILD } from '../../../shared/constants.js';
-import { loadPref, savePref } from '../store.js';
+import { loadPref, useStore } from '../store.js';
 import { data } from '../data.js';
 import { updateRotateHintPwaI18n } from './device.js';
 import { html } from './components.js';
+import { createClientPreferenceStore, canChangeClientPreference, clientPreferencePolicy } from '../clientPreferences.js';
 
 /** The switch's own label, in both languages (whoever opens it may not read the current one). */
 const SWITCH_LABEL = 'Language / 语言'; // i18n-ignore
 const PREF_KEY = 'lang';
+export const languagePreferences = createClientPreferenceStore({ prefix: '', preference: PREF_KEY, fields: ['language'],
+  // The host policy may arrive before the language index. Keep a well-formed
+  // code until the index can resolve its installed pack, including regional codes.
+  migrate: raw => typeof raw === 'string' && canonicalLang(raw) ? { language: canonicalLang(raw) } : {},
+  normalize: value => ({ language: canonicalLang(value.language) || DEFAULT_LANG }), persist: value => value.language });
 /** How long boot waits for the index and the UI strings before rendering in Chinese anyway (they apply when they arrive). */
 const BOOT_WAIT_MS = 2500;
 /** Up to this many languages the switch is a row of buttons (中文 | English …); more make it a list. */
@@ -204,6 +210,27 @@ function applyLang(lang) {
   setLang(lang);
   data.setLocale(getLang(), dataChain(getLang())).catch(() => {});
 }
+async function syncPolicyLanguage() {
+  const request = ++langRequest;
+  wire();
+  if (!normalizeLang(languagePreferences.get().language)) await loadLangIndex();
+  const wanted = languagePreferences.get().language, want = normalizeLang(wanted) || wanted;
+  const available = want === DEFAULT_LANG || await loadLangChain(want);
+  if (request === langRequest) applyLang(available ? want : DEFAULT_LANG);
+  return getLang();
+}
+// Explicit selections keep the original request ordering: remember immediately,
+// but retain the current interface until that requested pack actually loads.
+let savingLanguageChoice = false;
+function saveLanguageChoice(language) {
+  savingLanguageChoice = true;
+  try { languagePreferences.set({ language }); } finally { savingLanguageChoice = false; }
+}
+languagePreferences.subscribe(() => { if (!savingLanguageChoice) void syncPolicyLanguage(); });
+clientPreferencePolicy.subscribe((state, previous) => {
+  const current = state.config, old = previous.config;
+  if (current.defaults.language !== old.defaults.language || current.userControls.language !== old.userControls.language) void syncPolicyLanguage();
+});
 
 /**
  * Boot: list the packs, choose the language and load its UI strings (waits at most BOOT_WAIT_MS) before the first
@@ -220,13 +247,14 @@ export async function initLang() {
     const { lang, fromUrl } = initialLang(undefined, undefined, { tentative: !listed });
     if (fromUrl) stripLangParam();
     if (request !== langRequest) return null;
-    if (fromUrl) savePref(PREF_KEY, lang);
-    if (lang === DEFAULT_LANG) return null;
-    return (await loadLangChain(lang)) ? lang : null;
+    if (fromUrl && canChangeClientPreference('language')) saveLanguageChoice(lang);
+    const wanted = languagePreferences.get().language, want = normalizeLang(wanted) || wanted;
+    if (want === DEFAULT_LANG) return want;
+    return (await loadLangChain(want)) ? want : null;
   })();
   const got = await Promise.race([boot, new Promise((r) => setTimeout(() => r(TIMEOUT), BOOT_WAIT_MS))]);
   if (got === TIMEOUT) {
-    boot.then((lang) => { if (request === langRequest && lang && normalizeLang(loadPref(PREF_KEY, null)) === lang) applyLang(lang); });
+    boot.then((lang) => { if (request === langRequest && lang && normalizeLang(languagePreferences.get().language) === lang) applyLang(lang); });
   } else if (request === langRequest && got) applyLang(got);
   return getLang();
 }
@@ -238,12 +266,12 @@ export async function initLang() {
  * @returns {Promise<string>} the language in effect
  */
 export async function switchLang(lang) {
-  const request = ++langRequest;
+  if (!canChangeClientPreference('language')) return getLang();
+  const request = ++langRequest, want = normalizeLang(lang) || DEFAULT_LANG;
   wire();
-  const want = normalizeLang(lang) || DEFAULT_LANG;
-  savePref(PREF_KEY, want);
+  saveLanguageChoice(want);
   if (want !== DEFAULT_LANG && !(await loadLangChain(want))) return getLang();
-  if (request !== langRequest) return getLang();
+  if (request !== langRequest || !canChangeClientPreference('language')) return getLang();
   applyLang(want);
   return getLang();
 }
@@ -310,6 +338,7 @@ export function machineTranslationNote() {
  * @param {{ class?: string }} props
  */
 export function LangToggle({ class: cls }) {
+  useStore(s => s.config.userControls.language, Object.is, clientPreferencePolicy);
   const lang = useLang();
   const menu = langMenuModel(useLangs(), lang);
   const pick = async (code, select = null) => {
@@ -322,13 +351,13 @@ export function LangToggle({ class: cls }) {
   };
   if (menu.kind === 'select') {
     return html`<label class=${`set-seg lang-toggle lang-select${cls ? ` ${cls}` : ''}`} data-testid="lang-toggle">
-      <select aria-label=${SWITCH_LABEL} value=${lang} onChange=${(e) => pick(e.currentTarget.value, e.currentTarget)}>
+      <select aria-label=${SWITCH_LABEL} disabled=${!canChangeClientPreference('language')} title=${!canChangeClientPreference('language') ? t('由主机控制，允许自行修改后恢复你的设置。') : undefined} value=${lang} onChange=${(e) => pick(e.currentTarget.value, e.currentTarget)}>
         ${menu.items.map((it) => html`<option key=${it.code} value=${it.code} lang=${it.htmlLang} title=${it.title || undefined} selected=${it.on}>${it.label}</option>`)}
       </select>
     </label>`;
   }
   return html`<div class=${`set-seg lang-toggle${cls ? ` ${cls}` : ''}`} role="radiogroup" aria-label=${SWITCH_LABEL} data-testid="lang-toggle">
-    ${menu.items.map((it) => html`<button key=${it.code} type="button" role="radio" lang=${it.htmlLang} aria-checked=${it.on ? 'true' : 'false'}
+    ${menu.items.map((it) => html`<button key=${it.code} type="button" role="radio" disabled=${!canChangeClientPreference('language')} lang=${it.htmlLang} aria-checked=${it.on ? 'true' : 'false'}
       class=${it.on ? 'is-on' : ''} data-lang=${it.code} title=${it.title || undefined} onClick=${() => pick(it.code)}>${it.label}</button>`)}
   </div>`;
 }

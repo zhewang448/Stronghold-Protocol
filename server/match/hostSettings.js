@@ -16,6 +16,7 @@ import { DEFAULT_SOCIAL_SETTINGS } from '../../shared/social.js';
 import { ROOM_CAPACITIES, DIFFICULTIES, MAX_SPECTATORS, SPECTATOR_LIMIT_MAX, EMOTE_BARRAGE_RATE_MAX } from '../../shared/constants.js';
 import { VERSIONS } from '../../shared/versions.js';
 import { CONVENIENCE_DEFAULTS } from '../../shared/roomConvenience.js';
+import { resetClientPreferencePolicy } from '../clientPreferences.js';
 
 export const ROOM_CONFIG_FIELDS = Object.freeze([
   { key: 'difficulty', label: '模拟难度', options: DIFFICULTIES, labels: { FUNNY: '标准模拟', NORMAL: '险境模拟', HARD: '绝境模拟', ABYSS: '终极模拟' }, default: 'FUNNY' },
@@ -30,6 +31,7 @@ export const ROOM_CONFIG_FIELDS = Object.freeze([
   { key: 'uniteLayerGains', label: '允许联防叠层', default: false, hostControl: false },
   { key: 'enemyHpMultiplier', label: '敌人血量倍率', min: 0.1, max: 100, default: 1 },
   { key: 'independentPools', label: '独立卡池', default: false },
+  { key: 'allowDuplicateBands', label: '允许重复选择策略', default: false },
   { key: 'rescueEnabled', label: '队友救援', default: false },
   ...Object.entries(CONVENIENCE_DEFAULTS).map(([key, value], index) => ({
     key: 'convenience.' + key, label: ['允许整备区装备', '独立模拟不限时', '休整期调整技能与模组', '允许卸下装备', '变形同构体增强规则'][index], default: value,
@@ -231,7 +233,7 @@ export function setPrep(v) {
 }
 
 /** Back to the data's timers and the official 联防 rule (tests). */
-export function resetHostSettings() { prep = DEFAULT_PREP; roomCreation = initialRoomCreation(); roundCharts = true; liveRoundDamage = true; showPwaInstall = true; allowAiTakeover = null; social = DEFAULT_SOCIAL_SETTINGS; emoteBarrage = true; signalBar = true; emoteBarrageRate = 20; }
+export function resetHostSettings() { prep = DEFAULT_PREP; roomCreation = initialRoomCreation(); roundCharts = true; liveRoundDamage = true; showPwaInstall = true; allowAiTakeover = null; social = DEFAULT_SOCIAL_SETTINGS; emoteBarrage = true; signalBar = true; emoteBarrageRate = 20; resetClientPreferencePolicy(); }
 
 /** The 休整期 seconds of round r for a match whose data gives `base` (null = untimed stays untimed). */
 export function prepSecondsFor(round, base, p = prep) {

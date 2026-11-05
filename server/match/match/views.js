@@ -87,6 +87,7 @@ export class MatchViews {
       ...(this.convenience ? { convenience: this.convenience } : {}),
       ...(this.gd.enemyHpMultiplier !== 1 ? { enemyHpMultiplier: this.gd.enemyHpMultiplier } : {}),
       ...(this.independentPools ? { independentPools: true } : {}),
+      ...(this.allowDuplicateBands ? { allowDuplicateBands: true } : {}),
       ...(this.rescueEnabled ? { rescueEnabled: true } : {}),
       difficulty: this.difficulty,
       stageId: this.stageId,

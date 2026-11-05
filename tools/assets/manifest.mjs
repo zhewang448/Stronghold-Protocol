@@ -19,6 +19,14 @@ import { assetUrl, githubSourceUrl, mirrorUrl } from './sources.mjs';
 /** Manifest schema version (bump on breaking shape changes). */
 export const MANIFEST_VERSION = 1;
 
+/** Final manifest references, including retained dynamic records and the source
+ * pages/atlases needed to rebuild display derivatives during an offline repair. */
+export function assetReferences(value, files = new Set()) {
+  if (typeof value === 'string' && value.startsWith('/assets/')) files.add(value.slice(8));
+  else if (value && typeof value === 'object') for (const v of Object.values(value)) assetReferences(v, files);
+  return files;
+}
+
 const isLeaf = (n) => !!n && typeof n === 'object' && Array.isArray(n.alts);
 const isModelRef = (n) => !!n && typeof n === 'object' && typeof n.model === 'string' && Object.keys(n).length === 1;
 const LITERAL = Symbol('literal');

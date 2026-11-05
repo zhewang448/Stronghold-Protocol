@@ -56,6 +56,7 @@ import { RoomScreen, TrustedNotice } from './screens/room.js';
 import { GameScreen } from './screens/game.js';
 import { audio, installAudio } from './audio.js';
 import { settingsStore, updateSettings } from './ui/settings.js';
+import { setClientPreferencePolicy } from './clientPreferences.js';
 import { ResourceHost } from './ui/resourcePanel.js';
 import { syncResources, unsupportedReason } from './resources/index.js';
 import { GuideHost } from './ui/guide.js';
@@ -181,6 +182,7 @@ function backToLobby() {
 const pluginCount = (content) => (content && Number.isInteger(content.plugins) && content.plugins > 0 ? content.plugins : 0);
 
 function onWelcome(msg) {
+  setClientPreferencePolicy(msg.clientPreferences);
   pwaInstall.setEnabled(msg.showPwaInstall !== false);
   identity.saveToken(msg.token);
   identity.rememberMatch(null);
@@ -304,6 +306,7 @@ function wireNet() {
   });
   net.on('site.announcement', (message) => store.set({ announcement: announcementFromMessage(message) }));
   net.on('site.settings', (message) => {
+    if (Object.hasOwn(message, 'clientPreferences')) setClientPreferencePolicy(message.clientPreferences);
     pwaInstall.setEnabled(message.showPwaInstall);
     if (Object.hasOwn(message, 'roomCreation')) store.set({ roomCreation: message.roomCreation });
     // 表情弹幕 / 信号条 (host console): live, no reload — an open match re-renders its signal bar in place
@@ -476,7 +479,7 @@ function installGlobalErrorHandlers() {
 async function boot() {
   if (await bootDomainGate()) return;
   const installPolicyReady = fetchBuild((...args) => fetch(...args), {
-    onHealth: h => pwaInstall.setEnabled(h.siteSettings?.showPwaInstall),
+    onHealth: h => { pwaInstall.setEnabled(h.siteSettings?.showPwaInstall); setClientPreferencePolicy(h.siteSettings?.clientPreferences); },
   });
   installChatSync({ net, store });
   installGlobalErrorHandlers();
@@ -569,6 +572,7 @@ async function boot() {
       // the same /healthz names how many plugins the server has: the title screen shows it before any hello
       onHealth: (h) => {
         pwaInstall.setEnabled(h.siteSettings?.showPwaInstall);
+        setClientPreferencePolicy(h.siteSettings?.clientPreferences);
         const n = pluginCount(h.content), notices = h.content?.notices === true;
         if (n !== store.get().installedPlugins || notices !== store.get().installedNotices) store.set({ installedPlugins: n, installedNotices: notices });
       },

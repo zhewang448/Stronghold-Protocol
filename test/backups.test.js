@@ -239,7 +239,7 @@ test('DIY: prototype picks — the 9 elites at tiers 5 and 6, six 4★ reserves 
 
 test('DIY: the 79 owned 6★ picks — a form at every slot status with all three skills, every module at stage 1 and 3, their summons', () => {
   const { ownedPool } = backups.diy;
-  assert.equal(ownedPool.length, 79); // local-tools: upstream 72 + the 7 collab picks (tools/build-data.mjs DIY_COLLAB_ALLOWED)
+  assert.equal(ownedPool.length, 82); // upstream 72 + 7 collabs + the 3 scoped November operators
   let summoners = 0;
   for (const id of ownedPool) {
     const u = backups.units[id];
@@ -311,7 +311,7 @@ test('DIY: prototype picks carry the skill / module of their 补位 rows at the 
 test('DIY: the owned-6★ pool and the faction → bond rule (mainPower + every subPower vs powerIdList, else 协防干员)', () => {
   const { ownedPool, operators, prototypes } = backups.diy;
   const roster = new Set(base.map((c) => c.charId).filter(Boolean));
-  assert.equal(ownedPool.length, 79); // local-tools: + the 7 collab picks
+  assert.equal(ownedPool.length, 82); // + the 7 collab picks and 3 scoped November operators
   for (const id of ownedPool) {
     assert.ok(!roster.has(id), `${id}: a roster operator is never a pick`);
     assert.deepEqual([operators[id].rarity, operators[id].obtainable], [6, true], id);
@@ -326,7 +326,7 @@ test('DIY: the owned-6★ pool and the faction → bond rule (mainPower + every 
   const tally = {};
   for (const id of ownedPool) { const k = operators[id].bonds.join('+'); tally[k] = (tally[k] || 0) + 1; }
   // local-tools: the 7 collab picks — 结城理 拉特兰 (his subPower laterano), the other six 协防干员
-  assert.deepEqual(tally, { emptyShip: 44, yanShip: 14, victoriaShip: 8, sargonShip: 4, siracusaShip: 4, lateranoShip: 2, kazimierzShip: 1, egirShip: 1, 'yanShip+victoriaShip': 1 });
+  assert.deepEqual(tally, { emptyShip: 47, yanShip: 14, victoriaShip: 8, sargonShip: 4, siracusaShip: 4, lateranoShip: 2, kazimierzShip: 1, egirShip: 1, 'yanShip+victoriaShip': 1 });
   // upstream leaves the collab operators out of the data and the pool (the owner's decision of 2026-10-05: copyright);
   // local-tools lets all seven back in (tools/build-data.mjs DIY_COLLAB_ALLOWED)
   assert.deepEqual(backups.diy.excluded, []);

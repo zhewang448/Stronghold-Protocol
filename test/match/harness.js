@@ -87,6 +87,7 @@ export function makeMatch(o = {}) {
     headlessSliceMs: o.headlessSliceMs,
     aiPicksLast: o.aiPicksLast,
     independentPools: o.independentPools,
+    allowDuplicateBands: o.allowDuplicateBands,
     rescueEnabled: o.rescueEnabled,
     uniteLayerGains: o.uniteLayerGains,
     // a bot prep's layout rehearsal delegated to the room's host (DESIGN §14; test/match/rehearsal-delegate.test.js):

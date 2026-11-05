@@ -131,7 +131,7 @@ const short = (v) => { try { return String(JSON.stringify(v)).slice(0, 40); } ca
  * may be empty —, written as it is) — or an object of named
  * fields `{ fields }`, or one whose keys are free `{ each, key, max? }` (a voice slot, a skill index, an operator's
  * skins; `max` the most keys it takes).
- * @typedef {'image' | 'audio' | 'audioList' | 'track' | 'spine' | 'text' | { fields: Record<string, any> } | { each: any, key: RegExp, max?: number }} AssetKind
+ * @typedef {'image' | 'audio' | 'audioList' | 'track' | 'spine' | 'dynamic' | 'text' | { fields: Record<string, any> } | { each: any, key: RegExp, max?: number }} AssetKind
  * @typedef {{ path: string[], record: AssetKind, keys?: string[] }} AssetContainer
  */
 
@@ -149,13 +149,13 @@ const TEXT_MAX = 64;
 const SKINS_MAX = 64;
 /** One skin of an operator: the pictures and models the operator's own record has, under its key, and its name. */
 const SKIN_RECORD = { fields: { name: 'text', group: 'text', avatar: 'image', avatarE2: 'image', portrait: 'image',
-  portraitE2: 'image', illust: 'image', spine: { fields: { front: 'spine', back: 'spine' } } } };
+  portraitE2: 'image', illust: 'image', dynamic: 'dynamic', dynamicAvatar: 'dynamic', spine: { fields: { front: 'spine', back: 'spine' } } } };
 const SFX_UNIT = { fields: { attack: 'audio', hit: 'audio', skill: 'audio', die: 'audio', born: 'audio',
   skills: { each: 'audio', key: INDEX }, attacks: { each: 'audio', key: INDEX }, hits: { each: 'audio', key: INDEX } } };
 
 /** @type {readonly AssetContainer[]} the record containers a cosmetic plugin writes (see the header) */
 export const ASSET_CONTAINERS = Object.freeze(/** @type {AssetContainer[]} */ ([
-  { path: ['chars'], record: { fields: { avatar: 'image', avatarE2: 'image', portrait: 'image', portraitE2: 'image', illust: 'image',
+  { path: ['chars'], record: { fields: { avatar: 'image', avatarE2: 'image', portrait: 'image', portraitE2: 'image', illust: 'image', dynamic: 'dynamic', dynamicE2: 'dynamic', dynamicAvatar: 'dynamic',
       spine: { fields: { front: 'spine', back: 'spine' } }, skins: { each: SKIN_RECORD, key: SKIN_KEY, max: SKINS_MAX, keyName: 'key (letters, digits, _ @ # + . -, at most 64 characters)', keyProblem: true } } } },
   { path: ['enemies'], record: { fields: { icon: 'image', spine: 'spine' } } },
   { path: ['tokens'], record: { fields: { avatar: 'image', spine: 'spine' } } },
@@ -208,7 +208,7 @@ export function getPath(obj, path) {
  * @typedef {{ anims: Record<string, any>, animations: Record<string, number>, events: string[],
  *   hits: Record<string, number[]>, bounds: { x: number, y: number, width: number, height: number } | null }} SpineMeta
  *   what plugin.lock.json holds of a skeleton (tools/assets/skel.mjs, anim-roles.mjs — the fields of a manifest Spine)
- * @typedef {{ skel: string, atlas: string, textures: string[], pma: boolean, meta?: SpineMeta }} SpineOp
+ * @typedef {{ skel: string, atlas: string, textures: string[], pma: boolean, meta?: SpineMeta, frames?: Record<string, any>, layers?: Record<string, string> }} SpineOp
  * @typedef {{ at: string[], file?: string, files?: string[], track?: { loop: string, intro?: string }, spine?: SpineOp,
  *   text?: string, ref?: string, from?: string[], clear?: true, implied?: true }} AssetOp
  *   one write of an overlay (see the header); `clear`: the entry's value taken away (an enemy's or a token's
@@ -261,8 +261,9 @@ export function readAssetOverlay(assets, { vanilla = null, permissions = null, h
   };
 
   /** A Spine object (see the header) → a SpineOp, or null with a problem. */
-  const readSpine = (v, at) => {
+  const readSpine = (v, at, dynamic = false) => {
     for (const k of Object.keys(v)) {
+      if (dynamic && ['frames', 'background', 'foreground'].includes(k)) continue;
       if (k === 'anims' && v.anims === 'auto') continue;
       if (['animations', 'events', 'hits', 'bounds', 'anims'].includes(k)) { list.problem('PLUGIN_SPINE', `${pathText(at)}.${k}: a plugin's Spine clips come from ${LOCK_FILE} (node tools/plugin.mjs pack), never by hand — write "anims": "auto" or leave it out`, { at: where([...at, k]) }); return null; }
       if (!['skel', 'atlas', 'textures', 'pma'].includes(k)) list.warning('PLUGIN_ASSET_IGNORED', `${pathText(at)}.${k} is not a field of a Spine model (ignored)`, { at: where([...at, k]) });
@@ -283,7 +284,25 @@ export function readAssetOverlay(assets, { vanilla = null, permissions = null, h
     const model = [v.skel, atlas, ...new Set(textures)];
     for (const rel of model) addFile(rel);
     models.push(model);
-    return { skel: v.skel, atlas, textures: [...new Set(textures)], pma: v.pma === true };
+    const result = { skel: v.skel, atlas, textures: [...new Set(textures)], pma: v.pma === true };
+    if (dynamic) {
+      if (v.frames !== undefined && !isObj(v.frames)) { list.problem('PLUGIN_SPINE', `${pathText(at)}.frames: not a crop map`, { at: where([...at, 'frames']) }); return null; }
+      const frames = {};
+      for (const [kind, rect] of Object.entries(v.frames || {})) {
+        if (!['avatar', 'portrait'].includes(kind) || !isObj(rect) || Object.keys(rect).some(k => !['x', 'y', 'width', 'height'].includes(k))
+          || !['x', 'y', 'width', 'height'].every(k => typeof rect[k] === 'number' && Number.isFinite(rect[k])) || rect.width <= 0 || rect.height <= 0) {
+          list.problem('PLUGIN_SPINE', `${pathText(at)}.frames: invalid crop rectangle`, { at: where([...at, 'frames']) }); return null;
+        }
+        frames[kind] = { ...rect };
+      }
+      const layers = {};
+      for (const kind of ['background', 'foreground']) if (v[kind] !== undefined) {
+        if (!fileOk(v[kind], IMAGE, [...at, kind])) return null;
+        layers[kind] = v[kind]; addFile(v[kind]);
+      }
+      return { ...result, frames, layers };
+    }
+    return result;
   };
 
   /**
@@ -346,9 +365,9 @@ export function readAssetOverlay(assets, { vanilla = null, permissions = null, h
       if (tr.intro !== undefined) addFile(tr.intro);
       return;
     }
-    if (kind === 'spine') {
+    if (kind === 'spine' || kind === 'dynamic') {
       if (!isObj(v) || typeof /** @type {any} */ (v).skel !== 'string') { list.problem('PLUGIN_SPINE', `${pathText(at)}: not a Spine model { "skel", "atlas", "textures" } or a reference`, { at: where(at) }); return; }
-      const spine = readSpine(v, at);
+      const spine = readSpine(v, at, kind === 'dynamic');
       if (spine) {
         ops.push({ at, spine });
         const clear = localModelClear(loc);
@@ -743,8 +762,23 @@ export function prepareVisualDoc(doc) {
       }
       if (op.spine !== undefined) {
         const sp = op.spine;
-        const value = kind === 'spine' && isObj(sp) ? spineValue(sp, files, fileUrl) : null;
-        if (value) { ops.push({ at: [...at], value, urls: [value.skel, value.atlas, ...value.textures] }); for (const u of [value.skel, value.atlas, ...value.textures]) urls.add(u); } else drop(at, 'not a Spine model of the set (its files, its folder, its clip data)');
+        let value = (kind === 'spine' || kind === 'dynamic') && isObj(sp) ? spineValue(sp, files, fileUrl) : null;
+        if (value && kind === 'dynamic') {
+          const frames = sp.frames || {}, layers = sp.layers || {};
+          const rectsOk = isObj(frames) && Object.entries(frames).every(([k, r]) => ['avatar', 'portrait'].includes(k) && isObj(r)
+            && ['x', 'y', 'width', 'height'].every(f => typeof r[f] === 'number' && Number.isFinite(r[f])) && r.width > 0 && r.height > 0);
+          if (!rectsOk) value = null;
+          else {
+            value = { ...value, frames };
+            for (const k of ['background', 'foreground']) if (layers[k] !== undefined) {
+              const u = fileUrl(layers[k], IMAGE);
+              if (!u) { value = null; break; }
+              value[k] = u;
+            }
+          }
+        }
+        if (value) { const allUrls = [value.skel, value.atlas, ...value.textures, value.background, value.foreground].filter(Boolean);
+          ops.push({ at: [...at], value, urls: allUrls }); for (const u of allUrls) urls.add(u); } else drop(at, 'not a Spine model of the set (its files, its folder, its clip data)');
         return;
       }
       drop(at, 'not a write a cosmetic plugin makes');

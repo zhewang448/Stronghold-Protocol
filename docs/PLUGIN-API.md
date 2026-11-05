@@ -177,6 +177,9 @@ replacement. No route or frozen plugin grammar member is added; the stable surfa
 | `overlay.chars.portrait` | stable | 0.3.0 | `shared/plugins/visual.js#ASSET_CONTAINERS` |
 | `overlay.chars.portraitE2` | stable | 0.3.0 | `shared/plugins/visual.js#ASSET_CONTAINERS` |
 | `overlay.chars.illust` | stable | 0.3.0 | `shared/plugins/visual.js#ASSET_CONTAINERS` |
+| `overlay.chars.dynamic` | stable | 0.3.3 | `shared/plugins/visual.js#ASSET_CONTAINERS` |
+| `overlay.chars.dynamicE2` | stable | 0.3.3 | `shared/plugins/visual.js#ASSET_CONTAINERS` |
+| `overlay.chars.dynamicAvatar` | stable | 0.3.3 | `shared/plugins/visual.js#ASSET_CONTAINERS` |
 | `overlay.chars.spine.front` | stable | 0.3.0 | `shared/plugins/visual.js#ASSET_CONTAINERS` |
 | `overlay.chars.spine.back` | stable | 0.3.0 | `shared/plugins/visual.js#ASSET_CONTAINERS` |
 | `overlay.chars.skins.*` | stable | 0.3.0 | `shared/plugins/visual.js#ASSET_CONTAINERS` |

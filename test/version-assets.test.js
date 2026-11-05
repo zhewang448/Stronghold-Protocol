@@ -35,7 +35,7 @@ test('coverage fails for missing earlier-version pictures, model, skill icon, en
 
 test('presentation union retains the operators behind reused chess ids and their skills', () => {
   const sets = versionAssetData(root), all = presentationUnion(sets);
-  assert.equal(Object.keys(all.operators).length, 236);
+  assert.equal(Object.keys(all.operators).length, 239);
   assert.ok(all.operators.char_198_blackd.skills.some((s) => s.skillId === 'skchr_blackd_2'));
   assert.ok(all.enemies.enemy_1254_lypa);
   assert.ok(all.bands.band_zumama);

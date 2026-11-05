@@ -4,7 +4,7 @@ export function preloadPlan(manifest, local = null, scope = 'visual') {
   const urls = new Set();
   const walk = (v) => {
     if (typeof v === 'string' && ASSET_PATH.test(v) && !v.includes('..') && !v.includes('\\')) {
-      if (scope === 'all' || !/\.(?:mp3|ogg|wav)$/i.test(v)) urls.add(v);
+      if (scope === 'all' || (!/\.(?:mp3|ogg|wav)$/i.test(v) && !v.startsWith('/assets/dynamic/'))) urls.add(v);
     } else if (Array.isArray(v)) v.forEach(walk);
     else if (v && typeof v === 'object') Object.values(v).forEach(walk);
   };

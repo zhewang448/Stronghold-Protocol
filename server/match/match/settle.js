@@ -234,6 +234,7 @@ export class MatchSettle {
     if (this.convenience) result.convenience = this.convenience;
     if (this.gd.enemyHpMultiplier !== 1) result.enemyHpMultiplier = this.gd.enemyHpMultiplier;
     if (this.independentPools) result.independentPools = true;
+    if (this.allowDuplicateBands) result.allowDuplicateBands = true;
     if (this.rescueEnabled) result.rescueEnabled = true;
     this.lastResultMsg = result;
     this.markPublic();

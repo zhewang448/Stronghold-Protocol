@@ -110,6 +110,13 @@ refused (队友已选); band must list the mode type in `modeTypeList`. A single
 untimed. Solo: free pick, no timer, no skip. Starting LP = `bands[id].totalHp`.
 
 ### 1.2 机变 (SP draft)
+
+房主可在开局前启用「允许重复选择策略」（`room.setAllowDuplicateBands { on }`，默认关闭）。
+`room.state` / `m.public` / `m.result` 仅在开启时携带 `allowDuplicateBands: true`；旧记录缺字段按关闭。
+开启后 `Match.bandTaken` 对同组策略返回未占用，手选、AI 预设、随机、超时和离开座位的默认分配统一适用；
+仍校验版本/模式资格、当前轮次和每人一次选择。恢复、版本子进程及本机记录保留该规则；此类对局不计官方统计。
+房主修改后其他玩家需要重新准备，开局后不可修改。此规则为维护者于 2026-11-05 明确要求的 `[ASSUMED]` 扩展。
+
 Family = weighted pick from `choices.schedule[modeId].rounds[r].families`; cards: co-op 6 shared (each player takes 1,
 random order, 30 s first / 16 s others, timeout ⇒ a random remaining card), solo 3; solo and single-human drafts are
 untimed. The UI picks a card with two taps (select → 确认选择, DESIGN §18.2). A 驰援 tactic card

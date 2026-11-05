@@ -4,6 +4,13 @@
 
 ## 1. 仓库与分支
 
+客户端显示偏好的主机配置见 [客户端偏好规则](design/client.md#客户端偏好默认值与修改权限2026-11-05) 和
+[本次验收记录](CLIENT-PREFERENCES-ACCEPTANCE.md)。`shared/clientPreferences.js` 是字段、默认值和校验的共同入口；
+`server/clientPreferences.js` 提供主机状态，`public/js/clientPreferences.js` 分离个人保存值与当前生效值。
+新增偏好必须接入该目录及写入权限，禁止订阅生效值后把整个对象写回个人存储。控制台默认值/权限保存在既有 admin settings 文件，
+用户设置仍沿用原 key、稀疏保存和别名迁移；锁定只覆盖生效层。测试入口为 `test/client-preferences.test.js` 和
+启用 `SP_E2E=1` 的 `test/ui/client-preferences.e2e.test.js`。
+
 当前版本为 `v0.3.3-extended.10`，基础游戏 0.3.3、启动器 1.3.0；实际验证和附件状态见 [本轮发布记录](RELEASE-V0.3.3-EXTENDED.10.md)。
 
 v0.3.3 整合候选及验证边界见 [整合说明](UPSTREAM-V0.3.3-INTEGRATION.md)。

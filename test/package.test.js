@@ -64,7 +64,7 @@ test('selection: runtime files in; tests, maintainer tools, other docs, private 
     'docs/research/07-assets.json', 'docs/SKINS.md', 'tools/install-skins.mjs', 'tools/build-resource-manifest.mjs', 'CHANGELOG.md']) {
     assert.ok(keep.includes(f), `keeps ${f}`);
   }
-  assert.equal(keep.length, 42, keep.join(' '));
+  assert.equal(keep.length, 45, keep.join(' '));
   assert.equal(drop.length, 40, drop.join(' '));
   assert.ok(!keep.some((f) => drop.includes(f)));
 });
@@ -398,6 +398,9 @@ test('the personal scan reads bytes, never reports the matched text, and skips f
     assert.deepEqual(scanFiles(dir, ['a.bin', 'b.txt', 'c.txt', 'missing.txt'], { names: ['plantedname'] }),
       ['a.bin (home-directory path)', 'c.txt (account name)']);
     assert.deepEqual(scanFiles(dir, ['a.bin', 'c.txt'], { home: false, names: [] }), [], 'node_modules: the names only');
+    fs.writeFileSync(path.join(dir, 'curve.json'), JSON.stringify({ curve: [0.81234567, 123456.7], note: 'particle data' }));
+    fs.writeFileSync(path.join(dir, 'identity.json'), JSON.stringify({ account: '123456', scale: 0.81234567 }));
+    assert.deepEqual(scanFiles(dir, ['curve.json', 'identity.json'], { names: ['123456'] }), ['identity.json (account name)'], 'JSON numeric samples are not names; string names still fail');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

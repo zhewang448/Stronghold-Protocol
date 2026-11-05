@@ -420,6 +420,18 @@
     "anchor": "shared/plugins/visual.js#ASSET_CONTAINERS"
   },
   {
+    "name": "overlay.chars.dynamic",
+    "anchor": "shared/plugins/visual.js#ASSET_CONTAINERS"
+  },
+  {
+    "name": "overlay.chars.dynamicE2",
+    "anchor": "shared/plugins/visual.js#ASSET_CONTAINERS"
+  },
+  {
+    "name": "overlay.chars.dynamicAvatar",
+    "anchor": "shared/plugins/visual.js#ASSET_CONTAINERS"
+  },
+  {
     "name": "overlay.chars.spine.front",
     "anchor": "shared/plugins/visual.js#ASSET_CONTAINERS"
   },

@@ -169,6 +169,26 @@
   .settings-search [role="status"] { flex-basis: 100%; color: var(--text-lo); }
   .room-defaults-table th { text-align: left; max-width: 440px; white-space: normal; }
   .room-defaults-table td input:not([type="checkbox"]), .room-defaults-table select { width: 100%; min-width: 150px; max-width: 300px; }
+  .client-defaults-table { width: 100%; table-layout: fixed; }
+  .client-defaults-table th:first-child { width: 38%; white-space: normal; }
+  .client-defaults-table th:last-child { width: 140px; }
+  .client-defaults-table input:not([type="checkbox"]), .client-defaults-table select, .client-defaults-table textarea { width: 100%; min-width: 0; box-sizing: border-box; }
+  .client-defaults-table textarea { min-height: 70px; resize: vertical; font-family: monospace; }
+  .client-defaults-table input[type="checkbox"] { width: 20px; height: 20px; }
+  .client-defaults-table .meta { display: block; font-weight: normal; }
+  .client-preferences-filter { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin: 16px 0; }
+  .client-preferences-filter label { flex: 1 1 200px; }
+  .client-preferences-filter input { width: 100%; box-sizing: border-box; }
+  .client-preferences-actions { position: sticky; bottom: 0; padding: 12px 0; background: var(--bg, #141a18); }
+  @media(max-width: 650px) {
+    .client-defaults-table, .client-defaults-table tbody, .client-defaults-table tr, .client-defaults-table th, .client-defaults-table td { display: block; width: auto; }
+    .client-defaults-table thead { display: none; }
+    .client-defaults-table tr { padding: 12px 0; border-bottom: 1px solid #35413b; }
+    .client-defaults-table td::before { content: attr(data-label); display: block; margin-bottom: 6px; color: #d2ded8; }
+    .client-defaults-table tr[hidden] { display: none; }
+    .client-defaults-table th:first-child, .client-defaults-table th:last-child { width: auto; }
+    .client-preferences-actions button { min-height: 40px; }
+  }
   [data-room-config-row][hidden], .settings-group[hidden], .settings-group .room[hidden] { display: none; }
   .settings-group .meta { max-width: 82ch; line-height: 1.65; overflow-wrap: anywhere; }
   .settings-group form > .row { margin-top: 14px; }
@@ -488,7 +508,7 @@ function rulesText(rules) {
   const unite = rules.uniteLayerGains == null ? '联防叠层未知' : `联防叠层${rules.uniteLayerGains ? '开启' : '关闭'}`;
   const ai = rules.aiPicksLast == null ? 'AI 顺序未知' : rules.aiPicksLast ? 'AI 最后选择' : 'AI 按席位选择';
   const plugins = rules.plugins?.length ? `插件：${rules.plugins.map((plugin) => plugin.id + (plugin.version ? '@' + plugin.version : '')).join('、')}` : rules.gameplayPlugins == null ? '插件信息未知' : rules.gameplayPlugins ? '玩法插件（名称未知）' : '无插件';
-  return [hp, pools, rescue, unite, ai, rules.test ? '测试房间' : '', plugins].filter(Boolean).join(' · ');
+  return [hp, pools, rescue, unite, ai, rules.allowDuplicateBands ? '允许重复选择策略' : '', rules.test ? '测试房间' : '', plugins].filter(Boolean).join(' · ');
 }
 function ruleOptionsText(rules) {
   if (!rules?.convenience) return '其他房间选项未知';
@@ -1551,6 +1571,31 @@ function roomCreationSettings(data) {
   </section>`;
 }
 
+function clientPreferenceSettings(data) {
+  const config = data.clientPreferences;
+  if (!config) return '';
+  const names = { auto: '自动 / 开启', static: '静态 / 关闭', cn: '中文', jp: '日本語', en: 'English', kr: '한국어', low: '低', medium: '中', high: '高',
+    off: '关闭', lite: '精简', full: '完整', sm: '小', md: '中', lg: '大', xl: '特大', all: '全部干员', equipped: '已装扮皮肤的干员', unequipped: '未装扮皮肤的干员',
+    official: '官方背景', night: '夜巡', frost: '霜原', ember: '烬野', calm: '静默', custom: '本机自定义文件', deck: '卡片', list: '列表' };
+  const input = field => {
+    const value = config.defaults[field.key], attrs = `data-client-default="${esc(field.key)}" aria-label="${esc(field.label)}默认值"`;
+    if (field.type === 'boolean') return `<input type="checkbox" ${attrs} ${value ? 'checked' : ''}>`;
+    if (field.type === 'choice') return `<select ${attrs}>${field.options.map(option => `<option value="${esc(option)}" ${option === value ? 'selected' : ''}>${typeof option === 'number' ? option === 0 ? '不限' : option : esc(names[option] || option)}</option>`).join('')}</select>`;
+    if (field.type === 'number') return `<input type="number" ${attrs} min="${field.min}" max="${field.max}" step="${field.step}" value="${value}" required>`;
+    if (field.type === 'language') return `<input type="text" ${attrs} maxlength="32" value="${esc(value)}" placeholder="zh / en / ja / ko / zh-TW" required>`;
+    return `<textarea ${attrs} spellcheck="false" aria-describedby="client-json-help">${esc(JSON.stringify(value, null, 2))}</textarea>`;
+  };
+  return `<section class="room" id="client-preferences-settings"><h2>客户端设置默认值与用户权限</h2>
+    <p class="meta">默认值用于未保存该项偏好的用户。允许用户更改时优先使用其已有设置；关闭权限后立即强制采用本表默认值，但不覆盖用户保存的值，重新允许后自动恢复。所有权限初始均允许，设置保存后对在线客户端立即生效并跨服务器重启保留。</p>
+    <p class="meta" id="client-json-help">列表和逐干员语音、快捷键使用 JSON。插件只填写本服务器已安装的插件 ID；大厅自定义图片与音乐使用各用户自己的本机文件，文件不存在时沿用原回退。诊断、清缓存、导入导出等一次性操作不属于偏好设置。</p>
+    <div class="client-preferences-filter"><label>筛选客户端设置<input type="search" id="client-preferences-search" placeholder="名称或分组" aria-controls="client-defaults-body"></label><button type="button" data-client-allow-all>全部允许用户更改</button></div>
+    <table class="client-defaults-table"><thead><tr><th scope="col">客户端设置</th><th scope="col">默认值 / 强制值</th><th scope="col">允许用户更改</th></tr></thead><tbody id="client-defaults-body">
+      ${data.clientPreferenceFields.map(field => `<tr data-client-preference-row="${esc(field.key)}" data-search="${esc((field.label + ' ' + field.group).toLowerCase())}"><th scope="row">${esc(field.label)}<small class="meta">${esc(field.group)}</small></th><td data-label="默认值 / 强制值">${input(field)}</td><td data-label="允许用户更改"><input type="checkbox" data-client-control="${esc(field.key)}" aria-label="允许用户更改${esc(field.label)}" ${config.userControls[field.key] !== false ? 'checked' : ''}></td></tr>`).join('')}
+    </tbody></table>
+    <div class="row client-preferences-actions"><button type="button" class="primary" data-client-preferences-save>保存客户端设置与权限</button><button type="button" data-client-preferences-reset>撤销修改</button><span id="client-preferences-saved" role="status" aria-live="polite"></span></div>
+  </section>`;
+}
+
 async function showSettings() {
   const host = $('#settings');
   const [d, domains] = await Promise.all([
@@ -1600,6 +1645,7 @@ async function showSettings() {
     </section>
     <section class="room" id="recovery-settings"><h2>重启恢复</h2><div id="recovery-content" role="status">正在读取…</div></section>
     ${roomCreationSettings(d)}
+    ${clientPreferenceSettings(d)}
     <section class="room" id="round-charts-settings"><h2>局内每回合统计</h2>
     <p class="meta" id="round-charts-help">默认开启。所有玩家与观战者可在局内查看每回合曲线与干员伤害排行；关闭后隐藏整个统计入口和面板。保存后立即对所有房间生效，重启服务器后保留。</p>
     <form id="round-charts-form" class="stats-body" onsubmit="return false">
@@ -1691,6 +1737,7 @@ function arrangeSettings(domains) {
   sections.set(chat.id, chat);
   const groups = [
     ['game', '对局设置', ['room-defaults-settings', 'prep-settings', 'round-charts-settings', 'emote-barrage-settings']],
+    ['client', '客户端设置', ['client-preferences-settings']],
     ['chat', '交流管理', ['social-settings', 'chat-policy-settings', 'chat-settings']],
     ['history', '记录与恢复', ['replay-settings', 'recovery-settings']],
     ['system', '维护与扩展', ['release-update', 'update-backups-settings', 'domain-recovery-settings', 'pwa-install-settings', 'plugin-settings', 'issue-feedback']],
@@ -1905,6 +1952,43 @@ document.addEventListener('pointerdown', (e) => {
   if (e.target.closest('[data-candidate-option]')) e.preventDefault();
 });
 document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-client-allow-all]')) {
+    for (const input of document.querySelectorAll('[data-client-control]')) input.checked = true;
+    $('#client-preferences-saved').textContent = '已调整，保存后生效'; return;
+  }
+  if (e.target.closest('[data-client-preferences-reset]')) {
+    for (const input of document.querySelectorAll('[data-client-default]')) {
+      const field = settingsData.clientPreferenceFields.find(f => f.key === input.dataset.clientDefault), value = settingsData.clientPreferences.defaults[field.key];
+      if (input.type === 'checkbox') input.checked = value;
+      else input.value = ['boolean', 'number', 'choice', 'language'].includes(field.type) ? String(value) : JSON.stringify(value, null, 2);
+      input.setCustomValidity('');
+    }
+    for (const input of document.querySelectorAll('[data-client-control]')) input.checked = settingsData.clientPreferences.userControls[input.dataset.clientControl] !== false;
+    $('#client-preferences-saved').textContent = ''; return;
+  }
+  if (e.target.closest('[data-client-preferences-save]')) {
+    const panel = $('#client-preferences-settings'), controls = [...panel.querySelectorAll('input,select,textarea,button')], status = $('#client-preferences-saved');
+    try {
+      const defaults = {};
+      for (const input of panel.querySelectorAll('[data-client-default]')) {
+        input.setCustomValidity('');
+        if (!input.reportValidity()) return;
+        const field = settingsData.clientPreferenceFields.find(f => f.key === input.dataset.clientDefault);
+        try { defaults[field.key] = field.type === 'boolean' ? input.checked : field.type === 'number' || field.type === 'choice' && typeof field.default === 'number' ? Number(input.value)
+          : ['choice', 'language'].includes(field.type) ? input.value.trim() : JSON.parse(input.value); }
+        catch { input.setCustomValidity('请输入有效 JSON'); input.reportValidity(); return; }
+      }
+      const userControls = Object.fromEntries([...panel.querySelectorAll('[data-client-control]')].map(input => [input.dataset.clientControl, input.checked]));
+      controls.forEach(input => { input.disabled = true; }); status.textContent = '保存中…';
+      api('/api/settings', { clientPreferences: { defaults, userControls } }).then(result => {
+        if (!result.ok) throw new Error(result.error || '保存失败');
+        settingsData.clientPreferences = result.clientPreferences;
+        status.textContent = '已保存；默认值与用户修改权限立即生效，用户原设置已保留';
+      }).catch(error => { status.textContent = '保存失败：' + error.message; say(status.textContent, true); })
+        .finally(() => { controls.forEach(input => { input.disabled = false; }); });
+    } catch (error) { status.textContent = '保存失败：' + error.message; }
+    return;
+  }
   if (e.target.closest('[data-room-creation-reset]')) {
     for (const input of document.querySelectorAll('[data-room-default]')) {
       const value = settingsData.roomCreation.defaults[input.dataset.roomDefault];
@@ -1950,6 +2034,11 @@ document.addEventListener('click', (e) => {
   const el = option.closest('.autocomplete').querySelector('input');
   e.preventDefault();
   chooseCandidate(el, option.dataset.candidateOption);
+});
+document.addEventListener('input', event => {
+  if (event.target.id !== 'client-preferences-search') return;
+  const query = event.target.value.trim().toLowerCase();
+  for (const row of document.querySelectorAll('[data-client-preference-row]')) row.hidden = query && !row.dataset.search.includes(query);
 });
 
 async function changeUpdateBackup(body) {

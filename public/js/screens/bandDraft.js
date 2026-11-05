@@ -100,19 +100,19 @@ export function allowedBands(bands, modeType) {
 /** The official default strategy of an automatic assignment (data/config.json bandDraft.timeoutBandId). */
 export const DEFAULT_TIMEOUT_BAND = 'band_bldsk';
 
-export function randomBandCard() {
+export function randomBandCard(allowDuplicates = false) {
   return {
     bandId: RANDOM_BAND_ID,
     random: true,
     name: '?',
     effectName: t('随机策略'),
-    desc: t('随机抽取一个未被队友选择的策略，并额外获得 1 生命值和 1 资金。'),
+    desc: allowDuplicates ? t('随机抽取一个策略（可与队友重复），并额外获得 1 生命值和 1 资金。') : t('随机抽取一个未被队友选择的策略，并额外获得 1 生命值和 1 资金。'),
     totalHp: null,
   };
 }
 
-export function bandRecord(gd, bandId) {
-  return bandId === RANDOM_BAND_ID ? randomBandCard() : gd.band(bandId);
+export function bandRecord(gd, bandId, allowDuplicates = false) {
+  return bandId === RANDOM_BAND_ID ? randomBandCard(allowDuplicates) : gd.band(bandId);
 }
 
 /**
@@ -267,8 +267,9 @@ export function BandDraftScreen({ held = null } = {}) {
   const mode = gd.config?.modes?.[pub?.modeId];
   const offBonds = modeOffBonds(mode); // the bonds this mode never activates (标准: 10 of 23)
   const solo = roomSolo || mode?.type === 'SINGLE' || String(pub?.modeId || '').includes('single');
-  const bands = useMemo(() => [randomBandCard(), ...allowedBands(gd.list('bands'), mode?.type || (solo ? 'SINGLE' : 'MULTI'))],
-    [gd.ready, mode?.type, solo, data.locale()]);
+  const allowDuplicates = pub.allowDuplicateBands === true;
+  const bands = useMemo(() => [randomBandCard(allowDuplicates), ...allowedBands(gd.list('bands'), mode?.type || (solo ? 'SINGLE' : 'MULTI'))],
+    [gd.ready, mode?.type, solo, allowDuplicates, data.locale()]);
   const players = sortedPlayers(pub);
   const draft = normalizeDraft(pub?.draft, players, myId, pub?.poolGroups);
   const grouped = draft.groups.length > 1;
@@ -277,7 +278,7 @@ export function BandDraftScreen({ held = null } = {}) {
   const skipsLeft = draft.skipsLeft.has(myId) ? draft.skipsLeft.get(myId) : (skipped ? 0 : 1);
   const manualTeammateAfter = hasManualTeammateAfter(draft, players, myId);
   const canSkip = !solo && myTurn && skipsLeft > 0 && (grouped ? manualTeammateAfter : draft.order.filter((pid) => !draft.picks.has(pid)).length > 1);
-  const taken = solo ? new Map() : teammateBands(draft.picks, myId);
+  const taken = solo || allowDuplicates ? new Map() : teammateBands(draft.picks, myId);
   const pickers = new Map(); // bandId → players
   for (const [pid, bid] of draft.picks) {
     const p = players.find((x) => x.playerId === pid);
@@ -331,9 +332,9 @@ export function BandDraftScreen({ held = null } = {}) {
 
   // what a timeout gives me: the highlighted band while free, else the default (never 队友已选 — match/phases.js timeoutBand)
   const autoId = autoPickBand(sel, { bands, taken, myPick, defaultId });
-  const autoName = (autoId && bandRecord(gd, autoId)?.name) || bandRecord(gd, defaultId)?.name || tName('华法琳');
+  const autoName = (autoId && bandRecord(gd, autoId, allowDuplicates)?.name) || bandRecord(gd, defaultId, allowDuplicates)?.name || tName('华法琳');
 
-  const band = sel ? bandRecord(gd, sel) : null;
+  const band = sel ? bandRecord(gd, sel, allowDuplicates) : null;
   const selTaken = !!band && band.bandId !== RANDOM_BAND_ID && taken.has(band.bandId);
   const confirm = async () => {
     if (!band || busy || !myTurn || selTaken) return;

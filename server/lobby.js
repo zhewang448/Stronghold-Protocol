@@ -178,6 +178,7 @@ import { getUniteLayerGains, getAllowRoomUniteLayerGains, getSocialSettings } fr
 import { getShowPwaInstall, getAllowAiTakeover, getSeatAvatars } from './match/hostSettings.js';
 import { getEmoteBarrage, getSignalBar, getEmoteBarrageRate } from './match/hostSettings.js';
 import { ROOM_CONFIG_FIELDS, getRoomCreation, roomHostCanChange, roomCreationFrame } from './match/hostSettings.js';
+import { clientPreferenceFrame } from './clientPreferences.js';
 import { isSharedAvatar } from '../shared/avatar.js';
 import { ServerSocial } from './social.js';
 import { Matchmaking } from './matchmaking.js';
@@ -322,6 +323,7 @@ export class Room {
     this.convenience = roomConvenience(Object.fromEntries(CONVENIENCE_KEYS.map(key => [key, defaults['convenience.' + key]])));
     this.enemyHpMultiplier = defaults.enemyHpMultiplier;
     this.independentPools = mode !== 'solo' && defaults.independentPools;
+    this.allowDuplicateBands = mode !== 'solo' && defaults.allowDuplicateBands === true;
     this.rescueEnabled = mode !== 'solo' && defaults.rescueEnabled;
     this.spectatorLimit = defaults.spectatorLimit ?? MAX_SPECTATORS;
     // Capture the host default once; later changes belong to this room alone.
@@ -413,6 +415,7 @@ export class Room {
       convenience: { ...this.convenience },
       ...(this.enemyHpMultiplier !== 1 ? { enemyHpMultiplier: this.enemyHpMultiplier } : {}),
       ...(this.independentPools ? { independentPools: true } : {}),
+      ...(this.allowDuplicateBands ? { allowDuplicateBands: true } : {}),
       ...(this.rescueEnabled ? { rescueEnabled: true } : {}),
       canSetUniteLayerGains: getAllowRoomUniteLayerGains(),
       inMatch: !!this.match,
@@ -740,6 +743,7 @@ export class Lobby {
       'room.setAiPicksLast': 'aiPicksLast', 'room.setSeatAvatars': 'seatAvatars', 'room.setAiTakeover': 'aiTakeoverEnabled',
       'room.setUniteLayerGains': 'uniteLayerGains', 'room.setEnemyHpMultiplier': 'enemyHpMultiplier',
       'room.setIndependentPools': 'independentPools', 'room.setRescue': 'rescueEnabled',
+      'room.setAllowDuplicateBands': 'allowDuplicateBands',
       'room.setSoloUnlimited': 'convenience.soloUnlimited', 'room.setPlugins': 'plugins',
       'room.setSpectatorLimit': 'spectatorLimit',
       'room.setCustomIllust': 'customIllust',
@@ -762,6 +766,7 @@ export class Lobby {
       case 'room.setConvenience': return this.setConvenience(session, msg);
       case 'room.setEnemyHpMultiplier': return this.setEnemyHpMultiplier(session, msg);
       case 'room.setIndependentPools': return this.setIndependentPools(session, msg);
+      case 'room.setAllowDuplicateBands': return this.setAllowDuplicateBands(session, msg);
       case 'room.setRescue': return this.setRescue(session, msg);
       case 'room.proposeVersion': return this.proposeVersion(session, msg);
       case 'room.versionVote': return this.versionVote(session, msg);
@@ -1155,7 +1160,7 @@ export class Lobby {
     values.capacity = room.mode === 'solo' ? 1 : values.capacity;
     values.spectatorLimit ??= this.opts.maxSpectators;
     if (room.seats.slice(values.capacity).some(Boolean) || room.spectators.length > values.spectatorLimit) return fail(ERR.ROOM_RESET_BLOCKED);
-    if (room.mode === 'solo') for (const key of ['private', 'aiPicksLast', 'aiTakeoverEnabled', 'independentPools', 'rescueEnabled']) values[key] = false;
+    if (room.mode === 'solo') for (const key of ['private', 'aiPicksLast', 'aiTakeoverEnabled', 'independentPools', 'allowDuplicateBands', 'rescueEnabled']) values[key] = false;
     if (!getAllowAiTakeover() || version !== DEFAULT_VERSION || content?.vanilla === false) values.aiTakeoverEnabled = false;
     values.convenience = Object.fromEntries(CONVENIENCE_KEYS.map(key => [key,
       content?.rules && Object.hasOwn(content.rules, key) ? room.convenience[key] : choose('convenience.' + key, room.convenience[key])]));
@@ -1815,6 +1820,8 @@ export class Lobby {
     if (getEmoteBarrageRate() !== EMOTE_BARRAGE_RATE_DEFAULT) info.emoteBarrageRate = getEmoteBarrageRate();
     const creation = roomCreationFrame();
     if (creation) info.roomCreation = creation;
+    const clientPreferences = clientPreferenceFrame();
+    if (clientPreferences) info.clientPreferences = clientPreferences;
     const versions = this.versions?.welcome?.();
     if (versions) info.versions = versions;
     return info;
@@ -1873,6 +1880,7 @@ export class Lobby {
         convenience: { ...room.convenience },
         ...(room.enemyHpMultiplier !== 1 ? { enemyHpMultiplier: room.enemyHpMultiplier } : {}),
         ...(room.independentPools ? { independentPools: true } : {}),
+        ...(room.allowDuplicateBands ? { allowDuplicateBands: true } : {}),
         ...(room.rescueEnabled ? { rescueEnabled: true } : {}),
         ...(!modded && !versioned && this.simPool ? { simPool: this.simPool } : {}),
         seats: restored?.seats || seats,
@@ -2489,6 +2497,24 @@ export class Lobby {
     if (room.rescueEnabled !== on) {
       this.dropReplay(room, session.playerId);
       room.rescueEnabled = on;
+      for (const seat of room.seats) if (seat && !seat.isBot && seat.playerId !== room.hostId) seat.ready = false;
+      this.matchmaking.leave(session);
+      this.broadcastState(room);
+    }
+    return OK;
+  }
+
+  setAllowDuplicateBands(session, { on }) {
+    const room = this.roomOf(session);
+    if (!room) return fail(ERR.NOT_IN_ROOM);
+    if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
+    if (room.match) return fail(ERR.ROOM_STARTED);
+    if (room.mode !== 'coop') return fail(ERR.BAD_TARGET);
+    if (typeof on !== 'boolean') return fail(ERR.BAD_MSG);
+    if (!roomHostCanChange('allowDuplicateBands')) return fail(ERR.BAD_TARGET);
+    if (room.allowDuplicateBands !== on) {
+      this.dropReplay(room, session.playerId);
+      room.allowDuplicateBands = on;
       for (const seat of room.seats) if (seat && !seat.isBot && seat.playerId !== room.hostId) seat.ready = false;
       this.matchmaking.leave(session);
       this.broadcastState(room);

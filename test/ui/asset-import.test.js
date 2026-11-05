@@ -20,6 +20,18 @@ import {
 const enc = new TextEncoder();
 const bytesOf = (text) => enc.encode(text);
 
+test('JSON dynamic illustrations share one model hash across skeleton, atlas and all pages for offline import', () => {
+  const map = { 'assets/dynamic/a.json': bytesOf('{"bones":[]}'), 'assets/dynamic/a.atlas': bytesOf('page.png'),
+    'assets/dynamic/page.png': bytesOf('texture'), 'assets/dynamic/page2.png': bytesOf('texture2') };
+  const hashes = Object.fromEntries(Object.entries(map).map(([name, bytes]) => [name, hash16(bytes)]));
+  const view = rewriteManifest({ chars: { char_002_amiya: { dynamic: { skel: '/assets/dynamic/a.json',
+    atlas: '/assets/dynamic/a.atlas', textures: ['/assets/dynamic/page.png', '/assets/dynamic/page2.png'] } } } }, 'assets.json', indexFor(hashes));
+  const plan = planFromManifests(view.doc, null);
+  assert.equal(plan.groups.length, 1);
+  assert.deepEqual(plan.groups[0].members.map(m => m.rel), Object.keys(map));
+  assert.equal(new Set(plan.groups[0].members.map(m => plainRel(m.url).hash)).size, 1);
+});
+
 function set16(view, offset, value) { view.setUint16(offset, value, true); }
 function set32(view, offset, value) { view.setUint32(offset, value, true); }
 

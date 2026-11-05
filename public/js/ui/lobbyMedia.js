@@ -16,7 +16,9 @@
 // is decoded from its bytes (no media element). Texts go through t() (docs/I18N.md).
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { html, Button, Icon, MicroLabel, Modal, Tooltip } from './components.js';
-import { createStore, useStore, loadPref, savePref } from '../store.js';
+import { createStore, useStore, loadPref } from '../store.js';
+import { createClientPreferenceStore, canChangeClientPreference } from '../clientPreferences.js';
+import { ClientPreference } from './clientPreference.js';
 import { audio } from '../audio.js';
 import { toast } from './toasts.js';
 import { reducedMotion } from './device.js';
@@ -178,20 +180,20 @@ export function storageError(err) {
  * { prefs, backdrop: { kind, name, size, url, animated } | null, music: { name, size, id } | null,
  *   busy: null | 'backdrop' | 'music' }
  */
-export const mediaStore = createStore({ prefs: loadMediaPrefs(), backdrop: null, music: null, busy: null });
+const mediaPreferences = createClientPreferenceStore({ prefix: 'lobbyMedia', preference: PREF, normalize: loadMediaPrefs });
+export const mediaStore = createStore({ prefs: mediaPreferences.get(), backdrop: null, music: null, busy: null });
 let musicBlob = null;
 /** Bumped when a slot's file is chosen or deleted: a read of the saved files that started before it is stale. */
 const revision = { backdrop: 0, music: 0 };
 const savePrefs = (patch) => {
-  const prefs = { ...mediaStore.get().prefs, ...patch };
-  savePref(PREF, prefs);
-  mediaStore.set({ prefs });
+  mediaPreferences.set(patch);
 };
 /** The own track to the audio manager (or none); `decoded`: the file's check already decoded it (no second decode). */
 const syncMusic = (decoded = null) => {
   const { prefs, music } = mediaStore.get();
   audio.setLobbyTrack(prefs.music && music && musicBlob ? { id: music.id, read: () => musicBlob.arrayBuffer(), decoded } : null);
 };
+mediaPreferences.subscribe(prefs => { mediaStore.set({ prefs }); syncMusic(); if (prefs.backdrop || prefs.music) void loadSavedMedia(); });
 function showBackdrop(rec) {
   const old = mediaStore.get().backdrop;
   if (old?.url) URL.revokeObjectURL(old.url);
@@ -346,6 +348,7 @@ async function probeMusic(file) {
  * @returns {Promise<boolean>} whether it was taken (a refusal shows its reason)
  */
 export async function chooseMedia(slot, file) {
+  if (!canChangeClientPreference('lobbyMedia.' + slot)) return false;
   if (mediaStore.get().busy) return false;
   const c = classifyFile(file, slot);
   if (!c.ok) { toast(c.reason, 'warn'); return false; }
@@ -377,6 +380,7 @@ export async function chooseMedia(slot, file) {
 
 /** Delete the player's file of a slot (back to the official one). */
 export async function removeMedia(slot) {
+  if (!canChangeClientPreference('lobbyMedia.' + slot)) return;
   try { await writeRecord(slot, null); } catch { /* the record goes with the storage anyway */ }
   revision[slot]++;
   if (slot === 'backdrop') showBackdrop(null); else keepMusic(null);
@@ -500,17 +504,17 @@ export function LobbyMediaDialog({ onClose }) {
   const dim = Math.round(s.prefs.dim * 100);
   return html`<${Modal} open=${true} class="lmedia" micro="LOBBY BACKDROP & MUSIC" title=${t('大厅背景与音乐')} width="min(8.6rem, 96vw)"
       onClose=${onClose} actions=${html`<${Button} variant="ghost" onClick=${onClose} data-autofocus="">${t('完成')}<//>`}>
-    <${SceneRow} scene=${s.prefs.scene} />
-    <${MediaRow} slot="backdrop" title=${t('大厅背景')} micro="BACKDROP" file=${s.backdrop} on=${s.prefs.backdrop} busy=${s.busy}
-      accept="image/png,image/jpeg,image/webp,image/gif,image/avif,video/mp4,video/webm" chooseText=${t('选择图片或视频')} officialText=${t('默认背景')} />
-    ${s.backdrop && s.prefs.backdrop ? html`<label class="set-row lmedia__dim">
+    <${ClientPreference} name="lobbyMedia.scene"><${SceneRow} scene=${s.prefs.scene} /><//>
+    <${ClientPreference} name="lobbyMedia.backdrop"><${MediaRow} slot="backdrop" title=${t('大厅背景')} micro="BACKDROP" file=${s.backdrop} on=${s.prefs.backdrop} busy=${s.busy}
+      accept="image/png,image/jpeg,image/webp,image/gif,image/avif,video/mp4,video/webm" chooseText=${t('选择图片或视频')} officialText=${t('默认背景')} /><//>
+    ${s.backdrop && s.prefs.backdrop ? html`<${ClientPreference} name="lobbyMedia.dim"><label class="set-row lmedia__dim">
       <span class="set-row__label">${t('暗度')}<${MicroLabel}>DIM<//></span>
       <input class="set-range" type="range" min="0" max="80" step="5" value=${dim} style=${`--pct:${dim / 0.8}%`}
         onInput=${(e) => setBackdropDim(Number(e.currentTarget.value) / 100)} data-testid="media-dim" />
       <span class="set-row__val num">${dim}</span>
-    </label>` : null}
-    <${MediaRow} slot="music" title=${t('大厅音乐')} micro="MUSIC" file=${s.music} on=${s.prefs.music} busy=${s.busy}
-      accept="audio/*,.mp3,.m4a,.aac,.ogg,.opus,.wav,.flac,.webm" chooseText=${t('选择音乐文件')} officialText=${t('默认音乐')} />
+    </label><//>` : null}
+    <${ClientPreference} name="lobbyMedia.music"><${MediaRow} slot="music" title=${t('大厅音乐')} micro="MUSIC" file=${s.music} on=${s.prefs.music} busy=${s.busy}
+      accept="audio/*,.mp3,.m4a,.aac,.ogg,.opus,.wav,.flac,.webm" chooseText=${t('选择音乐文件')} officialText=${t('默认音乐')} /><//>
     <p class="lmedia__note"><${Icon} name="info" />${t('文件只保存在这台浏览器里，不会上传，队友也看不到。图片不超过 20 MB，最长边超过 2560 像素时缩小后保存（动图不能超过 2560 像素）；视频不超过 60 MB、最高 1080p，静音循环播放；音乐不超过 20 MB、6 分钟，替换标题、大厅、房间、开局前和结算时的音乐（外观插件的大厅音乐也被替换），音量跟随「背景音乐」。')}</p>
   <//>`;
 }

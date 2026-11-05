@@ -56,8 +56,9 @@ test('every generated attack/hit reference resolves to a valid pool and its sele
   // plain mode-bank slots on 19 operators, and 弑君者 / 莱伊 / 望 / 灰毫's normal attack from their mode-0 banks
   // The four-version art union adds nine references to installed sounds and 46 official pool records.
   // The extension keeps seven collaboration operators and their installed sound references.
-  assert.equal(refs, 1043);
-  assert.equal(Object.keys(pools).length, 1039);
+  // Three pinned new operators add 14 attack/hit references and 14 bank records.
+  assert.equal(refs, 1057);
+  assert.equal(Object.keys(pools).length, 1053);
   const p = pools[units.char_4064_mlynar.attackPools[2]];
   assert.equal(p.sounds['player/p_imp/p_imp_loyalsword_h.mp3'].delay, 0.1);
 });

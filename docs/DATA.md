@@ -1067,3 +1067,7 @@ one child process per version `cs`, at most `maxHosts`, counted apart from the p
 host checks every data file's sha256 against the version's hash input, installs the data with `setData` and the version's
 bounds snapshot, and refuses a match whose `opts.version` is not its data's version. A test journal of such a match carries
 `init.options.version` and replays in a process whose data singleton is that version's (`server/match/testReplay.js`).
+
+## 固定版本的三位自选扩展
+
+new-operators-20261101.json 仅补塔露拉、国度、冻河与必要引用；build-data.mjs --operator-extension-only 从该输入再生成第二期下半的 backups。全量构建复用同一步骤，其他三个版本不扩展名单。来源哈希、形态和模组见 [实施说明](DYNAMIC-ILLUSTRATIONS-IMPLEMENTATION.md)。

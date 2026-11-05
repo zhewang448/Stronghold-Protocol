@@ -26,6 +26,7 @@ import { kindOf } from './formats.mjs';
 import { pickUnitSfx, assignSkillModeSfx, UI_SFX, BATTLE_SFX, resolveSpec, indexVoice, nativeVoiceDirs, VOICE_DIRS, VOICE_CUSTOM_DIR, VOICE_BATTLE_SLOTS } from './audio.mjs';
 import { literal } from './manifest.mjs';
 import { EMOTE_CATALOG } from '../../shared/constants.js';
+import { EXTENSION_ILLUSTRATIONS, prtsIllustrationUrl } from './illustration-sources.mjs';
 
 /**
  * The voice slots are read from the zh_CN charword table, whose voiceIds are always `CN_*`: the other dubs
@@ -240,6 +241,8 @@ export function patternOperator(id, x = {}) {
     name: x.name ?? null, subProfessionId: x.subProfessionId ?? null, nationId: x.nationId ?? null, chess: [],
     avatar: { e0e1: { url: `${RAW.yuanyan}avatar/${id}.png` }, e2: { url: `${RAW.yuanyan}avatar/${id}_2.png` } },
     portrait: { e0e1: { url: `${RAW.yuanyan}portrait/${id}_1.png` }, e2: { url: `${RAW.yuanyan}portrait/${id}_2.png` } },
+    ...(EXTENSION_ILLUSTRATIONS[id] ? { illustration: { e1: prtsIllustrationUrl(`立绘_${EXTENSION_ILLUSTRATIONS[id]}_1.png`),
+      e2: prtsIllustrationUrl(`立绘_${EXTENSION_ILLUSTRATIONS[id]}_2.png`) } } : {}),
     skills: (x.skills || []).map((s) => ({
       index: s.index, skillId: s.skillId, iconId: s.iconId || s.skillId,
       icon: { url: `${RAW.yuanyan}skill/skill_icon_${encodeURIComponent(s.iconId || s.skillId)}.png` },
@@ -447,6 +450,8 @@ export function buildPlan({ assets07, ops03, enemies05, maps05, audio, modelsDat
     if (o.avatar?.e2?.url) c.avatarE2 = leaf(alt(`char/avatar/${id}_2.png`, o.avatar.e2.url, o.avatar.e2.bytes));
     c.portrait = leaf(alt(`char/portrait/${id}_1.png`, o.portrait?.e0e1?.url, o.portrait?.e0e1?.bytes));
     if (o.portrait?.e2?.url) c.portraitE2 = leaf(alt(`char/portrait/${id}_2.png`, o.portrait.e2.url, o.portrait.e2.bytes));
+    if (o.illustration?.e1) c.illust = leaf(alt(`char/illust/${id}_1.png`, o.illustration.e1));
+    if (o.illustration?.e2) c.illustE2 = leaf(alt(`char/illust/${id}_2.png`, o.illustration.e2));
     c.spine = {};
     const front = fexliModel(`op:${id}:front`, 'op', `spine/op/${id}/front/`, o.battleSpine?.front, idx);
     if (front) c.spine.front = front; else notes.push(`${id}: no Front battle Spine in research data`);
@@ -777,6 +782,9 @@ export function buildPlan({ assets07, ops03, enemies05, maps05, audio, modelsDat
     const tree = {};
     for (const [charId, slots] of voiceSlotsByChar) {
       if (!chars[charId]) continue;          // only the operators this game can field (`chars`: the 138 pool charIds and the 自选 picks)
+      // The pinned extension explicitly publishes CN, JP and RUS. Absent EN/KR
+      // lines use the existing Chinese fallback; do not report fictitious files.
+      if (EXTENSION_ILLUSTRATIONS[charId] && ['en', 'kr'].includes(lang) && !charword?.voiceLangDict?.[charId]?.dict?.[lang.toUpperCase()]) continue;
       const dir = dirOf ? dirOf(charId) : null;
       if (dirOf && !dir) continue;
       const dub = lang === 'cn' && linkageOnly(charId) ? VOICE_JP_LANG : lang;

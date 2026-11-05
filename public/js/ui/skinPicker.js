@@ -20,12 +20,17 @@
 // A missing piece of art still falls back to the OPERATOR's own (its 立绘 / portrait / avatar), never to a slash or a
 // placeholder, so the 默认 tile of a picture-only plugin draws the picture that plugin wrote.
 
-import { useState } from '../../vendor/hooks.module.js';
+import { useState, useRef, useEffect, useLayoutEffect } from '../../vendor/hooks.module.js';
+import { render } from '../../vendor/preact.module.js';
 import { html, MicroLabel, Modal, Button } from './components.js';
 import { useStore } from '../store.js';
 import { useData, data } from '../data.js';
 import { skinsStore, availableSkins, chosenSkin, hasAnySkinChoices, setSkin, clearSkin, SKINS_KEY,
   skinRandomStore, updateSkinRandom, setSkinLocked, randomizeSkins } from './skins.js';
+import { ClientPreference } from './clientPreference.js';
+import { DynamicIllustration } from './dynamicIllustration.js';
+import { RadioGroup } from './radioGroup.js';
+import { dynamicOf } from './dynamicFraming.js';
 import { toast } from './toasts.js';
 import { t } from '../../../shared/i18n.js';
 
@@ -46,19 +51,19 @@ export function SkinRandomControls({ ready = true }) {
     <${Modal} open=${open} onClose=${() => setOpen(false)} title=${t('皮肤随机设置')} micro="SKIN RANDOMIZATION" width="7.4rem"
       actions=${html`<${Button} variant="primary" onClick=${() => setOpen(false)}>${t('完成')}<//>`}>
       <div class="set-list" data-testid="skin-random-settings">
-        <div class="set-row"><span class="set-row__label">${t('随机范围')}</span>
+        <${ClientPreference} name="skinRandom.scope"><div class="set-row"><span class="set-row__label">${t('随机范围')}</span>
           <select class="lo-skin-random__scope" aria-label=${t('随机范围')} value=${policy.scope} onChange=${(e) => updateSkinRandom({ scope: e.currentTarget.value })}>
             <option value="all">${t('全部干员')}</option>
             <option value="equipped">${t('已装扮皮肤的干员')}</option>
             <option value="unequipped">${t('未装扮皮肤的干员')}</option>
           </select>
         </div>
-        <p class="set-hint">${t('按当前实际装扮判断范围；范围外和已锁定的干员保持不变。')}</p>
-        <div class="set-row"><span class="set-row__label">${t('每局自动随机皮肤')}</span>
+        <//><p class="set-hint">${t('按当前实际装扮判断范围；范围外和已锁定的干员保持不变。')}</p>
+        <${ClientPreference} name="skinRandom.auto"><div class="set-row"><span class="set-row__label">${t('每局自动随机皮肤')}</span>
           <button type="button" class=${cx('set-toggle', policy.auto && 'is-on')} role="switch" aria-label=${t('每局自动随机皮肤')}
             aria-checked=${String(policy.auto)} onClick=${() => updateSkinRandom({ auto: !policy.auto })}><i></i><span>${policy.auto ? t('已开启') : t('未开启')}</span></button>
         </div>
-        <p class="set-hint">${t('每局开始时随机一次，使用当前随机范围并跳过锁定干员。刷新、重连和回档不会重新随机。')}</p>
+        <//><p class="set-hint">${t('每局开始时随机一次，使用当前随机范围并跳过锁定干员。刷新、重连和回档不会重新随机。')}</p>
         <p class="set-hint">${t('已锁定 {n} 名干员，可在各干员的皮肤栏中解锁。', { n: Object.keys(policy.locked).length })}</p>
       </div>
     <//>
@@ -108,9 +113,29 @@ function SkinTile({ row, chosen, onPick, onPreview }) {
  * A plain component taking a URL rather than reading the store, so its markup can be tested without a browser.
  * @param {{ art?: string|null, name?: string }} props
  */
-export function SkinPreview({ art = null, name = '' }) {
+export function SkinPreview({ art = null, name = '', entry = null }) {
   if (!art) return null;
-  return html`<div class="lo-skin-preview"><img src=${art} alt=${name} /></div>`;
+  return html`<div class="lo-skin-preview"><${DynamicIllustration} entry=${entry} staticSrc=${art} name=${name} /></div>`;
+}
+
+// Escape the loadout drawer's stacking/scrolling context. Focus management remains
+// the normal Modal's, including restoring the preview button when it closes.
+function SkinPreviewModal({ open, art, name, entry, eliteArt = null, eliteEntry = null, onClose }) {
+  const [phase, setPhase] = useState('normal');
+  useEffect(() => { setPhase('normal'); }, [art, open]);
+  const host = useRef(null);
+  const clear = () => { if (host.current) { render(null, host.current); host.current.remove(); host.current = null; } };
+  useLayoutEffect(() => {
+    if (!open) { clear(); return; }
+    if (!host.current) { host.current = document.createElement('div'); host.current.className = 'skin-preview-portal'; document.body.appendChild(host.current); }
+    render(html`<${Modal} open=${true} title=${name || t('外观预览')} onClose=${onClose} width="min(92vw, 900px)"
+      actions=${html`<${Button} onClick=${onClose}>${t('关闭')}<//>`}>
+      ${eliteArt ? html`<${RadioGroup} label=${t('立绘阶段')} value=${phase} options=${[{ value: 'normal', label: t('普通') }, { value: 'elite', label: t('精二') }]} onChange=${setPhase} />` : null}
+      <${SkinPreview} art=${phase === 'elite' && eliteArt ? eliteArt : art} name=${name} entry=${phase === 'elite' && eliteArt ? eliteEntry : entry} />
+    <//>`, host.current);
+  });
+  useEffect(() => () => clear(), []);
+  return null;
 }
 
 /**
@@ -145,7 +170,7 @@ export function SkinSection({ charId }) {
   // the GLOBAL gate (docs/SKINS.md): shown for every operator as soon as any operator of the manifest has a wear-able
   // skin, and for none while none has. A per-operator gate lived here and was removed on purpose — see the header.
   const declared = data.get('skins')?.chars?.[id] || [];
-  if (!hasAnySkinChoices()) return null;
+  if (!hasAnySkinChoices() && !dynamicOf(data.get('assets'), id)) return null;
   const rows = availableSkins(id).filter((x) => x.own || x.playable);
   // an operator the composed manifest does not hold at all has nothing to draw — not even a 默认 tile — so it gets no
   // section rather than an empty grid: the global rule can only show what the manifest has
@@ -157,27 +182,28 @@ export function SkinSection({ charId }) {
   // 1:1 avatar, which CSS draws instead of the 1:2 art when the panel is too short for it. The enlarged preview prefers
   // the 立绘 — a 1024 px+ picture — and is only offered for a skin (the 默认 tile's own portrait is not a poster)
   const shown = rows.map((row) => ({ ...row, art: row.portrait || row.avatar || null, face: row.avatar || null }));
-  const previewRow = preview ? rows.find((x) => !x.own && x.id === preview) || null : null;
+  const previewRow = preview !== null ? rows.find(x => x.id === preview) || null : null;
   const previewArt = previewRow ? (previewRow.illust || previewRow.portrait || previewRow.avatar) : null;
 
   return html`<section class="lo-sec lo-sec--skin" data-testid="skin-section" data-skin-char=${charId} data-state=${rows.length > 1 ? 'ready' : 'empty'}>
     <header class="lo-sec__head">
       <h3>${t('皮肤')}<${MicroLabel}>SKIN<//></h3>
+      <${Button} size="sm" data-testid="illustration-preview" onClick=${() => setPreview(chosen || '')}>${t('查看立绘')}<//>
       ${/* always the count, 0 included ("0 套外观"): with the global rule an operator that has no skin of its own gets
             this section with the 默认 tile alone, and the count is what says the plugin is on and this operator simply
             has no 时装 — omitting it would leave the header looking like an empty section. One branch fewer, too. */ null}
       <span class="lo-sec__note">${t('{n} 套外观', { n: shown.length - 1 })}</span>
-      <button type="button" class=${cx('lo-skin-lock', randomPolicy.locked[id] && 'is-on')} data-testid="skin-lock"
+      <${ClientPreference} name="skinRandom.locked"><button type="button" class=${cx('lo-skin-lock', randomPolicy.locked[id] && 'is-on')} data-testid="skin-lock"
         aria-pressed=${String(!!randomPolicy.locked[id])} title=${t('锁定后，随机和批量恢复默认都不会更改此干员的皮肤。')}
-        onClick=${() => setSkinLocked(id, !randomPolicy.locked[id])}>${randomPolicy.locked[id] ? t('皮肤已锁定') : t('锁定皮肤')}</button>
+        onClick=${() => setSkinLocked(id, !randomPolicy.locked[id])}>${randomPolicy.locked[id] ? t('皮肤已锁定') : t('锁定皮肤')}</button><//>
     </header>
     <div class="lo-skins" role="radiogroup" aria-label=${t('选择皮肤')}>
       ${shown.map((row) => html`<${SkinTile} key=${row.own ? 'default' : row.id} row=${row} chosen=${row.own ? !chosen : chosen === row.id}
         onPick=${() => (row.own ? clearSkin(id) : setSkin(id, row.id))} onPreview=${() => setPreview(row.id)} />`)}
     </div>
-    <${Modal} open=${!!previewRow} title=${previewRow ? previewRow.name : t('外观预览')} micro="SKIN PREVIEW"
-      onClose=${() => setPreview(null)} width="min(92vw, 900px)">
-      <${SkinPreview} art=${previewArt} name=${previewRow ? previewRow.name : ''} />
-    <//>
+    <${SkinPreviewModal} open=${!!previewRow} name=${previewRow?.name || t('外观预览')} onClose=${() => setPreview(null)}
+      entry=${previewRow ? dynamicOf(data.get('assets'), id, previewRow.id, 'illustration', !previewRow.own) : null} art=${previewArt}
+      eliteArt=${previewRow?.own ? data.get('assets')?.chars?.[id]?.illustE2 : null}
+      eliteEntry=${previewRow?.own ? dynamicOf(data.get('assets'), id, null, 'illustration', true) : null} />
   </section>`;
 }

@@ -26,8 +26,10 @@
 
 import { useState } from '../../vendor/hooks.module.js';
 import { html, Button, MicroLabel } from './components.js';
-import { createStore, useStore, loadPref, savePref } from '../store.js';
+import { useStore } from '../store.js';
 import { settingsStore } from './settingsStore.js';
+import { ClientPreference } from './clientPreference.js';
+import { createClientPreferenceStore } from '../clientPreferences.js';
 import { t, N_ } from '../../../shared/i18n.js';
 
 export const FIT_SIDES = ['l', 'r', 't', 'b'];
@@ -60,7 +62,7 @@ export function sanitizeFit(v) {
 export const sliderOf = (px) => Math.round(MID + px / PX_PER_STEP);
 export const pxOf = (v) => (Number(v) - MID) * PX_PER_STEP;
 
-export const fitStore = createStore(sanitizeFit(loadPref('screenFit', null)));
+export const fitStore = createClientPreferenceStore({ prefix: 'screenFit', preference: 'screenFit', normalize: sanitizeFit });
 
 /** 界面大小 applies at 文字大小 小 only (see the header); `textSize` missing = 小. */
 export const uiAllowed = (textSize) => textSize == null || textSize === 'sm';
@@ -86,14 +88,14 @@ export function applyFit(f, textSize = settingsStore.get().textSize) {
   try { globalThis.dispatchEvent?.(new Event('resize')); } catch { /* old browsers */ }
 }
 
-fitStore.subscribe((f) => { savePref('screenFit', f); applyFit(f); });
+fitStore.subscribe((f) => applyFit(f));
 // a 文字大小 change turns the stored size on (小) or off (中 and above)
 let appliedText = settingsStore.get().textSize;
 settingsStore.subscribe((s) => { if (s.textSize !== appliedText) { appliedText = s.textSize; applyFit(fitStore.get(), s.textSize); } });
 applyFit(fitStore.get());
 
 /** @param {Partial<{l:number,r:number,t:number,b:number,ui:number}>} patch pixel offsets, the size in percent */
-export const updateFit = (patch) => fitStore.set(sanitizeFit({ ...fitStore.get(), ...patch }));
+export const updateFit = patch => fitStore.set(patch);
 
 const SIDE_NAMES = { l: N_('左侧'), r: N_('右侧'), t: N_('顶部'), b: N_('底部') };
 const SIDE_MICRO = { l: 'LEFT', r: 'RIGHT', t: 'TOP', b: 'BOTTOM' };
@@ -125,16 +127,16 @@ export function ScreenFitSection() {
     <p class="set-hint">${t('全屏后界面被挖孔、刘海或曲面边缘挡住，或比例、位置不对时使用：50 为不调整，往右拉该边往里收，往左拉该边往外扩。界面会立即移动，可边看边调，只保存在这台设备上。')}</p>
     ${FIT_SIDES.map((k) => {
       const v = sliderOf(f[k]);
-      return html`<div key=${k} class="set-row set-fit__row">
+      return html`<${ClientPreference} key=${k} name=${"screenFit." + k}><div class="set-row set-fit__row">
         <span class="set-row__label">${t(SIDE_NAMES[k])}<${MicroLabel}>${SIDE_MICRO[k]}<//></span>
         <button type="button" class="set-fit__step" aria-label=${t('减少')} disabled=${v <= LO} onClick=${() => updateFit({ [k]: pxOf(v - 1) })}>−</button>
         <input class="set-range" type="range" min=${LO} max=${HI} step="1" value=${v} style=${`--pct:${v}%`}
           aria-label=${t(SIDE_NAMES[k])} data-testid=${`fit-${k}`} onInput=${(e) => updateFit({ [k]: pxOf(e.currentTarget.value) })} />
         <button type="button" class="set-fit__step" aria-label=${t('增加')} disabled=${v >= HI} onClick=${() => updateFit({ [k]: pxOf(v + 1) })}>+</button>
         <span class="set-row__val num">${v}</span>
-      </div>`;
+      </div><//>`;
     })}
-    <div class=${`set-row set-fit__row${allowed ? '' : ' is-disabled'}`} data-testid="ui-size">
+    <${ClientPreference} name="screenFit.ui"><div class=${`set-row set-fit__row${allowed ? '' : ' is-disabled'}`} data-testid="ui-size">
       <span class="set-row__label">${t('界面大小')}<${MicroLabel}>UI SIZE<//></span>
       <button type="button" class="set-fit__step" aria-label=${t('减少')} disabled=${!allowed || ui <= UI_MIN} onClick=${() => setUi(ui - UI_STEP)}>−</button>
       <input class="set-range" type="range" min=${UI_MIN} max=${UI_MAX} step=${UI_STEP} value=${shown} disabled=${!allowed}
@@ -145,7 +147,7 @@ export function ScreenFitSection() {
       <button type="button" class="set-fit__step" aria-label=${t('增加')} disabled=${!allowed || ui >= UI_MAX} onClick=${() => setUi(ui + UI_STEP)}>+</button>
       <span class="set-row__val num" data-testid="ui-size-pct">${shown}%</span>
     </div>
-    <p class="set-hint">${t('界面大小：缩小按钮、面板、商店条和文字，给棋盘多留空间（100% 为原尺寸）；按钮保持可点的大小。')}</p>
+    <//><p class="set-hint">${t('界面大小：缩小按钮、面板、商店条和文字，给棋盘多留空间（100% 为原尺寸）；按钮保持可点的大小。')}</p>
     ${allowed ? null : html`<p class="set-hint" data-testid="ui-size-locked">${t('文字大小为「中」及以上时不可缩小界面')}</p>`}
   </section>`;
 }

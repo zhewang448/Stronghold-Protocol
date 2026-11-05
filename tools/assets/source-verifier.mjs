@@ -55,6 +55,7 @@ export class SourceVerifier {
     const parsed = new URL(url);
     if (parsed.origin !== 'https://raw.githubusercontent.com' || parsed.username || parsed.password || parsed.search || parsed.hash) throw new Error('unsupported source URL: expected public raw.githubusercontent.com URL');
     const parts = parsed.pathname.slice(1).split('/').map(decodeURIComponent);
+    if (parts[2] === 'refs' && parts[3] === 'heads') parts.splice(2, 2);
     const repo = parts.slice(0, 2).join('/');
     // Match the snapshot branch, including branch names containing slashes.
     const key = Object.keys(this.snapshot).filter((k) => k.startsWith(repo + '@') &&

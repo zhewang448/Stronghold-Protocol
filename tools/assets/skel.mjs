@@ -217,6 +217,17 @@ export function parseSkel(bytes, atlasRegions) {
   } finally {
     unguardSpineCounts();
   }
+  return skeletonMetadata(data, missing);
+}
+
+/** Inspect JSON illustrations with the same 3.8 runtime; the browser measures missing bounds after Idle. */
+export function parseSpineJson(json, atlasRegions) {
+  const r = loadRuntime(), missing = new Set();
+  const data = new r.SkeletonJson(makeLoader(r, atlasRegions, missing)).readSkeletonData(json);
+  return skeletonMetadata(data, missing);
+}
+
+function skeletonMetadata(data, missing) {
   const animations = data.animations.map((a) => a.name);
   const durations = {};
   const hits = {};

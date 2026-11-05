@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from '../../vendor/hooks.module.js';
 import { html, Button, Modal, TextField } from './components.js';
 import { createStore, store, useStore } from '../store.js';
+import { clientPreferencePolicy } from '../clientPreferences.js';
+import { ClientPreference } from './clientPreference.js';
 import { t } from '../../../shared/i18n.js';
 import { copyText } from './clipboard.js';
 import { backupDue, initializeReminder, isTemporaryHost, reminderState, updateReminder } from './backupReminder.js';
@@ -45,6 +47,8 @@ function PersonalDataPanel({ source, onClose }) {
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
   const [reminders, setReminders] = useState(() => reminderState().enabled);
+  const reminderPolicy = useStore(s => s.config.defaults['backupReminder.enabled'] + ':' + s.config.userControls['backupReminder.enabled'], Object.is, clientPreferencePolicy);
+  useEffect(() => { setReminders(reminderState().enabled); }, [reminderPolicy]);
   const active = useRef(true), cancelMigration = useRef(() => {}), fileRef = useRef(null), operation = useRef(false);
   const oldSiteEdited = useRef(false);
   useEffect(() => () => { active.current = false; cancelMigration.current(); }, []);
@@ -155,7 +159,7 @@ function PersonalDataPanel({ source, onClose }) {
     <div class="personal-data-panel">
       <p>${t('包含本机账号、昵称、头像、战绩与成就、干员调配、皮肤、设置、插件个人配置、自定义大厅背景和音乐。素材缓存及临时对局凭证不包含在内。')}</p>
       <p class="personal-data-warning">${t('恢复码包含个人数据，请像密码一样保管；它是备份时的快照，不会自动更新。')}</p>
-      ${!source ? html`<label><input type="checkbox" checked=${reminders} onChange=${(e) => { setReminders(e.currentTarget.checked); updateReminder({ enabled: e.currentTarget.checked }); }} /> ${t('定期提醒导出个人数据')}</label>` : null}
+      ${!source ? html`<${ClientPreference} name="backupReminder.enabled"><label><input type="checkbox" checked=${reminders} onChange=${(e) => { setReminders(e.currentTarget.checked); updateReminder({ enabled: e.currentTarget.checked }); }} /> ${t('定期提醒导出个人数据')}</label><//>` : null}
       ${source ? html`<section>
         <h3>${t('向新站传输')}</h3><p>${t('确认只将个人数据发送到以下网址：')}</p>
         <strong class="personal-data-origin">${source.origin}</strong>
@@ -208,7 +212,8 @@ export function PersonalDataReminder() {
     initializeReminder();
     const sync = () => setDue(backupDue(undefined, location.hostname));
     sync(); window.addEventListener('sp:backup-reminder', sync); window.addEventListener('storage', sync);
-    return () => { window.removeEventListener('sp:backup-reminder', sync); window.removeEventListener('storage', sync); };
+    const off = clientPreferencePolicy.subscribe(sync);
+    return () => { off(); window.removeEventListener('sp:backup-reminder', sync); window.removeEventListener('storage', sync); };
   }, []);
   if (!due) return null;
   return html`<section class="personal-data-reminder" role="status" data-testid="backup-reminder">
