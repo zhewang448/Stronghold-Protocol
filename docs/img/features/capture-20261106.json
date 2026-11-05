@@ -1,0 +1,281 @@
+{
+  "schema": 1,
+  "capturedAt": "2026-11-05T18:47:41.826169+00:00",
+  "codeCommit": "bd6bbd6f87aabec252a78097f24f5b93c32d7ac1",
+  "browser": "Google Chrome (puppeteer-core, headless)",
+  "freshBrowserProfiles": true,
+  "runtimeCodeChanged": false,
+  "imageRights": "见根目录 NOTICE.md 第 2 节；游戏截图不属于 GPL 美术授权",
+  "notes": [
+    "全局图片仅作界面文档展示，未提交独立官方美术素材",
+    "HUD 截图在缺可选 ui/ep 素材的实例使用程序圆环回退",
+    "第一轮采集误等官方贴图就绪，保留失败日志；HUD 单独按实际可见圆环恢复采集"
+  ],
+  "files": [
+    {
+      "file": "diy-four-choose-two.webp",
+      "source": "diy-choice.png",
+      "sourceSha256": "31c5feaadfe9caaf17d4e504a080dca92a994b6ef99f94444c521e9f45246a57",
+      "viewport": [
+        1440,
+        900
+      ],
+      "crop": null,
+      "size": [
+        1440,
+        900
+      ],
+      "bytes": 225662,
+      "sha256": "4f76569c071241b52aba7927ce85130f922c0a1a6318c6aaa91b9a36e06d641e",
+      "description": "真实开局简报；正常房间协议配置每阶四名候选"
+    },
+    {
+      "file": "namecard-backgrounds.webp",
+      "source": "namecard-picker-1440x900.png",
+      "sourceSha256": "52f2f3b622f3eedc16d3e0604f2cc5d3d1b685de391b555ae64715d870e6e42b",
+      "viewport": [
+        1440,
+        900
+      ],
+      "crop": [
+        470,
+        230,
+        970,
+        670
+      ],
+      "size": [
+        500,
+        440
+      ],
+      "bytes": 15938,
+      "sha256": "4987b84a0f531f505b6b4c5192ef7d00fa11f88e1faea5d8067fa4de08c7d5db",
+      "description": "真实等待室名片底图弹窗；默认跟随炎盟约"
+    },
+    {
+      "file": "namecard-room.webp",
+      "source": "namecard-auto.png",
+      "sourceSha256": "adde4b862f31e09c671bc6f4bdb1f75a923d1b1e10e4cabcfc8277001a1bd82a",
+      "viewport": [
+        1440,
+        900
+      ],
+      "crop": [
+        145,
+        70,
+        735,
+        805
+      ],
+      "size": [
+        590,
+        735
+      ],
+      "bytes": 30184,
+      "sha256": "91f261d8f0609ed3cc76e959ef7efe99e5220a4740e07ab294f8b66fff76a3e6",
+      "description": "真实等待室席位；人物立绘与姓名牌底图独立"
+    },
+    {
+      "file": "battle-hud-original.webp",
+      "source": "hud-off.png",
+      "sourceSha256": "562ac3c32cfad04966c73b04ed5c7813dd4f7f9f07606bc51477b67ce88a7df2",
+      "viewport": [
+        1440,
+        900
+      ],
+      "crop": [
+        520,
+        245,
+        945,
+        505
+      ],
+      "size": [
+        425,
+        260
+      ],
+      "bytes": 25938,
+      "sha256": "4039ab2f54324174773ad64694a952a521968dec4406dc7b3b5d340db86dd8e1",
+      "description": "真实战场渲染器、固定演示快照；总开关关闭"
+    },
+    {
+      "file": "battle-hud-official.webp",
+      "source": "hud-on.png",
+      "sourceSha256": "5408884cebc8bda0eb85525d496e5ecaf58fe5f7285662a77af4e41eb0465c09",
+      "viewport": [
+        1440,
+        900
+      ],
+      "crop": [
+        520,
+        245,
+        945,
+        505
+      ],
+      "size": [
+        425,
+        260
+      ],
+      "bytes": 27126,
+      "sha256": "1614be1edb8e7f0a5e1d15a673e9e20590f20914a870abbe5c4e172c5934b94a",
+      "description": "与原状态条相同演示输入；总开关开启，程序圆环回退"
+    },
+    {
+      "file": "shop-portrait-default.webp",
+      "source": "shop-off.png",
+      "sourceSha256": "3640f161cf3d974b9e8ea56094eb8a83099b4ef1714722a7a1b634b7787d45de",
+      "viewport": [
+        1440,
+        900
+      ],
+      "crop": [
+        710,
+        615,
+        1430,
+        895
+      ],
+      "size": [
+        720,
+        280
+      ],
+      "bytes": 27430,
+      "sha256": "ce7679696a6de25c96368ff597823a4d287be08da3217826027532abd0e4b609",
+      "description": "实际商店组件与演示库存；突出商店人像关闭"
+    },
+    {
+      "file": "shop-portrait-focus.webp",
+      "source": "shop-on.png",
+      "sourceSha256": "86418a51585393f084652f16dcfd72cbded7e92aec25ef1ade26d9e215de2e13",
+      "viewport": [
+        1440,
+        900
+      ],
+      "crop": [
+        710,
+        615,
+        1430,
+        895
+      ],
+      "size": [
+        720,
+        280
+      ],
+      "bytes": 29848,
+      "sha256": "638e9682d64bb9ad49b5ec87820a6579ebe0eed30091789072ae39b720db3756",
+      "description": "相同商店输入；突出商店人像开启"
+    },
+    {
+      "file": "strategy-minimap.webp",
+      "source": "strategy-map.png",
+      "sourceSha256": "a061b63789fcff562348f0093a28492f6884ab151e3c16cf3da30623a37e8e32",
+      "viewport": [
+        1440,
+        900
+      ],
+      "crop": null,
+      "size": [
+        1440,
+        900
+      ],
+      "bytes": 209934,
+      "sha256": "3812e59a75de594b1e692dd1b2f224b35368cd23cf8b49ff8d5c95bbb8f5ef1d",
+      "description": "真实策略选择页；按本局 stageId 绘制小地图"
+    },
+    {
+      "file": "bond-forecast.webp",
+      "source": "forecast.png",
+      "sourceSha256": "9cdcb9a56c5ff61ca5d29af70b95e97ca548340aa4644cb439f8139ee53c4fba",
+      "viewport": [
+        1440,
+        900
+      ],
+      "crop": [
+        25,
+        12,
+        590,
+        870
+      ],
+      "size": [
+        565,
+        858
+      ],
+      "bytes": 53216,
+      "sha256": "f9aab94e5cd712b6c8299e96e1bf22a48f00558d1d94193dfc780d6ae88c6089",
+      "description": "实际盟约组件与可重复的准备期预测夹具；非完整真人对局"
+    },
+    {
+      "file": "cursor-settings.webp",
+      "source": "cursor-settings.png",
+      "sourceSha256": "adbbba8d3a7c90469a9d5ed60907d136e375bfae1745431532593521c56f582b",
+      "viewport": [
+        1440,
+        900
+      ],
+      "crop": [
+        432,
+        45,
+        1008,
+        855
+      ],
+      "size": [
+        576,
+        810
+      ],
+      "bytes": 33364,
+      "sha256": "7b876e4b6f932553c7053c92a2b936bd13d1c3ab730d1aec54721a95a72f6208",
+      "description": "真实设置弹窗与已安装素材；截图中的鼠标为实际大小预览"
+    },
+    {
+      "file": "dynamic-skin-states.webp",
+      "source": "dynamic-skin.png",
+      "sourceSha256": "fa987afa2042e05fc6fb9bbce63b9a38e9f2ca852974ac93f334fbcfd859868e",
+      "viewport": [
+        1440,
+        900
+      ],
+      "crop": [
+        15,
+        15,
+        1200,
+        675
+      ],
+      "size": [
+        1185,
+        660
+      ],
+      "bytes": 121252,
+      "sha256": "ded5db46cfc248562fd09004048ff69e954343f532154387ee25e09fea0a8003",
+      "description": "实际动态立绘、半身、小图、商店和详情组件；银灰不融冰演示状态"
+    },
+    {
+      "file": "briefing-mobile.webp",
+      "source": "briefing-mobile.png",
+      "sourceSha256": "c2c41c17f3d15f36693c6319984fd7aa4c3d44c4cc31a66e33276a8faacafde6",
+      "viewport": [
+        844,
+        390
+      ],
+      "crop": null,
+      "size": [
+        844,
+        390
+      ],
+      "bytes": 65524,
+      "sha256": "02ff4dad32fb6f72a6914b13f43f80fa20fcb6d5332ac5080739c9ba8c374c4e",
+      "description": "真实开局简报；844×390 浏览器视口，非实体手机验证"
+    },
+    {
+      "file": "branch-overview.webp",
+      "source": [
+        "diy-four-choose-two.webp",
+        "namecard-backgrounds.webp",
+        "strategy-minimap.webp",
+        "battle-hud-official.webp"
+      ],
+      "size": [
+        1440,
+        1120
+      ],
+      "bytes": 131804,
+      "sha256": "c04b183a7e32fbc15e188e30a9b7aa645e7d11b9c95fe12b69a57a47a0257137",
+      "description": "四张实际截图的拼接封面；新增标题与说明，不生成或改画游戏界面"
+    }
+  ]
+}
