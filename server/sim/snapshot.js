@@ -150,6 +150,17 @@ export function unitTuple(u, t) {
  * activation's real total — extra bullets and refills included — that unitTuple's SP fraction runs on): the segmented
  * yellow bar under the HP bar (隐现's S2 holds 14 rounds, skill_table skchr_inside_2 `attack@trigger_time`).
  */
+/** Display only: actual overload state of the four existing duration skills. */
+export function overdriveView(u) {
+  const sk = u.skill;
+  if (u.side !== 'ally' || !sk?.active || sk.kind !== 'duration' || !(sk.duration > 0)) return null;
+  if (sk.id === 'skchr_horn_3') return u.mem.overload ? 1 : 0;
+  if (sk.id === 'skchr_wisdel_2') return u.mem.wisdelOverload ? 1 : 0;
+  if (sk.id === 'skchr_rockr_2') return u.mem.rockOver ? 1 : 0;
+  if (sk.id === 'skchr_oxi_3') return u.mem.oxi?.fire?.over ? 1 : 0;
+  return null;
+}
+
 export function ammoView(u) {
   const sk = u.skill;
   if (u.side !== 'ally' || !sk || !sk.active || sk.kind !== 'ammo') return null;

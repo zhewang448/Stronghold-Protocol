@@ -124,6 +124,8 @@ export function normalizeSnapshot(snap) {
       if (tu && tu.length === 9) tu.push(e[1], clamp(finite(e[2]), 0, 1), finite(e[3]), Math.max(0, finite(e[4])));
     }
   }
+  const overdrive = new Map();
+  for (const row of Array.isArray(snap.overdrive) ? snap.overdrive : []) if (Array.isArray(row) && units.has(row[0]) && (row[1] === 0 || row[1] === 1)) overdrive.set(row[0], row[1]);
   const ammo = countList(snap.ammo, units), wolves = countList(snap.wolves, units), coins = countList(snap.coins, units);
   const energy = countList(snap.energy, units), charges = countList(snap.charges, units);
   let layers = null;
@@ -178,7 +180,7 @@ export function normalizeSnapshot(snap) {
       (face || (face = new Map())).set(e[0], e[1]);
     }
   }
-  return { t, units, down, ammo, wolves, coins, energy, charges, layers, neg, motes, stand, standCut, face, raw: snap };
+  return { t, units, down, overdrive, ammo, wolves, coins, energy, charges, layers, neg, motes, stand, standCut, face, raw: snap };
 }
 
 /**
@@ -456,6 +458,7 @@ export class SnapshotBuffer {
       o.anim = a[8];
       if (a.length > 9) { o.el = a[9]; o.elFill = a[10]; o.elUntil = a[11]; o.elDur = a[12]; } else if (o.el !== null) { o.el = null; o.elFill = 0; o.elUntil = 0; o.elDur = 0; }
       // the HP-bar readouts come with the older snapshot, like flags (whole rounds step with the skill flag)
+      o.overdrive = A.overdrive?.get(id) ?? null;
       o.ammo = A.ammo ? A.ammo.get(id) || null : null;
       o.wolves = A.wolves ? A.wolves.get(id) || null : null;
       o.coins = A.coins?.get(id) ?? null;

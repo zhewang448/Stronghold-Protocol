@@ -63,8 +63,8 @@ export function readLibrary(storage = globalThis.localStorage) {
     const raw = storage?.getItem(PRESETS_KEY);
     if (raw == null) return { v: 1, activeId: null, items: [] };
     const value = JSON.parse(raw);
-    if (value?.v > 3) throw presetError('newer');
-    if (![1, 2, 3].includes(value?.v) || !Array.isArray(value.items) || value.items.length > PRESETS_LIMIT) throw presetError('invalid');
+    if (value?.v > 4) throw presetError('newer');
+    if (![1, 2, 3, 4].includes(value?.v) || !Array.isArray(value.items) || value.items.length > PRESETS_LIMIT) throw presetError('invalid');
     const ids = new Set(), names = new Set();
     for (const p of value.items) {
       const parsed = parsePresetLoadout(p?.snapshot?.loadout);
@@ -110,7 +110,8 @@ export function putPreset(library, { id = null, name, snapshot, overwrite = fals
   if (!previous && library.items.length >= PRESETS_LIMIT) throw presetError('limit');
   const item = { id: previous?.id || newId(), name, createdAt: previous?.createdAt ?? now, updatedAt: now, snapshot: structuredClone(snapshot) };
   // A pre-scope browser must refuse the library instead of treating a scoped preset as a global reset.
-  return { ...library, v: snapshot.ownership !== undefined ? 3 : snapshot.scope ? Math.max(2, library.v) : library.v, activeId: item.id, items: [...library.items.filter(p => p.id !== item.id), item] };
+  const candidates = Object.values(snapshot.diy).some(picks => Object.keys(picks).some(key => key.startsWith('diyBench_')));
+  return { ...library, v: Math.max(library.v, candidates ? 4 : snapshot.ownership !== undefined ? 3 : snapshot.scope ? 2 : 1), activeId: item.id, items: [...library.items.filter(p => p.id !== item.id), item] };
 }
 export function renamePreset(library, id, name) {
   name = presetName(name);

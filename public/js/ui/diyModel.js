@@ -17,14 +17,14 @@
 // version (`version`, only a non-default one).
 
 import { DIY_LIMITS, checkDiyPicks } from '../../../shared/protocol.js';
-import { diySlotIds, diySlot, diyPool, isPrototypePick, lockedSelection, isDiyModule, diyRecord } from '../../../shared/diy.js';
+import { diySlotIds, diySlot, diyBenchIds, diyBenchId, diyTierSlotIds, diyTiers, diyKeySlotId, diyKeyTier, diyPool, isPrototypePick, lockedSelection, isDiyModule, diyRecord } from '../../../shared/diy.js';
 import { unitForm } from '../../../shared/standIn.js';
 import { N_ } from '../../../shared/i18n.js';
 import { DEFAULT_VERSION, versionById, versionSlug } from '../../../shared/versions.js';
 
 /** localStorage key (store.js loadPref/savePref prefix `sp.pref.`) and format version. */
 export const DIY_PREF = 'diy';
-export const DIY_VERSION = 1;
+export const DIY_VERSION = 2;
 /** `kind` of an exported 自选编队 envelope. */
 export const DIY_EXPORT_KIND = 'stronghold.diy';
 /** A picked file / pasted payload longer than this is refused before parsing (a real payload is under 1 KB). */
@@ -103,8 +103,15 @@ const backupsOf = (data) => (isObj(data?.backups) ? data.backups : null);
  * form's, 集成战略 ones left out) and, for a prototype, its locked selection. Null when the data lacks a form.
  * @param {string} charId @param {string} slotId a slot base id @param {any} data
  */
+/** Four positions per tier; slot ids keep their legacy identities. */
+export function diyPositions(data) {
+  const slots = diySlotList(data);
+  return diyTiers(data).flatMap(tier => [...slots.filter(s => s.tier === tier), ...[1, 2].map(n => ({ ...slots.find(s => s.tier === tier), slotId: diyBenchId(tier, n), bench: true, n }))]);
+}
+export const legacyDiyPicks = picks => Object.fromEntries(Object.entries(cleanPicks(picks)).filter(([key]) => !/^diyBench_/.test(key)));
+
 export function pickChoices(charId, slotId, data) {
-  const slot = diySlot(slotId, data);
+  const slot = diySlot(diyKeySlotId(slotId, data) || slotId, data);
   const backups = backupsOf(data);
   if (!slot || !backups || !slot.normal || !slot.golden) return null;
   const normal = unitForm(backups, charId, slot.normal.status);
@@ -138,17 +145,17 @@ export function defaultPick(charId, slotId, data) {
  * @returns {Array<{ charId: string, unit: any, bonds: string[], proto: boolean, taken: string|null }>}
  */
 export function pickOptions(slotId, picks, data, kitted) {
-  const slot = diySlot(slotId, data);
+  const slot = diySlot(diyKeySlotId(slotId, data) || slotId, data);
   const backups = backupsOf(data);
   if (!slot || !backups) return [];
   const kit = kitted ? [...kitted] : [];
-  const tierOf = (id) => diySlot(id, data)?.tier ?? null;
+  const tierOf = (id) => diyKeyTier(id, data) ?? null;
   const roster = cleanPicks(picks);
   return diyPool(slot.tier, { data, kitted: kit }).map((charId) => {
     const proto = isPrototypePick(data, slot.tier, charId);
     let taken = null;
     for (const [other, p] of Object.entries(roster)) {
-      if (other === slot.baseId || p.charId !== charId) continue;
+      if (other === slotId || p.charId !== charId) continue;
       // the same tier: never twice; another tier: an owned operator only once (a prototype may repeat across tiers)
       if (tierOf(other) === slot.tier || !isPrototypePick(data, tierOf(other), charId)) { taken = other; break; }
     }
@@ -162,7 +169,7 @@ export function pickOptions(slotId, picks, data, kitted) {
  */
 export function slotRecord(slotId, pick, data, { elite = false, potential = null } = {}) {
   if (!isObj(pick)) return null;
-  try { return diyRecord(slotId, pick, { elite, data, potential }); } catch { return null; }
+  try { return diyRecord(diyKeySlotId(slotId, data) || slotId, pick, { elite, data, potential }); } catch { return null; }
 }
 
 /** Set (or with null, clear) one slot. Returns a new roster (the input is not changed). */
@@ -176,11 +183,11 @@ export function setPick(picks, slotId, pick) {
 // ---- export / import -------------------------------------------------------------------------------------------------
 
 /** Portable payload of a roster, as downloaded / copied by 导出 (`version`: its version, only a non-default one). */
-export function exportDiy(picks, { now = Date.now(), version = null } = {}) {
-  const clean = cleanPicks(picks);
+export function exportDiy(picks, { now = Date.now(), version = null, compatible = false } = {}) {
+  const clean = compatible ? legacyDiyPicks(picks) : cleanPicks(picks);
   return {
     kind: DIY_EXPORT_KIND,
-    v: DIY_VERSION,
+    v: Object.keys(clean).some(k => /^diyBench_/.test(k)) ? 2 : 1,
     exportedAt: new Date(Number.isFinite(now) ? now : Date.now()).toISOString(),
     ...(version && version !== DEFAULT_VERSION && versionById(version) ? { version } : {}),
     count: Object.keys(clean).length,

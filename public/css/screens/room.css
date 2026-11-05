@@ -345,3 +345,14 @@
 .trusted-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 90; padding: 5px 16px; background: #9b202b; color: #fff; display: flex; justify-content: space-between; gap: 12px; }
 .trusted-banner button { color: inherit; text-decoration: underline; }
 .trusted-hash { overflow-wrap: anywhere; font-family: monospace; }
+
+/* Waiting-room nameplates only; images never take events from avatar/seat controls. */
+.has-room-nc { isolation: isolate; }.room-nc { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background: #17261e; }
+.room-nc img { width: 100%; height: 100%; object-fit: cover; opacity: .45; }.room-nc--emblem img { object-fit: contain; object-position: 90% 50%; opacity: .28; }
+.room-nc::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg,rgba(4,12,8,.8),rgba(4,12,8,.2)); }
+.room-nc-open { position: absolute; right: .06rem; top: .05rem; z-index: 3; width: .3rem; min-width: 32px; height: .3rem; min-height: 32px; padding: .04rem; background: rgba(6,15,10,.8); color: var(--mint-400); border: 1px solid var(--line); cursor: pointer; }.room-nc-open .icon { width: 100%; height: 100%; }
+.room-nc-open:focus-visible,.room-nc-grid button:focus-visible { outline: 2px solid var(--mint-400); outline-offset: 2px; }
+.room-nc-modes,.room-nc-tabs,.room-nc-zoom { display: flex; align-items: center; gap: .1rem; flex-wrap: wrap; margin: .1rem 0; }
+.room-nc-preview { position: relative; isolation: isolate; height: 1rem; min-height: 60px; padding: .2rem; border: 1px solid var(--line); touch-action: none; }.room-nc-preview strong { position: relative; z-index: 1; }
+.room-nc-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(1.2rem,1fr)); gap: .08rem; }.room-nc-grid button { display: flex; flex-direction: column; padding: .04rem; min-height: 44px; border: 1px solid var(--line); background: var(--bg-1); color: var(--text-hi); cursor: pointer; }.room-nc-grid button.is-on { border-color: var(--mint-400); }.room-nc-grid img { width: 100%; height: .65rem; min-height: 40px; object-fit: contain; }.room-nc-grid span { font-size: max(calc(.13 * var(--t)),11px); overflow-wrap: anywhere; }
+.room-nc-zoom input { flex: 1; min-width: 120px; }

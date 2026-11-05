@@ -1915,3 +1915,7 @@ No damage/heal settlement or other guardian trigger changes.
 ## 塔露拉、国度与冻河
 
 三位新自选 kit 在当前结算 API 上实现三技能、双天赋与必要职业/模组；实际成功伤害用 damageApplied，防护在 injury 阶段。支持边界与 ASSUMED 决策见 [实施说明](DYNAMIC-ILLUSTRATIONS-IMPLEMENTATION.md)。
+
+## 可选过载显示行
+
+快照新增可选 `overdrive: [[unitId, 0|1]]`，由塔露拉 S3、维什戴尔 S2、号角 S3、洛洛 S2 已有真实技能阶段生成；只影响显示。九字段单位元组保持原格式，号角 S2 使用 `ammo`，没有该行的旧快照显示普通技能条。`settings.officialBattleHud` 开关不进入模拟和结果输入。详见 [实施说明](STARDUST-UI-MIGRATION.md)。

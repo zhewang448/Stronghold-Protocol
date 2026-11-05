@@ -69,7 +69,13 @@ describe('the manifest (data/assets.json)', () => {
     const withFall = backs.filter(([, c]) => dieClipDur(c.spine.back) > 0).map(([id]) => id).sort();
     assert.ok(backs.length >= 130, `${backs.length} Back skeletons`);
     assert.deepEqual(withFall, ['char_271_spikes', 'char_322_lmlee', 'char_388_mint', 'char_4064_mlynar', 'char_4182_oblvns', 'char_440_pinecn', 'char_602_cdfend'], 'including 芳汀 from the earlier-version union');
-    for (const [id, c] of Object.entries(M.chars)) assert.ok(dieClipDur(c.spine.front) > 0, `${id} Front has a Die clip`);
+    const fronts = Object.entries(M.chars).filter(([, c]) => c.spine?.front);
+    assert.ok(fronts.length >= 130, `${fronts.length} Front skeletons`);
+    for (const [id, c] of fronts) assert.ok(dieClipDur(c.spine.front) > 0, `${id} Front has a Die clip`);
+    for (const [id, c] of Object.entries(M.chars).filter(([, c]) => !c.spine?.front)) {
+      assert.ok(c.skins && Object.keys(c.skins).length, `${id}: a picture-only catalogue entry`);
+      assert.equal(spineEntry(M, id), null, `${id}: artwork does not add a battle model`);
+    }
     assert.equal(dieClipDur(back(CAPER)), 0);
     assert.equal(dieClipDur(front(CAPER)), front(CAPER).animations.Die);
     assert.equal(dieClipDur(null), 0);

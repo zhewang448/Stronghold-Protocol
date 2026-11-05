@@ -261,3 +261,10 @@
 
 .draft.is-held { pointer-events: none; animation: pg-out 200ms ease-in 500ms forwards; }
 .brief-faction__icon:focus-visible { outline: 2px solid var(--mint-400); outline-offset: 2px; }
+
+/* A bounded addition inside the existing order column; never changes the three column ratios. */
+.draft-stage { flex: none; display: flex; flex-direction: column; gap: .04rem; padding: .07rem; border: 1px solid var(--line); font-size: calc(.14 * var(--t)); }
+.draft-stage .stagemap { display: block; width: 100%; max-height: 1rem; }
+.stagemap__t { fill: #4a5b52; }.stagemap__t--road { fill: #78887c; }.stagemap__t--high { fill: #b1b7a3; }.stagemap__t--gate { fill: #fa553d; }.stagemap__t--goal { fill: #52b9e7; }.stagemap__t--fence { fill: #283d32; }
+.draft-order__list { flex: 1 1 auto; min-height: .5rem; overflow-y: auto; }
+@media(max-height:520px) { .draft-stage .stagemap { max-height: .58rem; } .draft-stage { gap: .01rem; padding: .035rem; } }

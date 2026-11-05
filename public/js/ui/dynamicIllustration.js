@@ -70,10 +70,16 @@ export function CoverIllustration({ entry, framing = {}, playing = true, explici
       query?.removeEventListener('change', measure);
       query = globalThis.matchMedia?.(`(resolution: ${dpr}dppx)`); query?.addEventListener('change', measure);
     };
-    measure(); const ro = globalThis.ResizeObserver ? new ResizeObserver(measure) : null; ro?.observe(el);
+    // The portrait's new crop can resize the overlay itself. Apply observer writes on the next frame.
+    let measureFrame = null;
+    const scheduleMeasure = () => {
+      if (measureFrame !== null) return;
+      measureFrame = requestAnimationFrame(() => { measureFrame = null; measure(); });
+    };
+    measure(); const ro = globalThis.ResizeObserver ? new ResizeObserver(scheduleMeasure) : null; ro?.observe(el);
     if (el.previousElementSibling?.tagName === 'IMG') ro?.observe(el.previousElementSibling);
     globalThis.addEventListener?.('resize', measure);
-    return () => { ro?.disconnect(); query?.removeEventListener('change', measure); globalThis.removeEventListener?.('resize', measure); };
+    return () => { ro?.disconnect(); if (measureFrame !== null) cancelAnimationFrame(measureFrame); query?.removeEventListener('change', measure); globalThis.removeEventListener?.('resize', measure); };
   }, [stage, resolutionScale]);
   useEffect(() => {
     if (!entry || !visible || !enabled || !canvas.current) { setState('idle'); return; }

@@ -28,6 +28,7 @@ import { useEffect, useMemo, useRef, useState } from '../../vendor/hooks.module.
 import { html, Button, Icon, MicroLabel, useTicker, secondsLeft } from '../ui/components.js';
 import { useGameData, BandIcon, BondGlyph, RichText, PlayerAvatar, LpTower, Sprite } from '../ui/gameComponents.js';
 import { StepHeader, ExitModal } from '../ui/matchChrome.js';
+import { StageMiniMap, stagePreview } from '../ui/stagePreview.js';
 import { MatchInfoDialog, matchInfoModel } from '../ui/matchInfo.js';
 // package (对局动画): the 「请选择策略」 band each time a pick becomes the player's (ui/matchIntro.js TurnBanner)
 import { actions, act, draftRequestScope } from '../ui/gameActions.js';
@@ -365,6 +366,8 @@ export function BandDraftScreen({ held = null } = {}) {
       total=${clock ? clock.total : null} onExit=${() => setExit(true)} />
     <main class="draft__main">
       <aside class="draft-order">
+        <div class="draft-stage" data-testid="draft-stage"><span>${data.lookup('stages', pub.stageId)?.name || t('战场地图')}</span>
+          ${stagePreview(data.lookup('stages', pub.stageId)) ? html`<${StageMiniMap} stage=${data.lookup('stages', pub.stageId)} />` : html`<small>${t('地图暂不可用')}</small>`}</div>
         <h3 class="brief-h"><span>${solo ? t('独立模拟') : t('决策顺序')}</span><${MicroLabel}>${solo ? 'FREE PICK' : 'MANUAL FIRST'}</${MicroLabel}></h3>
         <div class="draft-order__list" ref=${orderRef}>
         ${orderGroups.map((group) => html`<div key=${group.id || 'all'} class=${cx('draft-order__group', grouped && 'draft-order__group--framed')}

@@ -3,7 +3,8 @@
 
 import { DIFFICULTIES, NAME_MAX_LEN, ROOM_CODE_LEN, MAX_SEATS, ROOM_CAPACITIES, EMOTE_IDS, EMOTE_BARRAGE_COUNT_MAX, PING_KINDS, GEO } from './constants.js';
 import { isDroppableChess } from './standIn.js';
-import { diySlotIds, validateDiyPicks } from './diy.js';
+import { validNamecard } from './namecards.js';
+import { diySlotIds, diyBenchIds, validateDiyPicks } from './diy.js';
 import { cultivatedStats, isPotential, isCultivate, POTENTIAL_DEFAULT, CULTIVATE_DEFAULT, hasPotentialData } from './potential.js';
 import { isContentHash } from './plugins/identity.js';
 import { isPluginId } from './plugins/manifest.js';
@@ -418,7 +419,7 @@ export const isDiyPicks = (v) => isMap(v, DIY_LIMITS.slots, isId, isDiyPickWire)
  */
 export function checkDiyPicks(picks, { data, kitted = null } = { data: null }) {
   if (!isDiyPicks(picks)) return { error: 'BAD_MSG', detail: 'bad 自选 picks' };
-  const slots = diySlotIds(data);
+  const slots = [...diySlotIds(data), ...diyBenchIds(data)];
   /** @type {Record<string, { charId: string, skillIndex: number, uniEquipId: string|null }>} */
   const kept = {};
   let dropped = 0;
@@ -564,6 +565,7 @@ export const C2S = {
   'room.loadout': { entries: isLoadoutEntries, ops: isLoadoutOps, $optional: ['ops'] },
   'room.skins': { skins: isSkinSelection },
   'room.card': { charId: v => v === '' || isId(v), skinId: v => typeof v === 'string' && v.length <= 120 && /^[A-Za-z0-9_@#+.-]*$/.test(v), $optional: ['skinId'] },
+  'room.namecard': { selection: validNamecard },
   'room.bondPlan': { bondId: (v) => v === null || isId(v) },
 
   // operator ownership (干员持有, 0.2.0 补位): stored per session / seat; a match takes the list its seat had when it
@@ -572,6 +574,7 @@ export const C2S = {
   // 自选编队 (0.2.0 DIY): the player's DIY slot picks; stored per session / seat like room.ownership (a match takes the
   // picks its seat had when it started; during a match they are stored for the next one: ROOM_STARTED)
   'room.diy': { picks: isDiyPicks },
+  'g.diyChoose': { tier: v => v === 5 || v === 6, charIds: v => isList(v, 2, isCharId) && v.length > 0 && new Set(v).size === v.length, setupRevision: v => isInt(v, 0, 2 ** 31) },
   // spectator seats (remake feature, community report #26; MAX_SPECTATORS): take one of a co-op room's spectator seats —
   // in its lobby or while its match runs — never a player seat; the host frees one by playerId (the spectator gets
   // room.closed { reason: 'kicked' }). room.leave / g.leave leave a spectator seat like a player seat.

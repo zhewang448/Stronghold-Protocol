@@ -10,7 +10,8 @@ export function ensureCardArtCss() {
   const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = '/css/screens/card-art.css'; link.dataset.cardArt = '1'; document.head.appendChild(link);
 }
 const clamp = (value, minimum, maximum) => Math.max(minimum, Math.min(maximum, value));
-export const CARD_ART_MIN_ZOOM = 0.5, CARD_ART_MAX_ZOOM = 3;
+export const CARD_ART_MIN_ZOOM = 0.5;
+export const CARD_ART_MAX_ZOOM = 3;
 export function normalizeCardArt(value) {
   const number = (field, fallback) => typeof value?.[field] === 'number' && Number.isFinite(value[field]) ? value[field] : fallback;
   return { zoom: clamp(number('zoom', 1), CARD_ART_MIN_ZOOM, CARD_ART_MAX_ZOOM), ox: clamp(number('ox', 0), -100, 100), oy: clamp(number('oy', 0), -100, 100) };

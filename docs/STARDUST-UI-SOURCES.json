@@ -1,0 +1,93 @@
+{
+  "repository": "https://github.com/Stardust-minus/Stronghold-Protocol",
+  "commit": "7f39464c285fde4e5ee98825ad00936cffdfffa8",
+  "license": "GPL-3.0-or-later",
+  "codeBaseline": "0c84318c8",
+  "scope": "Selected implementation and tests adapted to local APIs; official art excluded",
+  "files": [
+    {
+      "path": "public/js/render/units.js",
+      "bytes": 177512,
+      "sha256": "4d294ed4f9bd9e1afdf7f9814bc076913a31b97d96a673fb1d1deda9da591835",
+      "gitBlob": "d843d9a2789c1f18380fefaa1d92e6cd19bba6a6"
+    },
+    {
+      "path": "public/js/render/textures.js",
+      "bytes": 86539,
+      "sha256": "1a452903d01ee2a2b45f3a1edfae2b7330bedcaa47a6e730d386e37fd8e177f2",
+      "gitBlob": "e67008556185939ea76a2b321f1b933622c7435a"
+    },
+    {
+      "path": "public/js/render/interp.js",
+      "bytes": 31150,
+      "sha256": "00f8758ce560b7409e5af021cd188c33494b1b04bf0c83ec6e5272acab8f5314",
+      "gitBlob": "798039effb024cf462cb618abef329f1e81cf3f2"
+    },
+    {
+      "path": "public/js/ui/namecards.js",
+      "bytes": 24073,
+      "sha256": "2f2f4a301dd56379a16956c86e74669fcf2bb22f04c70a4a3fed8fbfd78efa62",
+      "gitBlob": "73d791725e3b1aab1dfe6b7cd8fec266c7433800"
+    },
+    {
+      "path": "public/js/ui/stagePreview.js",
+      "bytes": 2362,
+      "sha256": "323fda1fa0ef5c30469596eec054e0bf7c2a8b8b5e4c1db8bf3cd0fcd70f1548",
+      "gitBlob": "1d24de451e3f08d30fe88dc01a251ed4f0e8ad10"
+    },
+    {
+      "path": "public/js/ui/diyChoice.js",
+      "bytes": 10783,
+      "sha256": "6f006e9d43a93090ccc047003f2885ba14b1f42b59c75e740b5d397e0aa90d86",
+      "gitBlob": "88f071fa53e85e276c214a182fb7887784a9096e"
+    },
+    {
+      "path": "public/js/ui/diyModel.js",
+      "bytes": 19624,
+      "sha256": "6cecd8be89c8fa95b22d8d977ef1fdf5bf165c50820a6d1ccbc9d21fed36fa90",
+      "gitBlob": "904e691ed571fa526a5383dea46bd4834abc482b"
+    },
+    {
+      "path": "public/css/screens/briefing.css",
+      "bytes": 32019,
+      "sha256": "ac977537ccba1866e32dde2ee8559012c2e17cd71ab58700f7509cde0314af30",
+      "gitBlob": "d0e7491117f9a84597c331d91ad52a18ddc326d7"
+    },
+    {
+      "path": "public/css/screens/game-shop.css",
+      "bytes": 22060,
+      "sha256": "54a2d542139fe8beb360630580075220d619469babbeb8542d940b4e2bc32c2c",
+      "gitBlob": "3b43ba4714a069e7a3df4bb0bfd293246374ca61"
+    },
+    {
+      "path": "server/match/layerForecast.js",
+      "bytes": 8643,
+      "sha256": "0c9d378a599a294148583ec7f5bcfc5c14e1c855fce6ff0bf9cf6b28974d1b70"
+    },
+    {
+      "path": "server/match/effectsMeta.js",
+      "bytes": 46622,
+      "sha256": "9b027bf2ff1648a7661af9b71bf498d9dfb25f376b7d3350f3e6d0770feeeef9"
+    },
+    {
+      "path": "shared/diy.js",
+      "bytes": 26817,
+      "sha256": "11fed90e85ee209d778987782b64f19c6349243e445a166fe6e077736012403b"
+    },
+    {
+      "path": "test/match/layer-forecast.test.js",
+      "bytes": 9320,
+      "sha256": "992b5cb6f9498495d34cadebde30237d85b45d67a0812adf2f4e24e59cc7a75c"
+    },
+    {
+      "path": "test/render/overdrive.test.js",
+      "bytes": 4404,
+      "sha256": "b2559a56b56249bae09d8d5fbb9655f5e027dc51d2c2ae488c26ee281725b3be"
+    },
+    {
+      "path": "test/content/overdrive-gauge.test.js",
+      "bytes": 5457,
+      "sha256": "71e133b93b45d3686a6e6d175aec3de4d1dd14b4234a253eadd8d062ba755b85"
+    }
+  ]
+}

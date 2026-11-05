@@ -620,3 +620,7 @@ The WebSocket handshake records only a bounded, valid HTTP(S) Origin host (inclu
 服务端校验 PNG/WebP/JPEG 魔数、64–2048 px 尺寸、最大 3:1 比例与 2 MiB 上限，原子写入并限制频率和总内存。
 房间真人座位仅携带 `illust` ETag；上传/删除后广播原 `room.state` 元数据，图片独立读取，不进入对局公共帧或 battleSpec。
 `room.setCustomIllust { on }` 为第 19 项房间配置，沿用默认值、逐项权限、开局锁和恢复默认；不另建个性化配置文件。
+
+## 指定 UI 迁移可选协议
+
+`welcome.uiMigration={diyCandidates:true,namecards:true}` 声明新能力。`room.namecard {selection:{mode,id,x,y,zoom}}` 独立于 `room.card`，服务端只接受目录身份并在 `room.state.seats[].namecard` 同步模式、取景与 `resolved`；自动模式随预选盟约更新，AI 不提供底图。`g.diyChoose {tier,charIds,setupRevision}` 只允许本人简报完整选择，数量、候选、阶段与重刷身份均由服务端校验。`m.private.diyChoice` 在简报提供选择视图；准备期可选 `layerForecast` 只发本人，不进入公共广播/回放/快照。`b.snap.overdrive` 增加可选真实阶段行，原单位九字段元组不变。旧服没有能力声明时只同步旧两名候选，不发新底图或改选命令。详见 [实施说明](../STARDUST-UI-MIGRATION.md)。
