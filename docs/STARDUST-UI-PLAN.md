@@ -1,5 +1,7 @@
 # Stardust 指定 UI 迁移计划
 
+实施状态：指定内容已完成，2026-11-05/06 合并至本地 `main`；保留原基线和参考提交，当前实现与本轮复测见 [迁移说明](STARDUST-UI-MIGRATION.md) 和 [验收记录](STARDUST-UI-ACCEPTANCE.md)。
+
 实施对象：本库 `0c84318c8` 已核对代码基线及其文档后续提交；独立副本为 `codex/stardust-ui-migration`。
 参考固定于 [Stardust-minus/Stronghold-Protocol `7f39464c285fde4e5ee98825ad00936cffdfffa8`](https://github.com/Stardust-minus/Stronghold-Protocol/tree/7f39464c285fde4e5ee98825ad00936cffdfffa8)，GPL-3.0-or-later。
 此前调查下载的源码与逐文件哈希继续作为来源证据，不追随移动分支。具体差异与验收见 [实施说明](STARDUST-UI-MIGRATION.md) 和 [验收记录](STARDUST-UI-ACCEPTANCE.md)。
