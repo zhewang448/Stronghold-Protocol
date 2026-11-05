@@ -68,11 +68,12 @@ import { normalizeProxyPrefix } from './assets/sources.mjs';
 import { loadIndexes } from './assets/cache.mjs';
 import { indexAudio, VOICE_DIRS } from './assets/audio.mjs';
 import { buildPlan, charModesFromIndex, VOICE_OPTIONAL_TREES } from './assets/plan.mjs';
+import { operatorAudioIndexes } from './assets/operator-audio.mjs';
 import {
   processModels, findLocalEnemyModels, findLocalTokenModels, localSpineMeta, loadLocalSpines, LOCAL_ENEMY_SPINES_FILE,
   LOCAL_TOKEN_SPINES_FILE, LOCAL_ENEMY_SPINE_DIR, LOCAL_TOKEN_SPINE_DIR,
 } from './assets/spine.mjs';
-import { collectLeaves, downloadLeaves, resolveTemplate, totalBytes, contentHash, droppedEntries, MANIFEST_VERSION } from './assets/manifest.mjs';
+import { collectLeaves, downloadLeaves, resolveTemplate, totalBytes, contentHash, droppedEntries, assetReferences, MANIFEST_VERSION } from './assets/manifest.mjs';
 import { fontJobs, buildFonts } from './assets/fonts.mjs';
 import { statsTemplateJobs } from './assets/stats-template.mjs';
 import { skelParserAvailable } from './assets/skel.mjs';
@@ -422,7 +423,10 @@ async function main() {
   const source = await selectDownloadSource({ mode: opts.source, offline: opts.offline, proxyPrefix, log, verified: !!verifier });
   const mirrorPolicy = new MirrorPolicy({ source, proxyPrefix, log });
   const network = { source, proxyPrefix, mirrorPolicy, verifier };
-  const { audioData, modelsData, charword } = await loadIndexes(ROOT, { refresh: opts.refreshIndex && !opts.offline, offline: opts.offline, log, ...network });
+  const indexes = await loadIndexes(ROOT, { refresh: opts.refreshIndex && !opts.offline, offline: opts.offline, log, ...network });
+  const scopedAudio = await readJson('docs/research/new-operator-audio-20261101.json');
+  const { audioData, charword } = operatorAudioIndexes(indexes.audioData, indexes.charword, scopedAudio);
+  const { modelsData } = indexes;
   const audio = indexAudio(audioData);
   // Skill attack slots follow each operator's mode list when the local fx index is on disk (#679). It is a client
   // extract (public/assets is not in git); without it the plan keeps the filename-letter fallback.
@@ -498,6 +502,22 @@ async function main() {
   if (existsSync(MANIFEST)) {
     try { current = JSON.parse(await readFile(MANIFEST, 'utf8')); } catch (e) { log(`[manifest] the current ${relative(ROOT, MANIFEST)} is unreadable (${e.message}): replaced`); }
   }
+  let dynamicRepair = { installed: [], failed: [], warnings: [] };
+  if (current) {
+    const registry = JSON.parse(await readFile(join(ROOT, 'docs/research/dynamic-illustrations.json'), 'utf8'));
+    const repairIds = Object.entries(registry.skins).filter(([id, r]) => {
+      const rec = current.chars?.[r.charId];
+      const dynamic = r.field ? rec?.[r.field] : rec?.skins?.[id]?.dynamic;
+      return dynamic && (!dynamic.installationFiles || [...assetReferences(dynamic)].some(p => !existsSync(join(ASSETS, p))));
+    }).map(([id]) => id);
+    if (repairIds.length) {
+      const { installDynamicIllustrations } = await import('./install-dynamic-illustrations.mjs');
+      dynamicRepair = await installDynamicIllustrations(repairIds, { root: ROOT, offline: opts.offline, log,
+        inputManifest: current, writeManifest: false, addOnly: opts.addOnly });
+      // A failed optional repair remains a reported gap; its static fallback and
+      // previous identity survive and are never treated as an unreferenced file.
+    }
+  }
 
   // Fonts (--add-only: not rebuilt — public/fonts may be another checkout's; the manifest keeps its current entry)
   let fontErrors = [];
@@ -530,6 +550,26 @@ async function main() {
   let body = resolved.value;
   tidyManifest(body);
   completeSkins(body.chars);
+  // Optional dynamic installers share this manifest. A normal asset refresh keeps
+  // their verified records rather than shrinking away successfully installed art.
+  for (const [id, rec] of Object.entries(current?.chars || {})) {
+    for (const field of ['dynamic', 'dynamicE2', 'dynamicAvatar']) if (rec[field] && body.chars?.[id]) body.chars[id][field] = rec[field];
+    if ((rec.dynamic || rec.dynamicE2) && body.chars?.[id]) for (const field of ['illust', 'illustE2']) {
+      if (rec[field] && !body.chars[id][field]) body.chars[id][field] = rec[field];
+    }
+    for (const [skinId, skin] of Object.entries(rec.skins || {})) if (skin.dynamic || skin.dynamicAvatar) {
+      const next = body.chars?.[id];
+      if (next) { next.skins ||= {}; next.skins[skinId] = { ...skin, ...next.skins[skinId], dynamic: skin.dynamic,
+        ...(skin.dynamicAvatar ? { dynamicAvatar: skin.dynamicAvatar } : {}) };
+      // The native full illustration must not turn back into a thumbnail during
+      // a normal refresh. These are verified base assets, before plugin overlays.
+      if (skin.dynamic?.staticSource?.startsWith('client:') && skin.illust) next.skins[skinId].illust = skin.illust;
+      if (skin.dynamic?.staticArt) {
+        const kept = next.skins[skinId];
+        kept.dynamic = { ...skin.dynamic, staticArt: Object.fromEntries(['avatar', 'avatarE2', 'portrait', 'portraitE2', 'illust'].filter(k => kept[k]).map(k => [k, kept[k]])) };
+      } }
+    }
+  }
   tidyVoiceTrees(body);
   const fontFaces = {};
   for (const [name, f] of Object.entries(fonts.files)) fontFaces[name] = f;
@@ -538,13 +578,10 @@ async function main() {
   if (opts.addOnly && current) {
     const { version, hash, generator, stats, ...previous } = current;
     body = addManifestEntries(previous, body);
-    // Retained entries still participate in size accounting and orphan detection.
-    const files = (v) => {
-      if (typeof v === 'string' && v.startsWith('/assets/')) resolved.files.add(v.slice('/assets/'.length));
-      else if (v && typeof v === 'object') for (const x of Object.values(v)) files(x);
-    };
-    files(body);
   }
+  // Count after every merge, for normal refresh and --prune as well as --add-only.
+  // The emitted manifest is the authority for what may be removed.
+  assetReferences(body, resolved.files);
   const bytes = totalBytes(ASSETS, resolved.files);
   const manifest = {
     version: MANIFEST_VERSION,
@@ -557,7 +594,8 @@ async function main() {
   if (guard.write) await writeJsonAtomic(MANIFEST, manifest);
 
   // Orphans: files on disk that the manifest does not reference (e.g. after a mapping change).
-  const orphans = orphanFiles(await listFiles(ASSETS), new Set([...resolved.files, ...dl.preserved]));
+  const retained = guard.write ? resolved.files : assetReferences(current);
+  const orphans = orphanFiles(await listFiles(ASSETS), new Set([...retained, ...dl.preserved]));
   if (opts.prune) for (const r of orphans) { try { await unlink(join(ASSETS, r)); } catch { /* ignore */ } }
 
   const charIds = Object.keys(plan.template.chars);
@@ -573,6 +611,7 @@ async function main() {
     droppedLeaves,
     misses: resolved.misses,
     downloadErrors, // leaves whose primary failed transiently (fallbacks not tried; re-run to retry)
+    dynamicRepair: { installed: dynamicRepair.installed, failed: dynamicRepair.failed, warnings: dynamicRepair.warnings },
     fallbacks: resolved.fallbacks,
     spineProblems: spine.problems,
     fontErrors,
@@ -622,7 +661,7 @@ async function main() {
     log('  a plain run downloads them again (--refresh-index if the upstream index lost them); without --strict / SP_ASSETS_STRICT this is only a warning');
   }
   if (verifier && (dl.totals.error || fontErrors.length || downloadErrors.length)) return 1;
-  return runExitCode({ requiredMisses: required.length, droppedLeaves: droppedLeaves.length, strict: opts.strict, manifestWritten: guard.write });
+  return runExitCode({ requiredMisses: required.length + dynamicRepair.failed.length, droppedLeaves: droppedLeaves.length, strict: opts.strict, manifestWritten: guard.write });
 }
 
 // run only as a script (tests import parseArgs / shrinkGuard)

@@ -914,6 +914,10 @@ def write_spine(objects, sda, sub, name, out_root, manifest, log):
         return 0
     atlas = texts[0] if len(texts) == 1 else '\n\n'.join(t.strip('\n') for t in texts) + '\n'
     names = atlas_pages(atlas)
+    # Native atlases retain # in outfit page names, whereas exported Texture2D
+    # keys are sanitized. Match every page before the existing one-page fallback.
+    if set(names) != set(pages) and len(names) == len(pages) and all(safe_name(p) in pages for p in names):
+        pages = {p: pages[safe_name(p)] for p in names}
     if set(names) != set(pages):
         if len(names) != 1 or len(pages) != 1:
             log(f'  warn {name}: atlas pages {names} do not match the textures {sorted(pages)}')

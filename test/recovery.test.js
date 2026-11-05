@@ -111,7 +111,7 @@ test('disk recovery preserves all room convenience choices and effective match r
   assert.equal(restored.match.rules.morphPairing, 'plus');
 });
 
-test('disk recovery preserves the room AI-last choice; old snapshots keep the historical default off', t => {
+test('disk recovery preserves AI-last and duplicate-strategy choices; old snapshots keep both off', t => {
   const f = fixture(t);
   class RestoredMatch extends Match {
     constructor(opts) { super({ ...opts, scheduler: new VirtualScheduler(), BattleClass: FakeBattle, botRehearsal: 0, clientCombat: false }); }
@@ -119,13 +119,17 @@ test('disk recovery preserves the room AI-last choice; old snapshots keep the hi
   const room = deserialize(fs.readFileSync(f.file));
   for (const [value, expected] of [[true, true], [false, false], [undefined, false]]) {
     room.room.aiPicksLast = value;
+    room.room.allowDuplicateBands = value;
     if (value === undefined) delete room.room.aiPicksLast;
+    if (value === undefined) delete room.room.allowDuplicateBands;
     fs.writeFileSync(f.file, serialize(room));
     const registry = new SessionRegistry(), lobby = new Lobby({ registry, MatchClass: RestoredMatch, getData: () => DATA, log });
     const recovery = createRecovery({ lobby, root: process.cwd(), dir: path.dirname(f.file), identity: 'test', log });
     recovery.restore();
     assert.equal(lobby.rooms.get('TEST')?.aiPicksLast, expected);
     assert.equal(lobby.rooms.get('TEST')?.match.aiPicksLast, expected);
+    assert.equal(lobby.rooms.get('TEST')?.allowDuplicateBands, expected);
+    assert.equal(lobby.rooms.get('TEST')?.match.allowDuplicateBands, expected);
     recovery.prepareShutdown(); lobby.shutdown();
   }
 });

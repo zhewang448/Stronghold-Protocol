@@ -41,7 +41,7 @@ test('ammoEnergyCount is off by default; a saved ammoCount true migrates on; the
 
 test('the settings dialog has one merged toggle and a hint with both example counts, in every language pack', () => {
   const src = read('public/js/ui/settings.js');
-  assert.match(src, /<\$\{Toggle\} label=\$\{t\('显示弹药与能量数量'\)\} micro="AMMO & ENERGY" value=\$\{s\.ammoEnergyCount\} onChange=\$\{\(v\) => updateSettings\(\{ ammoEnergyCount: v \}\)\} \/>/);
+  assert.match(src, /<\$\{Toggle\} setting="settings.ammoEnergyCount" label=\$\{t\('显示弹药与能量数量'\)\} micro="AMMO & ENERGY" value=\$\{s\.ammoEnergyCount\} onChange=\$\{\(v\) => updateSettings\(\{ ammoEnergyCount: v \}\)\} \/>/);
   assert.ok(src.includes(`t('${HINT}')`), 'the hint under it');
   assert.ok(src.indexOf("t('官方伤害数字')") < src.indexOf(`t('${LABEL}')`), 'beside the damage-number options');
   assert.equal(src.includes("t('弹药数量')"), false, 'the old ammo toggle is gone');

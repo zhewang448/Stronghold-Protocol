@@ -543,6 +543,7 @@ export const C2S = {
   'room.aiRequest': { botId: isId },
   'room.aiVote': { voteId: (v) => typeof v === 'string' && v.length <= 16, approve: isBool },
   'room.setAiPicksLast': { on: isBool },
+  'room.setAllowDuplicateBands': { on: isBool },
   'room.setSeatAvatars': { on: isBool },
   'room.setSpectatorLimit': { limit: value => isInt(value, 2, 20) },
   'room.setCustomIllust': { on: isBool },

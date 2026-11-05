@@ -61,12 +61,12 @@ export const RAW = Object.freeze({
   fexli: 'https://raw.githubusercontent.com/fexli/ArknightsResource/main/',
   arkModels: 'https://raw.githubusercontent.com/isHarryh/Ark-Models/main/',
   aa2: 'https://raw.githubusercontent.com/ArknightsAssets/ArknightsAssets2/cn/assets/dyn/',
-  aa2voice: 'https://raw.githubusercontent.com/ArknightsAssets/ArknightsAssets2/voice/assets/dyn/audio/sound_beta_2/',
+  aa2voice: 'https://raw.githubusercontent.com/ArknightsAssets/ArknightsAssets2/refs/heads/voice/assets/dyn/audio/sound_beta_2/',
   fonts: 'https://raw.githubusercontent.com/TimWangZi/The-font-of-Arknights/master/font/',
   gamedata: 'https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/',
 });
 
-const RAW_RE = /^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/;
+const RAW_RE = /^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/(?:refs\/heads\/)?([^/]+)\/(.+)$/;
 
 /**
  * Map a raw.githubusercontent.com URL to its jsDelivr mirror.

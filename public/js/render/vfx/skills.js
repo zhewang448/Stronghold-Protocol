@@ -1333,6 +1333,61 @@ export function chargeKeys(plan) {
  */
 const binding = (o) => Object.freeze({ ...o, ...(o.cover ? { cover: Object.freeze(o.cover) } : {}), ...(o.keys ? { keys: Object.freeze(o.keys) } : {}) });
 export const FX_BINDINGS = Object.freeze({
+  // Official client bindings adapted from Stardust-minus d03ae6e7 (see NOTICE.md).
+  skchr_oxi_1: Object.freeze({
+    aoe: binding({ owner: 'id', at: 'point', oneshot: true, keys: ['oxi_skill_01_hit_01'] }),
+    zone: binding({ owner: 'id', at: 'point', keys: ['oxi_buff_01'], hold: 'fx', holdS: 4, cover: ['zone'] }),
+  }),
+
+  skchr_oxi_2: Object.freeze({
+    aoe: binding({ owner: 'id', at: 'point', oneshot: true, keys: ['oxi_skill_02_hit_01'] }),
+    zone: binding({ owner: 'id', at: 'point', keys: ['oxi_buff_01'], hold: 'fx', holdS: 4, cover: ['zone'] }),
+  }),
+
+  skchr_oxi_3: Object.freeze({
+    zone: binding({ owner: 'id', at: 'point', keys: ['oxi_buff_01'], hold: 'fx', holdS: 4, cover: ['zone'] }),
+    heatwave: binding({ owner: 'id', flight: 'projectile_chr_oxi_s_3_heatwave' }),
+    heatwaveHit: binding({ owner: 'id', at: 'point', oneshot: true, landing: true, keys: ['oxi_skill_03_hit_01'] }),
+  }),
+
+  skchr_dminon_1: Object.freeze({
+    zone: binding({ owner: 'id', at: 'point', keys: ['dminon_talent_range_01'], hold: 'fx', holdS: 3, cover: ['zone'] }),
+    aoe: binding({ owner: 'id', at: 'point', oneshot: true, keys: ['dminon_talent_range_hit_01'] }),
+  }),
+
+  skchr_dminon_2: Object.freeze({
+    zone: binding({ owner: 'id', at: 'point', keys: ['dminon_talent_range_01'], hold: 'fx', holdS: 3, cover: ['zone'] }),
+    aoe: binding({ owner: 'id', at: 'point', oneshot: true, keys: ['dminon_talent_range_hit_01'] }),
+  }),
+
+  skchr_dminon_3: Object.freeze({
+    zone: binding({ owner: 'id', at: 'point', keys: ['dminon_talent_range_01'], hold: 'fx', holdS: 3, cover: ['zone'] }),
+    aoe: binding({ owner: 'id', at: 'point', oneshot: true, keys: ['dminon_talent_range_hit_01'] }),
+  }),
+
+  skchr_tocka_1: Object.freeze({
+    mark: binding({ owner: 'id', at: 'target', keys: ['tocka_skill_01_buff_02_start_01'] }),
+    shield: binding({ owner: 'id', at: 'point', keys: ['tocka_skill_01_buff_01'], hold: 'fx', holdS: 10, cover: ['shield'] }),
+    heal: binding({ owner: 'id', at: 'target', keys: ['tocka_heal_01_hit_01'] }),
+    aoe: binding({ owner: 'id', at: 'point', oneshot: true, keys: ['tocka_attack_02_range_01'] }),
+  }),
+
+  skchr_tocka_2: Object.freeze({
+    link: binding({ owner: 'id', flight: 'projectile_chr_tocka_s2' }),
+    mark: binding({ owner: 'id', at: 'target', keys: ['tocka_skill_02_hit_01', 'tocka_skill_02_buff_02_start_01'] }),
+    buff: binding({ owner: 'id', at: 'point', keys: ['tocka_skill_02_buff_01'], hold: 'fx', holdS: 15, cover: ['buff'] }),
+    heal: binding({ owner: 'id', at: 'target', keys: ['tocka_heal_01_hit_01'] }),
+    aoe: binding({ owner: 'id', at: 'point', oneshot: true, keys: ['tocka_attack_02_range_01'] }),
+  }),
+
+  skchr_tocka_3: Object.freeze({
+    link: binding({ owner: 'id', flight: 'projectile_tocka_s3_effect' }),
+    mark: binding({ owner: 'id', at: 'target', keys: ['tocka_skill_03_buff_start_02'] }),
+    buff: binding({ owner: 'id', at: 'point', keys: ['tocka_skill_03_buff_04'], hold: 'fx', holdS: 15, cover: ['buff'] }),
+    heal: binding({ owner: 'id', at: 'target', keys: ['tocka_heal_01_hit_01'] }),
+    aoe: binding({ owner: 'id', at: 'point', oneshot: true, keys: ['tocka_attack_02_range_01'] }),
+  }),
+
   // Existing kit event supplies the elimination position (no invented projectile collision or ally trigger).
   skchr_yu_3: Object.freeze({ firewallBlock: binding({ owner: 'id', at: 'point', oneshot: true, keys: ['yu_skill3_annex_01'] }) }),
   // 克莱门莎 S3 (op-clemnt.js bombard): the kit marks an enemy's tile ('lock': id = the enemy, src = her) and strikes it
@@ -1427,6 +1482,7 @@ export const FX_BINDINGS = Object.freeze({
  */
 export function bindingEffects(idx, bind) {
   if (Array.isArray(bind?.keys)) return bind.keys.map(lc).filter(Boolean);
+  if (bind?.flight) { const k = lc(idx?.projectiles?.[lc(bind.flight)]?.main); return k ? [k] : []; }
   const p = bind?.projectile ? idx?.projectiles?.[lc(bind.projectile)] : null;
   if (!p) return [];
   const list = bind.part ? (Array.isArray(p[bind.part]) ? p[bind.part] : [])

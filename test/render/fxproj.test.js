@@ -53,6 +53,22 @@ const run = (fx, seconds, dt = DT) => { for (let t = 0; t < seconds - 1e-9; t +=
 const texName = (fx, tex) => Object.keys(fx.tex).find((k) => fx.tex[k] === tex);
 const liveTex = (fx, name) => fx.parts.filter((p) => p.sp.texture === fx.tex[name]);
 
+test('塔露拉 heatwaves follow the sim flight time and matching collision stops only that flame', () => {
+  const { fx } = makeFx({ ts: 1 });
+  fx.simFx('heatwave', 0, 10, { tx: 10, ty: 10, t: 2, flame: 'a' });
+  fx.simFx('heatwave', 0, 11, { tx: 10, ty: 11, t: 2, flame: 'b' });
+  assert.equal(fx.projs.length, 2);
+  const a = fx.projs.find(p => p.flame === 'a');
+  assert.deepEqual([a.x0, a.tx, a.dur], [0, 10, 2]);
+  run(fx, 0.5);
+  assert.ok(a.core.visible && a.t > 0.4 && a.t < 0.6);
+  fx.simFx('heatwaveHit', 2.5, 10, { r: 1.5, flame: 'a' });
+  run(fx, 0.1);
+  assert.ok(!fx.projs.some(p => p.flame === 'a'));
+  assert.ok(fx.projs.some(p => p.flame === 'b'));
+  fx.destroy();
+});
+
 describe('projectile speeds follow the sim', () => {
   test('style.js PROJ mirrors PROJECTILE_SPEEDS for every sim kind (and the boomerang return speed)', () => {
     for (const [kind, v] of Object.entries(SIM.PROJECTILE_SPEEDS)) {

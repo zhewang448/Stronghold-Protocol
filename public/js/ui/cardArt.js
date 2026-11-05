@@ -2,6 +2,7 @@ import { useEffect, useRef } from '../../vendor/hooks.module.js';
 import { html, Button, Modal } from './components.js';
 import { createStore, loadPref, savePref, useStore } from '../store.js';
 import { t } from '../../../shared/i18n.js';
+import { LiveArt } from './dynamicIllustration.js';
 
 const frames = createStore({ values: loadPref('room.cardArt', {}) || {} });
 export function ensureCardArtCss() {
@@ -72,7 +73,7 @@ export function useArtGestures(elementRef, value, onChange, { enabled = true, mi
         oy: frame.oy + (event.key === 'ArrowUp' ? -2 : event.key === 'ArrowDown' ? 2 : 0) });
     } };
 }
-export function CardArtImage({ frameKey, src, class: className = '', custom = false, onError = null, interactive = false }) {
+export function CardArtImage({ frameKey, src, class: className = '', custom = false, onError = null, interactive = false, m = null, charId = null, skin = null }) {
   ensureCardArtCss();
   const value = useStore(state => state.values[frameKey], Object.is, frames);
   const frame = normalizeCardArt(value);
@@ -80,7 +81,8 @@ export function CardArtImage({ frameKey, src, class: className = '', custom = fa
   const gestures = useArtGestures(image, frame, next => setCardArt(frameKey, next), { enabled: interactive, parentBounds: true });
   return html`<img ref=${image} src=${src} class=${`cardart__still ${interactive ? 'is-interactive' : ''} ${className}`} alt="" draggable=${false} data-art=${custom ? 'custom' : 'operator'}
     tabindex=${interactive ? '0' : undefined} aria-label=${interactive ? t('拖拽调整位置') : undefined} ...${gestures}
-    style=${`object-fit:cover;transform:translate(${frame.ox}%,${frame.oy}%) scale(${frame.zoom})`} onError=${onError} />`;
+    style=${`object-fit:cover;transform:translate(${frame.ox}%,${frame.oy}%) scale(${frame.zoom})`} onError=${onError} />
+    ${!custom ? html`<${LiveArt} m=${m} charId=${charId} skin=${skin} frame=${frame} />` : null}`;
 }
 export function CardArt({ frameKey, src, onClose }) {
   ensureCardArtCss();

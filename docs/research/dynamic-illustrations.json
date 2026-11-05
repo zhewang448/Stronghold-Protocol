@@ -1,0 +1,1763 @@
+{
+  "schema": 1,
+  "source": "https://github.com/Stardust-minus/Stronghold-Protocol/blob/d03ae6e7b3ab4f6f816bb21bf0c45d7558210a76/data/assets.json",
+  "sourceSha256": "214e86d7e4c2583e5f44c083ca371d6bd8a415f865a9908cb4eb92adcaabecbc",
+  "skins": {
+    "char_1045_svash2@sale#20": {
+      "charId": "char_1045_svash2",
+      "stem": "dyn_illust_char_1045_svash2_sale__20",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1045_svash2_sale__20/dyn_illust_char_1045_svash2_sale__20/dyn_illust_char_1045_svash2_sale__20.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1045_svash2_sale__20/dyn_illust_char_1045_svash2_sale__20/dyn_illust_char_1045_svash2_sale__20.atlas",
+      "frames": {
+        "avatar": {
+          "x": 141.085,
+          "y": 1366.907,
+          "width": 138.607,
+          "height": 138.607
+        },
+        "portrait": {
+          "x": 136.852,
+          "y": 1242.055,
+          "width": 144.955,
+          "height": 289.91
+        }
+      },
+      "bundle": "char_1045_svash2_sale#20",
+      "officialDynamic": true,
+      "name": "雪覆伦城",
+      "group": "忒斯特收藏/XXII",
+      "illust": "https://media.prts.wiki/3/3d/%E7%AB%8B%E7%BB%98_%E5%87%9B%E5%BE%A1%E9%93%B6%E7%81%B0_skin1.png",
+      "prtsFile": "立绘_凛御银灰_skin1.png"
+    },
+    "char_4098_vvana@epoque#59": {
+      "charId": "char_4098_vvana",
+      "stem": "dyn_illust_char_4098_vvana_epoque__59",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4098_vvana_epoque__59/dyn_illust_char_4098_vvana_epoque__59/dyn_illust_char_4098_vvana_epoque__59.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4098_vvana_epoque__59/dyn_illust_char_4098_vvana_epoque__59/dyn_illust_char_4098_vvana_epoque__59.atlas",
+      "frames": {
+        "avatar": {
+          "x": -9.161,
+          "y": 1146.633,
+          "width": 183.132,
+          "height": 183.132
+        },
+        "portrait": {
+          "x": -4.234,
+          "y": 1014.416,
+          "width": 163.423,
+          "height": 326.845
+        }
+      },
+      "bundle": "char_4098_vvana_epoque#59",
+      "officialDynamic": true,
+      "name": "还愿礼",
+      "group": "时代/LIX",
+      "illust": "https://media.prts.wiki/e/e2/%E7%AB%8B%E7%BB%98_%E8%96%87%E8%96%87%E5%AE%89%E5%A8%9C_skin2.png",
+      "prtsFile": "立绘_薇薇安娜_skin2.png"
+    },
+    "char_2025_shu@nlc#1": {
+      "charId": "char_2025_shu",
+      "stem": "dyn_illust_char_2025_shu_nlc__1",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2025_shu_nlc__1/dyn_illust_char_2025_shu_nlc__1/dyn_illust_char_2025_shu_nlc__1.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2025_shu_nlc__1/dyn_illust_char_2025_shu_nlc__1/dyn_illust_char_2025_shu_nlc__1.atlas",
+      "frames": {
+        "avatar": {
+          "x": -146.024,
+          "y": 1329.3,
+          "width": 199.247,
+          "height": 199.247
+        },
+        "portrait": {
+          "x": -143.798,
+          "y": 1166.786,
+          "width": 191.455,
+          "height": 382.91
+        }
+      },
+      "bundle": "char_2025_shu_nlc#1",
+      "officialDynamic": true,
+      "name": "源远流长",
+      "group": "国家图书馆",
+      "illust": "https://media.prts.wiki/3/33/%E7%AB%8B%E7%BB%98_%E9%BB%8D_skin2.png",
+      "prtsFile": "立绘_黍_skin2.png"
+    },
+    "char_332_archet@sale#14": {
+      "charId": "char_332_archet",
+      "stem": "dyn_illust_char_332_archet_sale__14",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_332_archet_sale__14/dyn_illust_char_332_archet_sale__14/dyn_illust_char_332_archet_sale__14.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_332_archet_sale__14/dyn_illust_char_332_archet_sale__14/dyn_illust_char_332_archet_sale__14.atlas",
+      "frames": {
+        "avatar": {
+          "x": -111.911,
+          "y": 828.225,
+          "width": 197.804,
+          "height": 197.804
+        },
+        "portrait": {
+          "x": -110.503,
+          "y": 674.768,
+          "width": 183.725,
+          "height": 367.451
+        }
+      },
+      "bundle": "char_332_archet_sale#14",
+      "officialDynamic": true,
+      "name": "至虔者荣光",
+      "group": "忒斯特收藏/XV",
+      "illust": "https://media.prts.wiki/f/f8/%E7%AB%8B%E7%BB%98_%E7%A9%BA%E5%BC%A6_skin2.png",
+      "prtsFile": "立绘_空弦_skin2.png"
+    },
+    "char_4087_ines@ambienceSynesthesia#5": {
+      "charId": "char_4087_ines",
+      "stem": "dyn_illust_char_4087_ines_ambienceSynesthesia__5",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4087_ines_ambienceSynesthesia__5/dyn_illust_char_4087_ines_ambienceSynesthesia__5/dyn_illust_char_4087_ines_ambienceSynesthesia__5.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4087_ines_ambienceSynesthesia__5/dyn_illust_char_4087_ines_ambienceSynesthesia__5/dyn_illust_char_4087_ines_ambienceSynesthesia__5.atlas",
+      "frames": {
+        "avatar": {
+          "x": -135.596,
+          "y": 386.499,
+          "width": 176.589,
+          "height": 176.589
+        },
+        "portrait": {
+          "x": -133.351,
+          "y": 236.099,
+          "width": 174.345,
+          "height": 348.689
+        }
+      },
+      "bundle": "char_4087_ines_ambienceSynesthesia#5",
+      "officialDynamic": true,
+      "name": "蝶舞华章",
+      "group": "音律联觉/V",
+      "illust": "https://media.prts.wiki/8/84/%E7%AB%8B%E7%BB%98_%E4%BC%8A%E5%86%85%E4%B8%9D_skin2.png",
+      "prtsFile": "立绘_伊内丝_skin2.png"
+    },
+    "char_4087_ines@boc#8": {
+      "charId": "char_4087_ines",
+      "stem": "dyn_illust_char_4087_ines_boc__8",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4087_ines_boc__8/dyn_illust_char_4087_ines_boc__8/dyn_illust_char_4087_ines_boc__8.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4087_ines_boc__8/dyn_illust_char_4087_ines_boc__8/dyn_illust_char_4087_ines_boc__8.atlas",
+      "frames": {
+        "avatar": {
+          "x": -46.027,
+          "y": 957.825,
+          "width": 155.956,
+          "height": 155.956
+        },
+        "portrait": {
+          "x": -33.55,
+          "y": 840.338,
+          "width": 143.48,
+          "height": 286.96
+        }
+      },
+      "bundle": "char_4087_ines_boc#8",
+      "officialDynamic": true,
+      "name": "燃烧天穹下",
+      "group": "斗争血脉/VIII",
+      "illust": "https://media.prts.wiki/2/2c/%E7%AB%8B%E7%BB%98_%E4%BC%8A%E5%86%85%E4%B8%9D_skin1.png",
+      "prtsFile": "立绘_伊内丝_skin1.png"
+    },
+    "char_437_mizuki@sale#7": {
+      "charId": "char_437_mizuki",
+      "stem": "dyn_illust_char_437_mizuki_sale__7",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_437_mizuki_sale__7/dyn_illust_char_437_mizuki_sale__7/dyn_illust_char_437_mizuki_sale__7.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_437_mizuki_sale__7/dyn_illust_char_437_mizuki_sale__7/dyn_illust_char_437_mizuki_sale__7.atlas",
+      "frames": {
+        "avatar": {
+          "x": -143.007,
+          "y": 976.034,
+          "width": 276.242,
+          "height": 276.242
+        },
+        "portrait": {
+          "x": -208.131,
+          "y": 606.041,
+          "width": 333.494,
+          "height": 666.988
+        }
+      },
+      "bundle": "char_437_mizuki_sale#7",
+      "officialDynamic": true,
+      "name": "夏日餮宴",
+      "group": "忒斯特收藏/VIII",
+      "illust": "https://media.prts.wiki/0/05/%E7%AB%8B%E7%BB%98_%E6%B0%B4%E6%9C%88_skin1.png",
+      "prtsFile": "立绘_水月_skin1.png"
+    },
+    "char_1028_texas2@epoque#36": {
+      "charId": "char_1028_texas2",
+      "stem": "dyn_illust_char_1028_texas2_epoque__36",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1028_texas2_epoque__36/dyn_illust_char_1028_texas2_epoque__36/dyn_illust_char_1028_texas2_epoque__36.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1028_texas2_epoque__36/dyn_illust_char_1028_texas2_epoque__36/dyn_illust_char_1028_texas2_epoque__36.atlas",
+      "frames": {
+        "avatar": {
+          "x": -36.156,
+          "y": 1121.912,
+          "width": 224.204,
+          "height": 224.204
+        },
+        "portrait": {
+          "x": -33.282,
+          "y": 943.699,
+          "width": 213.856,
+          "height": 427.713
+        }
+      },
+      "bundle": "char_1028_texas2_epoque#36",
+      "officialDynamic": true,
+      "name": "幽兰秘辛",
+      "group": "时代/XXXVI",
+      "illust": "https://media.prts.wiki/f/f1/%E7%AB%8B%E7%BB%98_%E7%BC%84%E9%BB%98%E5%BE%B7%E5%85%8B%E8%90%A8%E6%96%AF_skin2.png",
+      "prtsFile": "立绘_缄默德克萨斯_skin2.png"
+    },
+    "char_1028_texas2@iteration#1": {
+      "charId": "char_1028_texas2",
+      "stem": "dyn_illust_char_1028_texas2_iteration__1",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1028_texas2_iteration__1/dyn_illust_char_1028_texas2_iteration__1/dyn_illust_char_1028_texas2_iteration__1.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1028_texas2_iteration__1/dyn_illust_char_1028_texas2_iteration__1/dyn_illust_char_1028_texas2_iteration__1.atlas",
+      "frames": {
+        "avatar": {
+          "x": -105.589,
+          "y": 1102.852,
+          "width": 188.91,
+          "height": 188.91
+        },
+        "portrait": {
+          "x": -99.075,
+          "y": 958.817,
+          "width": 174.434,
+          "height": 348.868
+        }
+      },
+      "bundle": "char_1028_texas2_iteration#1",
+      "officialDynamic": true,
+      "name": "破翼者",
+      "group": "命途迭代",
+      "illust": "https://media.prts.wiki/b/b9/%E7%AB%8B%E7%BB%98_%E7%BC%84%E9%BB%98%E5%BE%B7%E5%85%8B%E8%90%A8%E6%96%AF_skin1.png",
+      "prtsFile": "立绘_缄默德克萨斯_skin1.png"
+    },
+    "char_172_svrash@ambienceSynesthesia#4": {
+      "charId": "char_172_svrash",
+      "stem": "dyn_illust_char_172_svrash_ambienceSynesthesia__4",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_172_svrash_ambienceSynesthesia__4/dyn_illust_char_172_svrash_ambienceSynesthesia__4/dyn_illust_char_172_svrash_ambienceSynesthesia__4.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_172_svrash_ambienceSynesthesia__4/dyn_illust_char_172_svrash_ambienceSynesthesia__4/dyn_illust_char_172_svrash_ambienceSynesthesia__4.atlas",
+      "frames": {
+        "avatar": {
+          "x": -134.744,
+          "y": -62.808,
+          "width": 284.469,
+          "height": 284.469
+        },
+        "portrait": {
+          "x": -147.185,
+          "y": -291.358,
+          "width": 256.509,
+          "height": 513.019
+        }
+      },
+      "bundle": "char_172_svrash_ambienceSynesthesia#4",
+      "officialDynamic": true,
+      "name": "不融冰",
+      "group": "音律联觉/IV",
+      "illust": "https://media.prts.wiki/6/62/%E7%AB%8B%E7%BB%98_%E9%93%B6%E7%81%B0_skin3.png",
+      "prtsFile": "立绘_银灰_skin3.png"
+    },
+    "char_1026_gvial2@summer#12": {
+      "charId": "char_1026_gvial2",
+      "stem": "dyn_illust_char_1026_gvial2_summer__12",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1026_gvial2_summer__12/dyn_illust_char_1026_gvial2_summer__12/dyn_illust_char_1026_gvial2_summer__12.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1026_gvial2_summer__12/dyn_illust_char_1026_gvial2_summer__12/dyn_illust_char_1026_gvial2_summer__12.atlas",
+      "frames": {
+        "avatar": {
+          "x": -7.484,
+          "y": 868.027,
+          "width": 188.106,
+          "height": 188.106
+        },
+        "portrait": {
+          "x": -6.031,
+          "y": 722.045,
+          "width": 177.212,
+          "height": 354.423
+        }
+      },
+      "bundle": "char_1026_gvial2_summer#12",
+      "officialDynamic": true,
+      "name": "悠然假日 HD26",
+      "group": "珊瑚海岸/XII",
+      "illust": "https://media.prts.wiki/4/4e/%E7%AB%8B%E7%BB%98_%E7%99%BE%E7%82%BC%E5%98%89%E7%BB%B4%E5%B0%94_skin1.png",
+      "prtsFile": "立绘_百炼嘉维尔_skin1.png"
+    },
+    "char_4134_cetsyr@epoque#50": {
+      "charId": "char_4134_cetsyr",
+      "stem": "dyn_illust_char_4134_cetsyr_epoque__50",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4134_cetsyr_epoque__50/dyn_illust_char_4134_cetsyr_epoque__50/dyn_illust_char_4134_cetsyr_epoque__50.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4134_cetsyr_epoque__50/dyn_illust_char_4134_cetsyr_epoque__50/dyn_illust_char_4134_cetsyr_epoque__50.atlas",
+      "frames": {
+        "avatar": {
+          "x": -17.288,
+          "y": 831.784,
+          "width": 169.683,
+          "height": 169.683
+        },
+        "portrait": {
+          "x": -11.437,
+          "y": 698.964,
+          "width": 159.151,
+          "height": 318.301
+        }
+      },
+      "bundle": "char_4134_cetsyr_epoque#50",
+      "officialDynamic": true,
+      "name": "追悼",
+      "group": "时代/XLIX",
+      "illust": "https://media.prts.wiki/8/82/%E7%AB%8B%E7%BB%98_%E9%AD%94%E7%8E%8B_skin1.png",
+      "prtsFile": "立绘_魔王_skin1.png"
+    },
+    "char_1032_excu2@sale#12": {
+      "charId": "char_1032_excu2",
+      "stem": "dyn_illust_char_1032_excu2_sale__12",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1032_excu2_sale__12/dyn_illust_char_1032_excu2_sale__12/dyn_illust_char_1032_excu2_sale__12.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1032_excu2_sale__12/dyn_illust_char_1032_excu2_sale__12/dyn_illust_char_1032_excu2_sale__12.atlas",
+      "frames": {
+        "avatar": {
+          "x": -102.342,
+          "y": 832.302,
+          "width": 176.274,
+          "height": 176.274
+        },
+        "portrait": {
+          "x": -97.953,
+          "y": 693.331,
+          "width": 165.303,
+          "height": 330.606
+        }
+      },
+      "bundle": "char_1032_excu2_sale#12",
+      "officialDynamic": true,
+      "name": "众志归一",
+      "group": "忒斯特收藏/XIII",
+      "illust": "https://media.prts.wiki/e/ee/%E7%AB%8B%E7%BB%98_%E5%9C%A3%E7%BA%A6%E9%80%81%E8%91%AC%E4%BA%BA_skin1.png",
+      "prtsFile": "立绘_圣约送葬人_skin1.png"
+    },
+    "char_4010_etlchi@winter#5": {
+      "charId": "char_4010_etlchi",
+      "stem": "dyn_illust_char_4010_etlchi_winter__5",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4010_etlchi_winter__5/dyn_illust_char_4010_etlchi_winter__5/dyn_illust_char_4010_etlchi_winter__5.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4010_etlchi_winter__5/dyn_illust_char_4010_etlchi_winter__5/dyn_illust_char_4010_etlchi_winter__5.atlas",
+      "frames": {
+        "avatar": {
+          "x": -112.936,
+          "y": 1020.029,
+          "width": 196.526,
+          "height": 196.526
+        },
+        "portrait": {
+          "x": -104.136,
+          "y": 868.968,
+          "width": 184.793,
+          "height": 369.587
+        }
+      },
+      "bundle": "char_4010_etlchi_winter#5",
+      "officialDynamic": true,
+      "name": "耀目之蓝",
+      "group": "寒武纪/V",
+      "illust": "https://media.prts.wiki/9/9d/%E7%AB%8B%E7%BB%98_%E9%9A%90%E5%BE%B7%E6%9D%A5%E5%B8%8C_skin1.png",
+      "prtsFile": "立绘_隐德来希_skin1.png"
+    },
+    "char_350_surtr@ambienceSynesthesia#6": {
+      "charId": "char_350_surtr",
+      "stem": "dyn_illust_char_350_surtr_ambienceSynesthesia__6",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_350_surtr_ambienceSynesthesia__6/dyn_illust_char_350_surtr_ambienceSynesthesia__6/dyn_illust_char_350_surtr_ambienceSynesthesia__6.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_350_surtr_ambienceSynesthesia__6/dyn_illust_char_350_surtr_ambienceSynesthesia__6/dyn_illust_char_350_surtr_ambienceSynesthesia__6.atlas",
+      "frames": {
+        "avatar": {
+          "x": -131.079,
+          "y": 747.464,
+          "width": 196.748,
+          "height": 196.748
+        },
+        "portrait": {
+          "x": -125.228,
+          "y": 590.943,
+          "width": 187.971,
+          "height": 375.943
+        }
+      },
+      "bundle": "char_350_surtr_ambienceSynesthesia#6",
+      "officialDynamic": true,
+      "name": "超然序曲",
+      "group": "音律联觉/VII",
+      "illust": "https://media.prts.wiki/2/2f/%E7%AB%8B%E7%BB%98_%E5%8F%B2%E5%B0%94%E7%89%B9%E5%B0%94_skin3.png",
+      "prtsFile": "立绘_史尔特尔_skin3.png"
+    },
+    "char_350_surtr@summer#9": {
+      "charId": "char_350_surtr",
+      "stem": "dyn_illust_char_350_surtr_summer__9",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_350_surtr_summer__9/dyn_illust_char_350_surtr_summer__9/dyn_illust_char_350_surtr_summer__9.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_350_surtr_summer__9/dyn_illust_char_350_surtr_summer__9/dyn_illust_char_350_surtr_summer__9.atlas",
+      "frames": {
+        "avatar": {
+          "x": -0.107,
+          "y": 851.516,
+          "width": 225.225,
+          "height": 225.225
+        },
+        "portrait": {
+          "x": 8.555,
+          "y": 688.373,
+          "width": 200.681,
+          "height": 401.363
+        }
+      },
+      "background": "https://static.prts.wiki/spine38/dynbg/dyn_illust_char_350_surtr_summer__9/dyn_illust_char_350_surtr_summer__9_bg.png",
+      "bundle": "char_350_surtr_summer#9",
+      "officialDynamic": true,
+      "name": "缤纷奇境 CW03",
+      "group": "珊瑚海岸/IX",
+      "illust": "https://media.prts.wiki/6/69/%E7%AB%8B%E7%BB%98_%E5%8F%B2%E5%B0%94%E7%89%B9%E5%B0%94_skin2.png",
+      "prtsFile": "立绘_史尔特尔_skin2.png"
+    },
+    "char_202_demkni@ambienceSynesthesia#7": {
+      "charId": "char_202_demkni",
+      "stem": "dyn_illust_char_202_demkni_ambienceSynesthesia__7",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_202_demkni_ambienceSynesthesia__7/dyn_illust_char_202_demkni_ambienceSynesthesia__7/dyn_illust_char_202_demkni_ambienceSynesthesia__7.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_202_demkni_ambienceSynesthesia__7/dyn_illust_char_202_demkni_ambienceSynesthesia__7/dyn_illust_char_202_demkni_ambienceSynesthesia__7.atlas",
+      "frames": {
+        "avatar": {
+          "x": -110.42,
+          "y": 1135.905,
+          "width": 158.297,
+          "height": 158.297
+        },
+        "portrait": {
+          "x": -107.488,
+          "y": 1008.388,
+          "width": 154.633,
+          "height": 309.266
+        }
+      },
+      "bundle": "char_202_demkni_ambienceSynesthesia#7",
+      "officialDynamic": true,
+      "name": "黑白冷峻",
+      "group": "音律联觉/VIII",
+      "illust": "https://media.prts.wiki/7/74/%E7%AB%8B%E7%BB%98_%E5%A1%9E%E9%9B%B7%E5%A8%85_skin3.png",
+      "prtsFile": "立绘_塞雷娅_skin3.png"
+    },
+    "char_2015_dusk@nian#12": {
+      "charId": "char_2015_dusk",
+      "stem": "dyn_illust_char_2015_dusk_nian__12",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2015_dusk_nian__12/dyn_illust_char_2015_dusk_nian__12/dyn_illust_char_2015_dusk_nian__12.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2015_dusk_nian__12/dyn_illust_char_2015_dusk_nian__12/dyn_illust_char_2015_dusk_nian__12.atlas",
+      "frames": {
+        "avatar": {
+          "x": -44.5,
+          "y": 1196.027,
+          "width": 163.196,
+          "height": 163.196
+        },
+        "portrait": {
+          "x": -44.5,
+          "y": 1069.021,
+          "width": 152.271,
+          "height": 304.542
+        }
+      },
+      "bundle": "char_2015_dusk_nian#12",
+      "officialDynamic": true,
+      "name": "青玉砚",
+      "group": "0011制造/XII",
+      "illust": "https://media.prts.wiki/a/a1/%E7%AB%8B%E7%BB%98_%E5%A4%95_skin2.png",
+      "prtsFile": "立绘_夕_skin2.png"
+    },
+    "char_2015_dusk@nian#7": {
+      "charId": "char_2015_dusk",
+      "stem": "dyn_illust_char_2015_dusk_nian__7",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2015_dusk_nian__7/dyn_illust_char_2015_dusk_nian__7/dyn_illust_char_2015_dusk_nian__7.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2015_dusk_nian__7/dyn_illust_char_2015_dusk_nian__7/dyn_illust_char_2015_dusk_nian__7.atlas",
+      "frames": {
+        "avatar": {
+          "x": -236.75,
+          "y": 1403.93,
+          "width": 441.122,
+          "height": 441.122
+        },
+        "portrait": {
+          "x": -198.324,
+          "y": 1063.482,
+          "width": 408.077,
+          "height": 816.153
+        }
+      },
+      "background": "https://static.prts.wiki/spine38/dynbg/dyn_illust_char_2015_dusk_nian__7/dyn_illust_char_2015_dusk_nian__7_bg.png",
+      "bundle": "char_2015_dusk_nian#7",
+      "officialDynamic": true,
+      "name": "染尘烟",
+      "group": "0011制造/VI",
+      "illust": "https://media.prts.wiki/8/80/%E7%AB%8B%E7%BB%98_%E5%A4%95_skin1.png",
+      "prtsFile": "立绘_夕_skin1.png"
+    },
+    "char_1023_ghost2@boc#6": {
+      "charId": "char_1023_ghost2",
+      "stem": "dyn_illust_char_1023_ghost2_boc__6",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1023_ghost2_boc__6/dyn_illust_char_1023_ghost2_boc__6/dyn_illust_char_1023_ghost2_boc__6.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1023_ghost2_boc__6/dyn_illust_char_1023_ghost2_boc__6/dyn_illust_char_1023_ghost2_boc__6.atlas",
+      "frames": {
+        "avatar": {
+          "x": 65.16,
+          "y": 1181.176,
+          "width": 184.105,
+          "height": 184.105
+        },
+        "portrait": {
+          "x": 71.322,
+          "y": 1044.83,
+          "width": 164.077,
+          "height": 328.153
+        }
+      },
+      "background": "https://static.prts.wiki/spine38/dynbg/dyn_illust_char_1023_ghost2_boc__6/dyn_illust_char_1023_ghost2_boc__6_bg.png",
+      "foreground": "https://static.prts.wiki/spine38/dynbg/dyn_illust_char_1023_ghost2_boc__6/dyn_illust_char_1023_ghost2_boc__6_fg.png",
+      "bundle": "char_1023_ghost2_boc#6",
+      "officialDynamic": true,
+      "name": "生而为一",
+      "group": "斗争血脉/VI",
+      "illust": "https://media.prts.wiki/0/0d/%E7%AB%8B%E7%BB%98_%E5%BD%92%E6%BA%9F%E5%B9%BD%E7%81%B5%E9%B2%A8_skin1.png",
+      "prtsFile": "立绘_归溟幽灵鲨_skin1.png"
+    },
+    "char_4064_mlynar@epoque#28": {
+      "charId": "char_4064_mlynar",
+      "stem": "dyn_illust_char_4064_mlynar_epoque__28",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4064_mlynar_epoque__28/dyn_illust_char_4064_mlynar_epoque__28/dyn_illust_char_4064_mlynar_epoque__28.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4064_mlynar_epoque__28/dyn_illust_char_4064_mlynar_epoque__28/dyn_illust_char_4064_mlynar_epoque__28.atlas",
+      "frames": {
+        "avatar": {
+          "x": 5.041,
+          "y": 1232.716,
+          "width": 196.26,
+          "height": 196.26
+        },
+        "portrait": {
+          "x": 18.392,
+          "y": 1083.852,
+          "width": 178.903,
+          "height": 357.807
+        }
+      },
+      "bundle": "char_4064_mlynar_epoque#28",
+      "officialDynamic": true,
+      "name": "远路",
+      "group": "时代/XXVIII",
+      "illust": "https://media.prts.wiki/c/c0/%E7%AB%8B%E7%BB%98_%E7%8E%9B%E6%81%A9%E7%BA%B3_skin1.png",
+      "prtsFile": "立绘_玛恩纳_skin1.png"
+    },
+    "char_1046_sbell2@ambienceSynesthesia#8": {
+      "charId": "char_1046_sbell2",
+      "stem": "dyn_illust_char_1046_sbell2_ambienceSynesthesia__8",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1046_sbell2_ambienceSynesthesia__8/dyn_illust_char_1046_sbell2_ambienceSynesthesia__8/dyn_illust_char_1046_sbell2_ambienceSynesthesia__8.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1046_sbell2_ambienceSynesthesia__8/dyn_illust_char_1046_sbell2_ambienceSynesthesia__8/dyn_illust_char_1046_sbell2_ambienceSynesthesia__8.atlas",
+      "frames": {
+        "avatar": {
+          "x": -176.251,
+          "y": 1227.941,
+          "width": 186.034,
+          "height": 186.034
+        },
+        "portrait": {
+          "x": -171.46,
+          "y": 1086.619,
+          "width": 172.461,
+          "height": 344.921
+        }
+      },
+      "bundle": "char_1046_sbell2_ambienceSynesthesia#8",
+      "officialDynamic": true,
+      "name": "曙光祝颂",
+      "group": "音律联觉/IX",
+      "illust": "https://media.prts.wiki/0/09/%E7%AB%8B%E7%BB%98_%E5%9C%A3%E8%81%86%E5%88%9D%E9%9B%AA_skin1.png",
+      "prtsFile": "立绘_圣聆初雪_skin1.png"
+    },
+    "char_2026_yu@nian#12": {
+      "charId": "char_2026_yu",
+      "stem": "dyn_illust_char_2026_yu_nian__12",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2026_yu_nian__12/dyn_illust_char_2026_yu_nian__12/dyn_illust_char_2026_yu_nian__12.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2026_yu_nian__12/dyn_illust_char_2026_yu_nian__12/dyn_illust_char_2026_yu_nian__12.atlas",
+      "frames": {
+        "avatar": {
+          "x": -127.005,
+          "y": 1115.12,
+          "width": 209.664,
+          "height": 209.664
+        },
+        "portrait": {
+          "x": -121.891,
+          "y": 952.211,
+          "width": 196.514,
+          "height": 393.028
+        }
+      },
+      "bundle": "char_2026_yu_nian#12",
+      "officialDynamic": true,
+      "name": "愿清晓",
+      "group": "0011制造/XII",
+      "illust": "https://media.prts.wiki/9/9b/%E7%AB%8B%E7%BB%98_%E4%BD%99_skin1.png",
+      "prtsFile": "立绘_余_skin1.png"
+    },
+    "char_1012_skadi2@boc#4": {
+      "charId": "char_1012_skadi2",
+      "stem": "dyn_illust_char_1012_skadi2_boc__4",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1012_skadi2_boc__4/dyn_illust_char_1012_skadi2_boc__4/dyn_illust_char_1012_skadi2_boc__4.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1012_skadi2_boc__4/dyn_illust_char_1012_skadi2_boc__4/dyn_illust_char_1012_skadi2_boc__4.atlas",
+      "frames": {
+        "avatar": {
+          "x": -72.65,
+          "y": 794.148,
+          "width": 184.658,
+          "height": 184.658
+        },
+        "portrait": {
+          "x": -74.065,
+          "y": 642.036,
+          "width": 178.998,
+          "height": 357.995
+        }
+      },
+      "background": "https://static.prts.wiki/spine38/dynbg/dyn_illust_char_1012_skadi2_boc__4/dyn_illust_char_1012_skadi2_boc__4_bg.png",
+      "bundle": "char_1012_skadi2_boc#4",
+      "officialDynamic": true,
+      "name": "升华",
+      "group": "斗争血脉/IV",
+      "illust": "https://media.prts.wiki/a/a8/%E7%AB%8B%E7%BB%98_%E6%B5%8A%E5%BF%83%E6%96%AF%E5%8D%A1%E8%92%82_skin1.png",
+      "prtsFile": "立绘_浊心斯卡蒂_skin1.png"
+    },
+    "char_1012_skadi2@iteration#2": {
+      "charId": "char_1012_skadi2",
+      "stem": "dyn_illust_char_1012_skadi2_iteration__2",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1012_skadi2_iteration__2/dyn_illust_char_1012_skadi2_iteration__2/dyn_illust_char_1012_skadi2_iteration__2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1012_skadi2_iteration__2/dyn_illust_char_1012_skadi2_iteration__2/dyn_illust_char_1012_skadi2_iteration__2.atlas",
+      "frames": {
+        "avatar": {
+          "x": -118.212,
+          "y": 968.479,
+          "width": 186.737,
+          "height": 186.737
+        },
+        "portrait": {
+          "x": -110.547,
+          "y": 833.303,
+          "width": 165.834,
+          "height": 331.668
+        }
+      },
+      "bundle": "char_1012_skadi2_iteration#2",
+      "officialDynamic": true,
+      "name": "红女爵",
+      "group": "命途迭代/II",
+      "illust": "https://media.prts.wiki/7/78/%E7%AB%8B%E7%BB%98_%E6%B5%8A%E5%BF%83%E6%96%AF%E5%8D%A1%E8%92%82_skin2.png",
+      "prtsFile": "立绘_浊心斯卡蒂_skin2.png"
+    },
+    "char_472_pasngr@epoque#17": {
+      "charId": "char_472_pasngr",
+      "stem": "dyn_illust_char_472_pasngr_epoque__17",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_472_pasngr_epoque__17/dyn_illust_char_472_pasngr_epoque__17/dyn_illust_char_472_pasngr_epoque__17.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_472_pasngr_epoque__17/dyn_illust_char_472_pasngr_epoque__17/dyn_illust_char_472_pasngr_epoque__17.atlas",
+      "frames": {
+        "avatar": {
+          "x": -11.065,
+          "y": 1120.268,
+          "width": 219.262,
+          "height": 219.262
+        },
+        "portrait": {
+          "x": -4.568,
+          "y": 959.476,
+          "width": 194.899,
+          "height": 389.799
+        }
+      },
+      "background": "https://static.prts.wiki/spine38/dynbg/dyn_illust_char_472_pasngr_epoque__17/dyn_illust_char_472_pasngr_epoque__17_bg.png",
+      "alphaEdgeRegions": [
+        "A/Pas_B_Head",
+        "A/Pas_B_Nose",
+        "A/Pas_B_Nose_Sha",
+        "A/Pas_B_L_Eyewhite",
+        "A/Pas_B_R_Eyewhite"
+      ],
+      "bundle": "char_472_pasngr_epoque#17",
+      "officialDynamic": true,
+      "name": "今昔须臾之梦",
+      "group": "时代/XVII",
+      "illust": "https://media.prts.wiki/7/74/%E7%AB%8B%E7%BB%98_%E5%BC%82%E5%AE%A2_skin1.png",
+      "prtsFile": "立绘_异客_skin1.png"
+    },
+    "char_4058_pepe@sightseer#2": {
+      "charId": "char_4058_pepe",
+      "stem": "dyn_illust_char_4058_pepe_sightseer__2",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4058_pepe_sightseer__2/dyn_illust_char_4058_pepe_sightseer__2/dyn_illust_char_4058_pepe_sightseer__2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4058_pepe_sightseer__2/dyn_illust_char_4058_pepe_sightseer__2/dyn_illust_char_4058_pepe_sightseer__2.atlas",
+      "frames": {
+        "avatar": {
+          "x": -105.805,
+          "y": 856.347,
+          "width": 209.858,
+          "height": 209.858
+        },
+        "portrait": {
+          "x": -94.078,
+          "y": 696.485,
+          "width": 192.576,
+          "height": 385.151
+        }
+      },
+      "bundle": "char_4058_pepe_sightseer#2",
+      "officialDynamic": true,
+      "name": "星移",
+      "group": "错位巡礼/II",
+      "illust": "https://media.prts.wiki/7/71/%E7%AB%8B%E7%BB%98_%E4%BD%A9%E4%BD%A9_skin1.png",
+      "prtsFile": "立绘_佩佩_skin1.png"
+    },
+    "char_1019_siege2@epoque#50": {
+      "charId": "char_1019_siege2",
+      "stem": "dyn_illust_char_1019_siege2_epoque__50",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1019_siege2_epoque__50/dyn_illust_char_1019_siege2_epoque__50/dyn_illust_char_1019_siege2_epoque__50.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1019_siege2_epoque__50/dyn_illust_char_1019_siege2_epoque__50/dyn_illust_char_1019_siege2_epoque__50.atlas",
+      "frames": {
+        "avatar": {
+          "x": -111.214,
+          "y": 1129.022,
+          "width": 176.547,
+          "height": 176.547
+        },
+        "portrait": {
+          "x": -101.067,
+          "y": 995.766,
+          "width": 159.636,
+          "height": 319.273
+        }
+      },
+      "bundle": "char_1019_siege2_epoque#50",
+      "officialDynamic": true,
+      "name": "光耀之途",
+      "group": "时代/XLIX",
+      "illust": "https://media.prts.wiki/b/b3/%E7%AB%8B%E7%BB%98_%E7%BB%B4%E5%A8%9C%C2%B7%E7%BB%B4%E5%A4%9A%E5%88%A9%E4%BA%9A_skin1.png",
+      "prtsFile": "立绘_维娜·维多利亚_skin1.png"
+    },
+    "char_1020_reed2@epoque#30": {
+      "charId": "char_1020_reed2",
+      "stem": "dyn_illust_char_1020_reed2_epoque__30",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1020_reed2_epoque__30/dyn_illust_char_1020_reed2_epoque__30/dyn_illust_char_1020_reed2_epoque__30.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1020_reed2_epoque__30/dyn_illust_char_1020_reed2_epoque__30/dyn_illust_char_1020_reed2_epoque__30.atlas",
+      "frames": {
+        "avatar": {
+          "x": -63.071,
+          "y": 831.2,
+          "width": 175.316,
+          "height": 175.316
+        },
+        "portrait": {
+          "x": -66.283,
+          "y": 702.237,
+          "width": 158.335,
+          "height": 316.671
+        }
+      },
+      "bundle": "char_1020_reed2_epoque#30",
+      "officialDynamic": true,
+      "name": "博物",
+      "group": "时代/XXX",
+      "illust": "https://media.prts.wiki/3/36/%E7%AB%8B%E7%BB%98_%E7%84%B0%E5%BD%B1%E8%8B%87%E8%8D%89_skin1.png",
+      "prtsFile": "立绘_焰影苇草_skin1.png"
+    },
+    "char_1020_reed2@summer#17": {
+      "charId": "char_1020_reed2",
+      "stem": "dyn_illust_char_1020_reed2_summer__17",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1020_reed2_summer__17/dyn_illust_char_1020_reed2_summer__17/dyn_illust_char_1020_reed2_summer__17.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1020_reed2_summer__17/dyn_illust_char_1020_reed2_summer__17/dyn_illust_char_1020_reed2_summer__17.atlas",
+      "frames": {
+        "avatar": {
+          "x": 79.231,
+          "y": 707.687,
+          "width": 164.694,
+          "height": 164.694
+        },
+        "portrait": {
+          "x": 80.084,
+          "y": 574.566,
+          "width": 157.014,
+          "height": 314.029
+        }
+      },
+      "bundle": "char_1020_reed2_summer#17",
+      "officialDynamic": true,
+      "name": "夏卉 FA075",
+      "group": "珊瑚海岸/XVII",
+      "illust": "https://media.prts.wiki/1/1d/%E7%AB%8B%E7%BB%98_%E7%84%B0%E5%BD%B1%E8%8B%87%E8%8D%89_skin2.png",
+      "prtsFile": "立绘_焰影苇草_skin2.png"
+    },
+    "char_245_cello@sale#12": {
+      "charId": "char_245_cello",
+      "stem": "dyn_illust_char_245_cello_sale__12",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_245_cello_sale__12/dyn_illust_char_245_cello_sale__12/dyn_illust_char_245_cello_sale__12.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_245_cello_sale__12/dyn_illust_char_245_cello_sale__12/dyn_illust_char_245_cello_sale__12.atlas",
+      "frames": {
+        "avatar": {
+          "x": -73.335,
+          "y": 1097.802,
+          "width": 193.08,
+          "height": 193.08
+        },
+        "portrait": {
+          "x": -70.582,
+          "y": 944.439,
+          "width": 182.463,
+          "height": 364.925
+        }
+      },
+      "bundle": "char_245_cello_sale#12",
+      "officialDynamic": true,
+      "name": "无我唯识",
+      "group": "忒斯特收藏/XIII",
+      "illust": "https://media.prts.wiki/0/05/%E7%AB%8B%E7%BB%98_%E5%A1%91%E5%BF%83_skin1.png",
+      "prtsFile": "立绘_塑心_skin1.png"
+    },
+    "char_249_mlyss@ambienceSynesthesia#6": {
+      "charId": "char_249_mlyss",
+      "stem": "dyn_illust_char_249_mlyss_ambienceSynesthesia__6",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_249_mlyss_ambienceSynesthesia__6/dyn_illust_char_249_mlyss_ambienceSynesthesia__6/dyn_illust_char_249_mlyss_ambienceSynesthesia__6.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_249_mlyss_ambienceSynesthesia__6/dyn_illust_char_249_mlyss_ambienceSynesthesia__6/dyn_illust_char_249_mlyss_ambienceSynesthesia__6.atlas",
+      "frames": {
+        "avatar": {
+          "x": -120.581,
+          "y": 1244.059,
+          "width": 189.323,
+          "height": 189.323
+        },
+        "portrait": {
+          "x": -110.347,
+          "y": 1105.173,
+          "width": 168.856,
+          "height": 337.712
+        }
+      },
+      "bundle": "char_249_mlyss_ambienceSynesthesia#6",
+      "officialDynamic": true,
+      "name": "漫步于黄金之梦",
+      "group": "音律联觉/VI",
+      "illust": "https://media.prts.wiki/e/e9/%E7%AB%8B%E7%BB%98_%E7%BC%AA%E5%B0%94%E8%B5%9B%E6%80%9D_skin2.png",
+      "prtsFile": "立绘_缪尔赛思_skin2.png"
+    },
+    "char_249_mlyss@boc#8": {
+      "charId": "char_249_mlyss",
+      "stem": "dyn_illust_char_249_mlyss_boc__8",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_249_mlyss_boc__8/dyn_illust_char_249_mlyss_boc__8/dyn_illust_char_249_mlyss_boc__8.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_249_mlyss_boc__8/dyn_illust_char_249_mlyss_boc__8/dyn_illust_char_249_mlyss_boc__8.atlas",
+      "frames": {
+        "avatar": {
+          "x": -136.154,
+          "y": 1288.25,
+          "width": 187.44,
+          "height": 187.44
+        },
+        "portrait": {
+          "x": -127.281,
+          "y": 1145.175,
+          "width": 173.021,
+          "height": 346.042
+        }
+      },
+      "bundle": "char_249_mlyss_boc#8",
+      "officialDynamic": true,
+      "name": "新枝",
+      "group": "斗争血脉/VIII",
+      "illust": "https://media.prts.wiki/4/4f/%E7%AB%8B%E7%BB%98_%E7%BC%AA%E5%B0%94%E8%B5%9B%E6%80%9D_skin1.png",
+      "prtsFile": "立绘_缪尔赛思_skin1.png"
+    },
+    "char_391_rosmon@epoque#17": {
+      "charId": "char_391_rosmon",
+      "stem": "dyn_illust_char_391_rosmon_epoque__17",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_391_rosmon_epoque__17/dyn_illust_char_391_rosmon_epoque__17/dyn_illust_char_391_rosmon_epoque__17.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_391_rosmon_epoque__17/dyn_illust_char_391_rosmon_epoque__17/dyn_illust_char_391_rosmon_epoque__17.atlas",
+      "frames": {
+        "avatar": {
+          "x": -162.079,
+          "y": 890.612,
+          "width": 164.324,
+          "height": 164.324
+        },
+        "portrait": {
+          "x": -156.21,
+          "y": 765.902,
+          "width": 151.119,
+          "height": 302.239
+        }
+      },
+      "bundle": "char_391_rosmon_epoque#17",
+      "officialDynamic": true,
+      "name": "拥抱新生",
+      "group": "时代/XVII",
+      "illust": "https://media.prts.wiki/b/ba/%E7%AB%8B%E7%BB%98_%E8%BF%B7%E8%BF%AD%E9%A6%99_skin1.png",
+      "prtsFile": "立绘_迷迭香_skin1.png"
+    },
+    "char_391_rosmon@sale#16": {
+      "charId": "char_391_rosmon",
+      "stem": "dyn_illust_char_391_rosmon_sale__16",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_391_rosmon_sale__16/dyn_illust_char_391_rosmon_sale__16/dyn_illust_char_391_rosmon_sale__16.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_391_rosmon_sale__16/dyn_illust_char_391_rosmon_sale__16/dyn_illust_char_391_rosmon_sale__16.atlas",
+      "frames": {
+        "avatar": {
+          "x": -214.748,
+          "y": 994.719,
+          "width": 189.16,
+          "height": 189.16
+        },
+        "portrait": {
+          "x": -210.481,
+          "y": 844.671,
+          "width": 178.493,
+          "height": 356.986
+        }
+      },
+      "bundle": "char_391_rosmon_sale#16",
+      "officialDynamic": true,
+      "name": "轻盈一梦",
+      "group": "忒斯特收藏/XVIII",
+      "illust": "https://media.prts.wiki/f/ff/%E7%AB%8B%E7%BB%98_%E8%BF%B7%E8%BF%AD%E9%A6%99_skin2.png",
+      "prtsFile": "立绘_迷迭香_skin2.png"
+    },
+    "char_1041_angel2@iteration#6": {
+      "charId": "char_1041_angel2",
+      "stem": "dyn_illust_char_1041_angel2_iteration__6",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1041_angel2_iteration__6/dyn_illust_char_1041_angel2_iteration__6/dyn_illust_char_1041_angel2_iteration__6.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1041_angel2_iteration__6/dyn_illust_char_1041_angel2_iteration__6/dyn_illust_char_1041_angel2_iteration__6.atlas",
+      "frames": {
+        "avatar": {
+          "x": -103.395,
+          "y": 1018.148,
+          "width": 159.5,
+          "height": 159.5
+        },
+        "portrait": {
+          "x": -101.674,
+          "y": 891.925,
+          "width": 151.468,
+          "height": 302.936
+        }
+      },
+      "bundle": "char_1041_angel2_iteration#6",
+      "officialDynamic": true,
+      "name": "寻翼之歌",
+      "group": "命途迭代/VI",
+      "illust": "https://media.prts.wiki/e/ed/%E7%AB%8B%E7%BB%98_%E6%96%B0%E7%BA%A6%E8%83%BD%E5%A4%A9%E4%BD%BF_skin1.png",
+      "prtsFile": "立绘_新约能天使_skin1.png"
+    },
+    "char_1014_nearl2@epoque#17": {
+      "charId": "char_1014_nearl2",
+      "stem": "dyn_illust_char_1014_nearl2_epoque__17",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1014_nearl2_epoque__17/dyn_illust_char_1014_nearl2_epoque__17/dyn_illust_char_1014_nearl2_epoque__17.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1014_nearl2_epoque__17/dyn_illust_char_1014_nearl2_epoque__17/dyn_illust_char_1014_nearl2_epoque__17.atlas",
+      "frames": {
+        "avatar": {
+          "x": -56.306,
+          "y": 1202.902,
+          "width": 224.151,
+          "height": 224.151
+        },
+        "portrait": {
+          "x": -47.608,
+          "y": 1030.942,
+          "width": 206.754,
+          "height": 413.508
+        }
+      },
+      "background": "https://static.prts.wiki/spine38/dynbg/dyn_illust_char_1014_nearl2_epoque__17/dyn_illust_char_1014_nearl2_epoque__17_bg.png",
+      "foreground": "https://static.prts.wiki/spine38/dynbg/dyn_illust_char_1014_nearl2_epoque__17/dyn_illust_char_1014_nearl2_epoque__17_fg.png",
+      "bundle": "char_1014_nearl2_epoque#17",
+      "officialDynamic": true,
+      "name": "复现荣光",
+      "group": "时代/XVII",
+      "illust": "https://media.prts.wiki/5/5d/%E7%AB%8B%E7%BB%98_%E8%80%80%E9%AA%91%E5%A3%AB%E4%B8%B4%E5%85%89_skin1.png",
+      "prtsFile": "立绘_耀骑士临光_skin1.png"
+    },
+    "char_1038_whitw2@sale#15": {
+      "charId": "char_1038_whitw2",
+      "stem": "dyn_illust_char_1038_whitw2_sale__15",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1038_whitw2_sale__15/dyn_illust_char_1038_whitw2_sale__15/dyn_illust_char_1038_whitw2_sale__15.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1038_whitw2_sale__15/dyn_illust_char_1038_whitw2_sale__15/dyn_illust_char_1038_whitw2_sale__15.atlas",
+      "frames": {
+        "avatar": {
+          "x": -77.401,
+          "y": 788.984,
+          "width": 179.155,
+          "height": 179.155
+        },
+        "portrait": {
+          "x": -73.745,
+          "y": 649.438,
+          "width": 168.186,
+          "height": 336.373
+        }
+      },
+      "bundle": "char_1038_whitw2_sale#15",
+      "officialDynamic": true,
+      "name": "无序的谦卑",
+      "group": "忒斯特收藏/XVII",
+      "illust": "https://media.prts.wiki/f/f6/%E7%AB%8B%E7%BB%98_%E8%8D%92%E8%8A%9C%E6%8B%89%E6%99%AE%E5%85%B0%E5%BE%B7_skin1.png",
+      "prtsFile": "立绘_荒芜拉普兰德_skin1.png"
+    },
+    "char_4116_blkkgt@witch#5": {
+      "charId": "char_4116_blkkgt",
+      "stem": "dyn_illust_char_4116_blkkgt_witch__5",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4116_blkkgt_witch__5/dyn_illust_char_4116_blkkgt_witch__5/dyn_illust_char_4116_blkkgt_witch__5.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4116_blkkgt_witch__5/dyn_illust_char_4116_blkkgt_witch__5/dyn_illust_char_4116_blkkgt_witch__5.atlas",
+      "frames": {
+        "avatar": {
+          "x": -65.3,
+          "y": 953.177,
+          "width": 178.766,
+          "height": 178.766
+        },
+        "portrait": {
+          "x": -63.864,
+          "y": 814.616,
+          "width": 167.279,
+          "height": 334.558
+        }
+      },
+      "bundle": "char_4116_blkkgt_witch#5",
+      "officialDynamic": true,
+      "name": "暗月的影子",
+      "group": "巫异盛宴/V",
+      "illust": "https://media.prts.wiki/3/3d/%E7%AB%8B%E7%BB%98_%E9%94%8F_skin1.png",
+      "prtsFile": "立绘_锏_skin1.png"
+    },
+    "char_1016_agoat2@epoque#34": {
+      "charId": "char_1016_agoat2",
+      "stem": "dyn_illust_char_1016_agoat2_epoque__34",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1016_agoat2_epoque__34/dyn_illust_char_1016_agoat2_epoque__34/dyn_illust_char_1016_agoat2_epoque__34.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1016_agoat2_epoque__34/dyn_illust_char_1016_agoat2_epoque__34/dyn_illust_char_1016_agoat2_epoque__34.atlas",
+      "frames": {
+        "avatar": {
+          "x": -129.897,
+          "y": 926.523,
+          "width": 187.604,
+          "height": 187.604
+        },
+        "portrait": {
+          "x": -127.69,
+          "y": 778.647,
+          "width": 175.097,
+          "height": 350.194
+        }
+      },
+      "bundle": "char_1016_agoat2_epoque#34",
+      "officialDynamic": true,
+      "name": "远行前的野餐",
+      "group": "时代/XXXIV",
+      "illust": "https://media.prts.wiki/e/e8/%E7%AB%8B%E7%BB%98_%E7%BA%AF%E7%83%AC%E8%89%BE%E9%9B%85%E6%B3%95%E6%8B%89_skin1.png",
+      "prtsFile": "立绘_纯烬艾雅法拉_skin1.png"
+    },
+    "char_1016_agoat2@epoque#57": {
+      "charId": "char_1016_agoat2",
+      "stem": "dyn_illust_char_1016_agoat2_epoque__57",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1016_agoat2_epoque__57/dyn_illust_char_1016_agoat2_epoque__57/dyn_illust_char_1016_agoat2_epoque__57.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1016_agoat2_epoque__57/dyn_illust_char_1016_agoat2_epoque__57/dyn_illust_char_1016_agoat2_epoque__57.atlas",
+      "frames": {
+        "avatar": {
+          "x": -51.096,
+          "y": 1043.719,
+          "width": 207.571,
+          "height": 207.571
+        },
+        "portrait": {
+          "x": -49.539,
+          "y": 872.992,
+          "width": 200.306,
+          "height": 400.612
+        }
+      },
+      "bundle": "char_1016_agoat2_epoque#57",
+      "officialDynamic": true,
+      "name": "后来的故事",
+      "group": "时代/LVII",
+      "illust": "https://media.prts.wiki/5/52/%E7%AB%8B%E7%BB%98_%E7%BA%AF%E7%83%AC%E8%89%BE%E9%9B%85%E6%B3%95%E6%8B%89_skin2.png",
+      "prtsFile": "立绘_纯烬艾雅法拉_skin2.png"
+    },
+    "char_1039_thorn2@marthe#9": {
+      "charId": "char_1039_thorn2",
+      "stem": "dyn_illust_char_1039_thorn2_marthe__9",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1039_thorn2_marthe__9/dyn_illust_char_1039_thorn2_marthe__9/dyn_illust_char_1039_thorn2_marthe__9.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1039_thorn2_marthe__9/dyn_illust_char_1039_thorn2_marthe__9/dyn_illust_char_1039_thorn2_marthe__9.atlas",
+      "frames": {
+        "avatar": {
+          "x": -55.957,
+          "y": 969.507,
+          "width": 178.335,
+          "height": 178.335
+        },
+        "portrait": {
+          "x": -50.052,
+          "y": 837.822,
+          "width": 160.029,
+          "height": 320.059
+        }
+      },
+      "bundle": "char_1039_thorn2_marthe#9",
+      "officialDynamic": true,
+      "name": "无际之帆",
+      "group": "玛尔特/IX",
+      "illust": "https://media.prts.wiki/f/f3/%E7%AB%8B%E7%BB%98_%E5%BC%95%E6%98%9F%E6%A3%98%E5%88%BA_skin1.png",
+      "prtsFile": "立绘_引星棘刺_skin1.png"
+    },
+    "char_377_gdglow@summer#12": {
+      "charId": "char_377_gdglow",
+      "stem": "dyn_illust_char_377_gdglow_summer__12",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_377_gdglow_summer__12/dyn_illust_char_377_gdglow_summer__12/dyn_illust_char_377_gdglow_summer__12.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_377_gdglow_summer__12/dyn_illust_char_377_gdglow_summer__12/dyn_illust_char_377_gdglow_summer__12.atlas",
+      "frames": {
+        "avatar": {
+          "x": -239.598,
+          "y": 1125.802,
+          "width": 314.553,
+          "height": 314.553
+        },
+        "portrait": {
+          "x": -237.362,
+          "y": 883.551,
+          "width": 293.682,
+          "height": 587.364
+        }
+      },
+      "bundle": "char_377_gdglow_summer#12",
+      "officialDynamic": true,
+      "name": "夏卉 FA394",
+      "group": "珊瑚海岸/XII",
+      "illust": "https://media.prts.wiki/b/b6/%E7%AB%8B%E7%BB%98_%E6%BE%84%E9%97%AA_skin2.png",
+      "prtsFile": "立绘_澄闪_skin2.png"
+    },
+    "char_4080_lin@nian#10": {
+      "charId": "char_4080_lin",
+      "stem": "dyn_illust_char_4080_lin_nian__10",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4080_lin_nian__10/dyn_illust_char_4080_lin_nian__10/dyn_illust_char_4080_lin_nian__10.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4080_lin_nian__10/dyn_illust_char_4080_lin_nian__10/dyn_illust_char_4080_lin_nian__10.atlas",
+      "frames": {
+        "avatar": {
+          "x": -79.555,
+          "y": 1101.347,
+          "width": 197.56,
+          "height": 197.56
+        },
+        "portrait": {
+          "x": -73.943,
+          "y": 956.545,
+          "width": 176.794,
+          "height": 353.588
+        }
+      },
+      "bundle": "char_4080_lin_nian#10",
+      "officialDynamic": true,
+      "name": "列瑶台",
+      "group": "0011制造/IX",
+      "illust": "https://media.prts.wiki/5/5d/%E7%AB%8B%E7%BB%98_%E6%9E%97_skin1.png",
+      "prtsFile": "立绘_林_skin1.png"
+    },
+    "char_4080_lin@summer#19": {
+      "charId": "char_4080_lin",
+      "stem": "dyn_illust_char_4080_lin_summer__19",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4080_lin_summer__19/dyn_illust_char_4080_lin_summer__19/dyn_illust_char_4080_lin_summer__19.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4080_lin_summer__19/dyn_illust_char_4080_lin_summer__19/dyn_illust_char_4080_lin_summer__19.atlas",
+      "frames": {
+        "avatar": {
+          "x": 123.919,
+          "y": 807.726,
+          "width": 200.139,
+          "height": 200.139
+        },
+        "portrait": {
+          "x": 134.108,
+          "y": 661.443,
+          "width": 178.305,
+          "height": 356.611
+        }
+      },
+      "bundle": "char_4080_lin_summer#19",
+      "officialDynamic": true,
+      "name": "夏卉 FA137",
+      "group": "珊瑚海岸/XIX",
+      "illust": "https://media.prts.wiki/6/6a/%E7%AB%8B%E7%BB%98_%E6%9E%97_skin2.png",
+      "prtsFile": "立绘_林_skin2.png"
+    },
+    "char_4121_zuole@nian#11": {
+      "charId": "char_4121_zuole",
+      "stem": "dyn_illust_char_4121_zuole_nian__11",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4121_zuole_nian__11/dyn_illust_char_4121_zuole_nian__11/dyn_illust_char_4121_zuole_nian__11.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4121_zuole_nian__11/dyn_illust_char_4121_zuole_nian__11/dyn_illust_char_4121_zuole_nian__11.atlas",
+      "frames": {
+        "avatar": {
+          "x": -144.036,
+          "y": 1111.032,
+          "width": 176.235,
+          "height": 176.235
+        },
+        "portrait": {
+          "x": -137.896,
+          "y": 974.71,
+          "width": 163.34,
+          "height": 326.68
+        }
+      },
+      "bundle": "char_4121_zuole_nian#11",
+      "officialDynamic": true,
+      "name": "少年游",
+      "group": "0011制造/XI",
+      "illust": "https://media.prts.wiki/c/ce/%E7%AB%8B%E7%BB%98_%E5%B7%A6%E4%B9%90_skin1.png",
+      "prtsFile": "立绘_左乐_skin1.png"
+    },
+    "char_450_necras@summer#20": {
+      "charId": "char_450_necras",
+      "stem": "dyn_illust_char_450_necras_summer__20",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_450_necras_summer__20/dyn_illust_char_450_necras_summer__20/dyn_illust_char_450_necras_summer__20.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_450_necras_summer__20/dyn_illust_char_450_necras_summer__20/dyn_illust_char_450_necras_summer__20.atlas",
+      "frames": {
+        "avatar": {
+          "x": -112.582,
+          "y": 914.319,
+          "width": 178.792,
+          "height": 178.792
+        },
+        "portrait": {
+          "x": -105.373,
+          "y": 777.341,
+          "width": 165.095,
+          "height": 330.189
+        }
+      },
+      "bundle": "char_450_necras_summer#20",
+      "officialDynamic": true,
+      "name": "夏卉 FA161",
+      "group": "珊瑚海岸/XX",
+      "illust": "https://media.prts.wiki/e/e7/%E7%AB%8B%E7%BB%98_%E6%AD%BB%E8%8A%92_skin1.png",
+      "prtsFile": "立绘_死芒_skin1.png"
+    },
+    "char_113_cqbw#2": {
+      "charId": "char_113_cqbw",
+      "stem": "dyn_illust_char_113_cqbw_2",
+      "bundle": "char_113_cqbw_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "illust": "https://media.prts.wiki/3/39/%E7%AB%8B%E7%BB%98_W_2.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_113_cqbw_2/dyn_illust_char_113_cqbw_2/dyn_illust_char_113_cqbw_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_113_cqbw_2/dyn_illust_char_113_cqbw_2/dyn_illust_char_113_cqbw_2.atlas",
+      "prtsFile": "立绘_W_2.png"
+    },
+    "char_391_rosmon#2": {
+      "charId": "char_391_rosmon",
+      "stem": "dyn_illust_char_391_rosmon_2",
+      "bundle": "char_391_rosmon_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_391_rosmon_2/dyn_illust_char_391_rosmon_2/dyn_illust_char_391_rosmon_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_391_rosmon_2/dyn_illust_char_391_rosmon_2/dyn_illust_char_391_rosmon_2.atlas",
+      "illust": "https://media.prts.wiki/0/07/%E7%AB%8B%E7%BB%98_%E8%BF%B7%E8%BF%AD%E9%A6%99_2.png",
+      "prtsFile": "立绘_迷迭香_2.png"
+    },
+    "char_1035_wisdel#2": {
+      "charId": "char_1035_wisdel",
+      "stem": "dyn_illust_char_1035_wisdel_2",
+      "bundle": "char_1035_wisdel_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "illust": "https://media.prts.wiki/9/94/%E7%AB%8B%E7%BB%98_%E7%BB%B4%E4%BB%80%E6%88%B4%E5%B0%94_2.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1035_wisdel_2/dyn_illust_char_1035_wisdel_2/dyn_illust_char_1035_wisdel_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1035_wisdel_2/dyn_illust_char_1035_wisdel_2/dyn_illust_char_1035_wisdel_2.atlas",
+      "prtsFile": "立绘_维什戴尔_2.png"
+    },
+    "char_1013_chen2#2": {
+      "charId": "char_1013_chen2",
+      "stem": "dyn_illust_char_1013_chen2_2",
+      "bundle": "char_1013_chen2_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "illust": "https://media.prts.wiki/4/4e/%E7%AB%8B%E7%BB%98_%E5%81%87%E6%97%A5%E5%A8%81%E9%BE%99%E9%99%88_2.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1013_chen2_2/dyn_illust_char_1013_chen2_2/dyn_illust_char_1013_chen2_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1013_chen2_2/dyn_illust_char_1013_chen2_2/dyn_illust_char_1013_chen2_2.atlas",
+      "prtsFile": "立绘_假日威龙陈_2.png"
+    },
+    "char_249_mlyss#2": {
+      "charId": "char_249_mlyss",
+      "stem": "dyn_illust_char_249_mlyss_2",
+      "bundle": "char_249_mlyss_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_249_mlyss_2/dyn_illust_char_249_mlyss_2/dyn_illust_char_249_mlyss_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_249_mlyss_2/dyn_illust_char_249_mlyss_2/dyn_illust_char_249_mlyss_2.atlas",
+      "illust": "https://media.prts.wiki/c/c7/%E7%AB%8B%E7%BB%98_%E7%BC%AA%E5%B0%94%E8%B5%9B%E6%80%9D_2.png",
+      "prtsFile": "立绘_缪尔赛思_2.png"
+    },
+    "char_1045_svash2#2": {
+      "charId": "char_1045_svash2",
+      "stem": "dyn_illust_char_1045_svash2_2",
+      "bundle": "char_1045_svash2_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1045_svash2_2/dyn_illust_char_1045_svash2_2/dyn_illust_char_1045_svash2_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1045_svash2_2/dyn_illust_char_1045_svash2_2/dyn_illust_char_1045_svash2_2.atlas",
+      "illust": "https://media.prts.wiki/b/b2/%E7%AB%8B%E7%BB%98_%E5%87%9B%E5%BE%A1%E9%93%B6%E7%81%B0_2.png",
+      "prtsFile": "立绘_凛御银灰_2.png"
+    },
+    "char_2015_dusk#2": {
+      "charId": "char_2015_dusk",
+      "stem": "dyn_illust_char_2015_dusk_2",
+      "bundle": "char_2015_dusk_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2015_dusk_2/dyn_illust_char_2015_dusk_2/dyn_illust_char_2015_dusk_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2015_dusk_2/dyn_illust_char_2015_dusk_2/dyn_illust_char_2015_dusk_2.atlas",
+      "illust": "https://media.prts.wiki/0/0a/%E7%AB%8B%E7%BB%98_%E5%A4%95_2.png",
+      "prtsFile": "立绘_夕_2.png"
+    },
+    "char_1038_whitw2#2": {
+      "charId": "char_1038_whitw2",
+      "stem": "dyn_illust_char_1038_whitw2_2",
+      "bundle": "char_1038_whitw2_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1038_whitw2_2/dyn_illust_char_1038_whitw2_2/dyn_illust_char_1038_whitw2_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1038_whitw2_2/dyn_illust_char_1038_whitw2_2/dyn_illust_char_1038_whitw2_2.atlas",
+      "illust": "https://media.prts.wiki/0/0b/%E7%AB%8B%E7%BB%98_%E8%8D%92%E8%8A%9C%E6%8B%89%E6%99%AE%E5%85%B0%E5%BE%B7_2.png",
+      "prtsFile": "立绘_荒芜拉普兰德_2.png"
+    },
+    "char_1012_skadi2#2": {
+      "charId": "char_1012_skadi2",
+      "stem": "dyn_illust_char_1012_skadi2_2",
+      "bundle": "char_1012_skadi2_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1012_skadi2_2/dyn_illust_char_1012_skadi2_2/dyn_illust_char_1012_skadi2_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1012_skadi2_2/dyn_illust_char_1012_skadi2_2/dyn_illust_char_1012_skadi2_2.atlas",
+      "illust": "https://media.prts.wiki/b/b3/%E7%AB%8B%E7%BB%98_%E6%B5%8A%E5%BF%83%E6%96%AF%E5%8D%A1%E8%92%82_2.png",
+      "prtsFile": "立绘_浊心斯卡蒂_2.png"
+    },
+    "char_2023_ling#2": {
+      "charId": "char_2023_ling",
+      "stem": "dyn_illust_char_2023_ling_2",
+      "bundle": "char_2023_ling_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "illust": "https://media.prts.wiki/a/a3/%E7%AB%8B%E7%BB%98_%E4%BB%A4_2.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2023_ling_2/dyn_illust_char_2023_ling_2/dyn_illust_char_2023_ling_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2023_ling_2/dyn_illust_char_2023_ling_2/dyn_illust_char_2023_ling_2.atlas",
+      "prtsFile": "立绘_令_2.png"
+    },
+    "char_245_cello#2": {
+      "charId": "char_245_cello",
+      "stem": "dyn_illust_char_245_cello_2",
+      "bundle": "char_245_cello_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_245_cello_2/dyn_illust_char_245_cello_2/dyn_illust_char_245_cello_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_245_cello_2/dyn_illust_char_245_cello_2/dyn_illust_char_245_cello_2.atlas",
+      "illust": "https://media.prts.wiki/b/b2/%E7%AB%8B%E7%BB%98_%E5%A1%91%E5%BF%83_2.png",
+      "prtsFile": "立绘_塑心_2.png"
+    },
+    "char_1028_texas2#2": {
+      "charId": "char_1028_texas2",
+      "stem": "dyn_illust_char_1028_texas2_2",
+      "bundle": "char_1028_texas2_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1028_texas2_2/dyn_illust_char_1028_texas2_2/dyn_illust_char_1028_texas2_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1028_texas2_2/dyn_illust_char_1028_texas2_2/dyn_illust_char_1028_texas2_2.atlas",
+      "illust": "https://media.prts.wiki/f/f2/%E7%AB%8B%E7%BB%98_%E7%BC%84%E9%BB%98%E5%BE%B7%E5%85%8B%E8%90%A8%E6%96%AF_2.png",
+      "prtsFile": "立绘_缄默德克萨斯_2.png"
+    },
+    "char_1041_angel2#2": {
+      "charId": "char_1041_angel2",
+      "stem": "dyn_illust_char_1041_angel2_2",
+      "bundle": "char_1041_angel2_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1041_angel2_2/dyn_illust_char_1041_angel2_2/dyn_illust_char_1041_angel2_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1041_angel2_2/dyn_illust_char_1041_angel2_2/dyn_illust_char_1041_angel2_2.atlas",
+      "illust": "https://media.prts.wiki/0/07/%E7%AB%8B%E7%BB%98_%E6%96%B0%E7%BA%A6%E8%83%BD%E5%A4%A9%E4%BD%BF_2.png",
+      "prtsFile": "立绘_新约能天使_2.png"
+    },
+    "char_1023_ghost2#2": {
+      "charId": "char_1023_ghost2",
+      "stem": "dyn_illust_char_1023_ghost2_2",
+      "bundle": "char_1023_ghost2_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1023_ghost2_2/dyn_illust_char_1023_ghost2_2/dyn_illust_char_1023_ghost2_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1023_ghost2_2/dyn_illust_char_1023_ghost2_2/dyn_illust_char_1023_ghost2_2.atlas",
+      "illust": "https://media.prts.wiki/1/16/%E7%AB%8B%E7%BB%98_%E5%BD%92%E6%BA%9F%E5%B9%BD%E7%81%B5%E9%B2%A8_2.png",
+      "prtsFile": "立绘_归溟幽灵鲨_2.png"
+    },
+    "char_2027_wang#2": {
+      "charId": "char_2027_wang",
+      "stem": "dyn_illust_char_2027_wang_2",
+      "bundle": "char_2027_wang_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "illust": "https://media.prts.wiki/3/35/%E7%AB%8B%E7%BB%98_%E6%9C%9B_2.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2027_wang_2/dyn_illust_char_2027_wang_2/dyn_illust_char_2027_wang_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2027_wang_2/dyn_illust_char_2027_wang_2/dyn_illust_char_2027_wang_2.atlas",
+      "prtsFile": "立绘_望_2.png"
+    },
+    "char_1015_aglna2#2": {
+      "charId": "char_1015_aglna2",
+      "stem": "dyn_illust_char_1015_aglna2_2",
+      "bundle": "char_1015_aglna2_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "illust": "https://media.prts.wiki/0/0a/%E7%AB%8B%E7%BB%98_%E4%BA%88%E6%84%BF%E5%AE%89%E6%B4%81%E8%8E%89%E5%A8%9C_2.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1015_aglna2_2/dyn_illust_char_1015_aglna2_2/dyn_illust_char_1015_aglna2_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1015_aglna2_2/dyn_illust_char_1015_aglna2_2/dyn_illust_char_1015_aglna2_2.atlas",
+      "prtsFile": "立绘_予愿安洁莉娜_2.png"
+    },
+    "char_1016_agoat2#2": {
+      "charId": "char_1016_agoat2",
+      "stem": "dyn_illust_char_1016_agoat2_2",
+      "bundle": "char_1016_agoat2_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1016_agoat2_2/dyn_illust_char_1016_agoat2_2/dyn_illust_char_1016_agoat2_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1016_agoat2_2/dyn_illust_char_1016_agoat2_2/dyn_illust_char_1016_agoat2_2.atlas",
+      "illust": "https://media.prts.wiki/0/04/%E7%AB%8B%E7%BB%98_%E7%BA%AF%E7%83%AC%E8%89%BE%E9%9B%85%E6%B3%95%E6%8B%89_2.png",
+      "prtsFile": "立绘_纯烬艾雅法拉_2.png"
+    },
+    "char_1052_kalts2#2": {
+      "charId": "char_1052_kalts2",
+      "stem": "dyn_illust_char_1052_kalts2_2",
+      "bundle": "char_1052_kalts2_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "illust": "https://media.prts.wiki/5/57/%E7%AB%8B%E7%BB%98_%E5%87%AF%E5%B0%94%E5%B8%8C%C2%B7%E6%80%9D%E8%A1%A1%E6%89%98_2.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1052_kalts2_2/dyn_illust_char_1052_kalts2_2/dyn_illust_char_1052_kalts2_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1052_kalts2_2/dyn_illust_char_1052_kalts2_2/dyn_illust_char_1052_kalts2_2.atlas",
+      "prtsFile": "立绘_凯尔希·思衡托_2.png"
+    },
+    "char_2025_shu#2": {
+      "charId": "char_2025_shu",
+      "stem": "dyn_illust_char_2025_shu_2",
+      "bundle": "char_2025_shu_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "illust": "https://media.prts.wiki/c/cf/%E7%AB%8B%E7%BB%98_%E9%BB%8D_2.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2025_shu_2/dyn_illust_char_2025_shu_2/dyn_illust_char_2025_shu_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2025_shu_2/dyn_illust_char_2025_shu_2/dyn_illust_char_2025_shu_2.atlas",
+      "prtsFile": "立绘_黍_2.png"
+    },
+    "char_2014_nian#2": {
+      "charId": "char_2014_nian",
+      "stem": "dyn_illust_char_2014_nian_2",
+      "bundle": "char_2014_nian_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "illust": "https://media.prts.wiki/1/15/%E7%AB%8B%E7%BB%98_%E5%B9%B4_2.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2014_nian_2/dyn_illust_char_2014_nian_2/dyn_illust_char_2014_nian_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2014_nian_2/dyn_illust_char_2014_nian_2/dyn_illust_char_2014_nian_2.atlas",
+      "prtsFile": "立绘_年_2.png"
+    },
+    "char_2026_yu#2": {
+      "charId": "char_2026_yu",
+      "stem": "dyn_illust_char_2026_yu_2",
+      "bundle": "char_2026_yu_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2026_yu_2/dyn_illust_char_2026_yu_2/dyn_illust_char_2026_yu_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2026_yu_2/dyn_illust_char_2026_yu_2/dyn_illust_char_2026_yu_2.atlas",
+      "illust": "https://media.prts.wiki/1/1a/%E7%AB%8B%E7%BB%98_%E4%BD%99_2.png",
+      "prtsFile": "立绘_余_2.png"
+    },
+    "char_1044_hsgma2#2": {
+      "charId": "char_1044_hsgma2",
+      "stem": "dyn_illust_char_1044_hsgma2_2",
+      "bundle": "char_1044_hsgma2_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "illust": "https://media.prts.wiki/6/6b/%E7%AB%8B%E7%BB%98_%E6%96%A9%E4%B8%9A%E6%98%9F%E7%86%8A_2.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1044_hsgma2_2/dyn_illust_char_1044_hsgma2_2/dyn_illust_char_1044_hsgma2_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1044_hsgma2_2/dyn_illust_char_1044_hsgma2_2/dyn_illust_char_1044_hsgma2_2.atlas",
+      "prtsFile": "立绘_斩业星熊_2.png"
+    },
+    "char_2024_chyue#2": {
+      "charId": "char_2024_chyue",
+      "stem": "dyn_illust_char_2024_chyue_2",
+      "bundle": "char_2024_chyue_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "illust": "https://media.prts.wiki/a/a8/%E7%AB%8B%E7%BB%98_%E9%87%8D%E5%B2%B3_2.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2024_chyue_2/dyn_illust_char_2024_chyue_2/dyn_illust_char_2024_chyue_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2024_chyue_2/dyn_illust_char_2024_chyue_2/dyn_illust_char_2024_chyue_2.atlas",
+      "prtsFile": "立绘_重岳_2.png"
+    },
+    "char_4058_pepe#2": {
+      "charId": "char_4058_pepe",
+      "stem": "dyn_illust_char_4058_pepe_2",
+      "bundle": "char_4058_pepe_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4058_pepe_2/dyn_illust_char_4058_pepe_2/dyn_illust_char_4058_pepe_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4058_pepe_2/dyn_illust_char_4058_pepe_2/dyn_illust_char_4058_pepe_2.atlas",
+      "illust": "https://media.prts.wiki/0/03/%E7%AB%8B%E7%BB%98_%E4%BD%A9%E4%BD%A9_2.png",
+      "prtsFile": "立绘_佩佩_2.png"
+    },
+    "char_1026_gvial2#2": {
+      "charId": "char_1026_gvial2",
+      "stem": "dyn_illust_char_1026_gvial2_2",
+      "bundle": "char_1026_gvial2_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1026_gvial2_2/dyn_illust_char_1026_gvial2_2/dyn_illust_char_1026_gvial2_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1026_gvial2_2/dyn_illust_char_1026_gvial2_2/dyn_illust_char_1026_gvial2_2.atlas",
+      "illust": "https://media.prts.wiki/7/76/%E7%AB%8B%E7%BB%98_%E7%99%BE%E7%82%BC%E5%98%89%E7%BB%B4%E5%B0%94_2.png",
+      "prtsFile": "立绘_百炼嘉维尔_2.png"
+    },
+    "char_1014_nearl2#2": {
+      "charId": "char_1014_nearl2",
+      "stem": "dyn_illust_char_1014_nearl2_2",
+      "bundle": "char_1014_nearl2_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1014_nearl2_2/dyn_illust_char_1014_nearl2_2/dyn_illust_char_1014_nearl2_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1014_nearl2_2/dyn_illust_char_1014_nearl2_2/dyn_illust_char_1014_nearl2_2.atlas",
+      "illust": "https://media.prts.wiki/e/ec/%E7%AB%8B%E7%BB%98_%E8%80%80%E9%AA%91%E5%A3%AB%E4%B8%B4%E5%85%89_2.png",
+      "prtsFile": "立绘_耀骑士临光_2.png"
+    },
+    "char_4247_oxi#2": {
+      "charId": "char_4247_oxi",
+      "stem": "dyn_illust_char_4247_oxi_2",
+      "bundle": "char_4247_oxi_2",
+      "officialDynamic": true,
+      "name": "精英二",
+      "group": "默认服装",
+      "field": "dynamicE2",
+      "illust": "https://media.prts.wiki/c/c4/%E7%AB%8B%E7%BB%98_%E5%A1%94%E9%9C%B2%E6%8B%89_2.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4247_oxi_2/dyn_illust_char_4247_oxi_2/dyn_illust_char_4247_oxi_2.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4247_oxi_2/dyn_illust_char_4247_oxi_2/dyn_illust_char_4247_oxi_2.atlas",
+      "prtsFile": "立绘_塔露拉_2.png"
+    }
+  },
+  "official": {
+    "source": "https://github.com/Kengxxiao/ArknightsGameData/blob/master/zh_CN/gamedata/excel/skin_table.json",
+    "sha256": "ef0dfc4fbe0824349b8de5043a1e6ead1a69b072cff66c734ea0f6ae2a4895a4",
+    "outsideCatalogue": [
+      {
+        "id": "char_250_phatom@sale#4",
+        "charId": "char_250_phatom",
+        "name": "焦点",
+        "dynIllustId": "dyn_illust_char_250_phatom_sale#4"
+      },
+      {
+        "id": "char_1037_amiya3@sale#13",
+        "charId": "char_002_amiya",
+        "name": "寰宇独奏",
+        "dynIllustId": "dyn_illust_char_1037_amiya3_sale#13"
+      },
+      {
+        "id": "char_124_kroos@sale#14",
+        "charId": "char_124_kroos",
+        "name": "星月漂流记",
+        "dynIllustId": "dyn_illust_char_124_kroos_sale#14"
+      },
+      {
+        "id": "char_1035_wisdel@sale#14",
+        "charId": "char_1035_wisdel",
+        "name": "超新星",
+        "dynIllustId": "dyn_illust_char_1035_wisdel_sale#14"
+      },
+      {
+        "id": "char_003_kalts@sale#14",
+        "charId": "char_003_kalts",
+        "name": "时遗",
+        "dynIllustId": "dyn_illust_char_003_kalts_sale#14"
+      },
+      {
+        "id": "char_1001_amiya2@sale#16",
+        "charId": "char_002_amiya",
+        "name": "于万千宇宙之中",
+        "dynIllustId": "dyn_illust_char_1001_amiya2_sale#16"
+      },
+      {
+        "id": "char_113_cqbw@epoque#7",
+        "charId": "char_113_cqbw",
+        "name": "恍惚",
+        "dynIllustId": "dyn_illust_char_113_cqbw_epoque#7"
+      },
+      {
+        "id": "char_2014_nian@nian#4",
+        "charId": "char_2014_nian",
+        "name": "乐逍遥",
+        "dynIllustId": "dyn_illust_char_2014_nian_nian#4"
+      },
+      {
+        "id": "char_2023_ling@nian#9",
+        "charId": "char_2023_ling",
+        "name": "濯缨",
+        "dynIllustId": "dyn_illust_char_2023_ling_nian#9"
+      },
+      {
+        "id": "char_2024_chyue@nian#10",
+        "charId": "char_2024_chyue",
+        "name": "何处栖",
+        "dynIllustId": "dyn_illust_char_2024_chyue_nian#10"
+      },
+      {
+        "id": "char_2025_shu@nian#11",
+        "charId": "char_2025_shu",
+        "name": "春日宴",
+        "dynIllustId": "dyn_illust_char_2025_shu_nian#11"
+      },
+      {
+        "id": "char_2023_ling@nian#12",
+        "charId": "char_2023_ling",
+        "name": "方遒卷",
+        "dynIllustId": "dyn_illust_char_2023_ling_nian#12"
+      },
+      {
+        "id": "char_1044_hsgma2@whirlwind#11",
+        "charId": "char_1044_hsgma2",
+        "name": "一闪极意",
+        "dynIllustId": "dyn_illust_char_1044_hsgma2_whirlwind#11"
+      },
+      {
+        "id": "char_1013_chen2@summer#20",
+        "charId": "char_1013_chen2",
+        "name": "悠然假日 HD79",
+        "dynIllustId": "dyn_illust_char_1013_chen2_summer#20"
+      },
+      {
+        "id": "char_322_lmlee@witch#3",
+        "charId": "char_322_lmlee",
+        "name": "手到牌来",
+        "dynIllustId": "dyn_illust_char_322_lmlee_witch#3"
+      },
+      {
+        "id": "char_4055_bgsnow@wild#7",
+        "charId": "char_4055_bgsnow",
+        "name": "字句中的雪原",
+        "dynIllustId": "dyn_illust_char_4055_bgsnow_wild#7"
+      },
+      {
+        "id": "char_003_kalts@boc#6",
+        "charId": "char_003_kalts",
+        "name": "残余",
+        "dynIllustId": "dyn_illust_char_003_kalts_boc#6"
+      },
+      {
+        "id": "char_1013_chen2@boc#6",
+        "charId": "char_1013_chen2",
+        "name": "万重山",
+        "dynIllustId": "dyn_illust_char_1013_chen2_boc#6"
+      },
+      {
+        "id": "char_4179_monstr@boc#11",
+        "charId": "char_4179_monstr",
+        "name": "锋锐",
+        "dynIllustId": "dyn_illust_char_4179_monstr_boc#11"
+      },
+      {
+        "id": "char_4133_logos@ambienceSynesthesia#6",
+        "charId": "char_4133_logos",
+        "name": "辉煌的静谧",
+        "dynIllustId": "dyn_illust_char_4133_logos_ambienceSynesthesia#6"
+      },
+      {
+        "id": "char_2023_ling@ncg#1",
+        "charId": "char_2023_ling",
+        "name": "崖高梦远",
+        "dynIllustId": "dyn_illust_char_2023_ling_ncg#1"
+      },
+      {
+        "id": "char_4132_ascln@iteration#4",
+        "charId": "char_4132_ascln",
+        "name": "趋光之暗",
+        "dynIllustId": "dyn_illust_char_4132_ascln_iteration#4"
+      },
+      {
+        "id": "char_4202_haruka@iteration#6",
+        "charId": "char_4202_haruka",
+        "name": "常世之幻",
+        "dynIllustId": "dyn_illust_char_4202_haruka_iteration#6"
+      },
+      {
+        "id": "char_179_cgbird@sightseer#1",
+        "charId": "char_179_cgbird",
+        "name": "流辉",
+        "dynIllustId": "dyn_illust_char_179_cgbird_sightseer#1"
+      },
+      {
+        "id": "char_1042_phatm2@sightseer#4",
+        "charId": "char_1042_phatm2",
+        "name": "真我自扼",
+        "dynIllustId": "dyn_illust_char_1042_phatm2_sightseer#4"
+      },
+      {
+        "id": "char_2014_nian@cfa#1",
+        "charId": "char_2014_nian",
+        "name": "霹雳导演",
+        "dynIllustId": "dyn_illust_char_2014_nian_cfa#1"
+      },
+      {
+        "id": "char_2024_chyue@cfa#1",
+        "charId": "char_2024_chyue",
+        "name": "全能演员",
+        "dynIllustId": "dyn_illust_char_2024_chyue_cfa#1"
+      }
+    ]
+  }
+}

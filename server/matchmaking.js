@@ -23,7 +23,7 @@ export class Matchmaking {
     return !!room && !room.disposed && room.mode === 'coop' && room.capacity === DEFAULT_SEATS
       && !room.match && !room.private && !room.test && !room.modded && !room.content?.modeId && !room.versionVote
       && !!host?.connected && room.freeSeat() >= 0 && room.activeHumans().every(s => s.connected)
-      && room.aiPicksLast === true && !room.aiTakeoverEnabled && !room.uniteLayerGains && room.enemyHpMultiplier === 1 && !room.independentPools && !room.rescueEnabled
+      && room.aiPicksLast === true && !room.aiTakeoverEnabled && !room.uniteLayerGains && room.enemyHpMultiplier === 1 && !room.independentPools && !room.allowDuplicateBands && !room.rescueEnabled
       && Object.entries(CONVENIENCE_DEFAULTS).every(([key, value]) => room.convenience[key] === value);
   }
   same(a, b) { return a.version === b.version && a.difficulty === b.difficulty; }
@@ -42,7 +42,7 @@ export class Matchmaking {
     if (hostControls.difficulty === false && difficulty !== this.lobby.fallbackDifficulty(version, 'coop', defaults.difficulty)) return false;
     return defaults.capacity === DEFAULT_SEATS && !defaults.private && defaults.aiPicksLast
       && !defaults.aiTakeoverEnabled && !defaults.uniteLayerGains && defaults.enemyHpMultiplier === 1
-      && !defaults.independentPools && !defaults.rescueEnabled
+      && !defaults.independentPools && !defaults.allowDuplicateBands && !defaults.rescueEnabled
       && Object.entries(CONVENIENCE_DEFAULTS).every(([key, value]) => defaults['convenience.' + key] === value);
   }
   state(session) {

@@ -12,6 +12,9 @@ export async function buildSeatArt({ root, cache, out, download = false }) {
     await writeFile(skinFile, await response.text());
   }
   const characters = await read(join(cache, 'excel/character_table.json'));
+  // Explicit current extension only; leave the historical official cache unchanged.
+  const extension = await read(join(root, 'docs/research/new-operators-20261101.json')).catch(() => null);
+  if (extension?.charTable) Object.assign(characters, extension.charTable);
   const skins = await read(skinFile);
   const available = new Set(await read(join(root, 'docs/research/seat-art-portraits.json')));
   const catalogue = { version: 1, chars: {} }, jobs = new Map();
@@ -24,6 +27,9 @@ export async function buildSeatArt({ root, cache, out, download = false }) {
       const portrait = `/assets/seat-portrait/${local}`;
       choices.push({ id: s.skinId, name: s.displaySkin.skinName || s.displaySkin.skinGroupName || c.name, portrait });
       jobs.set(local, `https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/${encodeURIComponent(file)}`);
+    }
+    if (extension?.ids?.includes(id)) for (const ph of [1, 2]) if (!choices.some(s => s.id === `${id}#${ph}`)) {
+      choices.push({ id: `${id}#${ph}`, name: c.name, portrait: `/assets/char/portrait/${id}_${ph}.png` });
     }
     if (choices.length) catalogue.chars[id] = { charId: id, name: c.name, appellation: c.appellation, rarity: Number(String(c.rarity).split('_').at(-1)), choices };
   }

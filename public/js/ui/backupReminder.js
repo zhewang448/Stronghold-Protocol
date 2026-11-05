@@ -1,20 +1,27 @@
 // This per-origin bookkeeping is intentionally excluded from portable personal-data backups.
+import { resolveClientPreference, canChangeClientPreference } from '../clientPreferences.js';
 export const BACKUP_REMINDER_KEY = 'sp.backup.reminder';
 const DAY = 86400000;
 export const isTemporaryHost = (host) => /^[a-z0-9-]+\.trycloudflare\.com$/i.test(host || '');
-export function reminderState(storage, now = Date.now()) {
+function savedReminder(storage, now) {
   try {
     storage ||= globalThis.localStorage;
     const value = JSON.parse(storage.getItem(BACKUP_REMINDER_KEY) || 'null');
-    if (value && typeof value === 'object') return { enabled: value.enabled !== false,
+    if (value && typeof value === 'object') return { enabled: typeof value.enabled === 'boolean' ? value.enabled : undefined,
       firstSeen: Number.isFinite(value.firstSeen) && value.firstSeen > 0 ? value.firstSeen : now,
       exportedAt: Number.isFinite(value.exportedAt) && value.exportedAt > 0 ? value.exportedAt : 0,
       dismissedAt: Number.isFinite(value.dismissedAt) && value.dismissedAt > 0 ? value.dismissedAt : 0 };
   } catch {}
-  return { enabled: true, firstSeen: now, exportedAt: 0, dismissedAt: 0 };
+  return { enabled: undefined, firstSeen: now, exportedAt: 0, dismissedAt: 0 };
+}
+export function reminderState(storage, now = Date.now()) {
+  const value = savedReminder(storage, now);
+  return { ...value, enabled: resolveClientPreference('backupReminder.enabled', value.enabled) };
 }
 export function updateReminder(patch, storage, now = Date.now()) {
-  const value = { ...reminderState(storage, now), ...patch };
+  const allowed = { ...patch };
+  if (!canChangeClientPreference('backupReminder.enabled')) delete allowed.enabled;
+  const value = { ...savedReminder(storage, now), ...allowed };
   try { storage ||= globalThis.localStorage; storage.setItem(BACKUP_REMINDER_KEY, JSON.stringify(value)); } catch { return false; }
   if (typeof window !== 'undefined') window.dispatchEvent(new Event('sp:backup-reminder'));
   return true;

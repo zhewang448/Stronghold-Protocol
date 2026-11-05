@@ -130,7 +130,7 @@ export function illustUrl(m, id, opts) {
   if (!rec) return null;
   const wanted = opts && str(opts.skin) ? String(opts.skin) : null;
   const skin = wanted ? get(get(rec, 'skins'), wanted) : null;
-  return (skin && str(skin.illust)) || str(rec.illust) || null;
+  return (skin && str(skin.illust)) || str((opts?.e2 || /_2$/.test(s)) && rec.illustE2) || str(rec.illust) || null;
 }
 
 export function enemyIconUrl(m, enemyId) {
@@ -299,7 +299,9 @@ export function hasBackSpine(m, id, skinId) {
 }
 
 export function validSpine(sp) {
-  return isObj(sp) && typeof sp.skel === 'string' && /^\/[^\s]*\.skel$/.test(sp.skel) && typeof sp.atlas === 'string' && isObj(sp.anims);
+  return isObj(sp) && typeof sp.skel === 'string' && (sp.dynamic
+    ? /^\/[^\s?]*\.(?:skel|json)(?:\?[^\s]*)?$/.test(sp.skel)
+    : /^\/[^\s]*\.skel$/.test(sp.skel)) && typeof sp.atlas === 'string' && isObj(sp.anims);
 }
 
 /** Best 2D picture for a unit asset id (operator avatar, token avatar, enemy icon, item icon); `opts` reaches avatarUrl. */
@@ -663,7 +665,10 @@ export async function loadSpineData(entry, opts) {
   const PIXI = globalThis.PIXI;
   if (!PIXI || !PIXI.Assets || !PIXI.spine) throw new Error('PIXI / pixi-spine not loaded');
   if (opts && opts.fresh) forgetPendingSpine(entry, opts.keep);
-  const res = await PIXI.Assets.load(entry.skel);
+  const res = await PIXI.Assets.load(entry.dynamic ? { src: entry.skel, data: { spineAtlasFile: entry.atlas,
+    // Straight-alpha pages must be premultiplied before linear filtering. NPM
+    // exposes the dark matte around translucent facial attachment boundaries.
+    imageMetadata: { alphaMode: entry.pma ? PIXI.ALPHA_MODES.PMA : PIXI.ALPHA_MODES.UNPACK } } } : entry.skel);
   const data = res && (res.spineData || res);
   if (!data || !Array.isArray(data.animations)) throw new Error(`bad spine data: ${entry.skel}`);
   return data;

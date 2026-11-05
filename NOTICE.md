@@ -127,3 +127,5 @@ under GPL-3.0-or-later. Adaptation keeps the current room API, four-player rules
 [PR #14](https://github.com/zhewang448/Stronghold-Protocol/pull/14)、[PR #15](https://github.com/zhewang448/Stronghold-Protocol/pull/15) 和
 [PR #24](https://github.com/zhewang448/Stronghold-Protocol/pull/24)；分别固定于 c501530d、f31cab1a、198bc185，沿用本库 GPL-3.0-or-later 代码许可。
 本库按分组/个人库存、资源提取、现有头像同步及统一房间设置重新适配，不包含贡献者截图或用户上传图片。
+
+Dynamic illustration rendering and operator kits: adapted from Stardust-minus/Stronghold-Protocol commit d03ae6e7b3ab4f6f816bb21bf0c45d7558210a76 (GPL-3.0-or-later); performance policy also references Misyra commit 146007cc71c2a360514277d97a20384869ad458e. Optional artwork from PRTS, fexli/ArknightsResource and yuanyan3060/ArknightsGameResource retains its original rights and is not committed. See docs/DYNAMIC-ILLUSTRATIONS-IMPLEMENTATION.md.

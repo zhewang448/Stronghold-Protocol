@@ -47,6 +47,14 @@ forced assignment accepts the sentinel too. AI and unhighlighted timeouts retain
 remaining counts never enter public views, battle inputs or results.
 The card's effect label is 「随机策略」; its description names an unselected 策略, not a 盟约.
 
+2026-11-05 maintainer request: the co-op room option `allowDuplicateBands` (「允许重复选择策略」) defaults to false.
+The host may change it before starting; a change clears other humans' ready state and exits matchmaking. It is fixed
+for the match, forwarded to version/plugin hosts, and retained by recovery and replay. Missing legacy values mean false;
+solo keeps it false. When enabled, the group's taken-strategy check permits repeats for manual picks, AI presets,
+random picks, highlighted timeouts and forced defaults. Turn order, mode eligibility, one pick per player and random
+bonuses keep their existing rules. The draft UI permits the same choices and describes random picks accordingly.
+This is an `[ASSUMED]` custom rule authorized by the maintainer; the result records it and official statistics exclude it.
+
 Shop layouts are version-specific (`config.modes[modeId].shopSlots`, official
 `activity.AUTOCHESS_SEASON[season].shopLevelDataDict[modeId][level].charChessCount` / `itemCount`). Both 第一期
 builds have no equipment slot at levels 1–4 and one at 5–6; 第二期上半 and the default have one at 1–6 in every
@@ -387,3 +395,7 @@ The room's custom enemy HP multiplier defaults to 1 and ranges from 0.1 to 100. 
 
 The bond member popup also displays the receiving player's available operator stock, including operators outside the current shop.
 The view uses the same clamped pool balance as purchases, merges and sales; personal DIY stock remains separate and independent/grouped pools retain their existing ownership. This is a display extension and changes no acquisition or battle rule.
+
+## 三位自选干员（扩展）
+
+第二期下半的 5/6 阶自选新增塔露拉、国度、冻河，沿用名额、晋升、价格、共享库存及现有阵营映射；不加入常规随机池，不扩展其他三版。具体支持和来源见 [实施说明](../DYNAMIC-ILLUSTRATIONS-IMPLEMENTATION.md)。

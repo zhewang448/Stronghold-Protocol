@@ -8,7 +8,9 @@
 import { html, AvatarFrame, MicroLabel, Icon, Modal, Button } from './components.js';
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { render } from '../../vendor/preact.module.js';
-import { store } from '../store.js';
+import { store, useStore } from '../store.js';
+import { data, useData } from '../data.js';
+import { cardStore, cardAvatarUrl } from './seatArt.js';
 import { t } from '../../../shared/i18n.js';
 import { isSharedAvatar, MAX_AVATAR_LENGTH } from '../../../shared/avatar.js';
 import { PicturePresets, pictureDataUrl, pictureBlobFromDataUrl } from './picturePresets.js';
@@ -293,10 +295,13 @@ export function openAccountPanel(opts = {}) {
 /** The hub's top-right chip: avatar + name #tag; a click opens the account panel (with 统计数据). */
 export function AccountMeChip({ player, onStats }) {
   const { me } = useCurrentAccount();
+  useData('assets');
+  const card = useStore(s => s, Object.is, cardStore);
   useEffect(ensureStyle, []);
   const name = player?.name || me.name || t('博士');
   return html`<button type="button" class="me-chip me-chip--btn stats-entry" onClick=${() => openAccountPanel({ onStats })} title=${t('本机账号 · 统计数据')} aria-label=${t('本机账号')}>
-    <${AvatarFrame} size="sm" name=${name} seat=${0} self=${true} src=${me.avatar || undefined} />
+    <${AvatarFrame} size="sm" name=${name} seat=${0} self=${true} src=${me.avatar || cardAvatarUrl(card.card, card.cardSkin, data.get('assets')) || undefined}
+      m=${data.get('assets')} charId=${!me.avatar ? card.card : null} skin=${card.cardSkin} />
     <span class="me-chip__text"><span class="me-chip__name">${name}<span class="acct-tag">#${me.tag}</span></span><${MicroLabel}>${t('LOCAL · 本机账号')}<//></span>
     <${Icon} name="user" class="me-chip__stats" />
   </button>`;

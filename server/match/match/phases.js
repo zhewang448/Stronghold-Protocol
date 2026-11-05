@@ -236,6 +236,7 @@ export class MatchPhases {
    * assignments — a turn that runs out and a departing seat — obey the same rule: see timeoutBand / defaultBand.
    */
   bandTaken(bandId, playerId) {
+    if (this.allowDuplicateBands) return false;
     const picks = this.draft?.groups.length === 1 ? this.draft.picks : this.draftGroup(playerId)?.picks || {};
     for (const [pid, id] of Object.entries(picks)) if (pid !== playerId && id === bandId) return true;
     return false;

@@ -9,6 +9,7 @@
 import { createStore, loadPref, savePref } from '../store.js';
 import { isPluginId } from '../../../shared/plugins/manifest.js';
 import { UI_ERRORS, UI_LIMITS } from '../../../shared/plugins/ui.js';
+import { createClientPreferenceStore, canChangeClientPreference } from '../clientPreferences.js';
 
 /** localStorage preference (`sp.pref.<key>`) of the interface plugins this browser has on. */
 export const UI_PREF = 'ui-plugins';
@@ -24,8 +25,9 @@ function loadIds(key) {
 }
 
 /** The interface plugins switched on here: `{ ids }`. */
-export const uiPlugins = createStore({ ids: loadIds(UI_PREF) });
-uiPlugins.subscribe((s) => savePref(UI_PREF, s.ids));
+export const uiPlugins = createClientPreferenceStore({ prefix: 'uiPlugins', preference: UI_PREF,
+  migrate: value => isIds(value) ? { ids: value } : {}, persist: value => value.ids,
+  normalize: value => ({ ids: isIds(value.ids) ? [...new Set(value.ids)].sort() : [] }) });
 
 /** The ids this browser recommends (the host's own mark): `{ ids }`. */
 export const uiRecommend = createStore({ ids: loadIds(UI_RECOMMEND_PREF) });
@@ -47,6 +49,7 @@ export function uiPluginEntries(plugins) {
  * @returns {{ ok: true } | { error: string }}
  */
 export function setUiPlugin(id, on) {
+  if (!canChangeClientPreference('uiPlugins.ids')) return { error: 'CLIENT_SETTING_LOCKED' };
   if (!isPluginId(id)) return { error: UI_ERRORS.PLUGIN_SHAPE };
   const cur = uiPlugins.get().ids.filter((x) => x !== id);
   if (on) {

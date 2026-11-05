@@ -90,6 +90,7 @@ export const STANDIN_KIT_FILES = Object.freeze(['standin-acguad.js', 'standin-sh
  * data/backups.json; a new file is appended). An operator without a file is not offered as a 自选 pick (KITTED_CHARS).
  */
 export const OPERATOR_KIT_FILES = Object.freeze([
+  'op-oxi.js', 'op-dminon.js', 'op-tocka.js',
   'op-siege.js',
   'op-chen.js',
   'op-irene.js',

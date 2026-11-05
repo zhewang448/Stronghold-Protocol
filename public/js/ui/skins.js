@@ -23,6 +23,7 @@
 
 import { createStore, loadPref, savePref, store } from '../store.js';
 import { data } from '../data.js';
+import { createClientPreferenceStore } from '../clientPreferences.js';
 import { SKIN_LIMITS, isCharId, isSkinId } from '../../../shared/protocol.js';
 
 /** The localStorage preference (`sp.pref.<key>`) of this browser's skin choices: `{ [charId]: skinId }`. */
@@ -107,12 +108,10 @@ function parseRandomSettings(raw) {
 }
 
 /** Local-only policy; the existing room.skins sync publishes the resolved choices. */
-export const skinRandomStore = createStore(parseRandomSettings(loadPref(SKIN_RANDOM_PREF, null)));
+export const skinRandomStore = createClientPreferenceStore({ prefix: 'skinRandom', preference: SKIN_RANDOM_PREF, normalize: parseRandomSettings });
 
 export function updateSkinRandom(patch) {
-  const next = parseRandomSettings({ ...skinRandomStore.get(), ...patch });
-  savePref(SKIN_RANDOM_PREF, next);
-  skinRandomStore.set(next);
+  skinRandomStore.set(patch);
 }
 
 export function setSkinLocked(charId, on) {

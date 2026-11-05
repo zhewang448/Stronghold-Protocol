@@ -466,7 +466,7 @@ function SelfPage({ r, res, raw, self, gd, prog, content, onNext, version = null
       <div class="sself__fx" aria-hidden="true"></div>
       <${Logo} />
       <div class="sself__band">${self.bandId ? html`<${BandIcon} bandId=${self.bandId} size="lg" />` : html`<${ResultAvatar} player=${self} self=${true} />`}<i aria-hidden="true"></i></div>
-      <div class="sself__mode"><${ModePill} r=${r} /><${UnofficialMark} room=${{ content, independentPools: res?.independentPools, rescueEnabled: res?.rescueEnabled }} class="sself__modmark" /><${VersionTag} version=${version} class="sself__vertag" /><${SettleTestMark} res=${res} /></div>
+      <div class="sself__mode"><${ModePill} r=${r} /><${UnofficialMark} room=${{ content, independentPools: res?.independentPools, allowDuplicateBands: res?.allowDuplicateBands, rescueEnabled: res?.rescueEnabled }} class="sself__modmark" /><${VersionTag} version=${version} class="sself__vertag" /><${SettleTestMark} res=${res} /></div>
       <${SettleTitle} class="sself__title">${cleared ? t('模拟完成') : t('模拟中断')}</${SettleTitle}>
       <div class="sself__rounds"><span>${t('通过回合')}</span><b class="num">${rounds}</b></div>
       ${medals.length ? html`<div class="sself__medals">${medals.map((m, i) => html`<${Medal} key=${m.kind} m=${m} i=${i} />`)}</div>` : null}
@@ -563,7 +563,7 @@ function TeamPage({ r, res, gd, myId, at: when, content, backLabel, onBack, onDe
       </div>
       <div class="settle__barbg steam__barbg" aria-hidden="true"><${Sprite} k="settle/bottom_bg" /></div>
       <div class="steam__outcome">
-        <span class="steam__tags"><${ModePill} r=${r} /><${UnofficialMark} room=${{ content, independentPools: res?.independentPools, rescueEnabled: res?.rescueEnabled }} /><${VersionTag} version=${version} /><${SettleTestMark} res=${res} /></span>
+        <span class="steam__tags"><${ModePill} r=${r} /><${UnofficialMark} room=${{ content, independentPools: res?.independentPools, allowDuplicateBands: res?.allowDuplicateBands, rescueEnabled: res?.rescueEnabled }} /><${VersionTag} version=${version} /><${SettleTestMark} res=${res} /></span>
         <${SettleTitle} as="b" class="steam__title">${r.victory ? t('模拟完成') : t('模拟中断')}</${SettleTitle}>
       </div>
       <div class="steam__rounds"><span>${t('同盟通过回合')}</span><b class="num">${rounds}</b></div>

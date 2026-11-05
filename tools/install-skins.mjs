@@ -9,6 +9,7 @@ import { processModels } from './assets/spine.mjs';
 import { collectLeaves, downloadLeaves, resolveTemplate, contentHash, totalBytes } from './assets/manifest.mjs';
 import { restartForEnvProxy } from './assets/env-proxy.mjs';
 import { countStats } from './fetch-assets.mjs';
+import { installDynamicIllustrations } from './install-dynamic-illustrations.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export async function installSkins(ids, { root = ROOT, offline = false, source = 'direct', log = console.log } = {}) {
@@ -65,6 +66,12 @@ async function main() {
     return;
   }
   const result = await installSkins(ids, { offline, source });
+  const dynamicSources = JSON.parse(await readFile(join(ROOT, 'docs/research/dynamic-illustrations.json'), 'utf8'));
+  const dynamicIds = ids.includes('--all') ? Object.keys(dynamicSources.skins) : ids.filter(id => dynamicSources.skins[id]);
+  if (dynamicIds.length) {
+    const dynamic = await installDynamicIllustrations(dynamicIds, { offline });
+    if (dynamic.failed.length) console.log(`[skins] ${dynamic.failed.length} optional dynamic sources unavailable; static outfits retained`);
+  }
   if (result.failed.length) process.exitCode = 1;
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href && !restartForEnvProxy()) {

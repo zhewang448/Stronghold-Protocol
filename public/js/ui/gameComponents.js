@@ -9,6 +9,7 @@ import { parseRichText, rtClassName } from './richText.js';
 import { t as tr } from '../../../shared/i18n.js';
 import { useStore } from '../store.js';
 import { skinsStore, ownerSkin } from './skins.js';
+import { LiveArt } from './dynamicIllustration.js';
 import { settingsStore } from './settingsStore.js';
 import { useAccount } from './accounts.js';
 import {
@@ -88,7 +89,8 @@ export function OperatorImage({ m, chess, ownerId, skin = null, portrait = false
     players: s.match.public?.players || [], localSkins, otherSkins }));
   const art = portrait ? chessPortraitUrl(m, chess, { skin: selected }) : null;
   const src = art || (!portrait || avatarFallback ? chessAvatarUrl(m, chess, { skin: selected }) : null);
-  return html`<${Img} ...${props} src=${src} class=${art ? portraitClass ?? props.class : avatarClass ?? props.class} />`;
+  return html`<${Img} ...${props} src=${src} class=${art ? portraitClass ?? props.class : avatarClass ?? props.class} />
+    <${LiveArt} m=${m} charId=${chess?.charId} skin=${selected} kind=${art ? 'portrait' : 'avatar'} elite=${!!chess?.isGolden || chess?.status?.phase === 2} />`;
 }
 
 /** Official UI sprite by 'group/key' with a fallback. */
@@ -288,7 +290,7 @@ export function RichTip({ text, children, placement = 'top' }) {
  * Seat-coloured player avatar: band icon when a band is picked, else glyph/robot.
  * @param {{ player: any, size?: 'sm'|'md', self?: boolean, class?: string }} props
  */
-export function PlayerAvatar({ player, size = 'md', self = false, class: cls, avatar = null, strategyTip = true }) {
+export function PlayerAvatar({ player, size = 'md', self = false, class: cls, avatar = null, strategyTip = true, charId = null, skin = null }) {
   const avatarFirst = useStore(state => state.room?.seatAvatars === true) && !player?.isBot;
   const account = useAccount(player?.isBot ? null : player?.playerId);
   const src = avatar || (avatarFirst ? (player?.isBot ? null : account?.avatar) : player?.bandId ? bandIconUrl(data.get('assets'), player.bandId) : null);
@@ -299,7 +301,8 @@ export function PlayerAvatar({ player, size = 'md', self = false, class: cls, av
   const face = html`<span class=${cx('pavatar', `pavatar--${size}`, self && 'is-self', dead && 'is-dead', left && 'is-left', player?.isBot && 'is-bot',
       player?.connected === false && !player?.isBot && 'is-offline', cls)} style=${`--seat-color:${color}`}>
     <span class="pavatar__img">
-      <${Img} src=${src} fallback=${player?.isBot ? html`<${Icon} name="robot" class="pavatar__bot" />` : html`<span class="pavatar__glyph">${glyph}</span>`} />
+        <${Img} src=${src} fallback=${player?.isBot ? html`<${Icon} name="robot" class="pavatar__bot" />` : html`<span class="pavatar__glyph">${glyph}</span>`} />
+        ${avatar && charId ? html`<${LiveArt} m=${data.get('assets')} charId=${charId} skin=${skin} kind="avatar" posY=${50} />` : null}
     </span>
     ${dead ? html`<span class="pavatar__x" aria-label=${tr('已淘汰')}><${Icon} name="close" /></span>` : null}
     ${left ? html`<span class="pavatar__door" aria-label=${tr('已离开')}><${Icon} name="exit" /></span>` : null}

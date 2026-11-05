@@ -137,7 +137,8 @@ describe('settings control hit areas and feedback', { skip: process.env.SP_E2E !
           await activate(`${row} .set-fit__step:first-of-type`);
           assert.equal(await page.$eval(`${row} input`, e => e.value), '50');
         }
-        assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('sp.pref.screenFit'))), { l: 0, r: 0, t: 0, b: 0, ui: 100 });
+        assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('sp.pref.screenFit'))), { l: 0, r: 0, t: 0, b: 0 }, 'untouched UI size stays absent from the sparse personal layer');
+        assert.equal(await page.evaluate(async () => (await import('/js/ui/screenFit.js')).fitStore.get().ui), 100, 'the effective default UI size still applies');
         step = 'open shortcuts';
         if (await page.$('.set-keys__more:not([open])')) await activate('.set-keys__more > summary');
         await page.waitForSelector('.set-keys__list', { visible: true });

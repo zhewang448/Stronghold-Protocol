@@ -82,10 +82,10 @@ test('data/assets.json: voiceJp gives every voiced operator the JP twin of each 
   const cn = m.audio.voice;
   const jp = m.audio.voiceJp;
   assert.ok(jp && typeof jp === 'object', 'the manifest carries the JP tree');
-  assert.deepEqual(Object.keys(jp), Object.keys(cn), 'the same operators');
+  assert.deepEqual(Object.keys(jp).sort(), Object.keys(cn).sort(), 'the same operators');
   assert.equal(m.stats.voiceJpChars, Object.keys(jp).length);
   assert.equal(m.stats.voiceChars, Object.keys(cn).length);
-  assert.equal(Object.keys(jp).length, 218);
+  assert.equal(Object.keys(jp).length, 221);
   // the JP tree is the Chinese one with the folder swapped: same slots, same lines in the same order, same file names
   const normalized = JSON.parse(JSON.stringify(cn).replaceAll('/assets/audio/voice/cn/', '/assets/audio/voice/jp/'));
   // Historical 蜜莓 has an optional CN resultThree recording without a downloaded JP twin.
@@ -94,7 +94,7 @@ test('data/assets.json: voiceJp gives every voiced operator the JP twin of each 
   const lines = [];
   const walk = (x) => { if (typeof x === 'string') lines.push(x); else if (Array.isArray(x)) x.forEach(walk); else if (x && typeof x === 'object') Object.values(x).forEach(walk); };
   walk(jp);
-  assert.equal(lines.length, 3050);
+  assert.equal(lines.length, 3092);
   for (const u of lines) assert.match(u, /^\/assets\/audio\/voice\/jp\/char_[^/]+\/cn_\d+\.mp3$/);
   // no voice: the 17 stand-ins of data/backups.json (预备干员 / 原型干员), the mode's 盟约·辅助干员, every summon
   const backups = readJson('data/backups.json');

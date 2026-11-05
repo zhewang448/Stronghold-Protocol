@@ -55,7 +55,8 @@
 //     it: a switched-on personal plugin, the room's 插件 panel (ui/pluginPanel.js), 设置's 外观插件 (ui/settings.js) or
 //     the list behind the title screen's 「本服务器安装了 N 个插件」 (that count is the server's).
 
-import { createStore, loadPref, savePref, store as appStore } from './store.js';
+import { createStore, loadPref, store as appStore } from './store.js';
+import { createClientPreferenceStore, canChangeClientPreference } from './clientPreferences.js';
 import { data as dataStore } from './data.js';
 import { net as appNet } from './net.js';
 import { cosmetics, loadVisual, visualNow } from './cosmetics.js';
@@ -174,8 +175,9 @@ export function pluginName(p) {
 // ---- personal plugins -----------------------------------------------------------------------------------------------
 
 /** The personal cosmetic plugins switched on in this browser: `{ ids }` (persisted as PERSONAL_PREF). */
-export const personal = createStore({ ids: (() => { const v = loadPref(PERSONAL_PREF, []); return isIds(v) ? v : []; })() });
-personal.subscribe((s) => savePref(PERSONAL_PREF, s.ids));
+export const personal = createClientPreferenceStore({ prefix: 'cosmetics', preference: PERSONAL_PREF,
+  migrate: value => isIds(value) ? { ids: value } : {},
+  normalize: value => ({ ids: isIds(value.ids) ? value.ids : [] }), persist: value => value.ids });
 
 /** What the load order reads of a catalogue entry (shared/plugins/order.js OrderEntry). @param {any} p */
 const orderEntry = (p) => ({
@@ -221,6 +223,7 @@ export function personalSet(ids, entries) {
  * @returns {{ ok: true } | { error: string, detail: string }}
  */
 export function setPersonalPlugin(id, on) {
+  if (!canChangeClientPreference('cosmetics.ids')) return { error: 'CLIENT_SETTING_LOCKED', detail: '' };
   const ids = personal.get().ids.filter((x) => x !== id);
   if (on) {
     const cat = catalog.get();

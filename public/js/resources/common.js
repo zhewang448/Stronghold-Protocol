@@ -37,6 +37,7 @@ export const RESOURCE_GROUPS = Object.freeze({
   spine: { name: N_('Spine 模型与特效'), tier: TIER_ESSENTIAL },
   ui: { name: N_('界面、图标与字体'), tier: TIER_ESSENTIAL },
   skins: { name: N_('干员皮肤'), tier: TIER_ESSENTIAL },
+  dynamic: { name: N_('动态立绘'), tier: TIER_REST },
   voice_cn: { name: N_('中文语音'), tier: TIER_REST },
   voice_jp: { name: N_('日语语音'), tier: TIER_REST },
   voice_en: { name: N_('英语语音'), tier: TIER_REST },
@@ -50,6 +51,7 @@ export const RESOURCE_GROUPS = Object.freeze({
 
 export function resourceGroup(file) {
   const path = new URL(file.url, 'https://resources.invalid').pathname;
+  if (/\/assets\/dynamic\//.test(path)) return 'dynamic';
   if (/\/(?:avatar\/skin|char\/skin_avatar)\//.test(path) || /\/spine\/op\/[^/]+\/[^/]+\/(?:front|back)\//.test(path)) return 'skins';
   if (file.tier === TIER_REST) {
     if (/\/voice\/cn\//.test(path)) return 'voice_cn';

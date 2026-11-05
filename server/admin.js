@@ -44,6 +44,7 @@ import { getAllowAiTakeover, setAllowAiTakeover } from './match/hostSettings.js'
 import { getSeatAvatars, setSeatAvatars } from './match/hostSettings.js';
 import { getEmoteBarrage, setEmoteBarrage, getSignalBar, setSignalBar, getEmoteBarrageRate, setEmoteBarrageRate, normalizeEmoteBarrageRate, emoteBarrageFrame } from './match/hostSettings.js';
 import { ROOM_CONFIG_FIELDS, getRoomCreation, normalizeRoomCreation, setRoomCreation } from './match/hostSettings.js';
+import { CLIENT_PREFERENCE_FIELDS, getClientPreferencePolicy, validateClientPreferencePolicy, setClientPreferencePolicy } from './clientPreferences.js';
 import { resetAiTakeover } from './aiTakeover.js';
 import { readPersonalDataConfig, writePersonalDataConfig } from './http/personalDataConfig.js';
 import { AnnouncementDrafts } from './announcement-drafts.js';
@@ -715,6 +716,10 @@ export function loadSettings(file, log) {
       const creation = setRoomCreation(saved.roomCreation);
       if (creation.error) log.error('[admin] roomCreation ignored: ' + creation.error);
     }
+    if (saved.clientPreferences) {
+      const client = setClientPreferencePolicy(saved.clientPreferences);
+      if (client.error) log.error('[admin] clientPreferences ignored: ' + client.error);
+    }
     const chat = setChatSettings(saved.chat ?? DEFAULT_CHAT_SETTINGS);
     if (chat.error) log.error(`[admin] ${file}: chat ignored (${chat.error})`);
     const b = setBlockedWords(saved.blockedWords ?? []);
@@ -750,6 +755,8 @@ function saveSettings(file, body) {
   if (typeof seatAvatars !== 'boolean') return { error: '座位头像设置必须为开或关' };
   const creation = normalizeRoomCreation(Object.hasOwn(body, 'roomCreation') ? body.roomCreation : {});
   if (creation.error) return creation;
+  const client = validateClientPreferencePolicy(Object.hasOwn(body, 'clientPreferences') ? body.clientPreferences : {});
+  if (client.error) return client;
   if (Object.hasOwn(body, 'seatAvatars')) creation.config.defaults.seatAvatars = seatAvatars;
   if (Object.hasOwn(body, 'uniteLayerGains')) creation.config.defaults.uniteLayerGains = uniteLayerGains;
   if (Object.hasOwn(body, 'allowRoomUniteLayerGains')) creation.config.hostControls.uniteLayerGains = allowRoomUniteLayerGains;
@@ -770,7 +777,7 @@ function saveSettings(file, body) {
   fs.writeFileSync(tmp, JSON.stringify({ prep: r.prep, uniteLayerGains: creation.config.defaults.uniteLayerGains,
     allowRoomUniteLayerGains: creation.config.hostControls.uniteLayerGains, roundCharts, liveRoundDamage, showPwaInstall,
     emoteBarrage, signalBar, emoteBarrageRate: barrageRate.rate,
-    allowAiTakeover, seatAvatars: creation.config.defaults.seatAvatars, roomCreation: creation.config,
+    allowAiTakeover, seatAvatars: creation.config.defaults.seatAvatars, roomCreation: creation.config, clientPreferences: client.config,
     chat: chat.settings, blockedWords: blocked.words, replay, social: social.settings }, null, 2));
   fs.renameSync(tmp, file);
   setPrep(r.prep);
@@ -786,6 +793,7 @@ function saveSettings(file, body) {
   setAllowAiTakeover(allowAiTakeover);
   setSeatAvatars(seatAvatars);
   setRoomCreation(creation.config);
+  setClientPreferencePolicy(client.config);
   setChatSettings(chat.settings);
   setBlockedWords(blocked.words);
   setReplayConfig({ enabled: process.env.SP_REPLAY === '0' ? false : replay.enabled });
@@ -800,6 +808,7 @@ function saveSettings(file, body) {
   if (Object.hasOwn(body, 'allowAiTakeover')) out.allowAiTakeover = getAllowAiTakeover();
   if (Object.hasOwn(body, 'seatAvatars')) out.seatAvatars = getSeatAvatars();
   if (Object.hasOwn(body, 'roomCreation')) out.roomCreation = getRoomCreation();
+  if (Object.hasOwn(body, 'clientPreferences')) out.clientPreferences = getClientPreferencePolicy();
   if (Object.hasOwn(body, 'chat')) out.chat = getChatSettings();
   if (Object.hasOwn(body, 'blockedWords')) out.blockedWords = getBlockedWords();
   if (Object.hasOwn(body, 'replay')) out.replay = { enabled: getReplayConfig().enabled, keep: 50, forcedOff: process.env.SP_REPLAY === '0' };
@@ -1137,9 +1146,9 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
       if (req.method === 'GET' && url.pathname === '/api/catalog') return send(200, await catalogView(lobby, url.searchParams.get('room')));
       if (req.method === 'GET' && url.pathname === '/api/results-summary') return send(200, summarizeResults(Object.fromEntries(url.searchParams)));
       if (req.method === 'GET' && url.pathname === '/api/results') return send(200, { records: listRecords(resultsDir) });
-      if (req.method === 'GET' && url.pathname === '/api/settings') return send(200, { social: getSocialSettings(), prep: getPrep(), uniteLayerGains: getUniteLayerGains(), allowRoomUniteLayerGains: getAllowRoomUniteLayerGains(), roundCharts: getRoundCharts(), liveRoundDamage: getLiveRoundDamage(), showPwaInstall: getShowPwaInstall(), emoteBarrage: getEmoteBarrage(), signalBar: getSignalBar(), emoteBarrageRate: getEmoteBarrageRate(), allowAiTakeover: getAllowAiTakeover(), seatAvatars: getSeatAvatars(), roomCreation: getRoomCreation(), roomConfigFields: ROOM_CONFIG_FIELDS, chat: getChatSettings(), blockedWords: getBlockedWords(), replay: { enabled: getReplayConfig().enabled, keep: 50, forcedOff: process.env.SP_REPLAY === '0' }, file: settingsFile, defaults: prepDefaults(lobby.safeData()) });
+      if (req.method === 'GET' && url.pathname === '/api/settings') return send(200, { social: getSocialSettings(), prep: getPrep(), uniteLayerGains: getUniteLayerGains(), allowRoomUniteLayerGains: getAllowRoomUniteLayerGains(), roundCharts: getRoundCharts(), liveRoundDamage: getLiveRoundDamage(), showPwaInstall: getShowPwaInstall(), emoteBarrage: getEmoteBarrage(), signalBar: getSignalBar(), emoteBarrageRate: getEmoteBarrageRate(), allowAiTakeover: getAllowAiTakeover(), seatAvatars: getSeatAvatars(), roomCreation: getRoomCreation(), roomConfigFields: ROOM_CONFIG_FIELDS, clientPreferences: getClientPreferencePolicy(), clientPreferenceFields: CLIENT_PREFERENCE_FIELDS, chat: getChatSettings(), blockedWords: getBlockedWords(), replay: { enabled: getReplayConfig().enabled, keep: 50, forcedOff: process.env.SP_REPLAY === '0' }, file: settingsFile, defaults: prepDefaults(lobby.safeData()) });
       if (req.method === 'POST' && url.pathname === '/api/settings') {
-        const body = await readJson(req);
+        const body = await readJson(req, 128 * 1024);
         if (!body) return send(400, { error: '请求格式错误' });
         let r;
         try { r = saveSettings(settingsFile, body); } catch (e) { log.error('[admin] saving the settings failed', e); r = { error: `写入 ${settingsFile} 失败` }; }
@@ -1148,6 +1157,11 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
         }
         if (r.ok) for (const room of lobby.rooms.values()) room.match?.syncExtensions?.();
         if (r.ok && Object.hasOwn(body, 'social')) lobby.social?.sync(true);
+        if (r.ok && Object.hasOwn(body, 'clientPreferences')) {
+          const frame = { t: 'site.settings', clientPreferences: getClientPreferencePolicy() };
+          if (network?.conns) for (const connection of network.conns.values()) sendSocket(connection.ws, frame);
+          else for (const session of lobby.registry?.all?.() || []) if (session.connected) sendSession(session, frame);
+        }
         if (r.ok && Object.hasOwn(body, 'roomCreation')) {
           for (const room of lobby.rooms.values()) lobby.broadcastState?.(room);
           const frame = { t: 'site.settings', showPwaInstall: getShowPwaInstall(), roomCreation: getRoomCreation() };

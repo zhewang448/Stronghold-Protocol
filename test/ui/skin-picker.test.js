@@ -153,7 +153,7 @@ describe('皮肤 picker: what one operator offers', () => {
   });
 
   test('the section is gated globally, not per operator (the picker must not go back to hasSkinChoices)', () => {
-    assert.match(PICKER_SRC, /if \(!hasAnySkinChoices\(\)\) return null;/, 'the gate is the global criterion');
+    assert.match(PICKER_SRC, /if \(!hasAnySkinChoices\(\) && !dynamicOf/, 'the global criterion also admits a real default dynamic illustration');
     const skinsImport = PICKER_SRC.match(/import \{([^}]*)\} from '\.\/skins\.js'/) || [];
     assert.ok(skinsImport[1] && !/\bhasSkinChoices\b/.test(skinsImport[1]), 'and the per-operator one is not even imported');
     // the 默认 tile is kept for an operator without a skin: an empty grid is what the rule must not draw
@@ -199,9 +199,10 @@ describe('皮肤 picker: the enlarged preview', () => {
   test('one illustration inside the modal', () => {
     const v = SkinPreview({ art: ART, name: '厨房' });
     assert.equal(v.props.class, 'lo-skin-preview');
-    const img = v.props.children;
-    assert.equal(img.type, 'img');
-    assert.equal(img.props.src, ART);
+    const viewer = v.props.children;
+    assert.equal(typeof viewer.type, 'function');
+    assert.equal(viewer.props.staticSrc, ART);
+    assert.equal(viewer.props.entry, null);
   });
 
   test('no art at all renders nothing (a skin with no illustration uses the tile art, so this is the empty case)', () => {

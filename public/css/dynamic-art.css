@@ -1,0 +1,21 @@
+/* Same static box and crop; the animation surface never owns input. */
+.dyn-host { position: relative; }
+.dyn-cover { position: absolute; inset: 0; display: block; overflow: hidden; pointer-events: none; }
+.dyn-cover canvas { display: block; width: 100%; height: 100%; pointer-events: none; }
+.dyn-cover canvas[hidden] { display: none; }
+img[data-dyn-hidden="true"] { visibility: hidden; }
+.lo-dynamic { width: 100%; min-width: 0; }
+.lo-dynamic__stage { position: relative; height: min(55vh, 520px); min-height: 120px; overflow: hidden; touch-action: none; user-select: none; outline-offset: -3px; }
+.lo-dynamic__stage[data-zoomed="true"] { cursor: grab; }
+.lo-dynamic__stage[data-zoomed="true"]:active { cursor: grabbing; }
+.lo-dynamic__art { position: absolute; inset: 0; transform: translate(var(--art-x, 0px), var(--art-y, 0px)) scale(var(--art-zoom, 1)); transform-origin: center; }
+.lo-dynamic__art > img { position: absolute; top: 3%; left: 3%; width: 94%; height: 94%; object-fit: contain; pointer-events: none; }
+.lo-dynamic__zoom { min-width: 4ch; text-align: center; color: var(--text-hi); font-variant-numeric: tabular-nums; }
+.lo-dynamic__hint { color: var(--text-md); font-size: max(12px, calc(.14 * var(--t))); line-height: 1.5; margin: .1rem 0 0; }
+.lo-dynamic__stage:focus-visible { outline: 2px solid var(--mint-400); }
+.lo-dynamic__controls { display: flex; flex-wrap: wrap; gap: .12rem; align-items: center; padding-top: .12rem; }
+.lo-dynamic__controls button, .lo-dynamic__controls select { min-width: 32px; min-height: 32px; }
+.lo-dynamic__controls select { max-width: min(50vw, 240px); color: var(--text-hi); background: var(--bg-2); border: 1px solid var(--line-2); }
+.lo-dynamic__controls button:focus-visible, .lo-dynamic__controls select:focus-visible { outline: 2px solid var(--mint-400); outline-offset: 2px; }
+.lo-dynamic__controls label { color: var(--text-md); }
+@media (max-height: 450px) { .lo-dynamic__stage { height: 48vh; min-height: 90px; } }

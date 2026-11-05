@@ -14,7 +14,7 @@ test('seat artwork includes non-roster operators and declared skins with local p
   const ctx = { pool: [], byChar: new Map([[c.charId,c]]), m: {}, myId: 'me', myCard: c.charId, mySkin: skin.id };
   assert.equal(seatPortrait({ playerId:'me' }, ctx), skin.portrait);
   assert.equal(seatPortrait({ playerId:'peer',card:c.charId,cardSkin:skin.id }, ctx), skin.portrait);
-  for (const c of list) for (const s of c.choices) assert.match(s.portrait, /^\/assets\/seat-portrait\/[A-Za-z0-9_.-]+\.png$/);
+  for (const c of list) for (const s of c.choices) assert.match(s.portrait, /^\/assets\/(?:seat-portrait|char\/portrait)\/[A-Za-z0-9_.-]+\.png$/);
   assert.ok(validateC2S({ t:'room.card',charId:c.charId,skinId:'https://invalid.test/x' }));
 });
 test('seat artwork validates ownership, broadcasts to peers and survives leaving/rejoining', async t => {

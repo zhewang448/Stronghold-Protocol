@@ -656,7 +656,9 @@ function classifyAttack(char, traitText) {
   const skillOnArts = /技能开启时[^，。；]*法术伤害/.test(trait);
   let dmgType;
   if ((prof === 'MEDIC' && sub !== 'incantationmedic') || sub === 'bard') dmgType = 'heal';
-  else if ((/法术伤害/.test(trait) && !skillOnArts) || prof === 'CASTER') dmgType = 'arts';
+  // 塔露拉's first talent makes her normal attack arts; the branch trait only mentions elemental damage.
+  else if ((/法术伤害/.test(trait) && !skillOnArts) || prof === 'CASTER'
+    || (sub === 'primguard' && char.talents?.some(t => t.candidates?.some(c => /^攻击造成法术伤害/.test(c.description))))) dmgType = 'arts';
   else dmgType = 'phys';
 
   let attackKind;

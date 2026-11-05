@@ -7,6 +7,9 @@ import { clamp } from './limits.js';
 import { projSpeed } from './speeds.js';
 
 const MAX_PROJ = 260;
+// [ASSUMED] Procedural fire core until the optional official effect is extracted.
+// Its path, lifetime and collision identity come directly from the simulator.
+const HEATWAVE = Object.freeze({ look: 'orb', tint: 0xffe0a0, glow: 0xff6a2a, trail: 0xff8a3d, len: 0.8, width: 0.4, head: 0.7, hit: 'none' });
 
 /** Trail particles (and boomerang afterimages) per real second of one flying projectile (cosmetic). */
 const TRAIL_HZ = 36;
@@ -129,7 +132,7 @@ export class FxProjectiles {
 
   _releaseProj(pr) {
     pr.trail.visible = pr.halo.visible = pr.core.visible = pr.shadow.visible = false;
-    pr.src = pr.tgt = null;
+    pr.src = pr.tgt = null; pr.flame = null;
     this.projFree.push(pr);
   }
 
@@ -415,6 +418,20 @@ export class FxProjectiles {
    * brightening plus the blast radius throbbing until the impact. The shell takes the shooter's lock on that spot: the
    * lock ends with this shell's 'bombard' (_landed).
    */
+  heatwave(x, y, tx, ty, flight, flame) {
+    const pr = this._takeProj(), z = this._groundZ(x, y) + 0.35;
+    Object.assign(pr, { kind: 'heatwave', spec: HEATWAVE, src: null, tgt: null, x0: x, y0: y, z0: z,
+      tx, ty, tz: z, t: 0, dur: flight, fade: 0, hit: false, emit: 0, arc: 0, rise: 0,
+      ang: Math.atan2(-(ty - y), tx - x), glow: HEATWAVE.glow, trailTint: HEATWAVE.trail, flame });
+    this._dressProj(pr); this.projs.push(pr);
+    return pr;
+  }
+
+  endHeatwave(flame) {
+    if (flame == null) return;
+    for (const pr of this.projs) if (pr.kind === 'heatwave' && pr.flame === flame) { pr.hit = true; pr.fade = SHOT_FADE; }
+  }
+
   mortar(src, x, y, r, flight) {
     const pr = this._takeProj();
     const gz = this._groundZ(x, y);

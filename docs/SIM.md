@@ -1911,3 +1911,7 @@ Default runs have no adaptive limits. See [BOT_STRATEGIES](BOT_STRATEGIES.md) fo
 
 Blemishine S3 (§35.91): kit trigger DEFAULT overrides the guardian class condition, while rawRule retains TAKE_DAMAGE.
 No damage/heal settlement or other guardian trigger changes.
+
+## 塔露拉、国度与冻河
+
+三位新自选 kit 在当前结算 API 上实现三技能、双天赋与必要职业/模组；实际成功伤害用 damageApplied，防护在 injury 阶段。支持边界与 ASSUMED 决策见 [实施说明](DYNAMIC-ILLUSTRATIONS-IMPLEMENTATION.md)。

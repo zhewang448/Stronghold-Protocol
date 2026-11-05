@@ -43,14 +43,15 @@ export function relOf(url) {
 }
 
 /** Is `o` a Spine object of data/assets.json (`{ skel: '/….skel', atlas, textures? }`)? */
-const isSpine = (o) => isObj(o) && typeof o.skel === 'string' && o.skel.startsWith('/') && /\.skel$/.test(o.skel);
+const isSpine = (o) => isObj(o) && typeof o.skel === 'string' && o.skel.startsWith('/')
+  && (/\.skel$/.test(o.skel) || (/\.json$/.test(o.skel) && typeof o.atlas === 'string'));
 
 /** The URLs of a Spine object: skeleton, atlas, pages (the `<skel name>.png` when it lists none). */
 function spineUrls(o) {
   const out = [o.skel];
   if (typeof o.atlas === 'string' && o.atlas) out.push(o.atlas);
   const pages = Array.isArray(o.textures) ? o.textures.filter((u) => typeof u === 'string' && u) : [];
-  out.push(...(pages.length ? pages : [o.skel.replace(/\.skel$/, '.png')]));
+  out.push(...(pages.length ? pages : [o.skel.replace(/\.(?:skel|json)$/, '.png')]));
   return out;
 }
 

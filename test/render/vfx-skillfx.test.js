@@ -171,6 +171,41 @@ async function setup(o = {}) {
 
 const live = (handles, key) => handles.filter((h) => h.key === key && h.alive);
 
+test('new operator kit flights preload, land, expire and release by owner with procedural fallback', async () => {
+  const f = await setup(), { w, index, view, frame, handles, ofx } = f;
+  const skill = 'skchr_oxi_3', projectile = 'projectile_chr_oxi_s_3_heatwave';
+  index.skills[skill] = { mode: null, projectiles: [projectile], uses: [] };
+  index.units.char_4247_oxi = { kind: 'char', modes: [{ name: 'Default', attack: { class: 'MeleeAttack', cast: [], hit: [] } }], skills: { [skill]: index.skills[skill] } };
+  index.projectiles[projectile] = { main: 'oxi_flight', onHit: ['oxi_skill_03_hit_01'] };
+  index.prefabs.oxi_flight = { looping: true };
+  index.prefabs.oxi_skill_03_hit_01 = { looping: false };
+  RECS.char_4247_oxi = { charId: 'char_4247_oxi', skill: { skillId: skill, index: 2, skillType: 'MANUAL', duration: 20, bb: {} } };
+  const a = view(301, 'char_4247_oxi', 4, { skill: 2 }), b = view(302, 'char_4247_oxi', 5, { skill: 2 });
+  frame();
+  assert.ok(w.skills.keys([a, b]).includes('oxi_flight'), 'flight main effect is preloaded');
+  const shot = id => ({ id, flame: 'same-label', tx: 9, ty: 10, t: 2 });
+  assert.equal(w.simFx('heatwave', 1, 10, shot(a.id)), true);
+  assert.equal(w.simFx('heatwave', 1, 10, shot(b.id)), true);
+  const flights = live(handles, 'oxi_flight');
+  assert.equal(flights.length, 2);
+  assert.equal(w.skills.kitFlights.size, 2, 'equal shot labels in different owners remain independent');
+  assert.equal(w.simFx('heatwaveHit', 6, 10, { id: a.id, flame: 'same-label' }), true);
+  assert.equal(flights[0].alive, false); assert.equal(flights[1].alive, true);
+  w.release(b); assert.equal(w.skills.kitFlights.size, 0, 'retreat ends only that owner flight');
+  assert.equal(w.simFx('heatwave', 1, 10, shot(a.id)), true);
+  const last = handles.at(-1), fx = { anchor: [0, 0, 0], stop: () => last.stop() };
+  ofx.time += 3; last.opts.track(fx);
+  assert.ok(fx.anchor.every(Number.isFinite)); assert.equal(last.alive, false);
+  assert.equal(w.skills.kitFlights.size, 0, 'natural flight expiry releases its handle');
+  assert.equal(w.simFx('heatwave', 1, 10, shot(a.id)), true);
+  w.skills.clear(); assert.equal(w.skills.kitFlights.size, 0);
+  assert.equal(live(handles, 'oxi_flight').length, 0);
+  frame();
+  delete index.prefabs.oxi_flight;
+  assert.equal(w.simFx('heatwave', 1, 10, shot(a.id)), false, 'missing official effect keeps the procedural projectile');
+  delete RECS.char_4247_oxi;
+});
+
 describe('skill events', () => {
   test('on: start and range play, the loop starts (held); off: the loops stop, end plays; the official layer shows it', async () => {
     const { w, spawned, handles, view, frame } = await setup();

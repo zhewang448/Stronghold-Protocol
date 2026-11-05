@@ -94,6 +94,7 @@ import {
   ENEMY_FX_BINDINGS, ENEMY_FX_KINDS, OWNER_NEAR, auraTargets, enemyBindingKeys, modeLoopKeys,
 } from './skills.js';
 import { fxSpec } from '../fx/kinds.js';
+import { unitPoint } from './mounts.js';
 import { UF, ANIM } from '../../../../shared/constants.js';
 
 /** Battle seconds a held (non-oneshot) row of a skill's single cast lasts (FxWiring's CAST_LOOP_S for attacks). */
@@ -227,6 +228,7 @@ export class SkillFx {
     this.aloops = new Map();   // `${target id}|${key}` → { h, until, v }: an aura's looping buff effect on a unit in it
     this.viewList = [];        // the battle's views as the last sync gave them (an enemy binding's 'near' owner)
     this.modeWins = new Map(); // unit id → { hs, seq }: the loops of a mode an enemy binding's fx started (_modeWin)
+    this.kitFlights = new Map(); // owner + shot identity → { h, owner }
   }
 
   active() { return !!this.w.ofx.active && !!this.w.idx; }
@@ -698,6 +700,7 @@ export class SkillFx {
    */
   release(v) {
     const id = idOf(v);
+    this._stopKitFlights(id);
     const U = id != null ? this.units.get(id) : null;
     if (U) this._releaseU(U);
     for (const [slot, t] of this.tloops) if (idOf(t.tgt) === id) { t.h.stop(); this.tloops.delete(slot); }
@@ -879,6 +882,7 @@ export class SkillFx {
     const tier = this.w.ofx.tier;
     if (this.tier === null) { this.tier = tier; this.wasActive = active; }   // the first frame: nothing was cleared
     if (tier !== this.tier || active !== this.wasActive) {
+      this._stopKitFlights();
       // the effects were cleared (a tier switch) or not drawn: what should run starts again below, quietly
       for (const U of this.units.values()) {
         if (!U) continue;
@@ -1054,6 +1058,39 @@ export class SkillFx {
     return extra.skill != null && on && (U.loops.some((h) => h.alive) || !!U.ewin?.loops.some((h) => h.alive));
   }
 
+  // Adapted from Stardust-minus d03ae6e7; shot ownership also scopes replacement,
+  // landing and release so two players cannot stop each other's effects.
+  _flyKit(bind, x, y, extra) {
+    const proj = this.w.idx?.projectiles?.[lc(bind.flight)];
+    const key = lc(proj?.main), dur = Number(extra.t), ofx = this.w.ofx;
+    // Frozen River S2's official projectile intentionally has no flying graphic;
+    // its hit is placed by the matching mark event. Suppress the invented line.
+    if (proj && !key && Array.isArray(proj.effects) && proj.effects.some(k => ofx.lib.has(k))) return true;
+    if (!key || !ofx.lib.has(key) || !(dur > 0) || extra.flame == null || ![x, y, extra.tx, extra.ty].every(Number.isFinite)) return false;
+    const slot = JSON.stringify([extra.id, extra.flame]);
+    const a = unitPoint(null, null, this._ground(x, y)), b = unitPoint(null, null, this._ground(extra.tx, extra.ty));
+    const dx = b[0] - a[0], dy = b[1] - a[1], flip = !!ofx.lib.def(key)?.flipIfLeft && dx < 0, t0 = ofx.time;
+    const h = ofx.spawn(key, { pos: a.slice(), groundZ: a[2], rootRot: [0, 0, 0, 1] }, {
+      important: true, loop: true,
+      track: fx => {
+        const k = Math.min(1, Math.max(0, (ofx.time - t0) / dur));
+        fx.anchor[0] = a[0] + dx * k; fx.anchor[1] = a[1] + dy * k; fx.anchor[2] = a[2] + (b[2] - a[2]) * k;
+        fx.mirror = flip; fx.yaw = flip ? Math.atan2(dy, -dx) : Math.atan2(dy, dx);
+        if (k >= 1) { this.kitFlights.delete(slot); fx.stop(); }
+      },
+    });
+    if (!h) return false;
+    this.kitFlights.get(slot)?.h.stop();
+    this.kitFlights.set(slot, { h, owner: extra.id });
+    return true;
+  }
+
+  _stopKitFlights(owner = null) {
+    for (const [slot, shot] of this.kitFlights) if (owner == null || shot.owner === owner) {
+      shot.h.stop(); this.kitFlights.delete(slot);
+    }
+  }
+
   /** An FX_BINDINGS `attack` entry: that plan attack's rows on the owner now, its hits on the damage that follows. */
   _boundAttack(U, bind) {
     const a = U.plan?.attacks.find((x) => x.node === bind.attack);
@@ -1094,6 +1131,11 @@ export class SkillFx {
    * says; a binding's own `keys` at 'target' once on the unit the fx names.
    */
   _bound(U, bind, x, y, extra) {
+    if (bind.flight) return this._flyKit(bind, x, y, extra);
+    if (bind.landing) {
+      const slot = JSON.stringify([extra.id, extra.flame]);
+      this.kitFlights.get(slot)?.h.stop(); this.kitFlights.delete(slot);
+    }
     const keys = bindingEffects(this.w.idx, bind).filter((k) => this.w.ofx.lib.has(k));
     if (!keys.length) return false;
     if (bind.at === 'target') {
@@ -1426,6 +1468,7 @@ export class SkillFx {
 
   /** Battle reset: forget every unit (the effects themselves are cleared by OfficialFx.clear). */
   clear() {
+    this._stopKitFlights();
     this.units.clear();
     this.tloops.clear();
     this.marks = [];

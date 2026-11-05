@@ -128,7 +128,8 @@ export function buildSurface(extra = {}) {
   const records = recordNames();
   for (const name of records.operator) add(`record.operator.${name}`, 'record', 'stable', 'shared/plugins/recordsSchema.js#RECORD_SCHEMA');
   for (const name of records.generic) add(`record.generic.${name}`, 'record', 'stable', 'shared/plugins/recordsSchema.js#RECORD_SCHEMA');
-  for (const name of overlayNames()) add(name, 'overlay', 'stable', 'shared/plugins/visual.js#ASSET_CONTAINERS');
+  for (const name of overlayNames()) add(name, 'overlay', 'stable', 'shared/plugins/visual.js#ASSET_CONTAINERS',
+    /\.dynamic(?:E2|Avatar)?$/.test(name) ? '0.3.3' : SURFACE_SINCE);
   const dsl = extra.dsl || {};
   for (const [group, key] of DSL_GROUPS) for (const name of dsl[key] || []) add(`dsl.${group}.${name}`, 'dsl', 'stable', `server/sim/content/dsl/vocab.js#${key}`);
   for (const name of UI_PLUGIN_MESSAGES) add(`ui.message.plugin.${name}`, 'ui', 'stable', 'shared/plugins/ui.js#UI_PLUGIN_MESSAGES');

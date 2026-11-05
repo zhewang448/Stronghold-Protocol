@@ -73,7 +73,7 @@ function parseArgs(argv) {
     refresh: false, offline: false, quiet: false, noResearch: false, force: false,
     out: null, cache: join(ROOT, '.cache', 'gamedata'), report: null, version: null,
   };
-  const flags = { '--refresh': 'refresh', '--offline': 'offline', '--quiet': 'quiet', '--no-research': 'noResearch', '--force': 'force', '--seat-art-only': 'seatArtOnly', '--skins-only': 'skinsOnly' };
+  const flags = { '--refresh': 'refresh', '--offline': 'offline', '--quiet': 'quiet', '--no-research': 'noResearch', '--force': 'force', '--seat-art-only': 'seatArtOnly', '--skins-only': 'skinsOnly', '--operator-extension-only': 'operatorExtensionOnly' };
   const dirs = { '--out': 'out', '--cache': 'cache', '--report': 'report' };
   for (let i = 0; i < argv.length; i++) {
     const [name, inline] = argv[i].includes('=') ? [argv[i].slice(0, argv[i].indexOf('=')), argv[i].slice(argv[i].indexOf('=') + 1)] : [argv[i], null];
@@ -3306,7 +3306,48 @@ function validateAll(f) {
 
 // ===== main =====================================================================================
 
+/** Scoped extension: build only the three pinned operators, keeping every historical record intact. */
+async function extendOperators(backups, chess, bonds) {
+  if (!IS_DEFAULT) return;
+  const source = JSON.parse(await readFile(join(RESEARCH_DIR, 'new-operators-20261101.json'), 'utf8'));
+  const context = { ...source, ac: {}, research: {}, manifest: null };
+  const statuses = [...new Map(Object.values(backups.diy.slots).flatMap((s) => {
+    const base = Object.values(chess).find(c => c.goldenId === s.goldenId && c.isDiy);
+    return [base?.status, chess[s.goldenId]?.status].filter(Boolean).map(st => [statusKey(st), st]);
+  })).values()];
+  const errors = [];
+  for (const id of [...source.ids].sort(naturalCmp)) {
+    const unit = { ...buildUnitHead(context, id), standsIn: [], forms: {} };
+    for (const status of statuses) {
+      const forms = Array.from({ length: FULL_RANK + 1 }, (_, potRank) => buildUnitForm({ ...context, potRank }, id, status));
+      unit.forms[statusKey(status)] = withPotentialData(forms, `extension ${id}`, errors);
+    }
+    backups.units[id] = unit;
+    const ch = source.charTable[id];
+    const powers = [...new Set([ch.mainPower ?? ch, ...(ch.subPower || [])].flatMap(p => [p.nationId, p.groupId, p.teamId]).filter(Boolean))];
+    const hit = Object.values(bonds).filter(b => b.isCore && b.powerIdList?.some(p => powers.includes(p))).map(b => b.bondId);
+    // Same official faction→bond mapping as buildBackups; unknown factions use 协防.
+    backups.diy.operators[id] = { name: ch.name, rarity: rarityOf(ch), profession: ch.profession,
+      subProfessionId: ch.subProfessionId, obtainable: !ch.isNotObtainable, powers, bonds: hit.length ? hit : ['emptyShip'] };
+    if (!backups.diy.ownedPool.includes(id)) backups.diy.ownedPool.push(id);
+  }
+  if (errors.length) throw new Error(errors.join('\n'));
+  backups.diy.ownedPool.sort(naturalCmp);
+  const standIds = Object.keys(backups.units).filter(id => backups.units[id].standsIn.length);
+  backups.units = Object.fromEntries([...standIds, ...backups.diy.ownedPool].map(id => [id, backups.units[id]]));
+  log(`operator extension: ${source.ids.length} operators, ${statuses.length} forms each; historical records retained`);
+}
+
 async function main() {
+  if (OPTS.operatorExtensionOnly) {
+    if (!IS_DEFAULT) throw new Error('--operator-extension-only supports act2autochess only');
+    const read = async name => JSON.parse(await readFile(join(OPTS.out, name + '.json'), 'utf8'));
+    const [backups, chess, bonds] = await Promise.all(['backups', 'chess', 'bonds'].map(read));
+    await extendOperators(backups, chess, bonds);
+    const dest = join(OPTS.out, 'backups.json'), tmp = dest + '.tmp-' + process.pid;
+    await writeFile(tmp, JSON.stringify(backups)); await rename(tmp, dest);
+    return;
+  }
   if (OPTS.skinsOnly) {
     if (!IS_DEFAULT) throw new Error('--skins-only writes the shared default catalogue; omit --version');
     const research = await loadResearch('operator-skins.json');
@@ -3355,6 +3396,7 @@ async function main() {
   // the unit forms rebuild every PRESET chess at every rank (before the annotation: each pass as built)
   const errors = [...validateAll(files), ...passes.flatMap((p) => checkUnitFormParity(p.ctx, p.chess).map((e) => `${e} (potential rank ${p.ctx.potRank})`))];
   errors.push(...attachPotential(passes));
+  await extendOperators(backups, chess, bonds);
   let total = 0;
   const sizes = {};
   const texts = {};

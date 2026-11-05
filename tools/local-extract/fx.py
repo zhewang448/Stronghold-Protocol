@@ -3079,6 +3079,11 @@ def crawl_units(ab_root, cabs, unit_ids, gd, eff, enemy_idx, token_idx, log):
             f'({", ".join("{} {}".format(k, sum(1 for a in ab if a["kind"] == k)) for k in ("common", "general", "trait"))}); '
             f'when: {", ".join(f"{k} {v}" for k, v in sorted(whens.items(), key=lambda kv: str(kv[0])))}; '
             f'{sum(1 for n in [n for t in tk for n in t["nodes"]] + ab if n.get("triggers"))} with template triggers')
+    # Kit events also name flights which live in tile/buff behaviours rather than
+    # a normal attack emitter. Keep their actual projectile records in the same
+    # closure the renderer preloads; otherwise a known binding silently falls back.
+    for key in ('projectile_chr_oxi_s_3_heatwave', 'projectile_tocka_s3_effect', 'projectile_chr_tocka_s2'):
+        projectile(key)
     for p in projectiles.values():
         referenced.update(p['effects'])
     return units, projectiles, skills, skins, referenced
@@ -3319,6 +3324,12 @@ def export_fx(ab_root, out_root, manifest, log, selection='sample', keys=None, j
         wanted = set(keys) | skin_refs
     else:                         # the used set holds the sample too (a full run never drops a key a sample has)
         wanted = set(FX_SAMPLE_KEYS) | set(FX_COVERAGE_KEYS) | referenced | generic
+        # Explicit kit bindings place tile and target effects which are not
+        # discoverable through a normal attack or the skill root's emitters.
+        if selection == 'used':
+            wanted.update(('dminon_talent_range_hit_01', 'tocka_heal_01_hit_01',
+                           'tocka_skill_02_buff_02_start_01', 'tocka_skill_02_buff_01',
+                           'tocka_skill_03_buff_start_02', 'tocka_skill_03_buff_04'))
     missing = sorted(k for k in wanted if k not in eff)
     for k in missing:
         log(f'  skip (no such effect prefab in this client) {k}')

@@ -723,6 +723,25 @@ export function buildOverlay({ zh, en, data, fallback = {}, corrections = {}, so
   };
   const missing = [...stats.missing].sort((a, b) => (a[1].kind < b[1].kind ? -1 : a[1].kind > b[1].kind ? 1 : a[0] < b[0] ? -1 : 1))
     .map(([text, m]) => ({ kind: m.kind, n: m.n, text }));
+  // Keep coverage of the established release auditable when newly released CN-only
+  // operators have no official overseas texts yet. Overall coverage still reports every text.
+  const extensionIds = ['char_4247_oxi', 'char_4246_dminon', 'char_4244_tocka'].filter(id => data.backups?.units?.[id]);
+  if (extensionIds.length) {
+    const extra = new Stats(), pick = obj => Object.fromEntries(extensionIds.filter(id => obj?.[id]).map(id => [id, obj[id]]));
+    translateRecord('backups', 'units', pick(data.backups.units), tr, extra, {});
+    translateRecord('backups', 'diy', { operators: pick(data.backups.diy?.operators) }, tr, extra, {});
+    const base = {};
+    let texts = 0, translatedBase = 0;
+    for (const [kind, row] of Object.entries(coverage)) {
+      const e = extra.kinds[kind], n = row.texts - (e?.texts || 0);
+      const extraOk = e ? e.exact + e.template + e.composite + e.correction + e.remake + e.pr70 + e.ui + e.dict : 0;
+      const ok = row.translated - extraOk;
+      base[kind] = { texts: n, translated: ok, pct: n ? Math.round(ok / n * 1000) / 10 : 100 };
+      texts += n; translatedBase += ok;
+    }
+    overlay.meta.extension = { ids: extensionIds, baseCoverage: base,
+      baseTotals: { texts, translated: translatedBase, pct: texts ? Math.round(translatedBase / texts * 1000) / 10 : 100 } };
+  }
   return { overlay, report: { coverage, totals: overlay.meta.totals, pairs: index.pairs, nameConflicts, untranslated: samples, missing } };
 }
 
