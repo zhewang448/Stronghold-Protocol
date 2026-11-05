@@ -13,7 +13,7 @@ Host-console refresh keeps existing interaction and scroll containers, unfinishe
 
 ### 可选网页方舟鼠标（2026-11-05）
 
-设置 → 界面与操作的 `settings.cursorTheme` 为 `system`（默认）或 `arknights`，只影响本机。
+设置 → 界面与操作的 `settings.cursorTheme` 为 `system` 或 `arknights`（默认），只影响本机。
 后者使用原生 CSS 图片指针，按真实干员拖拽状态切换抓取形态；无软件跟随层。
 2026-11-06 按用户实测放大默认指针至 96 px，新增 `settings.cursorSize`，支持 32–128 px、每档 16 px，
 附实际大小预览，即时应用并保存。旧偏好无尺寸字段使用 96 px；每档独立素材及同比热点，加载乱序不覆盖新选择。

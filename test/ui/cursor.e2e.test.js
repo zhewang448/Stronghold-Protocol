@@ -100,15 +100,16 @@ describe('native Arknights cursor', { skip: !enabled && 'set SP_E2E=1 with Chrom
       assert.equal(await cursor(page, '.ff-piece.is-draggable'), 'grab');
     } finally { await page.close(); }
   });
-  test('opt-in, real settings controls, preserved text/disabled feedback, press reset and persisted choice', async () => {
+  test('default theme, real settings controls, preserved text/disabled feedback, press reset and persisted choices', async () => {
     const page = await pageFor();
     try {
-      assert.equal(await page.evaluate(() => document.documentElement.dataset.cursorTheme), undefined);
-      assert.equal(await cursor(page, '.ff-piece.is-draggable'), 'grab');
+      await page.waitForFunction(() => document.documentElement.dataset.cursorTheme === 'arknights');
+      assert.match(await cursor(page, '.ff-piece.is-draggable'), /grab\.png.*grab$/);
       await page.click('[data-testid="settings-btn"]'); await page.waitForSelector('[data-testid="cursor-theme"]');
       const radios = await page.$$('[data-testid="cursor-theme"] [role="radio"]');
-      assert.equal(await radios[0].evaluate(el => el.getAttribute('aria-checked')), 'true');
+      assert.equal(await radios[1].evaluate(el => el.getAttribute('aria-checked')), 'true');
       await radios[1].click(); await page.waitForFunction(() => document.documentElement.dataset.cursorTheme === 'arknights');
+      await page.waitForFunction(() => !document.documentElement.dataset.cursorPressed);
       assert.match(await cursor(page, '[data-testid="cursor-theme"] button'), /pointer\.png.*pointer$/);
       const button = await radios[0].boundingBox();
       await page.mouse.move(button.x + 5, button.y + 5); await page.mouse.down();
@@ -132,6 +133,9 @@ describe('native Arknights cursor', { skip: !enabled && 'set SP_E2E=1 with Chrom
       assert.equal(await page.$('#cursor-outer, .sp-cursor-overlay'), null);
       await choose(page, 'system');
       assert.equal(await cursor(page, '.ff-piece.is-draggable'), 'grab');
+      await page.reload({ waitUntil: 'networkidle0' });
+      assert.equal(await page.evaluate(() => document.documentElement.dataset.cursorTheme), undefined);
+      assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('sp.pref.settings')).cursorTheme), 'system');
     } finally { await page.close(); }
   });
   test('accepted operator drag changes globally to claw, release/cancel restores hover cursor', async () => {
