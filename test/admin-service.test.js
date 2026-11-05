@@ -21,12 +21,19 @@ async function until(fn) {
   for (let i = 0; i < 120; i++) { const value = await fn(); if (value) return value; await sleep(100); }
   throw new Error('service did not reach expected state');
 }
+const browserCookies = new Map();
+const pageCookies = new Map();
 async function pageToken(url) {
-  try { return (await (await fetch(url, { signal: AbortSignal.timeout(500) })).text()).match(/const TOKEN = '([a-f0-9]+)'/)?.[1]; }
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(500), headers: pageCookies.has(url) ? { Cookie: pageCookies.get(url) } : {} });
+    const token = (await response.text()).match(/const TOKEN = '([a-f0-9]+)'/)?.[1];
+    if (token) { const cookie = response.headers.get('set-cookie')?.split(';')[0]; browserCookies.set(token, cookie); pageCookies.set(url, cookie); }
+    return token;
+  }
   catch { return null; }
 }
 const call = (url, token, body, headers = {}) => fetch(`${url}/api/service`, {
-  method: body ? 'POST' : 'GET', headers: { 'X-Admin-Token': token, 'Content-Type': 'application/json', ...headers },
+  method: body ? 'POST' : 'GET', headers: { 'X-Admin-Token': token, 'Content-Type': 'application/json', ...(browserCookies.has(token) ? { Cookie: browserCookies.get(token) } : {}), ...headers },
   body: body && JSON.stringify(body),
 });
 

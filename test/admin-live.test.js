@@ -101,9 +101,9 @@ test('host live API: token/cookie/Host protection, invalid players and guarded r
   t.after(async () => { await admin.close(); fs.rmSync(dir, { recursive: true, force: true }); });
   const endpoint = '/api/live?room=TEST&playerId=p_0';
   assert.equal((await fetch(admin.url + endpoint)).status, 403);
-  assert.equal((await fetch(admin.url + '/live')).status, 404);
-  assert.equal((await fetch(admin.url + '/live?wall=1')).status, 404);
-  assert.equal((await fetch(admin.url + '/live-viewer.js')).status, 404);
+  assert.equal((await fetch(admin.url + '/live', { redirect: 'manual' })).status, 302);
+  assert.equal((await fetch(admin.url + '/live?wall=1', { redirect: 'manual' })).status, 302);
+  assert.equal((await fetch(admin.url + '/live-viewer.js', { redirect: 'manual' })).status, 302);
   const home = await fetch(admin.url), cookie = home.headers.get('set-cookie').split(';')[0];
   const ordinary = await fetch(admin.url + '/live', { headers: { Cookie: cookie } });
   assert.equal(ordinary.status, 200);

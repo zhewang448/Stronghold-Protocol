@@ -500,6 +500,34 @@ The authenticated local console settings API persists boolean allowAiTakeover in
 
 room.state always carries aiTakeoverAllowed (host policy) and canSetAiTakeover (policy plus default-version, original co-op content, before match). The room UI disables unsupported choices and explains host denial, historical/plugin restrictions or an already-started match. room.setAiTakeover still requires the room host and never bypasses these conditions. Saving the host policy broadcasts updated room states immediately. Switching it off clears every room opt-in and pending vote and prevents new requests/seat transfers; completed transfers are retained. Re-enabling only grants permission, so rooms must opt in again. No match-rehearsal or simulation rules change.
 
+### Console login and optional remote access (2026-11-05)
+
+The separate admin port defaults to loopback with login disabled. `logs/admin-access.json`, beside the admin settings
+file, stores `loginEnabled`, `allowRemote` and a salted scrypt password record; it is never a match result or a public
+setting. Remote enable requires login, a password and a single-use proof issued to a browser session, current for
+the configuration revision, aged at least 5000 ms and less than 120000 ms. Cancel consumes the pending confirmation.
+The controller switches only admin listeners, atomically persists configuration, and restores the prior listeners
+on failure; service/update operations and access changes are mutually exclusive. Disabling remote access revokes
+remote sessions and denies remote requests immediately, including existing connections.
+
+`GET /api/auth/status` exposes only login/remote/password-present/local/authenticated state and a repair warning.
+`POST /api/auth/login`, `skip`, `logout`, `password` handle the password, local bypass, exit and password changes.
+Unauthenticated login-page writes require `X-Admin-Login: 1`; browser writes also reject foreign Origin and Fetch
+Metadata. Skip/reset require a loopback peer, loopback Host with the actual port, and no outside/opaque forwarding
+identity; forwarding headers can remove locality but never grant it. Transparent raw TCP forwarding carries no
+identity and cannot be distinguished from a direct peer; deployment must not forward the local bypass channel.
+Remote password changes require the old password. Password changes retain the requesting browser session and revoke
+all others. Passwords are 8–128 Unicode characters. Five consecutive failures from a socket peer block that peer for
+15 minutes, including concurrent attempts; proxy headers cannot reset the budget.
+
+Each browser has a random cookie plus a distinct `X-Admin-Token`, expires after 12 hours and on restart; local-only
+sessions cannot authorize remote requests. Cookies use HttpOnly, SameSite=Strict and Secure on HTTPS (including
+forwarded HTTPS). The local launcher keeps its separate process token; no HTML contains that token and a remote
+request cannot use it. Protected pages/assets redirect to `/login`, management APIs return 403 with
+`code: LOGIN_REQUIRED`. `/api/access` reads/saves access flags; POST/DELETE `/api/access/confirmation` issues/cancels
+the proof. No CORS is enabled. The plugin studio keeps its own policy and its console shortcut remains local.
+Corrupt access configuration fails closed to local repair. These deployment settings do not change game rules.
+
 ### Console access domain (2026-10-26)
 
 The WebSocket handshake records only a bounded, valid HTTP(S) Origin host (including a non-default port) in Connection.accessDomain and copies it to Session.accessDomain after successful hello/resume. Missing, opaque or malformed origins clear it to null. Host and forwarding headers are not fallback page identities. This client-reported field is display-only metadata, never authority. Only the authenticated local console projection joins it by player ID, including hosted match views and spectators; normal player frames, results and recovery do not gain the field. Offline sessions retain the last host until expiry; a restart has no persisted domain.

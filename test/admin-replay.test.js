@@ -18,7 +18,7 @@ test('console replay API: authentication, private assets, versions, deletion sco
   const admin = await startAdmin({ lobby, port: 0, resultsDir, replaysDir, settingsFile, log: { info() {}, error() {} } });
   t.after(async () => { await admin.close(); fs.rmSync(dir, { recursive: true, force: true }); });
   const auth = { 'X-Admin-Token': admin.token };
-  const get = (url, headers = auth) => fetch(`${admin.url}${url}`, { headers });
+  const get = (url, headers = auth) => fetch(`${admin.url}${url}`, { headers, redirect: 'manual' });
   const post = (url, body) => fetch(`${admin.url}${url}`, { method: 'POST', headers: auth, body: JSON.stringify(body) });
   const identity = replayIdentity(path.resolve('.'));
   const replay = { format: 1, made: { identity }, players: [], rounds: [{ round: 1, admin: [{ action: 'funds' }], fields: [
@@ -29,8 +29,8 @@ test('console replay API: authentication, private assets, versions, deletion sco
   fs.writeFileSync(settingsFile, '{}');
   const page = await get('/', {}), cookie = page.headers.get('set-cookie').split(';')[0];
   assert.match(page.headers.get('set-cookie'), /HttpOnly; SameSite=Strict/);
-  assert.equal((await get('/replay?id=record.json', {})).status, 404);
-  assert.equal((await get('/sim/spec.js', {})).status, 404);
+  assert.equal((await get('/replay?id=record.json', {})).status, 302);
+  assert.equal((await get('/sim/spec.js', {})).status, 302);
   assert.equal((await get('/replay?id=record.json', { Cookie: cookie })).status, 200);
   assert.equal((await get('/sim/spec.js', { Cookie: cookie })).status, 200);
   assert.equal((await get('/api/replay?id=record.json', { Cookie: cookie })).status, 403);

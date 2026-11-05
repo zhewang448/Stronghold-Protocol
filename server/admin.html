@@ -6,6 +6,16 @@
 <title>卫戍协议 · 主机控制台</title>
 <style>
   :root { color-scheme: dark; --bg: #0c0f0e; --panel: #141816; --line: #2f3a35; --mint: #4ed8af; --text: #dfe6e2; --dim: #8a9a92; --warn: #f6a329; --red: #e85a4a; }
+  .access-password { border-top: 1px solid var(--line); margin-top: 24px; padding-top: 8px; }
+  .access-password > label { display: block; margin: 12px 0; max-width: 420px; }
+  .access-password > label[hidden] { display: none; }
+  .access-password input { display: block; width: 100%; min-height: 44px; margin-top: 6px; }
+  .access-risk { width: min(100% - 32px, 540px); padding: 24px; border: 1px solid var(--warn); border-radius: 6px; background: var(--panel); color: var(--text); box-shadow: 0 16px 48px #0008; }
+  .access-risk::backdrop { background: #000a; }
+  .access-risk .row { justify-content: flex-end; margin-top: 24px; }
+  .access-risk button { min-height: 44px; }
+  #admin-access-settings { scroll-margin-top: 16px; }
+  #admin-access-settings .meta { color: #a0afa7; }
   * { box-sizing: border-box; }
   body { margin: 0; font: 14px/1.5 system-ui, "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); }
   header { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--line); }
@@ -268,7 +278,7 @@
 <header>
   <h1>主机控制台</h1>
   <nav aria-label="页面"><button data-tab="rooms" aria-pressed="true">房间</button><button data-tab="records" aria-pressed="false">对局记录</button><button data-tab="events" aria-pressed="false">事件记录</button><button data-tab="settings" aria-pressed="false">设置</button><button data-tab="server" aria-pressed="false">服务器</button><button data-tab="devtools" aria-pressed="false" hidden>模拟页面</button><button id="devmode-toggle" type="button" aria-pressed="false">开发者模式</button><a href="/resources" target="_blank" rel="noopener">资源 ↗</a></nav>
-  <span class="meta">只能在这台电脑上打开 · 修改直接生效、不扣金币；只有「加层」「补发机变卡」「装备」会触发游戏效果</span>
+  <span class="meta" id="access-context">正在读取访问状态…</span><button id="admin-logout" type="button">退出登录</button>
   <span id="status" aria-live="polite"></span>
 </header>
 <div class="row status-bar" aria-label="服务器状态"><span id="host-overview" role="status">正在读取在线人数与资源…</span><span class="tag" id="notice-badge" hidden>公告生效中</span></div>
@@ -327,6 +337,7 @@ import { DEFAULT_VERSION, VERSIONS, versionById } from '/shared/versions.js';
 const gameVersion = (id) => versionById(id || DEFAULT_VERSION)?.label || id;
 import { DEV_PAGES, DEV_SCENES, devSceneUrl } from '/shared/devtools.js';
 import { initAnnouncementEditor } from '/js/ui/announcementEditor.js';
+import { initAdminAccess } from '/js/ui/adminAccess.js';
 const chartBonds = await fetch('/data/bonds.json').then((r) => r.ok ? r.json() : {}).catch(() => ({}));
 import { showReleaseNotes, showReleaseUpdatePrompt } from "/js/ui/releaseNotes.js";
 const TOKEN = '__TOKEN__';
@@ -373,8 +384,10 @@ const saveFeedbackObserver = new MutationObserver(changes => {
   }
 });
 for (const id of ['settings', 'server']) saveFeedbackObserver.observe($(`#${id}`), { childList: true, characterData: true, subtree: true });
-const api = (p, body) => fetch(p, { method: body ? 'POST' : 'GET', headers: { 'X-Admin-Token': TOKEN, 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) })
-  .then((r) => r.json());
+const api = (p, body, method = body ? 'POST' : 'GET') => fetch(p, { method, headers: { 'X-Admin-Token': TOKEN, 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) })
+  .then(async (r) => { const data = await r.json(); if (data.code === 'LOGIN_REQUIRED') location.replace('/login'); return data; });
+$('#admin-logout').onclick = async () => { await api('/api/auth/logout', {}); location.replace('/login'); };
+api('/api/access').then((state) => { $('#access-context').textContent = `${state.local ? '本机访问' : '非本机访问'} · ${state.allowRemote ? '已允许远程登录' : '仅本机'} · 修改直接生效、不扣金币`; }).catch(() => {});
 const DEV_MODE_KEY = 'sp.admin.developer-mode';
 const storedDevMode = () => { try { return localStorage.getItem(DEV_MODE_KEY) === '1'; } catch { return false; } };
 let devMode = storedDevMode();
@@ -1607,7 +1620,7 @@ async function showSettings() {
   const p = d.prep;
   const n = Math.max(0, ...d.defaults.map((x) => x.rounds.length));
   const base = (r) => { const v = d.defaults.map((x) => x.rounds[r - 1]).filter((s) => s > 0); return v.length ? Math.max(...v) : ''; };
-  host.innerHTML = `<section class="room" id="release-update" aria-label="版本更新"></section>
+  host.innerHTML = `<section class="room" id="admin-access-settings" aria-label="访问与登录"></section><section class="room" id="release-update" aria-label="版本更新"></section>
     <section class="room" id="update-backups-settings"><h2>更新备份与空间</h2>
       <p class="meta">更新前会预估暂存和备份空间；每个恢复点校验程序及素材。按最新版本的安装顺序回退。更新出错时不会自动清理正在恢复的备份。</p>
       <div id="update-backups-content" role="status" aria-live="polite">正在读取更新备份…</div>
@@ -1685,6 +1698,7 @@ async function showSettings() {
       <details class="settings-preview"><summary>查看默认时长与调整预览</summary><div class="xscroll" id="prep-preview"></div></details>
     </form></section>`;
   arrangeSettings(domains);
+  initAdminAccess($('#admin-access-settings'), api);
   drawPrepPreview();
   drawReleaseUpdate();
   await Promise.all([
@@ -1736,6 +1750,7 @@ function arrangeSettings(domains) {
   sections.set(blocked.id, blocked);
   sections.set(chat.id, chat);
   const groups = [
+    ['access', '访问与登录', ['admin-access-settings']],
     ['game', '对局设置', ['room-defaults-settings', 'prep-settings', 'round-charts-settings', 'emote-barrage-settings']],
     ['client', '客户端设置', ['client-preferences-settings']],
     ['chat', '交流管理', ['social-settings', 'chat-policy-settings', 'chat-settings']],
