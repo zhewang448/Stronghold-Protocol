@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { standInRecord, composeUnitRecord, unitForm, statusKey, IDENTITY_FIELDS } from '../shared/standIn.js';
 import { diyRecordOf, lockedSelection } from '../shared/diy.js';
 import { composeStats, composeTalents, resolveLoadout, loadoutRecord, normalizeChess } from '../server/sim/simdata.js';
+import { officialCharactersForBackups, scopedOperatorIds } from './helpers/scopedOfficial.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = process.env.DATA_DIR || join(ROOT, 'data');
@@ -25,7 +26,10 @@ const chess = load('chess');
 const backups = load('backups');
 const bonds = load('bonds');
 const config = load('config');
-const raw = (f) => JSON.parse(readFileSync(join(CACHE, 'excel', `${f}.json`), 'utf8'));
+const raw = f => {
+  const value = JSON.parse(readFileSync(join(CACHE, 'excel', `${f}.json`), 'utf8'));
+  return f === 'character_table' ? officialCharactersForBackups(value, backups) : value;
+};
 
 const all = Object.values(chess);
 const base = all.filter((c) => !c.isGolden);
@@ -346,7 +350,7 @@ test('DIY: powers and the owned pool re-derived from character_table', { skip: !
   const collab = (c, id) => !ALLOWED.includes(id) && ([c.mainPower, ...(c.subPower || [])].some((p) => ['rainbow', 'action4', 'mujica', 'sees', 'laios'].includes(p?.teamId))
     || /^(?:MH|RS|AM|PS|DD)\d/.test(c.displayNumber || ''));
   const legal = Object.entries(CT).filter(([id, c]) => id.startsWith('char_') && c.rarity === 'TIER_6' && !['TOKEN', 'TRAP'].includes(c.profession) && !c.isNotObtainable && !roster.has(id));
-  assert.equal(legal.length, 79, 'the excel\'s 79 obtainable 6★ outside the chess pool');
+  assert.equal(legal.length, 79 + scopedOperatorIds.length, '79 historical obtainable 6★ plus the three pinned extension records');
   assert.deepEqual([...backups.diy.ownedPool].sort(), legal.filter(([id, c]) => !collab(c, id)).map(([id]) => id).sort());
   assert.deepEqual([...backups.diy.excluded].sort(), legal.filter(([id, c]) => collab(c, id)).map(([id]) => id).sort());
   for (const [id, o] of Object.entries(backups.diy.operators)) {

@@ -1071,3 +1071,7 @@ bounds snapshot, and refuses a match whose `opts.version` is not its data's vers
 ## 固定版本的三位自选扩展
 
 new-operators-20261101.json 仅补塔露拉、国度、冻河与必要引用；build-data.mjs --operator-extension-only 从该输入再生成第二期下半的 backups。全量构建复用同一步骤，其他三个版本不扩展名单。来源哈希、形态和模组见 [实施说明](DYNAMIC-ILLUSTRATIONS-IMPLEMENTATION.md)。
+
+全量构建与单独重装统一按角色 ID 排序 `backups.diy.operators`，确保对旧缓存重建时逐字节相同。
+保留主目录旧官方缓存时，来源回归只为这三名角色叠加固定提交摘录，声音校验同样使用已登记的三人官方 bank；
+不替换历史表，不跳过新角色的逐潜能、满潜能、天赋和音效参数核验。

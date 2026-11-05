@@ -5,6 +5,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { bankPool, indexAudio } from '../tools/assets/audio.mjs';
 import { buildPlan } from '../tools/assets/plan.mjs';
 import { resolveTemplate, collectLeaves } from '../tools/assets/manifest.mjs';
+import { operatorAudioIndexes } from '../tools/assets/operator-audio.mjs';
 
 const manifest = JSON.parse(readFileSync(new URL('../data/assets.json', import.meta.url), 'utf8'));
 const official = new URL('../.cache/gamedata/excel/audio_data.json', import.meta.url);
@@ -64,7 +65,9 @@ test('every generated attack/hit reference resolves to a valid pool and its sele
 });
 
 test('all exported pools match the cached official bank limits, pitches and delays', { skip: !existsSync(official) }, () => {
-  const raw = JSON.parse(readFileSync(official, 'utf8'));
+  const historical = JSON.parse(readFileSync(official, 'utf8'));
+  const scoped = JSON.parse(readFileSync(new URL('../docs/research/new-operator-audio-20261101.json', import.meta.url), 'utf8'));
+  const raw = operatorAudioIndexes(historical, {}, scoped).audioData;
   const banks = new Map(raw.soundFXBanks.map(b => [b.name, b]));
   for (const [id, pool] of Object.entries(manifest.audio.sfx.pools)) {
     const bank = banks.get(id);

@@ -17,6 +17,7 @@ import {
   cultivatedStats, cultivationOf, CULTIVATE_EFFECTS, POTENTIAL_DEFAULT, CULTIVATE_DEFAULT, FULL_RANK,
 } from '../shared/potential.js';
 import { composeTalents } from '../shared/loadoutRecord.js';
+import { officialCharactersForBackups } from './helpers/scopedOfficial.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = process.env.DATA_DIR || join(ROOT, 'data');
@@ -27,7 +28,10 @@ const chess = load('chess');
 const tokens = load('tokens');
 const backups = load('backups');
 const effects = load('effects');
-const raw = (f) => JSON.parse(readFileSync(join(CACHE, 'excel', `${f}.json`), 'utf8'));
+const raw = f => {
+  const value = JSON.parse(readFileSync(join(CACHE, 'excel', `${f}.json`), 'utf8'));
+  return f === 'character_table' ? officialCharactersForBackups(value, backups) : value;
+};
 const talent = (rec, name) => rec.talents.find((t) => t.name === name);
 
 test('potDown does not create dsl or pluginId leaves', () => {
@@ -112,7 +116,7 @@ test('every chess and 自选 form at every potential: the raw keyframes plus the
       forms++;
     }
   }
-  assert.equal(forms, 280); // local-tools: + the 7 collab picks' three forms each (259 upstream)
+  assert.equal(forms, 289); // 259 upstream + seven collaboration picks and three pinned operators, three forms each.
 });
 
 test('talent candidates at every potential: each talent is the last one unlocked with requiredPotentialRank ≤ the rank', { skip: !HAS_CACHE && 'no .cache/gamedata' }, () => {

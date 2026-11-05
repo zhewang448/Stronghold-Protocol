@@ -18,6 +18,7 @@ import { resolveLoadout, loadoutRecord } from '../server/sim/simdata.js';
 import { diyRecordOf } from '../shared/diy.js';
 import { standInRecord } from '../shared/standIn.js';
 import { makeBattle } from './helpers/battleHarness.js';
+import { officialCharactersForBackups } from './helpers/scopedOfficial.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = process.env.DATA_DIR || join(ROOT, 'data');
@@ -27,7 +28,10 @@ const load = (name) => JSON.parse(readFileSync(join(DATA, `${name}.json`), 'utf8
 const chess = load('chess');
 const tokens = load('tokens');
 const backups = load('backups');
-const raw = (f) => JSON.parse(readFileSync(join(CACHE, 'excel', `${f}.json`), 'utf8'));
+const raw = f => {
+  const value = JSON.parse(readFileSync(join(CACHE, 'excel', `${f}.json`), 'utf8'));
+  return f === 'character_table' ? officialCharactersForBackups(value, backups) : value;
+};
 const talent = (rec, name) => rec.talents.find((t) => t.name === name);
 
 test('刺玫 at full potential: ATK 435 / cost 15 (the tournament video), 再部署 66 s, 土壤基肥改良 at its 「天赋效果增强」 step', () => {
@@ -93,7 +97,7 @@ test('every chess, 自选 form and stand-in form: the raw keyframes plus every p
   for (const [charId, u] of Object.entries(backups.units)) {
     for (const f of Object.values(u.forms)) { check(`${charId}@${f.status.phase}/${f.status.level}`, charId, f.status, f.stats); forms++; }
   }
-  assert.equal(forms, 280); // local-tools: + the 7 collab picks' three forms each (259 upstream)
+  assert.equal(forms, 289); // 259 upstream + seven collaboration picks and three pinned operators, three forms each.
   // the 原型干员 stand-ins have no potential ranks: their numbers are the plain keyframes
   for (const id of ['char_600_cpione', 'char_602_cdfend', 'char_608_acpion', 'char_617_sharp2']) assert.equal((CT[id].potentialRanks || []).length, 0, id);
 });

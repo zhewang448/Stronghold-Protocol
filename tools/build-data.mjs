@@ -3333,6 +3333,9 @@ async function extendOperators(backups, chess, bonds) {
   }
   if (errors.length) throw new Error(errors.join('\n'));
   backups.diy.ownedPool.sort(naturalCmp);
+  // A scoped reinstall can begin with these keys already present in a different
+  // insertion order. Emit the same bytes as a complete build from older tables.
+  backups.diy.operators = Object.fromEntries(Object.entries(backups.diy.operators).sort(([a], [b]) => naturalCmp(a, b)));
   const standIds = Object.keys(backups.units).filter(id => backups.units[id].standsIn.length);
   backups.units = Object.fromEntries([...standIds, ...backups.diy.ownedPool].map(id => [id, backups.units[id]]));
   log(`operator extension: ${source.ids.length} operators, ${statuses.length} forms each; historical records retained`);
