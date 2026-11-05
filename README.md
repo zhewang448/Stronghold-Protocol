@@ -16,6 +16,37 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 >
 > 非官方、非商业同人项目，与《明日方舟》官方无隶属或授权关系。游戏素材与数据的权利归原权利人；代码、素材及截图的许可边界见 [NOTICE.md](NOTICE.md)。
 
+## 启动器有新版本：1.3.0
+
+1.1.0 及更早版本请从本次 Release 下载 StrongholdProtocolLauncher-v1.3.0-win-x64.zip，关闭旧启动器，解压替换 EXE 后重新打开。1.2.0 可使用顶部「启动器更新」。关闭窗口不会停止后台游戏服务；控制台同步更新需要先升级游戏更新器，实例外 EXE 需新版运行后登记位置。详见 [启动器说明](launcher/README.md)。
+
+如果本项目帮到了你，欢迎点一下仓库右上角的 Star ⭐，也欢迎反馈问题，帮助这个非商业同人项目继续改进。
+
+## 仓库索引
+
+感谢原项目及社区作者的开源贡献。本库采用或参考的实现与对应作者列在下表，具体提交、许可证及署名见 [NOTICE.md](NOTICE.md)。
+
+| 仓库 | 定位、采用内容与致谢 |
+| --- | --- |
+| [本库 · Stronghold-Protocol](https://github.com/zhewang448/Stronghold-Protocol) | 主机管理与联机体验扩展；本 README、整合包与问题反馈对应此仓库 |
+| [原项目 · sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) | 本库的玩法、确定性模拟、官方数据适配与插件体系基础；感谢 **sganggs 及上游贡献者**的原始实现与持续维护 |
+| [多人扩容方案 · LongQianChen/Stronghold-Protocol](https://github.com/LongQianChen/Stronghold-Protocol/tree/feat/IncreasePlayerCapacity) | 本库采用解除四人限制、固定分组卡池与并行轮选的核心方案，感谢 **LongQianChen** 的多人扩容实现 |
+| [多人扩容 0.3.1 适配 · SiderLock/Stronghold-Protocol](https://github.com/SiderLock/Stronghold-Protocol) | 本库迁移采用其 0.3.1 适配，感谢 **SiderLock** 的整合工作；具体提交及本库兼容调整见 [扩展联机说明](docs/EXPANDED-COOP.md#来源) |
+| [Stardust-minus/Stronghold-Protocol](https://github.com/Stardust-minus/Stronghold-Protocol) | 独立卡池、AI 开局策略、持有预设、扩展观战、队友救援、动态立绘与新增自选干员，以及损伤环/脚下血条/过载、商店人像、小地图、名片底图、预计叠层和四候选选二的参考与适配来源；感谢 **Stardust-minus 及该仓库贡献者**的 GPL-3.0-or-later 开源实现。本次 UI 固定参考 `7f39464`，范围、默认值和兼容见 [迁移说明](docs/STARDUST-UI-MIGRATION.md) |
+| [社区贡献 · DoraCat（@DuolaCCCCat）](https://github.com/DuolaCCCCat) | 感谢 **DoraCat（DuolaCCCCat）** 提出库存显示、皮肤特效、玩家头像与自定义立绘方案，提交相关 Issue、PR 及验收反馈；本库按现有房间、卡池与同步流程适配，具体来源见 [NOTICE.md](NOTICE.md) |
+| [原始社区 UI · isomerpoi/Stronghold-Protocol](https://github.com/isomerpoi/Stronghold-Protocol) | 本库大厅、同盟等待室、物资调配、对局 HUD 与结算界面的原始社区实现来源；感谢 **isomerpoi（雨千代chiyo）** 的界面设计与实现 |
+| [UI 后续适配参考 · xinhai-ai/Stronghold-Protocol](https://github.com/xinhai-ai/Stronghold-Protocol) | 本库交流布局、快捷键、资源展示、公告 Markdown 和手机界面的后续适配参考；感谢 **xinhai-ai 及参考站贡献者**的公开实现，移植范围见 [源码对照文档](docs/REFERENCE-UI-REVIEW.md) |
+| [方舟鼠标参考 · DoingStone/Arknights-Mouse](https://github.com/DoingStone/Arknights-Mouse) | 感谢 **DoingStone 及项目贡献者**的鼠标容器与姿态实现；本库适配为网页原生指针、大小预览及干员抓取形态，固定参考 `e1249037`。代码许可 MIT，角色美术不属于该 MIT 授权；[安装与适配边界](docs/CURSOR.md)、[第三方声明](THIRD-PARTY-NOTICES.md) |
+| [参考站前端归档 · stronghold-ui-site-archive（私有）](https://github.com/zhewang448/stronghold-ui-site-archive) | 保存参考站公开前端快照、来源和哈希，供后续跟进 UI 变化；需仓库访问权限，更新方法见 [源码对照文档](docs/REFERENCE-UI-REVIEW.md#后续跟进与私有归档) |
+| [Stronghold-Protocol-Forge-Mods](https://github.com/XiaMo233M/Stronghold-Protocol-Forge-Mods) | Forge 工坊包与成品索引；配套下方 Forge 宿主使用 |
+| [Stronghold-Protocol-Forge](https://github.com/XiaMo233M/Stronghold-Protocol-Forge) | Forge-Mods 对应的游戏宿主与 MOD API |
+| [RyantArgnisan/Stronghold-Protocol](https://github.com/RyantArgnisan/Stronghold-Protocol) | 本库房间文字聊天的参考与改编来源，感谢 **RyantArgnisan** 的开源聊天实现；具体提交见 [NOTICE.md](NOTICE.md) |
+| [Stronghold-Protocol-Lele-Mods](https://github.com/llleeeqi/Stronghold-Protocol-Lele-Mods) | Lele 系列插件，需要其配套宿主适配 |
+
+不同分支的插件格式和宿主 API 并不通用。**Forge-Mods 与 Lele 插件尚未验证可直接用于本库**；更多来源、安装前核对项和兼容边界见[社区插件索引](docs/COMMUNITY-PLUGINS.md)。本库设置页提供本机插件工作台入口。
+
+本版已整合上游 **v0.3.3**，包含 Forge 导入与工作台扩展、测试房间、联防及干员规则修复，详见 [更新记录](docs/LOCAL-CHANGELOG.md)。
+
 ## 本库特色
 
 ### 当前源码亮点
@@ -55,37 +86,6 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 | [开服与维护](#开服更新与恢复) | 一键开服、公网隧道、重启恢复、签名增量更新与完整包回退；提供启动保护、更新验证和备份管理 |
 
 上述功能包含本库新增、上游整合及社区界面适配，并非全部从零原创；来源与兼容边界见[仓库索引](#仓库索引)和[版权说明](NOTICE.md)。插件工作台、Forge 导入及确定性战斗模拟等继承自上游，使用方法见[插件指南](docs/PLUGIN-GUIDE.md)。
-
-## 启动器有新版本：1.3.0
-
-1.1.0 及更早版本请从本次 Release 下载 StrongholdProtocolLauncher-v1.3.0-win-x64.zip，关闭旧启动器，解压替换 EXE 后重新打开。1.2.0 可使用顶部「启动器更新」。关闭窗口不会停止后台游戏服务；控制台同步更新需要先升级游戏更新器，实例外 EXE 需新版运行后登记位置。详见 [启动器说明](launcher/README.md)。
-
-如果本项目帮到了你，欢迎点一下仓库右上角的 Star ⭐，也欢迎反馈问题，帮助这个非商业同人项目继续改进。
-
-## 仓库索引
-
-感谢原项目及社区作者的开源贡献。本库采用或参考的实现与对应作者列在下表，具体提交、许可证及署名见 [NOTICE.md](NOTICE.md)。
-
-| 仓库 | 定位、采用内容与致谢 |
-| --- | --- |
-| [本库 · Stronghold-Protocol](https://github.com/zhewang448/Stronghold-Protocol) | 主机管理与联机体验扩展；本 README、整合包与问题反馈对应此仓库 |
-| [原项目 · sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) | 本库的玩法、确定性模拟、官方数据适配与插件体系基础；感谢 **sganggs 及上游贡献者**的原始实现与持续维护 |
-| [多人扩容方案 · LongQianChen/Stronghold-Protocol](https://github.com/LongQianChen/Stronghold-Protocol/tree/feat/IncreasePlayerCapacity) | 本库采用解除四人限制、固定分组卡池与并行轮选的核心方案，感谢 **LongQianChen** 的多人扩容实现 |
-| [多人扩容 0.3.1 适配 · SiderLock/Stronghold-Protocol](https://github.com/SiderLock/Stronghold-Protocol) | 本库迁移采用其 0.3.1 适配，感谢 **SiderLock** 的整合工作；具体提交及本库兼容调整见 [扩展联机说明](docs/EXPANDED-COOP.md#来源) |
-| [Stardust-minus/Stronghold-Protocol](https://github.com/Stardust-minus/Stronghold-Protocol) | 独立卡池、AI 开局策略、持有预设、扩展观战、队友救援、动态立绘与新增自选干员，以及损伤环/脚下血条/过载、商店人像、小地图、名片底图、预计叠层和四候选选二的参考与适配来源；感谢 **Stardust-minus 及该仓库贡献者**的 GPL-3.0-or-later 开源实现。本次 UI 固定参考 `7f39464`，范围、默认值和兼容见 [迁移说明](docs/STARDUST-UI-MIGRATION.md) |
-| [社区贡献 · DoraCat（@DuolaCCCCat）](https://github.com/DuolaCCCCat) | 感谢 **DoraCat（DuolaCCCCat）** 提出库存显示、皮肤特效、玩家头像与自定义立绘方案，提交相关 Issue、PR 及验收反馈；本库按现有房间、卡池与同步流程适配，具体来源见 [NOTICE.md](NOTICE.md) |
-| [原始社区 UI · isomerpoi/Stronghold-Protocol](https://github.com/isomerpoi/Stronghold-Protocol) | 本库大厅、同盟等待室、物资调配、对局 HUD 与结算界面的原始社区实现来源；感谢 **isomerpoi（雨千代chiyo）** 的界面设计与实现 |
-| [UI 后续适配参考 · xinhai-ai/Stronghold-Protocol](https://github.com/xinhai-ai/Stronghold-Protocol) | 本库交流布局、快捷键、资源展示、公告 Markdown 和手机界面的后续适配参考；感谢 **xinhai-ai 及参考站贡献者**的公开实现，移植范围见 [源码对照文档](docs/REFERENCE-UI-REVIEW.md) |
-| [方舟鼠标参考 · DoingStone/Arknights-Mouse](https://github.com/DoingStone/Arknights-Mouse) | 感谢 **DoingStone 及项目贡献者**的鼠标容器与姿态实现；本库适配为网页原生指针、大小预览及干员抓取形态，固定参考 `e1249037`。代码许可 MIT，角色美术不属于该 MIT 授权；[安装与适配边界](docs/CURSOR.md)、[第三方声明](THIRD-PARTY-NOTICES.md) |
-| [参考站前端归档 · stronghold-ui-site-archive（私有）](https://github.com/zhewang448/stronghold-ui-site-archive) | 保存参考站公开前端快照、来源和哈希，供后续跟进 UI 变化；需仓库访问权限，更新方法见 [源码对照文档](docs/REFERENCE-UI-REVIEW.md#后续跟进与私有归档) |
-| [Stronghold-Protocol-Forge-Mods](https://github.com/XiaMo233M/Stronghold-Protocol-Forge-Mods) | Forge 工坊包与成品索引；配套下方 Forge 宿主使用 |
-| [Stronghold-Protocol-Forge](https://github.com/XiaMo233M/Stronghold-Protocol-Forge) | Forge-Mods 对应的游戏宿主与 MOD API |
-| [RyantArgnisan/Stronghold-Protocol](https://github.com/RyantArgnisan/Stronghold-Protocol) | 本库房间文字聊天的参考与改编来源，感谢 **RyantArgnisan** 的开源聊天实现；具体提交见 [NOTICE.md](NOTICE.md) |
-| [Stronghold-Protocol-Lele-Mods](https://github.com/llleeeqi/Stronghold-Protocol-Lele-Mods) | Lele 系列插件，需要其配套宿主适配 |
-
-不同分支的插件格式和宿主 API 并不通用。**Forge-Mods 与 Lele 插件尚未验证可直接用于本库**；更多来源、安装前核对项和兼容边界见[社区插件索引](docs/COMMUNITY-PLUGINS.md)。本库设置页提供本机插件工作台入口。
-
-本版已整合上游 **v0.3.3**，包含 Forge 导入与工作台扩展、测试房间、联防及干员规则修复，详见 [更新记录](docs/LOCAL-CHANGELOG.md)。
 
 ## 开始运行
 
