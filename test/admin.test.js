@@ -61,7 +61,7 @@ test('console: localhost only, token required, actions change the running match'
   // the page carries the token; the API refuses without it, and refuses a foreign Host (DNS rebinding)
   const page = await req(P, '/');
   assert.equal(page.status, 200);
-  assert.ok(page.text.includes(admin.token) && !page.text.includes('__TOKEN__'));
+  assert.ok(!page.text.includes(admin.token) && !page.text.includes('__TOKEN__'), 'browser session never contains launcher token');
   assert.equal((await req(P, '/api/rooms')).status, 403);
   assert.equal((await req(P, '/api/rooms', { headers: { ...auth, 'x-admin-token': 'f'.repeat(32) } })).status, 403);
   assert.equal((await req(P, '/api/rooms', { headers: { ...auth, host: 'evil.example' } })).status, 403);

@@ -16,9 +16,9 @@ import { listBackups, configureBackups, deleteBackup } from './update-backups.js
 // the 休整期 timer and optional 联防 layer gains for every room and match (./match/hostSettings.js), kept in
 // logs/admin-settings.json.
 //
-// Reachable from this computer only: it listens on 127.0.0.1 (the LAN and a cloudflared tunnel to the game port never
-// reach it), every /api request carries the per-process token embedded in the page, and the Host header must be the
-// console's own localhost address (another site open in the host's browser cannot drive it, no DNS rebinding).
+// Defaults to loopback. admin-access.js adds opt-in login and independently confirmed remote access on this port.
+// Browser pages carry a session request token, never the launcher's process token. Local bypass checks peer, Host
+// and forwarding identities together; all write requests reject foreign browser origins.
 //
 //   SP_ADMIN_PORT  default PORT + 100 (3100); SP_ADMIN=0 turns the console off (server/http/boot.js runMain).
 //
@@ -27,7 +27,8 @@ import { listBackups, configureBackups, deleteBackup } from './update-backups.js
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
-import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
+import { createAdminAccess, adminSameOrigin, localAdminRequest } from './admin-access.js';
 import { fileURLToPath } from 'node:url';
 import { PHASE, PHASE_NAMES, BOND_LAYER_CAP, GEO } from '../shared/constants.js';
 import { rewindToPrep } from './match/rewind.js';
@@ -829,7 +830,10 @@ function readJson(req, limit = 8192) {
 export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log = console, resultsDir = path.join(DIR, '..', 'logs', 'results'),
   settingsFile = path.join(DIR, '..', 'logs', 'admin-settings.json'), root = path.join(DIR, '..'), onUpdateReady,
   replaysDir = path.join(path.dirname(resultsDir), 'replays'),
-  updateOptions = {}, service = null, network = null, traffic = null, studioUrl = null }) {
+  updateOptions = {}, service = null, network = null, traffic = null, studioUrl = null, accessOptions = {} }) {
+  const token = randomBytes(16).toString('hex');
+  const access = createAdminAccess({ file: path.join(path.dirname(settingsFile), 'admin-access.json'), processToken: token, log, ...accessOptions });
+  let accessChanging = false, closing = false;
   const oldReplayConfig = getReplayConfig();
   let identity = null;
   try { identity = replayIdentity(root); } catch (e) { log.error('[replay] fingerprint unavailable', e.message); }
@@ -855,23 +859,17 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
     if (room.match && room.match !== before) idleUpdater.matchStarted();
     return result;
   };
-  const idleTimer = setInterval(() => { idleUpdater.tick().catch((e) => log.error('[auto-update]', e)); }, 1000);
+  const idleTimer = setInterval(() => { if (!accessChanging) idleUpdater.tick().catch((e) => log.error('[auto-update]', e)); }, 1000);
   idleTimer.unref();
   const updateStatus = () => ({ ...updater.status(), automatic: idleUpdater.status() });
   const notes = readReleaseNotes(root);
   const resources = createResources({ lobby, network, traffic });
-  const token = randomBytes(16).toString('hex');
   let serviceAction = null, serviceTimer = null, serviceCancel = null;
   const serviceView = () => ({ instanceId: process.pid, activeMatches: [...lobby.rooms.values()].filter((r) => r.match && !r.match.ended && !r.match.disposed).length,
     canRestart: !!service, canShutdown: !!service && !service.shutdownReason,
     shutdownReason: service?.shutdownReason || '', action: serviceAction, recoveryEnabled: lobby.recovery?.status().enabled || false });
-  const page = fs.readFileSync(path.join(DIR, 'admin.html'), 'utf8').replace('__TOKEN__', token);
-  const tokenBuf = Buffer.from(token);
-  const authed = (req) => {
-    const t = Buffer.from(String(req.headers['x-admin-token'] || ''));
-    return t.length === tokenBuf.length && timingSafeEqual(t, tokenBuf);
-  };
-  const session = (req) => (req.headers.cookie || '').split(';').some((s) => s.trim() === `sp_admin=${token}`);
+  const page = fs.readFileSync(path.join(DIR, 'admin.html'), 'utf8');
+  const session = (req) => !!access.session(req);
   const summarizeResults = createResultSummary(resultsDir);
   const audit = createAdminAudit({ lobby, file: path.join(resultsDir, 'admin-events.ndjson'), log });
   const diagnosticSeen = new WeakMap(), diagnosticPending = new WeakSet();
@@ -926,38 +924,76 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
       round: before?.round ?? null, ok: !!result?.ok, error: result?.error || null, value, ...actionChanges(before, after) });
     return result;
   }
-  const resultFiles = () => recordFiles(resultsDir, [path.resolve(settingsFile), path.resolve(announcementDrafts.file), path.resolve(announcementPersistenceFile)]);
+  const privateFiles = [settingsFile, access.file, announcementDrafts.file, announcementPersistenceFile].map((file) => path.resolve(file));
+  const resultFiles = () => recordFiles(resultsDir, privateFiles);
   const storageView = () => ({ results: resultFiles().length, replays: replayFiles(replaysDir).length,
     adminLogs: audit.list().events.length + replayAdminLogs(replaysDir) + [...lobby.rooms.values()].reduce((n, r) => n + (r.adminLog?.length || 0) + (r.match?.replay?.rounds || []).reduce((s, x) => s + x.admin.length, 0), 0) });
 
-  const server = http.createServer(async (req, res) => {
+  const listeners = new Set();
+  let activeListeners = [];
+  let server, actual;
+  const busy = () => serviceAction || ['checking', 'downloading', 'verifying', 'scheduled', 'validating', 'starting', 'rolling-back'].includes(updater.status().state);
+  const handler = async (req, res) => {
     const send = (status, body, type = 'application/json; charset=utf-8') => {
       res.writeHead(status, { 'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY' });
       res.end(typeof body === 'string' ? body : JSON.stringify(body));
     };
     try {
-      const address = server.address();
-      if (!address) {
+      if (closing) {
         res.setHeader('Connection', 'close');
         return send(503, { error: '控制台正在关闭，请稍后重试' });
       }
-      const p = address.port;
-      if (req.headers.host !== `127.0.0.1:${p}` && req.headers.host !== `localhost:${p}`) return send(403, { error: 'forbidden host' });
+      if (!access.allowed(req)) return send(403, { error: 'forbidden host' });
       const url = new URL(req.url || '/', 'http://localhost');
-      if (req.method === 'GET' && url.pathname === '/') {
-        res.setHeader('Set-Cookie', `sp_admin=${token}; HttpOnly; SameSite=Strict; Path=/`);
-        return send(200, page, 'text/html; charset=utf-8');
+      if (!['GET', 'HEAD'].includes(req.method) && !adminSameOrigin(req)) return send(403, { error: '请求必须来自控制台本身' });
+      let browserSession = access.session(req);
+      const current = access.authenticated(req);
+      const redirectLogin = () => { res.writeHead(302, { Location: '/login', 'Cache-Control': 'no-store' }); res.end(); };
+      if (req.method === 'GET' && url.pathname === '/login') return send(200, fs.readFileSync(path.join(DIR, 'admin-login.html'), 'utf8'), 'text/html; charset=utf-8');
+      if (req.method === 'GET' && url.pathname === '/api/auth/status') return send(200, access.view(req));
+      if (url.pathname.startsWith('/api/auth/') && req.method === 'POST') {
+        if (!current && req.headers['x-admin-login'] !== '1') return send(403, { error: '缺少登录请求标记' });
+        const action = url.pathname.slice('/api/auth/'.length);
+        if (action === 'logout') {
+          if (!current) return send(401, { error: '请先登录', code: 'LOGIN_REQUIRED' });
+          access.logout(current); res.setHeader('Set-Cookie', access.cookie(req, null));
+          return send(200, { ok: true });
+        }
+        if (action === 'skip') {
+          if (!localAdminRequest(req)) return send(403, { error: '仅本机可以跳过密码' });
+          res.setHeader('Set-Cookie', access.cookie(req, access.issue(req)));
+          return send(200, { ok: true });
+        }
+        if (!['login', 'password'].includes(action)) return send(404, { error: 'not found' });
+        if (action === 'password' && !current && !localAdminRequest(req)) return send(401, { error: '请先登录', code: 'LOGIN_REQUIRED' });
+        if (action === 'password' && (accessChanging || busy())) return send(409, { error: '访问设置、服务操作或更新进行中，请稍后重试' });
+        if (action === 'password') accessChanging = true;
+        try {
+          const body = await readJson(req);
+          const result = action === 'login' ? await access.login(req, body?.password) : await access.password(req, body, current);
+          if (result.error) return send(result.status, { error: result.error });
+          res.setHeader('Set-Cookie', access.cookie(req, result.session));
+          return send(200, { ok: true });
+        } finally { if (action === 'password') accessChanging = false; }
       }
+      if (req.method === 'GET' && url.pathname === '/') {
+        if (!browserSession && !access.loginEnabled && localAdminRequest(req)) browserSession = access.issue(req);
+        if (!browserSession) return redirectLogin();
+        res.setHeader('Set-Cookie', access.cookie(req, browserSession));
+        return send(200, page.replace('__TOKEN__', browserSession.token), 'text/html; charset=utf-8');
+      }
+      if (!url.pathname.startsWith('/api/') && !browserSession) return redirectLogin();
       if (req.method === 'GET' && ['/wall', '/resources'].includes(url.pathname) && session(req)) {
-        return send(200, fs.readFileSync(path.join(DIR, 'monitor.html'), 'utf8').replace('__TOKEN__', token), 'text/html; charset=utf-8');
+        return send(200, fs.readFileSync(path.join(DIR, 'monitor.html'), 'utf8').replace('__TOKEN__', browserSession.token), 'text/html; charset=utf-8');
       }
       if (req.method === 'GET' && url.pathname === '/studio' && session(req)) {
+        if (!localAdminRequest(req)) return send(403, { error: '插件工作台入口仅供本机使用' });
         if (!studioUrl) return send(503, '插件工作台未启用。请检查 SP_STUDIO 设置，并使用游戏服务启动控制台。', 'text/plain; charset=utf-8');
         res.writeHead(302, { Location: studioUrl, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
         return res.end();
       }
       if (req.method === 'GET' && url.pathname === '/replay' && session(req)) {
-        return send(200, fs.readFileSync(path.join(DIR, 'replay.html'), 'utf8').replace('__TOKEN__', token), 'text/html; charset=utf-8');
+        return send(200, fs.readFileSync(path.join(DIR, 'replay.html'), 'utf8').replace('__TOKEN__', browserSession.token), 'text/html; charset=utf-8');
       }
       if (req.method === 'GET' && url.pathname === '/replay-viewer.js' && session(req)) {
         return send(200, fs.readFileSync(path.join(DIR, 'replay-viewer.js'), 'utf8'), 'text/javascript; charset=utf-8');
@@ -966,12 +1002,12 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
         // Only the read-only wall view can be framed, and only by this same local console origin.
         if (url.searchParams.get('wall') === '1') {
           res.setHeader('Content-Security-Policy', "frame-ancestors 'self'");
-          const html = fs.readFileSync(path.join(DIR, 'live.html'), 'utf8').replace('__TOKEN__', token);
+          const html = fs.readFileSync(path.join(DIR, 'live.html'), 'utf8').replace('__TOKEN__', browserSession.token);
           res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',
             'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'SAMEORIGIN' });
           return res.end(html);
         }
-        return send(200, fs.readFileSync(path.join(DIR, 'live.html'), 'utf8').replace('__TOKEN__', token), 'text/html; charset=utf-8');
+        return send(200, fs.readFileSync(path.join(DIR, 'live.html'), 'utf8').replace('__TOKEN__', browserSession.token), 'text/html; charset=utf-8');
       }
       if (req.method === 'GET' && url.pathname === '/live-viewer.js' && session(req)) {
         return send(200, fs.readFileSync(path.join(DIR, 'live-viewer.js'), 'utf8'), 'text/javascript; charset=utf-8');
@@ -981,7 +1017,32 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
         return await serveStatic(req, res, url.pathname, url.search.slice(1));
       }
       if (!url.pathname.startsWith('/api/')) return send(404, { error: 'not found' });
-      if (!authed(req)) return send(403, { error: 'bad token' });
+      if (!current) return send(403, { error: '请重新登录控制台', code: 'LOGIN_REQUIRED' });
+      if (url.pathname === '/api/access/confirmation') {
+        if (req.method === 'DELETE') { access.cancelConfirmation(current); return send(200, { ok: true }); }
+        if (req.method !== 'POST') return send(405, { error: 'method not allowed' });
+        const result = access.confirmation(current);
+        return send(result.status || 200, result);
+      }
+      if (url.pathname === '/api/access') {
+        if (req.method === 'GET') return send(200, access.view(req));
+        if (req.method !== 'POST') return send(405, { error: 'method not allowed' });
+        if (accessChanging || busy()) return send(409, { error: '访问设置、服务操作或更新进行中，请稍后重试' });
+        accessChanging = true;
+        const wasRemote = access.remote;
+        try {
+          const result = access.prepare(await readJson(req), current);
+          if (result.error) return send(result.status, { error: result.error });
+          if (wasRemote !== result.config.allowRemote) await rebind(result.config.allowRemote);
+          access.commit(result.config);
+          return send(200, { ok: true, ...access.view(req) });
+        } catch (error) {
+          if (wasRemote !== access.remote || server?.address() === null || boundRemote !== wasRemote) await rebind(wasRemote);
+          log.error('[admin-access] listener/configuration change failed', error.code || error.message);
+          return send(500, { error: '保存失败，已恢复原访问设置。请检查端口占用和配置文件权限。' });
+        } finally { accessChanging = false; }
+      }
+      if (accessChanging && req.method === 'POST' && ['/api/service', '/api/update'].includes(url.pathname)) return send(409, { error: '正在修改访问设置，请稍后重试' });
       if (url.pathname === '/api/domain-recovery') {
         const file = path.join(root, 'local', 'personal-data.json');
         if (req.method === 'GET') return send(200, { ok: true, config: readPersonalDataConfig(file) });
@@ -1046,7 +1107,7 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
         const body = await readJson(req);
         if (!body || body.confirm !== true) return send(400, { error: '请先确认删除范围' });
         if (body.id != null) {
-          if (typeof body.id !== 'string' || !REPLAY_ID.test(body.id) || [path.resolve(settingsFile), path.resolve(announcementDrafts.file), path.resolve(announcementPersistenceFile)].includes(path.resolve(resultsDir, body.id))) return send(400, { error: '记录名称无效' });
+          if (typeof body.id !== 'string' || !REPLAY_ID.test(body.id) || privateFiles.includes(path.resolve(resultsDir, body.id))) return send(400, { error: '记录名称无效' });
           const deleted = deleteRecordFiles(resultsDir, replaysDir, body.id);
           for (const room of lobby.rooms.values()) if (room.adminLastMatch?.id === body.id) room.adminLastMatch = null;
           return send(200, { ok: true, deleted, ...storageView() });
@@ -1078,7 +1139,7 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
         if (body.confirm !== true) return send(400, { error: '请确认结束全部对局并操作服务' });
         if (body.confirmActive === false && serviceView().activeMatches) return send(409, { error: '当前有活动对局，请确认后再停止。' });
         if (!service || (body.action === 'shutdown' && service.shutdownReason)) return send(409, { error: service?.shutdownReason || '当前启动方式不支持服务控制' });
-        if (serviceAction || ['checking', 'downloading', 'verifying', 'scheduled', 'validating', 'starting', 'rolling-back'].includes(updater.status().state)) return send(409, { error: '服务操作或更新进行中，请稍后重试' });
+        if (accessChanging || serviceAction || ['checking', 'downloading', 'verifying', 'scheduled', 'validating', 'starting', 'rolling-back'].includes(updater.status().state)) return send(409, { error: '访问设置、服务操作或更新进行中，请稍后重试' });
         serviceAction = body.action;
         try {
           const prepared = await service.prepare(body.action);
@@ -1110,7 +1171,7 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
       if (req.method === 'GET' && url.pathname === '/api/update') return send(200, updateStatus());
       if (req.method === 'POST' && url.pathname === '/api/update') {
         const body = await readJson(req);
-        if (serviceAction) return send(409, { error: '正在操作服务，请稍后重试' });
+        if (accessChanging || serviceAction) return send(409, { error: '正在修改访问设置或操作服务，请稍后重试' });
         if (!body || typeof body !== 'object' || Array.isArray(body)) return send(400, { error: '请求格式错误' });
         if (body.action === 'automatic') { const r = idleUpdater.configure(body.enabled); return send(200, { ...updateStatus(), ...(r.error ? { error: r.error } : { ok: true }) }); }
         if (body.action === 'check') return send(200, { ...(await updater.check()), automatic: idleUpdater.status() });
@@ -1199,6 +1260,7 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
         return send(200, r);
       }
       if (req.method === 'GET' && url.pathname === '/api/result') {
+        if (privateFiles.includes(path.resolve(resultsDir, url.searchParams.get('id') || ''))) return send(404, { error: '记录不存在' });
         const rec = readRecord(resultsDir, url.searchParams.get('id'));
         return rec ? send(200, { ...rec, ruleStatus: resultRules(rec) }) : send(404, { error: '记录不存在' });
       }
@@ -1215,11 +1277,41 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
       log.error('[admin] request failed', e);
       return send(500, { error: '控制台内部错误' });
     }
-  });
-  try { await new Promise((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(port, host, () => { server.off('error', reject); resolve(); });
-  }); } catch (e) {
+  };
+  let boundRemote = access.remote;
+  async function listen(remote) {
+    const group = [];
+    try {
+      // Explicit IPv4 and IPv6-only listeners cover both families on Windows and Unix.
+      for (const bindHost of remote ? ['0.0.0.0', '::'] : [host]) {
+        const next = http.createServer(handler);
+        listeners.add(next);
+        try {
+          await new Promise((resolve, reject) => {
+            next.once('error', reject);
+            next.listen({ port: actual || port, host: bindHost, exclusive: true, ipv6Only: bindHost === '::' }, () => { next.off('error', reject); resolve(); });
+          });
+        } catch (error) {
+          listeners.delete(next);
+          if (bindHost === '::' && ['EAFNOSUPPORT', 'EADDRNOTAVAIL'].includes(error.code)) continue;
+          throw error;
+        }
+        group.push(next); actual = next.address().port;
+      }
+      activeListeners = group; server = group[0]; boundRemote = remote;
+    } catch (error) { for (const listener of group) retire(listener); throw error; }
+  }
+  function retire(listener) {
+    listener.close(() => listeners.delete(listener));
+    listener.closeIdleConnections?.();
+  }
+  async function rebind(remote) {
+    const previous = boundRemote;
+    for (const listener of activeListeners) retire(listener); // releases ports without waiting on this response
+    try { await listen(remote); }
+    catch (error) { await listen(previous); throw error; }
+  }
+  try { await listen(access.remote); } catch (e) {
     clearInterval(idleTimer); clearInterval(diagnosticTimer); auditClosed = true; audit.close(); resources.close();
     if (hadStart) lobby.startMatch = originalStart; else delete lobby.startMatch;
     setReplayConfig(oldReplayConfig);
@@ -1248,10 +1340,10 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
     }
     return onMatchEnd.call(this, room, ctx, summary);
   };
-  const actual = server.address().port;
   return {
-    url: `http://${host}:${actual}`, port: actual, token, resultsDir, replaysDir,
+    url: `http://127.0.0.1:${actual}`, port: actual, token, resultsDir, replaysDir,
     close: () => new Promise((r) => {
+      closing = true; access.close();
       clearInterval(idleTimer);
       clearInterval(diagnosticTimer); auditClosed = true; audit.close();
       resources.close();
@@ -1260,8 +1352,9 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
       serviceCancel?.();
       if (hadOwn) lobby.onMatchEnd = onMatchEnd; else delete lobby.onMatchEnd;
       setReplayConfig(oldReplayConfig);
-      server.close(() => r());
-      server.closeIdleConnections?.();
+      Promise.all([...listeners].map((listener) => new Promise((done) => {
+        listener.close(() => done()); listener.closeIdleConnections?.();
+      }))).then(() => r());
     }),
   };
 }

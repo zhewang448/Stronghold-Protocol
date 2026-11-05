@@ -177,7 +177,7 @@ export async function runMain(start) {
   }
   printBanner(srv);
   try { resumeLauncherUpdate(ROOT); } catch (error) { console.warn('[launcher-update] ' + error.message); }
-  // the host's local console (server/admin.js): 127.0.0.1 only, never part of what the LAN / tunnel can reach
+  // The independent host console defaults to loopback; its own confirmed access settings can enable remote login.
   let admin = null;
   let removeInstance = () => {};
   let stopping = false;
@@ -211,7 +211,7 @@ export async function runMain(start) {
           },
         },
         updateOptions: { port: srv.port }, onUpdateReady: () => stop('UPDATE') });
-      console.log(`  Console: ${admin.url}  (本机控制台)\n`);
+      console.log(`  Console: ${admin.url}  (主机控制台，访问范围由控制台设置管理)\n`);
       removeInstance = recordInstance(ROOT, { port: srv.port, adminPort: admin.port, token: admin.token });
     } catch (e) {
       console.warn(`  Console: 未启动（${e.code || e.message}）\n`);

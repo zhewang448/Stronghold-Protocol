@@ -26,7 +26,7 @@ test('service buttons: desktop/mobile, cancellation, failure recovery, restart r
     } };
   try {
     admin = await startAdmin(options);
-    browser = await (await import('puppeteer-core')).default.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox', '--no-first-run'] });
+    browser = await (await import('puppeteer-core')).default.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox', '--no-first-run', ...(CHROME.toLowerCase().includes('msedge') ? ['--edge-skip-compat-layer-relaunch'] : [])] });
     const page = await browser.newPage(), errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto(admin.url, { waitUntil: 'domcontentloaded' });
@@ -49,7 +49,7 @@ test('service buttons: desktop/mobile, cancellation, failure recovery, restart r
     await page.waitForFunction(() => document.querySelector('#service-status').textContent.includes('测试准备失败'));
     await page.waitForSelector('[data-service="restart"]:not([disabled])');
     fail = false;
-    const token = admin.token;
+    const token = await page.$eval('script:last-of-type', (script) => script.textContent.match(/const TOKEN = '([^']+)'/)[1]);
     await page.click('[data-tab="server"]');
     page.once('dialog', (dialog) => dialog.accept());
     await page.click('[data-service="restart"]');

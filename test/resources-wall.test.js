@@ -66,7 +66,7 @@ test('without a console no resource monitor is attached; local console meters HT
     // A snapshot samples immediately until the one-second timer first fires.
     const data = await (await fetch(admin.url + '/api/resources', { headers })).json();
     assert.ok(data.current.assets > 0);
-    assert.equal((await fetch(admin.url + '/wall')).status, 404);
+    assert.equal((await fetch(admin.url + '/wall', { redirect: 'manual' })).status, 302);
     await admin.close(); admin = null;
     assert.equal(srv.network.monitor, undefined);
   } finally { await admin?.close(); await srv.close(); fs.rmSync(dir, { recursive: true, force: true }); }

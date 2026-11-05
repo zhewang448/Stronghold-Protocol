@@ -12,7 +12,7 @@ test('console overview, drawers, tabs, paging and notice presets', { skip: proce
   const room = { code:'TEST',mode:'coop',difficulty:'NORMAL',seats:[],spectators:[],match:h.m };
   for (let i=0;i<170;i++) fs.writeFileSync(path.join(dir,'20261016-TEST-'+i+'.json'), JSON.stringify({ savedAt:Date.now()+i,room:i===169?'FIND':'TEST',mode:'coop',difficulty:'NORMAL',history:[],result:{victory:false,roundsPassed:1,durationMs:1000,players:[{playerId:'p_0',name:'Doctor '+i}]}}));
   const admin = await startAdmin({ lobby:{rooms:new Map([['TEST',room]]),safeData:()=>h.m.data,onMatchEnd(){}},port:0,resultsDir:dir,settingsFile:path.join(dir,'settings.json'),studioUrl:'http://127.0.0.1:3000/studio/#key=fixture',updateOptions:{fetchImpl:async()=>new Response('[]')},log:{info(){},error(){}} });
-  const browser = await(await import('puppeteer-core')).default.launch({executablePath:CHROME,headless:true,args:['--no-sandbox']});
+  const browser = await(await import('puppeteer-core')).default.launch({executablePath:CHROME,headless:true,args:['--no-sandbox',...(CHROME.toLowerCase().includes('msedge')?['--edge-skip-compat-layer-relaunch']:[])]});
   t.after(async()=>{await browser.close();await admin.close();h.m.dispose();fs.rmSync(dir,{recursive:true,force:true});});
   const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(admin.url,{waitUntil:'domcontentloaded'});await page.waitForSelector('[data-open-room]');
@@ -40,10 +40,11 @@ test('console overview, drawers, tabs, paging and notice presets', { skip: proce
   const issueLink = await page.$eval('#issue-feedback a', e => ({ href: e.href, target: e.target, rel: e.rel }));
   assert.deepEqual(issueLink, { href: 'https://github.com/zhewang448/Stronghold-Protocol/issues', target: '_blank', rel: 'noopener noreferrer' });
   assert.match(await page.$eval('#issue-feedback', e => e.textContent), /欢迎反馈使用中遇到的问题.*功能拓展建议/);
-  const redirect = await fetch(admin.url + '/studio', { redirect: 'manual', headers: { Cookie: 'sp_admin=' + admin.token } });
+  const consolePage = await fetch(admin.url);
+  const redirect = await fetch(admin.url + '/studio', { redirect: 'manual', headers: { Cookie: consolePage.headers.get('set-cookie').split(';')[0] } });
   assert.equal(redirect.status, 302);
   assert.equal(redirect.headers.get('location'), 'http://127.0.0.1:3000/studio/#key=fixture');
-  assert.equal((await fetch(admin.url + '/studio', { redirect: 'manual' })).status, 404);
+  assert.equal((await fetch(admin.url + '/studio', { redirect: 'manual' })).status, 302);
   await page.click('[data-tab="server"]');assert.equal(await page.$eval('#site-notice-duration',e=>e.value),'3600000');
   await page.select('#site-notice-duration','untilRemoved');
   for(const [width,height] of [[1440,900],[720,700],[390,844]]){
