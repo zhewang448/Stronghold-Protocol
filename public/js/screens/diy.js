@@ -19,7 +19,7 @@ import { OperatorImage, Img, BondGlyph } from '../ui/gameComponents.js';
 import { profIconUrl, subProfIconUrl, bondIconUrl, skillRecordIconUrl, moduleTypeIconUrl } from '../ui/assetUrls.js';
 import { data } from '../data.js';
 import { MODULE_NONE, PROF_NAME, skillLabel, moduleBadge, quickSkillTags, opsOf, chessOptions } from '../ui/loadoutModel.js';
-import { diySlotList, pickChoices, pickOptions, slotRecord, defaultPick } from '../ui/diyModel.js';
+import { diyPositions, diySlotList, pickChoices, pickOptions, slotRecord, defaultPick } from '../ui/diyModel.js';
 import { OperatorVoice } from '../ui/operatorVoice.js';
 // 皮肤 (docs/SKINS.md): the same self-contained section the 干员调配 detail draws, keyed by the operator being picked
 
@@ -283,7 +283,7 @@ export function DiyPickerView({ m, slot, picks, kitted, onDone, onClose, filter,
   const D = diyData();
   const cur = picks[slot.slotId] || null;
   const options = pickOptions(slot.slotId, picks, D, kitted);
-  const tiers = new Map(diySlotList(D).map((s) => [s.slotId, s.tier]));
+  const tiers = new Map(diyPositions(D).map((s) => [s.slotId, s.tier]));
   const q = query.trim().toLowerCase();
   const list = options.filter((o) => (filter === 'all' || (filter === 'proto') === o.proto)
     && (!prof || o.unit?.profession === prof)
@@ -424,16 +424,17 @@ export function DiyPanel(props) {
 
 /** The tab's view (no hooks: the tests draw it): `picking` = the slot being filled, or null. */
 export function DiyPanelView({ m, picks, legal, kitted, onSet, picking, onPicking: setPicking, ops = {}, onOps = null }) {
-  const slots = diySlotList(diyData());
+  const slots = diyPositions(diyData());
   const slot = picking ? slots.find((s) => s.slotId === picking) : null;
   const tiers = [...new Set(slots.map((s) => s.tier))];
   return html`<main class="diy" data-testid="diy">
     <div class="own__bar">
-      <p class="own__lead">${t('5阶与6阶各有两个自选名额：选择持有的 6★ 干员（任选技能与模组）或原型干员（技能锁定）。自选干员只出现在你自己的商店里，调度中心达到该阶等级后才会刷新，价格与同阶干员相同；盟约按干员实际所属阵营分配，没有特质。')}</p>
+      <p class="own__lead">${t('5阶与6阶各配置最多四名候选，开局各选两名上场。原有技能、模组、持有名单及个人商店规则继续生效。')}</p>
     </div>
     <div class="diy__body">
       ${tiers.map((tier) => html`<section key=${tier} class="own-tier diy-tier" data-tier=${tier} aria-label=${t('{tier}阶', { tier })}>
-        <h3 class="own-tier__head"><${TierChip} tier=${tier} size="sm" /><span class="num">${ROMAN[tier]}</span><span>${t('阶')}</span></h3>
+        <h3 class="own-tier__head"><${TierChip} tier=${tier} size="sm" /><span class="num">${ROMAN[tier]}</span><span>${t('阶')}</span>
+          <span>${t('{tier}阶 已配置候选 {n}/4', { tier, n: slots.filter(s => s.tier === tier && legal[s.slotId]).length })}</span></h3>
         <div class="diy-grid">
           ${slots.filter((s) => s.tier === tier).map((s) => html`<${SlotCard} key=${s.slotId} m=${m} slot=${s} pick=${picks[s.slotId] || null}
             illegal=${!!picks[s.slotId] && !legal[s.slotId]} onOpen=${setPicking} onClear=${(id) => onSet(id, null)} ops=${ops} onOps=${onOps} />`)}

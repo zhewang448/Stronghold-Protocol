@@ -55,64 +55,64 @@
 | char_4080_lin@summer#19 · 夏卉 FA137 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2304×2304 | 3 动作通过；avatar、portrait | Unity 附加效果 20 项未重建 |
 | char_4121_zuole@nian#11 · 少年游 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；avatar、portrait | Unity 附加效果 8 项未重建 |
 | char_450_necras@summer#20 · 夏卉 FA161 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；avatar、portrait | Unity 附加效果 9 项未重建 |
-| char_113_cqbw#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2048×2048 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 3 项未重建 |
-| char_391_rosmon#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2048×2048 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 13 项未重建 |
-| char_1035_wisdel#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 2 项未重建 |
-| char_1013_chen2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2048×2048 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 3 项未重建 |
-| char_249_mlyss#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 3 项未重建 |
-| char_1045_svash2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 9 项未重建 |
-| char_2015_dusk#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2048×2048 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 3 项未重建 |
-| char_1038_whitw2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 4 项未重建 |
-| char_1012_skadi2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 1 项未重建 |
-| char_2023_ling#2 · 精英二 | 是 | 客户端 / 3.8.99 / 2 页 / straight | 2048×2048 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 7 项未重建 |
-| char_245_cello#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2304×2304 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 4 项未重建 |
-| char_1028_texas2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2048×2048 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 2 项未重建 |
-| char_1041_angel2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 5 项未重建 |
-| char_1023_ghost2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2216×2216 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 7 项未重建 |
-| char_2027_wang#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2544×2544 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 6 项未重建 |
-| char_1015_aglna2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2068×2068 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 19 项未重建 |
-| char_1016_agoat2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2536×2536 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 10 项未重建 |
-| char_1052_kalts2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 12 项未重建 |
-| char_2025_shu#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2048×2048 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 4 项未重建 |
-| char_2014_nian#2 · 精英二 | 是 | 客户端 / 3.8.99 / 2 页 / straight | 2048×2048 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 5 项未重建 |
-| char_2026_yu#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 11 项未重建 |
-| char_1044_hsgma2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 15 项未重建 |
-| char_2024_chyue#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2500×2500 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 7 项未重建 |
-| char_4058_pepe#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2176×2176 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 3 项未重建 |
-| char_1026_gvial2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2520×2520 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 11 项未重建 |
-| char_1014_nearl2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2460×2460 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 2 项未重建 |
-| char_4247_oxi#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 3300×3300 | 3 动作通过；完整预览 | 小图无验证裁切，保持静态；Unity 附加效果 16 项未重建 |
+| char_113_cqbw#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2048×2048 | 3 动作通过；portrait、avatar | Unity 附加效果 3 项未重建 |
+| char_391_rosmon#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2048×2048 | 3 动作通过；portrait、avatar | Unity 附加效果 13 项未重建 |
+| char_1035_wisdel#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；portrait、avatar | Unity 附加效果 2 项未重建 |
+| char_1013_chen2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2048×2048 | 3 动作通过；portrait、avatar | Unity 附加效果 3 项未重建 |
+| char_249_mlyss#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；portrait、avatar | Unity 附加效果 3 项未重建 |
+| char_1045_svash2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；portrait、avatar | Unity 附加效果 9 项未重建 |
+| char_2015_dusk#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2048×2048 | 3 动作通过；portrait、avatar | Unity 附加效果 3 项未重建 |
+| char_1038_whitw2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；portrait、avatar | Unity 附加效果 4 项未重建 |
+| char_1012_skadi2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；portrait、avatar | Unity 附加效果 1 项未重建 |
+| char_2023_ling#2 · 精英二 | 是 | 客户端 / 3.8.99 / 2 页 / straight | 2048×2048 | 3 动作通过；portrait、avatar | Unity 附加效果 7 项未重建 |
+| char_245_cello#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2304×2304 | 3 动作通过；portrait、avatar | Unity 附加效果 4 项未重建 |
+| char_1028_texas2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2048×2048 | 3 动作通过；portrait、avatar | Unity 附加效果 2 项未重建 |
+| char_1041_angel2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；portrait、avatar | Unity 附加效果 5 项未重建 |
+| char_1023_ghost2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2216×2216 | 3 动作通过；portrait、avatar | Unity 附加效果 7 项未重建 |
+| char_2027_wang#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2544×2544 | 3 动作通过；portrait、avatar | Unity 附加效果 6 项未重建 |
+| char_1015_aglna2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2068×2068 | 3 动作通过；portrait、avatar | Unity 附加效果 19 项未重建 |
+| char_1016_agoat2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2536×2536 | 3 动作通过；portrait、avatar | Unity 附加效果 10 项未重建 |
+| char_1052_kalts2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；portrait、avatar | Unity 附加效果 12 项未重建 |
+| char_2025_shu#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2048×2048 | 3 动作通过；portrait、avatar | Unity 附加效果 4 项未重建 |
+| char_2014_nian#2 · 精英二 | 是 | 客户端 / 3.8.99 / 2 页 / straight | 2048×2048 | 3 动作通过；portrait、avatar | Unity 附加效果 5 项未重建 |
+| char_2026_yu#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；portrait、avatar | Unity 附加效果 11 项未重建 |
+| char_1044_hsgma2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；portrait、avatar | Unity 附加效果 15 项未重建 |
+| char_2024_chyue#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2500×2500 | 3 动作通过；portrait、avatar | Unity 附加效果 7 项未重建 |
+| char_4058_pepe#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2176×2176 | 3 动作通过；portrait、avatar | Unity 附加效果 3 项未重建 |
+| char_1026_gvial2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2520×2520 | 3 动作通过；portrait、avatar | Unity 附加效果 11 项未重建 |
+| char_1014_nearl2#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2460×2460 | 3 动作通过；portrait、avatar | Unity 附加效果 2 项未重建 |
+| char_4247_oxi#2 · 精英二 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 3300×3300 | 3 动作通过；portrait、avatar | Unity 附加效果 16 项未重建 |
+| char_250_phatom@sale#4 · 焦点 | 是 | 客户端 / 3.8.99 / 2 页 / straight | 2048×2048 | 3 动作通过；portrait、avatar | Unity 附加效果 4 项未重建 |
+| char_1037_amiya3@sale#13 · 寰宇独奏 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2344×2344 | 3 动作通过；portrait、avatar | Unity 附加效果 10 项未重建 |
+| char_124_kroos@sale#14 · 星月漂流记 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2216×2216 | 1 动作通过；portrait、avatar | Unity 附加效果 1 项未重建 |
+| char_1035_wisdel@sale#14 · 超新星 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 4 动作通过；portrait、avatar | Unity 附加效果 37 项未重建 |
+| char_003_kalts@sale#14 · 时遗 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 1 动作通过；portrait、avatar | Unity 附加效果 2 项未重建 |
+| char_1001_amiya2@sale#16 · 于万千宇宙之中 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 2 动作通过；portrait、avatar | 核心立绘无缺项 |
+| char_113_cqbw@epoque#7 · 恍惚 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2048×2048 | 4 动作通过；portrait、avatar | Unity 附加效果 8 项未重建 |
+| char_2014_nian@nian#4 · 乐逍遥 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2048×2048 | 3 动作通过；portrait、avatar | Unity 附加效果 12 项未重建 |
+| char_2023_ling@nian#9 · 濯缨 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2048×2048 | 3 动作通过；portrait、avatar | Unity 附加效果 8 项未重建 |
+| char_2024_chyue@nian#10 · 何处栖 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2352×2352 | 3 动作通过；portrait、avatar | Unity 附加效果 21 项未重建 |
+| char_2025_shu@nian#11 · 春日宴 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 1792×1792 | 3 动作通过；portrait、avatar | Unity 附加效果 13 项未重建 |
+| char_2023_ling@nian#12 · 方遒卷 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 4 动作通过；portrait、avatar | Unity 附加效果 15 项未重建 |
+| char_1044_hsgma2@whirlwind#11 · 一闪极意 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2980×2980 | 3 动作通过；portrait、avatar | Unity 附加效果 16 项未重建 |
+| char_1013_chen2@summer#20 · 悠然假日 HD79 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2304×2304 | 3 动作通过；portrait、avatar | Unity 附加效果 9 项未重建 |
+| char_322_lmlee@witch#3 · 手到牌来 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2048×2048 | 4 动作通过；portrait、avatar | Unity 附加效果 28 项未重建 |
+| char_4055_bgsnow@wild#7 · 字句中的雪原 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2048×2048 | 3 动作通过；portrait、avatar | Unity 附加效果 4 项未重建 |
+| char_003_kalts@boc#6 · 残余 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 4 动作通过；portrait、avatar | Unity 附加效果 24 项未重建 |
+| char_1013_chen2@boc#6 · 万重山 | 是 | 客户端 / 3.8.99 / 2 页 / straight | 2048×2048 | 3 动作通过；portrait、avatar | Unity 附加效果 2 项未重建 |
+| char_4179_monstr@boc#11 · 锋锐 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；portrait、avatar | Unity 附加效果 9 项未重建 |
+| char_4133_logos@ambienceSynesthesia#6 · 辉煌的静谧 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2380×2380 | 3 动作通过；portrait、avatar | Unity 附加效果 10 项未重建 |
+| char_2023_ling@ncg#1 · 崖高梦远 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；portrait、avatar | Unity 附加效果 5 项未重建 |
+| char_4132_ascln@iteration#4 · 趋光之暗 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2560×2560 | 3 动作通过；portrait、avatar | Unity 附加效果 16 项未重建 |
+| char_4202_haruka@iteration#6 · 常世之幻 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2364×2364 | 3 动作通过；portrait、avatar | Unity 附加效果 24 项未重建 |
+| char_179_cgbird@sightseer#1 · 流辉 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2176×2176 | 3 动作通过；portrait、avatar | Unity 附加效果 6 项未重建 |
+| char_1042_phatm2@sightseer#4 · 真我自扼 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2548×2548 | 3 动作通过；portrait、avatar | Unity 附加效果 12 项未重建 |
+| char_2014_nian@cfa#1 · 霹雳导演 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 2300×2300 | 3 动作通过；portrait、avatar | Unity 附加效果 10 项未重建 |
+| char_2024_chyue@cfa#1 · 全能演员 | 是 | 客户端 / 3.8.99 / 1 页 / straight | 1536×1536 | 4 动作通过；portrait、avatar | Unity 附加效果 6 项未重建 |
 
 ## 官方有动态、本库皮肤目录尚未收录
 
 | ID | 外观 | 官方动态资源 |
 | --- | --- | --- |
-| char_250_phatom@sale#4 | 焦点 | dyn_illust_char_250_phatom_sale#4 |
-| char_1037_amiya3@sale#13 | 寰宇独奏 | dyn_illust_char_1037_amiya3_sale#13 |
-| char_124_kroos@sale#14 | 星月漂流记 | dyn_illust_char_124_kroos_sale#14 |
-| char_1035_wisdel@sale#14 | 超新星 | dyn_illust_char_1035_wisdel_sale#14 |
-| char_003_kalts@sale#14 | 时遗 | dyn_illust_char_003_kalts_sale#14 |
-| char_1001_amiya2@sale#16 | 于万千宇宙之中 | dyn_illust_char_1001_amiya2_sale#16 |
-| char_113_cqbw@epoque#7 | 恍惚 | dyn_illust_char_113_cqbw_epoque#7 |
-| char_2014_nian@nian#4 | 乐逍遥 | dyn_illust_char_2014_nian_nian#4 |
-| char_2023_ling@nian#9 | 濯缨 | dyn_illust_char_2023_ling_nian#9 |
-| char_2024_chyue@nian#10 | 何处栖 | dyn_illust_char_2024_chyue_nian#10 |
-| char_2025_shu@nian#11 | 春日宴 | dyn_illust_char_2025_shu_nian#11 |
-| char_2023_ling@nian#12 | 方遒卷 | dyn_illust_char_2023_ling_nian#12 |
-| char_1044_hsgma2@whirlwind#11 | 一闪极意 | dyn_illust_char_1044_hsgma2_whirlwind#11 |
-| char_1013_chen2@summer#20 | 悠然假日 HD79 | dyn_illust_char_1013_chen2_summer#20 |
-| char_322_lmlee@witch#3 | 手到牌来 | dyn_illust_char_322_lmlee_witch#3 |
-| char_4055_bgsnow@wild#7 | 字句中的雪原 | dyn_illust_char_4055_bgsnow_wild#7 |
-| char_003_kalts@boc#6 | 残余 | dyn_illust_char_003_kalts_boc#6 |
-| char_1013_chen2@boc#6 | 万重山 | dyn_illust_char_1013_chen2_boc#6 |
-| char_4179_monstr@boc#11 | 锋锐 | dyn_illust_char_4179_monstr_boc#11 |
-| char_4133_logos@ambienceSynesthesia#6 | 辉煌的静谧 | dyn_illust_char_4133_logos_ambienceSynesthesia#6 |
-| char_2023_ling@ncg#1 | 崖高梦远 | dyn_illust_char_2023_ling_ncg#1 |
-| char_4132_ascln@iteration#4 | 趋光之暗 | dyn_illust_char_4132_ascln_iteration#4 |
-| char_4202_haruka@iteration#6 | 常世之幻 | dyn_illust_char_4202_haruka_iteration#6 |
-| char_179_cgbird@sightseer#1 | 流辉 | dyn_illust_char_179_cgbird_sightseer#1 |
-| char_1042_phatm2@sightseer#4 | 真我自扼 | dyn_illust_char_1042_phatm2_sightseer#4 |
-| char_2014_nian@cfa#1 | 霹雳导演 | dyn_illust_char_2014_nian_cfa#1 |
-| char_2024_chyue@cfa#1 | 全能演员 | dyn_illust_char_2024_chyue_cfa#1 |
 
 机器证据：`.cache/dynamic-illustrations-new-operators/followup/support-matrix.json`；运行 `node tools/audit-dynamic-illustrations.mjs` 重新核对当前文件与显示证据。

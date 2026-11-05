@@ -70,10 +70,16 @@ export function CoverIllustration({ entry, framing = {}, playing = true, explici
       query?.removeEventListener('change', measure);
       query = globalThis.matchMedia?.(`(resolution: ${dpr}dppx)`); query?.addEventListener('change', measure);
     };
-    measure(); const ro = globalThis.ResizeObserver ? new ResizeObserver(measure) : null; ro?.observe(el);
+    // The portrait's new crop can resize the overlay itself. Apply observer writes on the next frame.
+    let measureFrame = null;
+    const scheduleMeasure = () => {
+      if (measureFrame !== null) return;
+      measureFrame = requestAnimationFrame(() => { measureFrame = null; measure(); });
+    };
+    measure(); const ro = globalThis.ResizeObserver ? new ResizeObserver(scheduleMeasure) : null; ro?.observe(el);
     if (el.previousElementSibling?.tagName === 'IMG') ro?.observe(el.previousElementSibling);
     globalThis.addEventListener?.('resize', measure);
-    return () => { ro?.disconnect(); query?.removeEventListener('change', measure); globalThis.removeEventListener?.('resize', measure); };
+    return () => { ro?.disconnect(); if (measureFrame !== null) cancelAnimationFrame(measureFrame); query?.removeEventListener('change', measure); globalThis.removeEventListener?.('resize', measure); };
   }, [stage, resolutionScale]);
   useEffect(() => {
     if (!entry || !visible || !enabled || !canvas.current) { setState('idle'); return; }
@@ -111,8 +117,8 @@ export function CoverIllustration({ entry, framing = {}, playing = true, explici
   </span>`;
 }
 
-export function LiveArt({ m, charId, skin = null, kind = 'portrait', elite = true, posX = null, posY = null, frame = null }) {
-  const entry = dynamicOf(m, charId, skin, kind, elite), crop = cropFraming(entry, kind, posX ?? 50, posY ?? 50);
+export function LiveArt({ m, charId, skin = null, kind = 'portrait', elite = true, posX = null, posY = null, frame = null, staticSrc = null }) {
+  const entry = dynamicOf(m, charId, skin, kind, elite, staticSrc), crop = cropFraming(entry, kind, posX ?? 50, posY ?? 50);
   // Only a verified official crop may replace the small static picture.
   return crop ? html`<${CoverIllustration} entry=${entry} framing=${{ ...crop, autoPosition: posX == null && posY == null, ...frame }} />` : null;
 }

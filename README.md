@@ -32,7 +32,7 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 | [原项目 · sganggs/Stronghold-Protocol](https://github.com/sganggs/Stronghold-Protocol) | 本库的玩法、确定性模拟、官方数据适配与插件体系基础；感谢 **sganggs 及上游贡献者**的原始实现与持续维护 |
 | [多人扩容方案 · LongQianChen/Stronghold-Protocol](https://github.com/LongQianChen/Stronghold-Protocol/tree/feat/IncreasePlayerCapacity) | 本库采用解除四人限制、固定分组卡池与并行轮选的核心方案，感谢 **LongQianChen** 的多人扩容实现 |
 | [多人扩容 0.3.1 适配 · SiderLock/Stronghold-Protocol](https://github.com/SiderLock/Stronghold-Protocol) | 本库迁移采用其 0.3.1 适配，感谢 **SiderLock** 的整合工作；具体提交及本库兼容调整见 [扩展联机说明](docs/EXPANDED-COOP.md#来源) |
-| [Stardust-minus/Stronghold-Protocol](https://github.com/Stardust-minus/Stronghold-Protocol) | 独立卡池、AI 开局策略、持有预设、扩展观战和队友救援的参考，感谢 **Stardust-minus**；本库按现有分组、版本与恢复机制适配 |
+| [Stardust-minus/Stronghold-Protocol](https://github.com/Stardust-minus/Stronghold-Protocol) | 独立卡池、AI 开局策略、持有预设、扩展观战、队友救援、动态立绘与新增自选干员，以及损伤环/脚下血条/过载、商店人像、小地图、名片底图、预计叠层和四候选选二的参考与适配来源；感谢 **Stardust-minus 及该仓库贡献者**的 GPL-3.0-or-later 开源实现。本次 UI 固定参考 `7f39464`，范围、默认值和兼容见 [迁移说明](docs/STARDUST-UI-MIGRATION.md) |
 | [社区贡献 · DoraCat（@DuolaCCCCat）](https://github.com/DuolaCCCCat) | 感谢 **DoraCat（DuolaCCCCat）** 提出库存显示、皮肤特效、玩家头像与自定义立绘方案，提交相关 Issue、PR 及验收反馈；本库按现有房间、卡池与同步流程适配，具体来源见 [NOTICE.md](NOTICE.md) |
 | [原始社区 UI · isomerpoi/Stronghold-Protocol](https://github.com/isomerpoi/Stronghold-Protocol) | 本库大厅、同盟等待室、物资调配、对局 HUD 与结算界面的原始社区实现来源；感谢 **isomerpoi（雨千代chiyo）** 的界面设计与实现 |
 | [UI 后续适配参考 · xinhai-ai/Stronghold-Protocol](https://github.com/xinhai-ai/Stronghold-Protocol) | 本库交流布局、快捷键、资源展示、公告 Markdown 和手机界面的后续适配参考；感谢 **xinhai-ai 及参考站贡献者**的公开实现，移植范围见 [源码对照文档](docs/REFERENCE-UI-REVIEW.md) |
@@ -372,6 +372,7 @@ npm start
 | [扩展更新记录](docs/LOCAL-CHANGELOG.md) | 本库扩展、版本与验证记录 |
 | [CHANGELOG.md](CHANGELOG.md) | 上游基础版本更新记录 |
 | [扩展开发笔记](docs/LOCAL-DEV.md) | 控制台、回档、回放、联动干员等实现细节 |
+| [Stardust UI 迁移](docs/STARDUST-UI-MIGRATION.md) / [验收记录](docs/STARDUST-UI-ACCEPTANCE.md) | 损伤环、商店、小地图、等待室底图、预计叠层与四选二的默认值、来源和兼容 |
 | [部署说明](docs/DEPLOY.md) | 开服、后台运行、跨网联机、更新与本地素材 |
 | [社区插件索引](docs/COMMUNITY-PLUGINS.md) | 插件库、宿主关系与兼容边界 |
 | [皮肤说明](docs/SKINS.md) | 安装、外观同步、随机装备与预加载 |

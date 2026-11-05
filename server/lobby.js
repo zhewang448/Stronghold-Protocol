@@ -161,6 +161,7 @@
 //     code; a player never switches to spectating in place (ALREADY). Disconnect / grace / reconnect / expiry work as for
 //     a player seat (the seat is kept and given back on resume).
 
+import { namecardSource, validNamecard, normalizeNamecard, resolveNamecard } from '../shared/namecards.js';
 import { randomBytes, randomInt } from 'node:crypto';
 import { DEFAULT_VERSION } from '../shared/versions.js';
 import { aiTakeover, resetAiTakeover, reconcileAiTakeover } from './aiTakeover.js';
@@ -427,6 +428,7 @@ export class Room {
         ? { seat: s.seat, playerId: s.playerId, name: s.name, isBot: s.isBot, ready: s.ready, connected: s.connected && !s.left, bondPlan: s.bondPlan || null,
           ...(s.isBot && s.botBand ? { botBand: s.botBand } : {}),
           ...(!s.isBot && Object.hasOwn(s, 'card') ? { card: s.card || null, cardSkin: s.cardSkin || null } : {}),
+          ...(!s.isBot ? { namecard: s.namecard || resolveNamecard(null, s.bondPlan, null) } : {}),
           ...(!s.isBot && s.illust ? { illust: s.illust } : {}),
           ...(s.skins && Object.keys(s.skins).length ? { skins: s.skins } : {}),
           // a room with gameplay plugins (header "Gameplay plugins"): has this player's page loaded and checked its content?
@@ -798,6 +800,7 @@ export class Lobby {
       case 'room.rerollSetup': return this.rerollSetup(session, msg);
       case 'room.cancelReroll': return this.rerollSetup(session, msg, true);
       case 'room.loadout': return this.loadout(session, msg);
+      case 'room.namecard': return this.namecard(session, msg.selection);
       case 'room.card': return this.card(session, msg);
       case 'room.avatar': return this.avatar(session, msg);
       case 'room.bondPlan': return this.bondPlan(session, msg);
@@ -1809,6 +1812,7 @@ export class Lobby {
       // Catalogue metadata, never part of a room or match; omitted when no loaded plugin publishes a notice.
       if (this.plugins?.hasNotices?.()) info.content.notices = true;
     }
+    info.uiMigration = { diyCandidates: true, namecards: true };
     // Omitted when the switch is off, so a welcome from a normal server stays identical.
     if (this.testEnabled === true) info.testMode = true;
     // Default-on is omitted for compatibility with older servers and clients.
@@ -2202,8 +2206,24 @@ export class Lobby {
     const room = this.roomOf(session);
     const seat = room?.seatOf(session.playerId);
     session.bondPlan = bondId;
-    if (seat) seat.bondPlan = bondId;
-    if (room?.match && seat) return room.match.setBondPlan(session.playerId, bondId);
+    if (seat) { seat.bondPlan = bondId; seat.namecard = resolveNamecard(session.namecard, bondId, this.safeData().assets); }
+    if (room?.match && seat) {
+      const result = room.match.setBondPlan(session.playerId, bondId);
+      this.broadcastState(room);
+      return result;
+    }
+    if (room) this.broadcastState(room);
+    return OK;
+  }
+
+  namecard(session, selection) {
+    if (!validNamecard(selection)) return fail(ERR.BAD_MSG);
+    const room = this.roomOf(session);
+    const manifest = this.safeData().assets;
+    if (selection.mode === 'manual' && !namecardSource(manifest, selection.id)) return fail(ERR.BAD_MSG);
+    session.namecard = normalizeNamecard(selection);
+    const seat = room?.seatOf(session.playerId);
+    if (seat) seat.namecard = resolveNamecard(session.namecard, seat.bondPlan, manifest);
     if (room) this.broadcastState(room);
     return OK;
   }
@@ -2235,6 +2255,7 @@ export class Lobby {
       seat: idx, playerId: session.playerId, name: session.name, isBot: false, ready: false, connected: session.connected, left: false,
       loadout: session.loadout || null,
       ...cardFields,
+      namecard: resolveNamecard(session.namecard, session.bondPlan, this.safeData().assets),
       ...(this.illusts?.get(session.playerId)?.etag ? { illust: this.illusts.get(session.playerId).etag } : {}),
       bondPlan: session.bondPlan || null,
       ops: session.ops || null,

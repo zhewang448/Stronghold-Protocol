@@ -23,6 +23,14 @@ test('console login and access: desktop/mobile, local reset, remote password and
   await page.setViewport({ width: 1440, height: 900 });
   await page.goto(`${admin.url}/login`);
   await page.waitForSelector('#skip:not([hidden])');
+  assert.equal(await page.$eval('#access-mode', (element) => element.textContent), '本机访问');
+  assert.equal((await fetch(`${admin.url}/login-display.woff2`)).status, 200, 'login font loads before authentication');
+  assert.equal((await fetch(`${admin.url}/fonts/fonts.css`, { redirect: 'manual' })).status, 302, 'other font routes remain protected');
+  await page.evaluate(() => document.fonts.ready);
+  for (const [width, height] of [[320, 740], [768, 1024], [1440, 900]]) {
+    await page.setViewport({ width, height });
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `login fits ${width}px`);
+  }
   await page.screenshot({ path: path.join(output, 'login-desktop.png') });
   await page.setViewport({ width: 390, height: 844 });
   await page.click('#reset summary');
@@ -60,6 +68,7 @@ test('console login and access: desktop/mobile, local reset, remote password and
   await remote.setExtraHTTPHeaders({ 'X-Forwarded-For': '203.0.113.99' });
   await remote.goto(admin.url); assert.ok(remote.url().endsWith('/login'));
   await remote.waitForFunction(() => !document.querySelector('#password').disabled);
+  assert.equal(await remote.$eval('#access-mode', (element) => element.textContent), '非本机访问');
   assert.equal(await remote.$eval('#skip', (button) => button.hidden), true);
   assert.equal(await remote.$eval('#reset', (section) => section.hidden), true);
   await remote.type('#password', 'browser-test-password');

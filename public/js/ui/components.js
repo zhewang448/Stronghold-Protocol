@@ -847,7 +847,7 @@ export function AvatarFrame({ name = '', src, size = 'md', seat = 0, host, bot, 
         : imgOk ? html`<img src=${src} alt="" draggable=${false} onError=${() => setBadSrc(src)} />`
         : bot ? html`<${Icon} name="robot" class="avatar__bot" />`
         : html`<span class="avatar__glyph">${glyph}</span>`}
-      ${imgOk && !empty && !bot && charId ? html`<${LiveArt} m=${m} charId=${charId} skin=${skin} kind="avatar" posY=${50} />` : null}
+      ${imgOk && !empty && !bot && charId ? html`<${LiveArt} m=${m} charId=${charId} skin=${skin} kind="avatar" posY=${50} staticSrc=${src} />` : null}
     </div>
     ${host ? html`<span class="avatar__badge avatar__badge--host" title=${t('创建者')}><${Icon} name="crown" /></span>` : null}
     ${self ? html`<span class="avatar__badge avatar__badge--self" title=${t('你')}><${Icon} name="user" /></span>` : null}

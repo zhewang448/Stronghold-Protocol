@@ -77,11 +77,11 @@ describe('settings control hit areas and feedback', { skip: process.env.SP_E2E !
         const groups = await page.$$eval('.set-list .set-seg', es => es.filter(e => e.getClientRects().length && !e.closest('.set-lang')).map((e, i) => {
           e.dataset.controlGroup = String(i);
           const key = e.closest('.set-voice') ? 'voiceLang' : e.matches('.set-textsize') ? 'textSize'
-            : e.matches('.set-seg--fps') ? 'fpsLimit' : e.closest('[data-testid="official-fx"]') ? 'officialFx' : 'quality';
+            : e.matches('.set-seg--fps') ? 'fpsLimit' : e.matches('.set-cursor') ? 'cursorTheme' : e.closest('[data-testid="official-fx"]') ? 'officialFx' : 'quality';
           return { id: i, key, count: e.querySelectorAll('button').length };
         }));
         assert.ok(groups.some(g => g.key === 'voiceLang') && groups.some(g => g.key === 'quality'), 'settings option groups are present');
-        const options = { voiceLang: ['cn', 'jp', 'en', 'kr'], quality: ['low', 'medium', 'high'], officialFx: ['off', 'lite', 'full'], textSize: ['sm', 'md', 'lg', 'xl'], fpsLimit: [0, 30, 60, 120] };
+        const options = { voiceLang: ['cn', 'jp', 'en', 'kr'], quality: ['low', 'medium', 'high'], officialFx: ['off', 'lite', 'full'], textSize: ['sm', 'md', 'lg', 'xl'], fpsLimit: [0, 30, 60, 120], cursorTheme: ['system', 'arknights'] };
         let clicks = 0;
         for (const group of groups) {
           for (let n = 0; n < group.count; n++) {
@@ -151,10 +151,13 @@ describe('settings control hit areas and feedback', { skip: process.env.SP_E2E !
           await page.waitForSelector('.set-key.is-waiting', { hidden: true });
         }
         assert.ok(await page.$('.set-list'), 'canceling key capture keeps settings open');
-        const sliders = await page.$$eval('.set-list label.set-row .set-range', es => es.map((e, i) => { e.dataset.controlSlider = String(i); return i; }));
-        for (const i of sliders) {
-          step = `slider ${i}`;
-          const selector = `[data-control-slider="${i}"]`;
+        const sliders = await page.$$eval('.set-list label.set-row .set-range', es => es.map((e, i) => {
+          e.dataset.controlSlider = String(i);
+          return { id: i, setting: e.closest('[data-client-preference]')?.dataset.clientPreference.replace('settings.', ''), min: Number(e.min), max: Number(e.max) };
+        }));
+        for (const slider of sliders) {
+          step = `slider ${slider.setting}`;
+          const selector = `[data-control-slider="${slider.id}"]`;
           const r = await target(selector);
           if (touch) {
             const finger = await page.touchscreen.touchStart(r.x + r.w * .25, r.y + r.h / 2);
@@ -166,8 +169,9 @@ describe('settings control hit areas and feedback', { skip: process.env.SP_E2E !
             await page.mouse.move(r.x + r.w * .75, r.y + r.h / 2, { steps: 5 }); await page.mouse.up();
           }
           const v = await page.$eval(selector, e => Number(e.value));
-          assert.ok(v >= 65 && v <= 85, `slider ${i} follows the ${touch ? 'touch' : 'mouse'} drag: ${v}`);
-          assert.equal((await settings())[['bgm', 'voice', 'sfx'][i]], v / 100);
+          const fraction = (v - slider.min) / (slider.max - slider.min);
+          assert.ok(fraction >= .65 && fraction <= .85, `slider ${slider.setting} follows the ${touch ? 'touch' : 'mouse'} drag: ${v}`);
+          assert.equal((await settings())[slider.setting], slider.setting === 'cursorSize' ? v : v / 100);
         }
         const saved = await settings();
         step = 'reload';

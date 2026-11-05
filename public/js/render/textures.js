@@ -1417,6 +1417,12 @@ export function hudRings() {
   return _rings;
 }
 
+/** A ceil frame never implies that the gauge emptied before the simulation. */
+export function ringStep(frac, mode = 'round') {
+  const f = Math.max(0, Math.min(1, Number(frac) || 0));
+  return Math.min(RING_STEPS, f > 0 ? Math.max(1, mode === 'ceil' ? Math.ceil(f * RING_STEPS) : Math.round(f * RING_STEPS)) : 0);
+}
+
 /** Arc frame of a fraction 0..1 (rounded to the nearest step; a non-zero fraction never shows an empty ring). */
 export function ringArc(frac) {
   const r = hudRings();
@@ -1425,6 +1431,118 @@ export function ringArc(frac) {
   if (k === 0 && f > 0) k = 1;
   return r.arcs[k];
 }
+
+/** Local-art manifest group of the gauge sprites (tools/local-extract/extract.py job `ui/ep`). */
+export const EP_GROUP = 'ui/ep';
+/** The sprites the atlas reads (EP_GROUP names). */
+export const EP_SPRITES = Object.freeze({
+  back: 'slider_ep_back', color: 'sprite_ep_color', fill: 'slider_ep_fill',
+  icon: Object.freeze({ neural: 'sprite_ep_icon', erosion: 'sprite_ep_water_icon', burn: 'sprite_ep_fire_icon', apoptosis: 'sprite_ep_dark_icon', necrosis: 'sprite_ep_dark_icon' }),
+  backEnemy: 'slider_ep_back_enemy', colorEnemy: 'slider_ep_color_enemy', fillBackEnemy: 'slider_ep_fill_back_enemy', fillEnemy: 'slider_ep_fill_enemy',
+});
+/**
+ * The prefabs' geometry in UI units (see above): `cell` the back's size (an atlas cell), `ring` the fill's, `y` the
+ * centre below the unit's anchor, `hpY` / `hpW` the HP bar prefab's centre and width; × `scale` (ep_slider).
+ */
+export const EP_PREFAB = Object.freeze({
+  op: Object.freeze({ cell: 54, ring: 28, backAlpha: 0.784, scale: 1.2, y: 25.9, hpY: 54.5, hpW: 125 }),
+  enemy: Object.freeze({ cell: 51, ring: 12, backAlpha: 1, fillTint: 0xd5d5d5, scale: 1.2, y: 26.5, hpY: 55.3, hpW: 105 }),
+});
+const EPC = 64;   // atlas cell px (one cell = the back's size)
+let _official = null;
+
+/** The names of every sprite the atlas needs. */
+export function epSpriteNames() {
+  const S = EP_SPRITES;
+  return [...new Set([S.back, S.color, S.fill, ...Object.values(S.icon), S.backEnemy, S.colorEnemy, S.fillBackEnemy, S.fillEnemy])];
+}
+
+/** Draw `img` centred in a cell at (x, y), `units` = its size in prefab units of a cell `cellUnits` wide. */
+function drawCentred(c, img, x, y, cellUnits, w = img.width, h = img.height, alpha = 1) {
+  const k = EPC / cellUnits;
+  c.globalAlpha = alpha;
+  c.drawImage(img, x + (EPC - w * k) / 2, y + (EPC - h * k) / 2, w * k, h * k);
+  c.globalAlpha = 1;
+}
+
+/** `img` multiplied by a css colour (its alpha kept), as Unity tints an Image: a small canvas. */
+function tinted(img, color) {
+  const t = makeCanvas(img.width, img.height);
+  const c = t.getContext('2d');
+  c.drawImage(img, 0, 0);
+  c.globalCompositeOperation = 'multiply';
+  c.fillStyle = color; c.fillRect(0, 0, img.width, img.height);
+  c.globalCompositeOperation = 'destination-in';
+  c.drawImage(img, 0, 0);
+  return t;
+}
+
+/** The official ring atlas from loaded sprite images (`imgs[name]`): `{ op, enemy }` each `{ track, disc: {el}, arcs[] }`. */
+export function buildOfficialRings(imgs) {
+  const P = PIXI();
+  const S = EP_SPRITES;
+  const cols = 16, cells = 2 * (1 + RING_KEYS.length + RING_STEPS + 1);
+  const canvas = makeCanvas(cols * EPC, Math.ceil(cells / cols) * EPC);
+  const c = canvas.getContext('2d');
+  let n = 0;
+  const next = () => { const i = n++; return [(i % cols) * EPC, Math.floor(i / cols) * EPC]; };
+  const side = (enemy) => {
+    const g = enemy ? EP_PREFAB.enemy : EP_PREFAB.op;
+    const out = { track: next(), disc: {}, arcs: [] };
+    drawCentred(c, imgs[enemy ? S.backEnemy : S.back], ...out.track, g.cell, undefined, undefined, g.backAlpha);
+    for (const el of RING_KEYS) {
+      const at = out.disc[el] = next();
+      const col = imgs[enemy ? S.colorEnemy : S.color];
+      drawCentred(c, tinted(col, ELEMENT_RING[el].disc), ...at, g.cell, col.width, col.height);
+      if (enemy) drawCentred(c, imgs[S.fillBackEnemy], ...at, g.cell);
+      else drawCentred(c, imgs[S.icon[el]], ...at, g.cell);
+    }
+    const fill = imgs[enemy ? S.fillEnemy : S.fill];
+    for (let k = 0; k <= RING_STEPS; k++) {
+      const at = next();
+      out.arcs.push(at);
+      if (!k) continue;
+      c.save();
+      c.beginPath();
+      const cx = at[0] + EPC / 2, cy = at[1] + EPC / 2;
+      c.moveTo(cx, cy);
+      c.arc(cx, cy, EPC, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * k) / RING_STEPS);
+      c.closePath();
+      c.clip();
+      drawCentred(c, fill, ...at, g.cell);
+      c.restore();
+    }
+    return out;
+  };
+  const frames = { op: side(false), enemy: side(true) };
+  const base = P.BaseTexture.from(canvas, { mipmap: P.MIPMAP_MODES.ON });
+  const tex = ([x, y]) => new P.Texture(base, new P.Rectangle(x, y, EPC, EPC));
+  const pack = (f) => ({ track: tex(f.track), disc: Object.fromEntries(RING_KEYS.map((el) => [el, tex(f.disc[el])])), arcs: f.arcs.map(tex) });
+  return { official: true, size: EPC, canvas, base, op: pack(frames.op), enemy: pack(frames.enemy) };
+}
+
+/**
+ * The official ring atlas once its sprites are listed by the local-art manifest (`assets.localUrl(EP_GROUP, name)`) and
+ * loaded (`assets.image`), else null — the caller draws the procedural hudRings meanwhile. The first call with every
+ * sprite listed starts the one load; a sprite that fails leaves the procedural rings for the page's life.
+ * @param {any} assets store of public/js/assets.js (localUrl, image)
+ */
+export function officialRings(assets) {
+  if (_official) return _official.atlas || null;
+  if (!assets || typeof assets.localUrl !== 'function' || typeof assets.image !== 'function' || typeof document === 'undefined') return null;
+  const names = epSpriteNames();
+  const urls = names.map((n) => assets.localUrl(EP_GROUP, n));
+  if (urls.some((u) => typeof u !== 'string' || !u)) return null;   // not listed (yet): the manifest may still arrive
+  const state = _official = { atlas: null };
+  Promise.all(urls.map((u) => assets.image(u))).then((list) => {
+    if (list.some((img) => !img)) return;
+    try { state.atlas = buildOfficialRings(Object.fromEntries(names.map((n, i) => [n, list[i]]))); } catch { /* procedural */ }
+  }, () => {});
+  return null;
+}
+
+/** Tests: forget the official atlas (the next officialRings call looks again). */
+export function resetOfficialRings() { _official = null; }
 
 /** Redeploy-ring label style (the seconds left, "DP", "!"); `fill` is set per label. */
 export const DOWN_LABEL_STYLE = Object.freeze({ fontFamily: 'Bender, Oxanium, "Noto Sans SC", sans-serif', fontSize: 32, fontWeight: '700', fill: '#ffffff', stroke: '#0b0f0e', strokeThickness: 6 });

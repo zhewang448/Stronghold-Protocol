@@ -86,7 +86,7 @@ import { UF, ANIM } from '../../../shared/constants.js';
 import { SpineActor } from './spine.js';
 import { skillAttackMode } from './skillAttack.js';
 import { MANIFOLD, isManifold, manifoldCopyForm, manifoldAttackForm } from './manifold.js';
-import { diamondTexture, shadowTexture, fxAtlas, tierChip, statusTexture, itemTexture, hudRings, ringArc, downLabel, HUD_DISC, ELEMENT_RING } from './textures.js';
+import { diamondTexture, shadowTexture, fxAtlas, tierChip, statusTexture, itemTexture, hudRings, ringArc, ringStep, RING_STEPS, officialRings, EP_PREFAB, downLabel, HUD_DISC, ELEMENT_RING } from './textures.js';
 import { COLORS, TIER_COLORS, ENEMY_FRAME, UNIT, PROJ, statusIconKey, statusIconSuppressed } from './style.js';
 import { drawCrate, rowDepthKey, ROW_KEY, deviceBoxOf, DEVICE_BOX } from './tiles.js';
 import { startAtkInterval, nextAtkInterval, clampAtkInterval } from './attackRate.js';
@@ -259,6 +259,47 @@ export const ALIAS_TINT = Object.freeze({ enemy_1305_mhslim: 0xffc48a, enemy_130
  * between `pulse` and 1 at `pulseHz` (real time).
  */
 export const EL_BAR = Object.freeze({ icon: 0.15, min: 8, max: 15, enemy: 0.8, gap: 1, pulse: 0.45, pulseHz: 1.5 });
+
+export const EL_RING = Object.freeze({ minUnit: 0.42, pulse: 0.45, pulseHz: 1.5, fallbackRing: 58.5 / 64 });
+
+/**
+ * The element ring at a tile of `s` px: `px` per prefab unit; `cell` the official atlas cell on screen (the back's size,
+ * × ep_slider's scale); `ring` the arc's diameter (an enemy's: its coloured disc, what the procedural ring stands for);
+ * `dy` its centre below the unit's anchor (the feet).
+ * @param {number} s @param {boolean} [enemy]
+ */
+export function elementRingGeom(s, enemy = false) {
+  const g = enemy ? EP_PREFAB.enemy : EP_PREFAB.op;
+  const px = Math.max(EL_RING.minUnit, (s * UNIT.barWidth) / EP_PREFAB.op.hpW);
+  return { px, cell: g.cell * g.scale * px, ring: (enemy ? 27 : g.ring) * g.scale * px, dy: g.y * px };
+}
+
+/**
+ * HUD_LAYOUT — the battle HUD under the model, as the official one (owner decision 10, 2026-11-02; the client's prefabs
+ * char_hp_slider / char_sp_slider -54.5, enemy_hp_slider -55.3 / enemy_sp_slider -54.5, enemy_boss_hp_slider -43 /
+ * enemy_boss_sp_slider -46.2, trap_hp_slider -54.5 — arts/ui/[uc]battlecommon.ab): the HP bar's centre `hpY` prefab units
+ * (textures.js EP_PREFAB; elementRingGeom `px`) below the unit's anchor, its feet; the SP bar and the other rows (ammo
+ * count, 狼影 pips, purses, energies, 丰川祥子's Fever) stack under it as before; the element ring sits between the feet
+ * and the bar (EP_PREFAB y), and the bar keeps `ringGap` px clear of it however the sizes clamp (a boss's bar is closer
+ * to the feet than the ring's bottom). Above the head stay the status icons (`iconGap` px over the head; the official
+ * HUD has no such row) and the prep board's tier chip; a knocked-down operator's redeploy ring takes the element ring's
+ * place, its HUD alone. The bars layer sorts by depth: a nearer unit's HUD draws over a farther one's.
+ */
+export const HUD_LAYOUT = Object.freeze({
+  op: Object.freeze({ hpY: 54.5 }), enemy: Object.freeze({ hpY: 55.3 }), boss: Object.freeze({ hpY: 43 }), device: Object.freeze({ hpY: 54.5 }),
+  ringGap: 2, iconGap: 3,
+});
+
+/**
+ * The HP bar's centre below the feet (px) of a unit at a tile of `s` px, its bar `bh` px thick (HUD_LAYOUT): the
+ * official offset, never over the element ring's place (elementRingGeom) — with a shield bar's strip above it.
+ * @param {number} s @param {'op'|'enemy'|'boss'} kind @param {number} bh
+ */
+export function hudBarY(s, kind, bh) {
+  const g = elementRingGeom(s, kind === 'enemy' || kind === 'boss');
+  const clear = g.dy + g.ring / 2 + HUD_LAYOUT.ringGap + Math.max(1.5, bh * 0.35) + 1 + bh / 2;
+  return Math.max(HUD_LAYOUT[kind].hpY * g.px, clear);
+}
 
 /** The share of a model's height a bar is placed above (the head is not the very top of the silhouette). */
 export const HEAD_TOP_K = 0.92;
@@ -1173,6 +1214,7 @@ export class UnitView {
     if (!s) return;
     if (Number.isFinite(t)) this.gameT = t;
     // the element gauge shown (b.snap `elem`): element, fill 0..1, cooldown end (game s) and length
+    this.od = s.overdrive ?? null;
     this.el = typeof s.el === 'string' ? s.el : null;
     this.elFill = this.el ? s.elFill || 0 : 0; this.elUntil = this.el ? s.elUntil || 0 : 0; this.elDur = this.el ? s.elDur || 0 : 0;
     this.followSample(s, t);
@@ -2011,7 +2053,9 @@ export class UnitView {
     let sx = this.shake > 0 ? Math.sin(t * 90) * this.shake * 10 : 0;
     this.shake = Math.max(0, this.shake - dt);
     const x0 = x - bw / 2 + sx;
-    let cy = y - 4;
+    const official = this.ctx.settings?.officialBattleHud === true;
+    const hudKind = this.info.kind === 'device' ? 'device' : this.isBoss ? 'boss' : this.isEnemy ? 'enemy' : 'op';
+    let cy = official ? this.screen.y + hudBarY(s, hudKind, bh) : y - 4;
     // HP
     this.hpBg.visible = this.hpFill.visible = this.hpGhost.visible = showHp;
     if (showHp) {
@@ -2041,12 +2085,14 @@ export class UnitView {
     let sy = 0;
     if (showSp) {
       const active = !!(this.flags & UF.SKILL);
-      const k = ammo ? ammo[0] / ammo[1] : clamp(this.sp / this.spMax, 0, 1);
+      let k = ammo ? ammo[0] / ammo[1] : clamp(this.sp / this.spMax, 0, 1);
+      if (official && !ammo && active && this.od != null) k = clamp(this.od === 1 ? 2 * k : 2 * k - 1, 0, 1);
       ready = !active && k >= 0.999;
       sy = cy + bh / 2 + spH / 2 + 1.5;
       this.spBg.position.set(x0 - 1, sy); this.spBg.width = bw + 2; this.spBg.height = spH + 2;
       this.spFill.position.set(x0, sy); this.spFill.width = bw * k; this.spFill.height = spH;
       this.spFill.tint = ammo ? COLORS.ammo : active ? COLORS.spActive : ready ? COLORS.spReady : COLORS.sp;
+      if (official && !ammo && active && this.od === 1) this.spFill.tint = 0xff4747;
       this._spY = sy;
     }
     this._updateAmmoCuts(showSp && !!ammo, ammo, x0, sy, bw, spH);
@@ -2068,7 +2114,7 @@ export class UnitView {
     // status icons row above the bars
     const icons = this._iconKeys();
     const isz = clamp(s * 0.26, 12, 26);
-    const iy = cy - bh / 2 - isz / 2 - 3;
+    const iy = (official ? y - 4 : cy) - bh / 2 - isz / 2 - 3;
     for (let i = 0; i < this.icons.length; i++) {
       const ic = this.icons[i];
       const key = icons[i];
@@ -2089,8 +2135,9 @@ export class UnitView {
     const wolfH = this._updateWolfPips(showBars && !this.isEnemy && !!this.wolves, x0, rowsTop, s);
     const coinH = this._updateCoins(showBars && !this.isEnemy && !!this.coins, x0, rowsTop + wolfH, s);
     const energyH = this._updateEnergy(showBars && !this.isEnemy && !!this.energy && this.ctx.settings?.ammoEnergyCount === true, x0, rowsTop + wolfH + coinH, s);
-    this._updateElementBar(showBars && !!this.el, x0, bw, rowsTop + wolfH + coinH + energyH + 1, spH, s, t);
-    this._updateDownRing(!prep && !!this.down && !this.alive, x, this.screen.y - DOWN_LOOK.height * s, s, t);
+    this._updateElementRing(official && showBars && !!this.el, s, t);
+    this._updateElementBar(!official && showBars && !!this.el, x0, bw, rowsTop + wolfH + coinH + energyH + 1, spH, s, t);
+    this._updateDownRing(!prep && !!this.down && !this.alive, x, official ? this.screen.y + elementRingGeom(s).dy : this.screen.y - DOWN_LOOK.height * s, s, t);
     // blocked marker at the feet (enemies held by a blocker)
     const blocked = !prep && this.alive && this.isEnemy && (this.flags & UF.BLOCKED);
     this.blockIcon.visible = !!blocked;
@@ -2262,6 +2309,54 @@ export class UnitView {
    * `elementLeft()` on a dark track `h` px tall — white for the 元素值 left; in the element's colour, the disc pulsing
    * (clock `t`), while it refills over a 爆发冷却. Built on the first gauge, hidden while there is none.
    */
+  _updateElementRing(show, s, t = 0) {
+    let r = this._elRing;
+    if (!show) { if (r) r.root.visible = false; return; }
+    if (!r) {
+      const P = this.P;
+      const root = new P.Container();
+      const mk = () => { const sp = new P.Sprite(P.Texture.EMPTY); sp.anchor.set(0.5); root.addChild(sp); return sp; };
+      const track = mk(), disc = mk(), arc = mk();
+      r = this._elRing = { root, track, disc, arc, share: 0, d: 0, official: false };
+      this.hud.addChild(root);
+    }
+    const g = elementRingGeom(s, this.isEnemy);
+    const off = officialRings(this.ctx.assets);
+    const left = this.elementLeft();
+    const step = ringStep(left, 'ceil');
+    let k, white;
+    if (off) {
+      const side = this.isEnemy ? off.enemy : off.op;
+      r.track.texture = side.track;
+      r.disc.texture = side.disc[this.el] || side.disc.burn;
+      r.arc.texture = side.arcs[step];
+      k = g.cell / off.size;
+      white = this.isEnemy ? EP_PREFAB.enemy.fillTint : 0xffffff;
+    } else {
+      const tex = hudRings();
+      r.track.texture = tex.track;
+      r.disc.texture = (this.isEnemy ? tex.discEnemy : tex.disc)[this.el] || tex.disc.burn;
+      r.arc.texture = tex.arcs[step];
+      k = g.ring / EL_RING.fallbackRing / tex.size;
+      white = 0xffffff;
+    }
+    r.official = !!off;
+    r.d = g.ring;
+    r.track.scale.set(k); r.disc.scale.set(k); r.arc.scale.set(k);
+    r.share = step / RING_STEPS;
+    r.arc.visible = step > 0;
+    if (this.elementCooling()) {
+      r.arc.tint = (ELEMENT_RING[this.el] || ELEMENT_RING.burn).tint;
+      r.disc.alpha = EL_RING.pulse + (1 - EL_RING.pulse) * (0.5 + 0.5 * Math.cos(t * Math.PI * 2 * EL_RING.pulseHz));
+    } else {
+      r.arc.tint = white;
+      r.disc.alpha = 1;
+    }
+    r.root.position.set(this.screen.x, this.screen.y + g.dy);
+    r.root.visible = true;
+  }
+
+
   _updateElementBar(show, x0, bw, top, h, s, t = 0) {
     let r = this._elBar;
     if (!show) { if (r) r.root.visible = false; return; }
@@ -2806,14 +2901,15 @@ export class DeviceView {
     }
     g.zIndex = zKey + 0.001;
     g.alpha = k;
-    const p = cam.project(this.x, this.y, this.z + spec.height + 0.35, this.screen);
+    const p = cam.project(this.x, this.y, this.z + (this.ctx.settings?.officialBattleHud === true ? 0 : spec.height + 0.35), this.screen);
     this.placed = true;
     const show = this.alive && this.hp < this.maxHp - 0.5;
     this.hud.visible = show;
     if (show) {
       const bw = clamp(p.s * 0.7, 24, 90), bh = clamp(p.s * 0.06, 3, 6);
-      this.hpBg.position.set(p.x - bw / 2 - 1, p.y); this.hpBg.width = bw + 2; this.hpBg.height = bh + 2;
-      this.hpFill.position.set(p.x - bw / 2, p.y); this.hpFill.width = bw * clamp(this.hp / this.maxHp, 0, 1); this.hpFill.height = bh;
+      const cy = p.y + (this.ctx.settings?.officialBattleHud === true ? hudBarY(p.s, 'device', bh) : 0);
+      this.hpBg.position.set(p.x - bw / 2 - 1, cy); this.hpBg.width = bw + 2; this.hpBg.height = bh + 2;
+      this.hpFill.position.set(p.x - bw / 2, cy); this.hpFill.width = bw * clamp(this.hp / this.maxHp, 0, 1); this.hpFill.height = bh;
     }
     this.screen.top = p.y;
   }

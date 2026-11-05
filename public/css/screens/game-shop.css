@@ -239,3 +239,10 @@
 .shopbar.has-armed .scard:not(.is-armed):not(.scard--sold) { filter: brightness(.72); }
 .lvcard.is-armed { background: linear-gradient(180deg, #ffd65a, #e0a800); color: #1d1400; box-shadow: 0 0 0 2px #fff4c2, 0 0 .3rem rgba(255, 198, 0, .5); animation: pulse-gold 1.1s var(--ease-in-out) infinite; }
 .lvcard.is-armed .lvcard__label { letter-spacing: .12em; padding-left: .12em; }
+
+/* Optional face-focused crop; the outer card geometry stays unchanged. */
+.shopbar.has-portrait-focus .scard:not(.scard--item) .scard__art { left: 50%; top: 0; height: 128%; width: auto; max-width: none; object-fit: cover; transform: translateX(-50%); filter: brightness(1.1) saturate(1.05); -webkit-mask-image: linear-gradient(180deg, #000 56%, transparent 80%); mask-image: linear-gradient(180deg, #000 56%, transparent 80%); }
+.shopbar.has-portrait-focus .scard:not(.scard--item) .scard__body { padding-top: .22rem; background: linear-gradient(0deg, rgba(8,11,10,.94) 62%, transparent); }
+.shopbar.has-portrait-focus .scard:not(.scard--item) > .dyn-cover { transform: translateX(-50%); filter: brightness(1.1) saturate(1.05); -webkit-mask-image: linear-gradient(180deg, #000 56%, transparent 80%); mask-image: linear-gradient(180deg, #000 56%, transparent 80%); }
+.shopbar.has-portrait-focus .scard.is-disabled .scard__art,
+.shopbar.has-portrait-focus .scard.is-disabled > .dyn-cover { filter: grayscale(.7) brightness(.6); }

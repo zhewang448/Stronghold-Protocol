@@ -194,6 +194,19 @@ test('diy sync: welcome brings the kit list and sends room.diy; edits are deboun
   s.dispose();
 });
 
+test('candidate capability keeps bench preferences local on old servers and syncs them on capable servers', async () => {
+  const net = fakeNet(), T = fakeTimers();
+  const picks = { [T5A]: SIEGE_PICK, diyBench_5_1: { charId: SHARP } };
+  const target = createStore({ diy: picks, diyKitted: null, open: false, diySync: 'idle' });
+  const sync = installDiySync({ net, timers: T, target });
+  net.emit('welcome', { diyKitted: [SIEGE, SHARP] }); await T.advance(100);
+  assert.deepEqual(net.sent.at(-1).picks, { [T5A]: SIEGE_PICK });
+  assert.deepEqual(target.get().diy, picks, 'unsupported candidates remain in the local roster');
+  net.emit('welcome', { diyKitted: [SIEGE, SHARP], uiMigration: { diyCandidates: true } }); await T.advance(100);
+  assert.deepEqual(net.sent.at(-1).picks, picks);
+  sync.dispose();
+});
+
 // ---- the tab --------------------------------------------------------------------------------------------------------------
 
 describe('自选编队 tab (screens/diy.js)', () => {
@@ -261,12 +274,12 @@ describe('自选编队 tab (screens/diy.js)', () => {
   test('four slots by tier: an empty slot to fill, a filled one shows the operator, its tag, skill and module', () => {
     const tree = expand(DiyPanelView({ m: data.get('assets'), picks: { [T5A]: SIEGE_PICK, [T6A]: { charId: SHARP } }, legal: { [T5A]: SIEGE_PICK, [T6A]: { charId: SHARP } }, kitted: KIT, onSet() {}, picking: null, onPicking() {} }));
     const slots = [...walk(tree)].filter((v) => hasClass(v, 'diy-slot'));
-    assert.deepEqual(slots.map((v) => v.props['data-slot']), [T5A, T5B, T6A, T6B]);
+    assert.deepEqual(slots.map((v) => v.props['data-slot']), [T5A, T5B, 'diyBench_5_1', 'diyBench_5_2', T6A, T6B, 'diyBench_6_1', 'diyBench_6_2']);
     const siege = slots[0];
     assert.equal(siege.props['data-char'], SIEGE);
     const txt = textOf(siege);
     assert.ok(txt.includes(DATA.backups.units[SIEGE].name) && txt.includes('已持有') && txt.includes('S3') && txt.includes('SOL-X'), txt);
-    assert.ok(textOf(slots[2]).includes('原型'));
+    assert.ok(textOf(slots[4]).includes('原型'));
     assert.ok(hasClass(slots[1], 'is-empty') && textOf(slots[1]).includes('选择干员'));
   });
 

@@ -75,7 +75,13 @@ test('console client settings retain personal values through defaults, forced va
     await consolePage.select('[data-client-default="loadout.view"]', 'list');
     await consolePage.select('[data-client-default="lobbyMedia.scene"]', 'night');
     const keys = ['settings.bgm', 'settings.dynamicIllustrations', 'screenFit.l', 'language', 'skinRandom.scope', 'skinRandom.auto', 'skinRandom.locked', 'uiPlugins.ids', 'cosmetics.ids', 'lobbyMedia.scene', 'loadout.view', 'backupReminder.enabled'];
-    for (const key of keys) await consolePage.click(`[data-client-control="${key}"]`); await save();
+    for (const key of keys) {
+      const selector = `[data-client-control="${key}"]`;
+      await consolePage.$eval(selector, e => e.scrollIntoView({ block: 'center' }));
+      await consolePage.click(selector);
+      await consolePage.waitForFunction(selector => !document.querySelector(selector).checked, {}, selector);
+    }
+    await save();
     t.diagnostic('host locks saved');
     await user.bringToFront();
     await user.waitForFunction(async () => (await import('/js/ui/settingsStore.js')).settingsStore.get().bgm === 0.8);

@@ -131,7 +131,7 @@ def export_stills(game, registry, out):
         dest = index['skins'].get(skin_id, {})
         if 'skeleton' not in dest:
             continue
-        char_id = row['charId']
+        char_id = row['charId'] if row.get('field') else skin_id.split('@')[0]
         rel = ('chararts/' if row.get('field') else 'skinpack/') + char_id + '.ab'
         try:
             if rel not in packs:

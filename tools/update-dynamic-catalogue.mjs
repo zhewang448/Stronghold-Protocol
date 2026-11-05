@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { prtsIllustrationUrl } from './assets/illustration-sources.mjs';
 
-const file = process.argv[2];
+const args = process.argv.slice(2), file = args[0];
 if (!file) throw new Error('Usage: node tools/update-dynamic-catalogue.mjs <official skin_table.json>');
 const bytes = await readFile(resolve(file)), official = JSON.parse(bytes);
 const read = async name => JSON.parse(await readFile(name, 'utf8'));
@@ -15,11 +15,14 @@ const baseNames = Object.fromEntries(Object.entries(backups.units).map(([id, u])
 for (const row of Object.values(await read('data/chess.json'))) if (row.charId && row.name) baseNames[row.charId] ||= row.name;
 const known = new Map(Object.values(research.chars).flat().map(s => [s.id, s]));
 const inScope = new Set([...Object.keys(research.chars), ...Object.keys(JSON.parse(await readFile('data/assets.json','utf8')).chars)]);
+const includeMissing = args.includes('--include-missing');
+const framesFile = args.find(arg => arg.startsWith('--frames='))?.slice('--frames='.length);
+const cropSource = framesFile ? await read(framesFile) : null;
 const outside = [];
 for (const [id, skin] of Object.entries(official.charSkins)) {
   if (!skin.dynIllustId) continue;
   const def = !id.includes('@') && /#2$/.test(id) && inScope.has(skin.charId);
-  if (!known.has(id) && !def) { outside.push({ id, charId: skin.charId, name: skin.displaySkin.skinName, dynIllustId: skin.dynIllustId }); continue; }
+  if (!known.has(id) && !def && !includeMissing) { outside.push({ id, charId: skin.charId, name: skin.displaySkin.skinName, dynIllustId: skin.dynIllustId }); continue; }
   const row = registry.skins[id] ||= { charId: skin.charId, stem: skin.dynIllustId.replace('#', '__') };
   row.bundle = skin.dynIllustId.replace(/^dyn_illust_/, '');
   row.officialDynamic = true;
@@ -36,8 +39,27 @@ for (const [id, skin] of Object.entries(official.charSkins)) {
   }
   row.skeleton ||= `https://static.prts.wiki/spine38/dyn/${row.stem}/${row.stem}/${row.stem}.skel`;
   row.atlas ||= row.skeleton.replace(/\.skel$/, '.atlas');
+  const crop = cropSource?.illustrations?.[id];
+  if (crop) {
+    for (const kind of ['avatar', 'portrait']) {
+      const rect = crop.frames?.[kind];
+      if (!rect || !['x', 'y', 'width', 'height'].every(key => Number.isFinite(rect[key])) || rect.width <= 0 || rect.height <= 0) throw new Error(`Invalid ${kind} crop for ${id}`);
+    }
+    row.frames = crop.frames;
+    row.frameSource = crop.source;
+  }
+  if (includeMissing && !def && !known.has(id)) {
+    const mirror = 'https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/';
+    const entry = { id, name: row.name, group: row.group, stem: row.bundle.replaceAll('#', '_'), pictureOnly: true,
+      avatar: mirror + 'avatar/' + encodeURIComponent(skin.avatarId) + '.png',
+      portrait: mirror + 'portrait/' + encodeURIComponent(skin.portraitId) + '.png',
+      ...(row.illust ? { illust: row.illust } : {}) };
+    (research.chars[skin.charId] ||= []).push(entry);
+    known.set(id, entry);
+  }
 }
 registry.official = { source: 'https://github.com/Kengxxiao/ArknightsGameData/blob/master/zh_CN/gamedata/excel/skin_table.json',
   sha256: createHash('sha256').update(bytes).digest('hex'), outsideCatalogue: outside };
 await writeFile('docs/research/dynamic-illustrations.json', JSON.stringify(registry, null, 2) + '\n');
+if (includeMissing) await writeFile('docs/research/operator-skins.json', JSON.stringify(research, null, 1) + '\n');
 console.log(JSON.stringify({ registered: Object.keys(registry.skins).length, outsideCatalogue: outside.length }));

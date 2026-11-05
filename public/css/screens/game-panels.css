@@ -845,3 +845,5 @@ button.bpop__harmony:hover { border-style: solid; color: #fff; }
 /* #746: optional selected-unit bond timers; labels wrap at narrow widths and large text sizes. */
 .dbond-times__row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .08rem .2rem; margin: .1rem 0; font-size: calc(.24 * var(--t)); }
 .dbond-times__row > span { min-width: 0; overflow-wrap: anywhere; }
+
+.bslot__forecast { color: var(--mint-400); font-size: calc(.13 * var(--t)); }.bpop__forecast small { display: block; line-height: 1.5; color: var(--text-dim); }

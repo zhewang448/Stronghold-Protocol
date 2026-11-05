@@ -183,6 +183,8 @@ export class PlayerState {
      * started, re-checked; frozen; {} = none (bots always). setDiy makes `this.gd` the player's data view.
      */
     this.diy = Object.freeze({});
+    this.diyPreset = Object.freeze({});
+    this.diyChoice = Object.freeze({});
     /** @type {Map<string, object>} slot id (normal / elite) → composed 自选 record (setDiy) */
     this._diyRecords = new Map();
     /** the copies of the slotted pieces (initDiyStock, once the match's bans are drawn) */
@@ -192,7 +194,11 @@ export class PlayerState {
     // A modded room's content list (Match.diyKitted) is what the lobby already accepted. Without it setDiy
     // keeps the vanilla kit list and drops a plugin operator with no error (checkDiyPicks is lenient).
     // Bots never slot 自选; they read the human's composed records once this succeeds (bot.js chessRec).
-    if (!this.isBot && seat.diy) this.setDiy(seat.diy, this.m.diyKitted ? { kitted: this.m.diyKitted } : undefined);
+    if (!this.isBot && (seat.diyPreset || seat.diy)) {
+      this.setDiy(seat.diyPreset ?? seat.diy, this.m.diyKitted ? { kitted: this.m.diyKitted } : undefined);
+      this.setDiyChoiceState(seat.diyChoice);
+      if (seat.diyPreset && seat.diy) this.applyDiySlots(seat.diy);
+    }
     /** 皮肤 (docs/SKINS.md): frozen `{ [charId]: skinId }`, {} = every operator on its default model. Unlike the
      * loadout these are PUBLIC (a teammate sees your skin), so they travel in Match.publicView().players[]. */
     this.skins = Object.freeze({});

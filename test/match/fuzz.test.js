@@ -29,6 +29,7 @@ function randomIntent(rng, m, ps) {
   switch (t) {
     case 'g.test': return { t, cmd: 'funds', args: { amount: rng.int(100000) } };
     case 'g.infoReady': return { t, setupRevision: m.setupRevision ?? 0 };
+    case 'g.diyChoose': return { t, tier: rng() < 0.5 ? 5 : 6, charIds: rng() < 0.5 ? ['char_609_acguad'] : ['char_609_acguad', 'char_112_siege'], setupRevision: m.setupRevision ?? 0 };
     case 'g.rerollVote': return { t, voteId: m.setupVote?.id ?? 1 + rng.int(10), agree: rng() < 0.5 };
     case 'g.band': return { t, bandId: rng() < 0.8 ? rng.pick(BANDS) : rng.pick(['constructor', '__proto__', 'band_x', 'a'.repeat(64)]) };
     case 'g.buy': return { t, slot: rng.int(16) };

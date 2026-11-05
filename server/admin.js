@@ -950,6 +950,15 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
       const current = access.authenticated(req);
       const redirectLogin = () => { res.writeHead(302, { Location: '/login', 'Cache-Control': 'no-store' }); res.end(); };
       if (req.method === 'GET' && url.pathname === '/login') return send(200, fs.readFileSync(path.join(DIR, 'admin-login.html'), 'utf8'), 'text/html; charset=utf-8');
+      if (['GET', 'HEAD'].includes(req.method) && url.pathname === '/login-display.woff2') {
+        // One public display font for the unauthenticated login page, without exposing protected asset mounts.
+        const file = path.join(root, 'public', 'fonts', 'novecento-wide-normal.woff2');
+        if (!fs.existsSync(file)) return send(404, 'not found', 'text/plain; charset=utf-8');
+        const font = fs.readFileSync(file);
+        res.writeHead(200, { 'Content-Type': 'font/woff2', 'Content-Length': font.length,
+          'Cache-Control': 'public, max-age=86400', 'X-Content-Type-Options': 'nosniff' });
+        return res.end(req.method === 'HEAD' ? undefined : font);
+      }
       if (req.method === 'GET' && url.pathname === '/api/auth/status') return send(200, access.view(req));
       if (url.pathname.startsWith('/api/auth/') && req.method === 'POST') {
         if (!current && req.headers['x-admin-login'] !== '1') return send(403, { error: '缺少登录请求标记' });

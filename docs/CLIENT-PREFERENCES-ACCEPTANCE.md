@@ -6,6 +6,8 @@
 实施工作树：`C:\Users\34948\.codex\worktrees\dynamic-illustrations-new-operators\Stronghold-Protocol`。分支：`codex/dynamic-illustrations-new-operators`。
 原始基线：`cbeb8d2a8d34ba7f39a31b746b34d8398b2d8a0e`。继承既有动态立绘、新干员和重复策略修改。
 
+2026-11-05/06 指定 UI 迁移合并后，当前目录为 **54 项**：新增「还原战场状态条」（默认开）及「突出商店人像」（默认关）。新增开关沿用稀疏个人值、服主默认和编辑锁；其验收见 [UI 迁移验收](STARDUST-UI-ACCEPTANCE.md)。下文 52 项及对应截图/耗时保留为最初实现的历史记录。
+
 ## 已实现
 
 控制台「设置 → 客户端设置」提供 52 项默认值/强制值与「允许用户更改」，初始全部允许。

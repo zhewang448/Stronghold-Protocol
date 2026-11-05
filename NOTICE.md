@@ -129,3 +129,7 @@ under GPL-3.0-or-later. Adaptation keeps the current room API, four-player rules
 本库按分组/个人库存、资源提取、现有头像同步及统一房间设置重新适配，不包含贡献者截图或用户上传图片。
 
 Dynamic illustration rendering and operator kits: adapted from Stardust-minus/Stronghold-Protocol commit d03ae6e7b3ab4f6f816bb21bf0c45d7558210a76 (GPL-3.0-or-later); performance policy also references Misyra commit 146007cc71c2a360514277d97a20384869ad458e. Optional artwork from PRTS, fexli/ArknightsResource and yuanyan3060/ArknightsGameResource retains its original rights and is not committed. See docs/DYNAMIC-ILLUSTRATIONS-IMPLEMENTATION.md.
+
+## Stardust 指定 UI 迁移（2026-11-05）
+
+损伤圆环与脚下血条、过载分段、商店人像、小地图、名片底图选择及取景、预计叠层、四候选选二及相关测试适配自 [Stardust-minus/Stronghold-Protocol](https://github.com/Stardust-minus/Stronghold-Protocol/tree/7f39464c285fde4e5ee98825ad00936cffdfffa8)，固定提交 `7f39464c285fde4e5ee98825ad00936cffdfffa8`，代码许可 GPL-3.0-or-later。保留原作者及仓库来源；本库额外适配客户端设置管控、等待室自动盟约底图、版本/重刷/恢复兼容。具体文件与取舍见 [实施说明](docs/STARDUST-UI-MIGRATION.md)。官方游戏素材不属于 GPL 代码，仍按本声明第 2 节处理，未加入 Git。

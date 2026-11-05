@@ -9,6 +9,8 @@ import { useState } from '../../vendor/hooks.module.js';
 import { html, Button, Icon, MicroLabel } from '../ui/components.js';
 import { useGameData, Img, RichText } from '../ui/gameComponents.js';
 import { StepHeader, ExitModal } from '../ui/matchChrome.js';
+import { DiyChoice } from '../ui/diyChoice.js';
+import { act } from '../ui/gameActions.js';
 import { MatchInfo, matchInfoModel } from '../ui/matchInfo.js';
 import { LoadoutButton } from './loadout.js';
 import { UnofficialMark } from '../ui/pluginTag.js';
@@ -96,6 +98,8 @@ export function BriefingScreen() {
         <${MatchInfo} model=${info} />
       </section>
     </main>
+    ${priv?.diyChoice ? html`<div class="brief__diy-dock"><${DiyChoice} key=${pub.setupRevision || 0} priv=${priv} dock=${true} ready=${!!me?.ready} disabled=${!me || !!pub.rerollVote}
+      onChoose=${(tier, charIds) => act('g.diyChoose', { tier, charIds, setupRevision: pub.setupRevision || 0 })} /></div>` : null}
     <${SetupReroll} pub=${pub} />
     <footer class="brief__foot">
       <${LoadoutButton} from="briefing" size="lg" class="brief-loadout" />

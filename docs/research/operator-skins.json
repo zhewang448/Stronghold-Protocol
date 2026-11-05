@@ -57,6 +57,16 @@
     "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_2025_shu_nlc%231.png",
     "illust": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/skin/char_2025_shu_nlc%231b.png",
     "back": true
+   },
+   {
+    "id": "char_2025_shu@nian#11",
+    "name": "春日宴",
+    "group": "0011制造/XI",
+    "stem": "char_2025_shu_nian_11",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_2025_shu_nian%2311.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_2025_shu_nian%2311.png",
+    "illust": "https://media.prts.wiki/5/52/%E7%AB%8B%E7%BB%98_%E9%BB%8D_skin1.png"
    }
   ],
   "char_498_inside": [
@@ -2173,6 +2183,301 @@
     "stem": "char_473_mberry_nian_9",
     "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_473_mberry_nian%239.png",
     "back": true
+   }
+  ],
+  "char_250_phatom": [
+   {
+    "id": "char_250_phatom@sale#4",
+    "name": "焦点",
+    "group": "忒斯特收藏/V",
+    "stem": "char_250_phatom_sale_4",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_250_phatom_sale%234.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_250_phatom_sale%234.png",
+    "illust": "https://media.prts.wiki/e/e8/%E7%AB%8B%E7%BB%98_%E5%82%80%E5%BD%B1_skin2.png"
+   }
+  ],
+  "char_002_amiya": [
+   {
+    "id": "char_1037_amiya3@sale#13",
+    "name": "寰宇独奏",
+    "group": "忒斯特收藏/XIV",
+    "stem": "char_1037_amiya3_sale_13",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_1037_amiya3_sale%2313.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_1037_amiya3_sale%2313.png"
+   },
+   {
+    "id": "char_1001_amiya2@sale#16",
+    "name": "于万千宇宙之中",
+    "group": "忒斯特收藏/XVIII",
+    "stem": "char_1001_amiya2_sale_16",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_1001_amiya2_sale%2316.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_1001_amiya2_sale%2316.png"
+   }
+  ],
+  "char_124_kroos": [
+   {
+    "id": "char_124_kroos@sale#14",
+    "name": "星月漂流记",
+    "group": "忒斯特收藏/XV",
+    "stem": "char_124_kroos_sale_14",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_124_kroos_sale%2314.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_124_kroos_sale%2314.png"
+   }
+  ],
+  "char_1035_wisdel": [
+   {
+    "id": "char_1035_wisdel@sale#14",
+    "name": "超新星",
+    "group": "忒斯特收藏/XV",
+    "stem": "char_1035_wisdel_sale_14",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_1035_wisdel_sale%2314.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_1035_wisdel_sale%2314.png",
+    "illust": "https://media.prts.wiki/b/b2/%E7%AB%8B%E7%BB%98_%E7%BB%B4%E4%BB%80%E6%88%B4%E5%B0%94_skin1.png"
+   }
+  ],
+  "char_003_kalts": [
+   {
+    "id": "char_003_kalts@sale#14",
+    "name": "时遗",
+    "group": "忒斯特收藏/XVI",
+    "stem": "char_003_kalts_sale_14",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_003_kalts_sale%2314.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_003_kalts_sale%2314.png",
+    "illust": "https://media.prts.wiki/9/98/%E7%AB%8B%E7%BB%98_%E5%87%AF%E5%B0%94%E5%B8%8C_skin2.png"
+   },
+   {
+    "id": "char_003_kalts@boc#6",
+    "name": "残余",
+    "group": "斗争血脉/VI",
+    "stem": "char_003_kalts_boc_6",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_003_kalts_boc%236.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_003_kalts_boc%236.png",
+    "illust": "https://media.prts.wiki/0/0f/%E7%AB%8B%E7%BB%98_%E5%87%AF%E5%B0%94%E5%B8%8C_skin1.png"
+   }
+  ],
+  "char_113_cqbw": [
+   {
+    "id": "char_113_cqbw@epoque#7",
+    "name": "恍惚",
+    "group": "时代/VII",
+    "stem": "char_113_cqbw_epoque_7",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_113_cqbw_epoque%237.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_113_cqbw_epoque%237.png",
+    "illust": "https://media.prts.wiki/a/a3/%E7%AB%8B%E7%BB%98_W_skin1.png"
+   }
+  ],
+  "char_2014_nian": [
+   {
+    "id": "char_2014_nian@nian#4",
+    "name": "乐逍遥",
+    "group": "0011制造/III",
+    "stem": "char_2014_nian_nian_4",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_2014_nian_nian%234.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_2014_nian_nian%234.png",
+    "illust": "https://media.prts.wiki/6/6f/%E7%AB%8B%E7%BB%98_%E5%B9%B4_skin1.png"
+   },
+   {
+    "id": "char_2014_nian@cfa#1",
+    "name": "霹雳导演",
+    "group": "中国电影资料馆",
+    "stem": "char_2014_nian_cfa_1",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_2014_nian_cfa%231.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_2014_nian_cfa%231.png",
+    "illust": "https://media.prts.wiki/4/41/%E7%AB%8B%E7%BB%98_%E5%B9%B4_skin2.png"
+   }
+  ],
+  "char_2023_ling": [
+   {
+    "id": "char_2023_ling@nian#9",
+    "name": "濯缨",
+    "group": "0011制造/VIII",
+    "stem": "char_2023_ling_nian_9",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_2023_ling_nian%239.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_2023_ling_nian%239.png",
+    "illust": "https://media.prts.wiki/5/5e/%E7%AB%8B%E7%BB%98_%E4%BB%A4_skin1.png"
+   },
+   {
+    "id": "char_2023_ling@nian#12",
+    "name": "方遒卷",
+    "group": "0011制造/XII",
+    "stem": "char_2023_ling_nian_12",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_2023_ling_nian%2312.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_2023_ling_nian%2312.png",
+    "illust": "https://media.prts.wiki/e/e5/%E7%AB%8B%E7%BB%98_%E4%BB%A4_skin3.png"
+   },
+   {
+    "id": "char_2023_ling@ncg#1",
+    "name": "崖高梦远",
+    "group": "国家地理",
+    "stem": "char_2023_ling_ncg_1",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_2023_ling_ncg%231.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_2023_ling_ncg%231.png",
+    "illust": "https://media.prts.wiki/7/70/%E7%AB%8B%E7%BB%98_%E4%BB%A4_skin2.png"
+   }
+  ],
+  "char_2024_chyue": [
+   {
+    "id": "char_2024_chyue@nian#10",
+    "name": "何处栖",
+    "group": "0011制造/IX",
+    "stem": "char_2024_chyue_nian_10",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_2024_chyue_nian%2310.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_2024_chyue_nian%2310.png",
+    "illust": "https://media.prts.wiki/a/a5/%E7%AB%8B%E7%BB%98_%E9%87%8D%E5%B2%B3_skin1.png"
+   },
+   {
+    "id": "char_2024_chyue@cfa#1",
+    "name": "全能演员",
+    "group": "中国电影资料馆",
+    "stem": "char_2024_chyue_cfa_1",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_2024_chyue_cfa%231.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_2024_chyue_cfa%231.png",
+    "illust": "https://media.prts.wiki/6/6e/%E7%AB%8B%E7%BB%98_%E9%87%8D%E5%B2%B3_skin2.png"
+   }
+  ],
+  "char_1044_hsgma2": [
+   {
+    "id": "char_1044_hsgma2@whirlwind#11",
+    "name": "一闪极意",
+    "group": "0011/飙系列/XI",
+    "stem": "char_1044_hsgma2_whirlwind_11",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_1044_hsgma2_whirlwind%2311.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_1044_hsgma2_whirlwind%2311.png",
+    "illust": "https://media.prts.wiki/c/c6/%E7%AB%8B%E7%BB%98_%E6%96%A9%E4%B8%9A%E6%98%9F%E7%86%8A_skin1.png"
+   }
+  ],
+  "char_1013_chen2": [
+   {
+    "id": "char_1013_chen2@summer#20",
+    "name": "悠然假日 HD79",
+    "group": "珊瑚海岸/XX",
+    "stem": "char_1013_chen2_summer_20",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_1013_chen2_summer%2320.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_1013_chen2_summer%2320.png",
+    "illust": "https://media.prts.wiki/f/f5/%E7%AB%8B%E7%BB%98_%E5%81%87%E6%97%A5%E5%A8%81%E9%BE%99%E9%99%88_skin2.png"
+   },
+   {
+    "id": "char_1013_chen2@boc#6",
+    "name": "万重山",
+    "group": "斗争血脉/VI",
+    "stem": "char_1013_chen2_boc_6",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_1013_chen2_boc%236.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_1013_chen2_boc%236.png",
+    "illust": "https://media.prts.wiki/f/f2/%E7%AB%8B%E7%BB%98_%E5%81%87%E6%97%A5%E5%A8%81%E9%BE%99%E9%99%88_skin1.png"
+   }
+  ],
+  "char_322_lmlee": [
+   {
+    "id": "char_322_lmlee@witch#3",
+    "name": "手到牌来",
+    "group": "巫异盛宴/III",
+    "stem": "char_322_lmlee_witch_3",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_322_lmlee_witch%233.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_322_lmlee_witch%233.png",
+    "illust": "https://media.prts.wiki/0/00/%E7%AB%8B%E7%BB%98_%E8%80%81%E9%B2%A4_skin1.png"
+   }
+  ],
+  "char_4055_bgsnow": [
+   {
+    "id": "char_4055_bgsnow@wild#7",
+    "name": "字句中的雪原",
+    "group": "生命之地/VII",
+    "stem": "char_4055_bgsnow_wild_7",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_4055_bgsnow_wild%237.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_4055_bgsnow_wild%237.png",
+    "illust": "https://media.prts.wiki/9/9d/%E7%AB%8B%E7%BB%98_%E9%B8%BF%E9%9B%AA_skin1.png"
+   }
+  ],
+  "char_4179_monstr": [
+   {
+    "id": "char_4179_monstr@boc#11",
+    "name": "锋锐",
+    "group": "斗争血脉/XI",
+    "stem": "char_4179_monstr_boc_11",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_4179_monstr_boc%2311.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_4179_monstr_boc%2311.png",
+    "illust": "https://media.prts.wiki/3/30/%E7%AB%8B%E7%BB%98_Mon3tr_skin1.png"
+   }
+  ],
+  "char_4133_logos": [
+   {
+    "id": "char_4133_logos@ambienceSynesthesia#6",
+    "name": "辉煌的静谧",
+    "group": "音律联觉/VI",
+    "stem": "char_4133_logos_ambienceSynesthesia_6",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_4133_logos_ambienceSynesthesia%236.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_4133_logos_ambienceSynesthesia%236.png",
+    "illust": "https://media.prts.wiki/d/dd/%E7%AB%8B%E7%BB%98_%E9%80%BB%E5%90%84%E6%96%AF_skin1.png"
+   }
+  ],
+  "char_4132_ascln": [
+   {
+    "id": "char_4132_ascln@iteration#4",
+    "name": "趋光之暗",
+    "group": "命途迭代/IV",
+    "stem": "char_4132_ascln_iteration_4",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_4132_ascln_iteration%234.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_4132_ascln_iteration%234.png",
+    "illust": "https://media.prts.wiki/0/0b/%E7%AB%8B%E7%BB%98_%E9%98%BF%E6%96%AF%E5%8D%A1%E7%BA%B6_skin1.png"
+   }
+  ],
+  "char_4202_haruka": [
+   {
+    "id": "char_4202_haruka@iteration#6",
+    "name": "常世之幻",
+    "group": "命途迭代/VI",
+    "stem": "char_4202_haruka_iteration_6",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_4202_haruka_iteration%236.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_4202_haruka_iteration%236.png",
+    "illust": "https://media.prts.wiki/d/dd/%E7%AB%8B%E7%BB%98_%E9%81%A5_skin1.png"
+   }
+  ],
+  "char_179_cgbird": [
+   {
+    "id": "char_179_cgbird@sightseer#1",
+    "name": "流辉",
+    "group": "错位巡礼/I",
+    "stem": "char_179_cgbird_sightseer_1",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_179_cgbird_sightseer%231.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_179_cgbird_sightseer%231.png",
+    "illust": "https://media.prts.wiki/e/e5/%E7%AB%8B%E7%BB%98_%E5%A4%9C%E8%8E%BA_skin2.png"
+   }
+  ],
+  "char_1042_phatm2": [
+   {
+    "id": "char_1042_phatm2@sightseer#4",
+    "name": "真我自扼",
+    "group": "错位巡礼/IV",
+    "stem": "char_1042_phatm2_sightseer_4",
+    "pictureOnly": true,
+    "avatar": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar/char_1042_phatm2_sightseer%234.png",
+    "portrait": "https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_1042_phatm2_sightseer%234.png",
+    "illust": "https://media.prts.wiki/9/90/%E7%AB%8B%E7%BB%98_%E9%85%92%E7%A5%9E_skin1.png"
    }
   ]
  }

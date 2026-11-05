@@ -503,7 +503,7 @@ export class Match {
     // 自选编队 (0.2.0): each human's slotted DIY pieces get their own stock — none for one whose bonds are all off this
     // match (player/diy.js initDiyStock); no randomness is drawn here
     const off = new Set([...bans.drawn, ...bans.staticOff]);
-    for (const ps of this.order) ps.initDiyStock(off);
+    for (const ps of this.order) { ps.resolveDiy(off); ps.initDiyStock(off); }
 
     this.phase = PHASE.LOBBY;
     this.round = 0;

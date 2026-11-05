@@ -17,6 +17,7 @@ export function buildSkinPlan(research, selected = [], seatArt = null) {
       if (!selected.includes(s.id)) continue;
       const spine = {};
       for (const side of ['front', 'back']) {
+        if (s.pictureOnly) continue;
         if (side === 'back' && !s.back) continue;
         const dir = `spine/op/${charId}/${s.stem}/${side}/`;
         const folder = side === 'front' ? s.frontFolder || 'Front' : 'Back';
@@ -36,7 +37,7 @@ export function buildSkinPlan(research, selected = [], seatArt = null) {
         ? { alts: [{ rel: portraitUrl.slice('/assets/'.length), urls: [], kind: 'png' }] }
         : s.portrait ? { alts: [{ rel: `char/portrait/${safeName(s.stem)}.png`, urls: [s.portrait], kind: 'png' }] } : null;
       const illust = s.illust ? { alts: [{ rel: `char/illust/${safeName(s.stem)}.png`, urls: [s.illust], kind: 'png' }] } : null;
-      c.skins[s.id] = { avatar, spine, ...(portrait ? { portrait, portraitE2: portrait } : {}), ...(illust ? { illust } : {}) };
+      c.skins[s.id] = { avatar, spine, ...(s.pictureOnly ? { pictureOnly: true } : {}), ...(portrait ? { portrait, portraitE2: portrait } : {}), ...(illust ? { illust } : {}) };
     }
   }
   return { template, models };
@@ -45,7 +46,7 @@ export function buildSkinPlan(research, selected = [], seatArt = null) {
 export function completeSkins(chars) {
   for (const c of Object.values(chars || {})) {
     for (const [id, skin] of Object.entries(c.skins || {})) {
-      if (!skin.avatar || !skin.spine?.front) delete c.skins[id];
+      if (!skin.avatar || (!skin.spine?.front && !(skin.pictureOnly && (skin.portrait || skin.illust)))) delete c.skins[id];
     }
   }
   return chars;
