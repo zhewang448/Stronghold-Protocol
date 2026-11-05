@@ -2,7 +2,7 @@ import { VersionPicker } from '../ui/versionPicker.js';
 import { VersionVote } from '../ui/versionVote.js';
 import { DEFAULT_VERSION, roomVersion, serverDefaultVersion, versionLabel, needsContent, offeredDifficulties, soloTimedOf, soloTimeMsgid } from '../versions.js';
 import { useAccount, AccountTag } from '../ui/accounts.js';
-import { useCustomIllust, useOwnIllust } from '../ui/customIllust.js';
+import { useCustomIllust, useOwnIllust, ownIllustSnapshot, removeOwnIllust } from '../ui/customIllust.js';
 import { IllustDialog } from '../ui/illustPicker.js';
 import { CardArtImage } from '../ui/cardArt.js';
 import { TrophyBadge } from '../ui/trophies.js';
@@ -486,9 +486,10 @@ export function RoomScreen() {
     pool: cardList.filter((c) => (c.rarity ?? 0) >= 5 && c.assets).sort((a, b) => (a.charId < b.charId ? -1 : 1)),
     byChar: new Map(cardList.map((c) => [c.charId, c])), m, myId: me.playerId, myCard, mySkin,
   }), [cardList, m, me.playerId, myCard, mySkin]);
-  const pickCard = (charId, skinId = '') => {
+  const pickCard = (charId, skinId = '') => run('card', async () => {
+    if (facts.mine?.illust || await ownIllustSnapshot()) await removeOwnIllust();
     setCard(charId, skinId); setPicking(false);
-  };
+  });
   // arrived through 搜寻队友 (match.found for this room): 搜寻成功 once
   useEffect(() => {
     if (room && mm?.status === 'found' && mm.roomCode === room.code) {

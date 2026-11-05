@@ -7,6 +7,103 @@ import { startServer } from '../../server/index.js';
 import { CHROME, hasChrome } from '../e2e/client.mjs';
 import { png } from '../helpers/pluginFixtures.js';
 
+test('choosing standard seat artwork replaces an applied custom preset on both clients', {
+  skip: process.env.SP_E2E !== '1' || !hasChrome(), timeout: 90000,
+}, async testContext => {
+  const server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, recovery: false, assetIndex: false, illustDir: null, heavyBurst: 100 });
+  const browser = await (await import('puppeteer-core')).default.launch({ executablePath: CHROME, headless: true,
+    args: ['--no-sandbox', '--disable-background-timer-throttling', '--disable-renderer-backgrounding'] });
+  testContext.after(async () => { await browser.close(); await server.close(); });
+  const errors = [], picture = png(128, 256), requests = [];
+  let failRemoval = false;
+  const login = async name => {
+    const page = await (await browser.createBrowserContext()).newPage();
+    page.on('pageerror', error => errors.push(error.message));
+    await page.setViewport({ width: 1440, height: 900 });
+    await page.setRequestInterception(true);
+    page.on('request', request => {
+      if (request.method() === 'DELETE' && request.url().endsWith('/illust')) {
+        requests.push(request.method());
+        if (failRemoval) return request.respond({ status: 503, contentType: 'application/json', body: '{"error":"temporary"}' });
+      }
+      if (request.resourceType() === 'image' && new URL(request.url()).pathname.startsWith('/assets/')) {
+        return request.respond({ status: 200, contentType: 'image/png', body: picture });
+      }
+      return request.continue();
+    });
+    await page.goto(server.url, { waitUntil: 'domcontentloaded' }); await page.waitForSelector('.title-login input');
+    await page.type('.title-login input', name);
+    await page.evaluate(() => [...document.querySelectorAll('.title-login button')].find(button => button.textContent.includes('开始')).click());
+    await page.waitForSelector('.lobby-screen'); return page;
+  };
+  const host = await login('Portrait host'), guest = await login('Portrait guest');
+  await host.evaluate(() => globalThis.__SP__.net.request('room.create', { mode: 'coop', difficulty: 'NORMAL' }));
+  const room = [...server.lobby.rooms.values()][0];
+  await guest.evaluate(code => globalThis.__SP__.net.request('room.join', { code }), room.code);
+  const operator = server.lobby.safeData()['seat-art'].chars.char_498_inside;
+  const skin = operator.choices.find(choice => choice.id.includes('@'));
+  await host.evaluate(async bytes => {
+    const { savePicturePreset } = await import('/js/ui/picturePresets.js');
+    const scope = (await import('/js/ui/accounts.js')).currentAccount().id;
+    await savePicturePreset(scope, 'illust', 0, { blob: new Blob([new Uint8Array(bytes)], { type: 'image/png' }), frame: { zoom: 1.2, ox: 5, oy: -3 } });
+  }, [...picture]);
+  const openPicker = async () => {
+    await host.bringToFront(); await host.click('.rseat.is-me [aria-label="更换名片干员"]'); await host.waitForSelector('.cardpick');
+  };
+  const applyPreset = async () => {
+    await openPicker(); await host.click('[data-testid="custom-illust-entry"]');
+    await host.waitForFunction(() => document.querySelector('[data-testid="illust-preset-use"]')?.disabled === false);
+    await host.click('[data-testid="illust-preset-use"]'); await host.waitForSelector('.cardpick'); await host.keyboard.press('Escape');
+    await host.waitForSelector('.rseat.is-me img[data-art="custom"]');
+    await guest.waitForSelector('.rseat:not(.is-me) img[data-art="custom"]');
+  };
+  const chooseOperator = async (skinId = '') => {
+    await host.click('.cardpick input[type="search"]'); await host.type('.cardpick input[type="search"]', operator.name);
+    await host.click('.cardpick__op[title="' + operator.name + '"]'); await host.waitForSelector('.cardpick__grid--skins');
+    await host.click(skinId ? '.cardpick__grid--skins button[title="' + skin.name + '"]' : '.cardpick__grid--skins button:first-child');
+  };
+  const assertStandard = async (charId, skinId = '') => {
+    await host.waitForSelector('.cardpick', { hidden: true });
+    testContext.diagnostic(JSON.stringify({ requested: { charId, skinId }, customActive: !!server.lobby.illusts.get(room.hostId),
+      displayed: await host.$eval('.rseat.is-me .rseat__art img', image => image.dataset.art) }));
+    assert.equal(!!server.lobby.illusts.get(room.hostId), false, 'a standard artwork choice deactivates the current custom picture');
+    for (const [page, selector] of [[host, '.rseat.is-me'], [guest, '.rseat:not(.is-me)']]) {
+      await page.waitForFunction((selector, charId, skinId, playerId) => import('/js/store.js').then(({ store }) => {
+        const seat = store.get().room.seats.find(seat => seat?.playerId === playerId);
+        const image = document.querySelector(selector + ' img[data-art="operator"]');
+        return (seat.card || '') === charId && (seat.cardSkin || '') === skinId && !seat.illust && image?.naturalWidth > 0
+          && !document.querySelector(selector + ' img[data-art="custom"]');
+      }), { timeout: 5000 }, selector, charId, skinId, room.hostId).catch(async error => {
+        throw new Error(JSON.stringify(await page.evaluate(async selector => {
+          const { store } = await import('/js/store.js');
+          const { cardStore } = await import('/js/ui/seatArt.js');
+          return { selector, seats: store.get().room.seats, card: cardStore.get(), images: [...document.querySelectorAll(selector + ' img')].map(image => ({ src: image.getAttribute('src'), art: image.dataset.art, width: image.naturalWidth })) };
+        }, selector)), { cause: error });
+      });
+    }
+    assert.equal(await host.evaluate(async () => (await import('/js/ui/customIllust.js')).ownIllustSnapshot()), null);
+    assert.equal(await host.evaluate(async () => {
+      const scope = (await import('/js/ui/accounts.js')).currentAccount().id;
+      return (await (await import('/js/ui/picturePresets.js')).readPicturePresets(scope, 'illust')).filter(Boolean).length;
+    }), 1, 'switching to standard artwork preserves the saved preset');
+  };
+  await applyPreset(); await openPicker(); await chooseOperator(); await assertStandard(operator.charId);
+  await host.reload({ waitUntil: 'domcontentloaded' }); await host.waitForSelector('.room-screen'); await assertStandard(operator.charId);
+  await applyPreset(); await openPicker(); await chooseOperator(); await assertStandard(operator.charId);
+  await applyPreset(); await openPicker(); await chooseOperator(skin.id); await assertStandard(operator.charId, skin.id);
+  await applyPreset(); await openPicker(); await host.click('.cardpick__op--auto:not(.cardpick__op--custom)'); await assertStandard('');
+  const removals = requests.length;
+  await openPicker(); await chooseOperator(); await assertStandard(operator.charId);
+  assert.equal(requests.length, removals, 'ordinary artwork selection does not remove an absent custom picture');
+  await applyPreset(); await openPicker(); failRemoval = true; await chooseOperator(skin.id);
+  await host.waitForFunction(() => [...document.querySelectorAll('.toast')].some(element => element.textContent.includes('Illustration request failed')));
+  assert.ok(server.lobby.illusts.get(room.hostId));
+  assert.equal(room.seats[0].cardSkin || '', '', 'failed removal preserves the previous selection');
+  assert.ok(await host.$('.rseat.is-me img[data-art="custom"]'));
+  failRemoval = false; await host.click('.cardpick__grid--skins button[title="' + skin.name + '"]'); await assertStandard(operator.charId, skin.id);
+  assert.deepEqual(errors, []);
+});
+
 test('three local avatar and illustration presets survive reload, isolate slots, confirm replacement and share only the applied image', {
   skip: process.env.SP_E2E !== '1' || !hasChrome(), timeout: 180000,
 }, async testContext => {

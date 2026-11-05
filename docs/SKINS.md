@@ -183,6 +183,10 @@ follow the seat cards' rule below (`seatCardSkin`), reading the match's `m.publi
 
 ## The waiting room's seat cards (0.3.2, the maintainer's decision 4 of 2026-10-21)
 
+Confirming an operator, outfit or automatic default in the room picker removes the active custom illustration before
+publishing the card choice. Both clients then show the selected operator art, including after reload. A failed removal
+keeps the current illustration and card selection; saved local illustration presets remain available for reuse.
+
 The 名片干员 portrait on a room seat card (`public/js/screens/room.js`, `public/js/ui/seatArt.js`) and on the strategy
 draft's name cards (`public/js/screens/bandDraft.js`) wears the player's outfit for the operator it shows:
 
