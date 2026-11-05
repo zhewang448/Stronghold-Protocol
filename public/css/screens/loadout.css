@@ -928,7 +928,7 @@
 .lo-op__bonds { grid-row: 3; grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 3px; min-height: max(.26rem, 16px); padding-top: 2px; }
 .lo-op__bond { display: grid; place-items: center; width: max(.26rem, 16px); height: max(.26rem, 16px); border-radius: 50%; background: rgba(0, 0, 0, .55); border: 1px solid rgba(255, 255, 255, .22); }
 .lo-op__bond img { width: 70%; height: 70%; object-fit: contain; }
-.lo-op.is-standin .lo-op__art img { filter: saturate(.5); }
+.lo-op.is-standin .lo-op__art :is(img, .dyn-cover) { filter: saturate(.5); }
 /* 快速配置: a column of choices beside the card */
 .lo-op__quick { flex: none; width: var(--qw); --q: calc(var(--qw) - max(.12rem, 8px)); --qg: max(.06rem, 4px);
   display: flex; flex-direction: column; align-items: center; gap: var(--qg); padding: max(.06rem, calc(4px * var(--sp-ui, 1))) 0; overflow-y: auto; scrollbar-width: none;

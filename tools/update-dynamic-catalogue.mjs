@@ -5,6 +5,25 @@ import { resolve } from 'node:path';
 import { prtsIllustrationUrl } from './assets/illustration-sources.mjs';
 
 const args = process.argv.slice(2), file = args[0];
+if (args.includes('--frames-only')) {
+  const framesFile = args.find(arg => arg.startsWith('--frames='))?.slice('--frames='.length);
+  if (!framesFile) throw new Error('--frames-only requires --frames=PATH');
+  const crops = JSON.parse(await readFile(resolve(framesFile), 'utf8'));
+  const registry = JSON.parse(await readFile('docs/research/dynamic-illustrations.json', 'utf8'));
+  let count = 0;
+  for (const [id, crop] of Object.entries(crops.illustrations || {})) {
+    const row = registry.skins[id];
+    if (!row) throw new Error(`Unknown dynamic illustration: ${id}`);
+    for (const kind of ['avatar', 'portrait']) {
+      const rect = crop.frames?.[kind];
+      if (!rect || !['x', 'y', 'width', 'height'].every(key => Number.isFinite(rect[key])) || rect.width <= 0 || rect.height <= 0) throw new Error(`Invalid ${kind} crop for ${id}`);
+    }
+    row.frames = crop.frames; row.frameSource = crop.source; count++;
+  }
+  await writeFile('docs/research/dynamic-illustrations.json', JSON.stringify(registry, null, 2) + '\n');
+  console.log(JSON.stringify({ framesUpdated: count }));
+  process.exit(0);
+}
 if (!file) throw new Error('Usage: node tools/update-dynamic-catalogue.mjs <official skin_table.json>');
 const bytes = await readFile(resolve(file)), official = JSON.parse(bytes);
 const read = async name => JSON.parse(await readFile(name, 'utf8'));

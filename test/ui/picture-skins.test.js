@@ -44,6 +44,16 @@ test('two owners, spectator, otherSkins and public clears never use the viewer c
   assert.equal(selected('unknown', { skin: 'picture' }).skin, 'picture');
   assert.equal(selected(undefined).skin, 'portrait', 'local picker');
   assert.equal(selected(null).skin, null, 'unowned catalogue');
+  assert.equal(selected('one', { players: [] }).skin, 'portrait', 'own local choice remains visible while public data is absent');
+});
+
+test('a public operator detail follows its clicked local artwork while explicit teammate and neutral owners stay separate', () => {
+  const pub = resolveDetail({ kind: 'chess', id: chess.chessId, foreign: true }, new Map(), { priv: { playerId: 'one' } });
+  assert.equal(pub.ownerId, undefined, 'the public catalogue uses the same local appearance as its thumbnail');
+  const mate = resolveDetail({ kind: 'chess', id: chess.chessId, owner: 'two' }, new Map(), { priv: { playerId: 'one' } });
+  assert.equal(mate.ownerId, 'two');
+  const selfUnit = resolveDetail({ kind: 'unit', unit: { uid: 41, defId: chess.chessId } }, new Map([[41, { piece: { uid: 41, kind: 'chess', id: chess.chessId } }]]), { priv: { playerId: 'one' } });
+  assert.equal(selfUnit.ownerId, 'one', 'own piece provenance is retained when unit metadata omitted the owner');
 });
 
 test('normal / elite image layers fall back independently; removed or foreign skins use default pictures', () => {

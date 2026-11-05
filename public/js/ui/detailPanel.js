@@ -765,7 +765,7 @@ export function resolveDetail(target, pieces, { priv = null, backups = data.get(
     return rec ? { chess: rec, diy: ownDiyPick(priv, c) } : null;
   };
   const appearance = { ownerId: target.kind === 'unit' ? target.unit?.ownerId ?? null
-    : target.owner ?? (target.foreign ? null : priv?.playerId), skin: target.unit?.skin || null };
+    : target.owner ?? (target.foreign ? undefined : priv?.playerId), skin: target.skin ?? target.unit?.skin ?? null };
   if (target.kind === 'piece') {
     const e = pieces?.get(target.uid);
     if (!e) return null;
@@ -803,6 +803,7 @@ export function resolveDetail(target, pieces, { priv = null, backups = data.get(
   if (target.kind === 'unit') {
     const u = target.unit || {};
     const own = Number.isInteger(u.uid) ? pieces?.get(u.uid) : null;
+    if (u.ownerId == null && own?.piece) appearance.ownerId = priv?.playerId;
     if (u.side === 'enemy') { const en = data.lookup('enemies', u.defId); return en ? { type: 'enemy', enemy: en, unitId: u.id } : null; }
     // a hand item on a scouted prep board (m.field units, kind 'item'): the item's own card
     if (u.kind === 'item') { const it = data.lookup('items', u.defId); return it ? { type: 'item', item: it } : null; }

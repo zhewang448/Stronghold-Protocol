@@ -62,6 +62,7 @@ export function ownerSkin(charId, { ownerId, myId = null, players = [], localSki
   if (ownerId !== myId && !otherSkins) return null;
   const owner = players.find((p) => p.playerId === ownerId);
   if (owner) return str(owner.skins?.[charId]);
+  if (ownerId === myId) return str(localSkins[charId] ?? skin);
   return str(skin);
 }
 

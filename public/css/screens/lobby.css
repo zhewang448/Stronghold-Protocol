@@ -1265,7 +1265,7 @@
 .sw-op__tier { position: absolute; left: 2px; bottom: 2px; min-width: max(.26rem, 16px); padding: 0 .03rem; font-family: var(--font-num); font-size:max(calc(.15 * var(--t)), 10px); font-weight: 900;
   line-height: max(.24rem, 15px); text-align: center; color: var(--tc); background: rgba(10, 12, 12, .85); border: 1px solid var(--tc); }
 .sw-op__sub { position: absolute; right: 0; top: 0; padding: 0 .04rem; font-size:max(calc(.12 * var(--t)), 9px); font-weight: 800; color: #1a1a1a; background: var(--amber, #f2b544); }
-.sw-op.is-standin img { filter: saturate(.55); }
+.sw-op.is-standin :is(img, .dyn-cover) { filter: saturate(.55); }
 
 /* enemy thumbnails */
 .sw-ethumbs { display: flex; flex-wrap: wrap; align-items: center; gap: .08rem; }
@@ -1830,7 +1830,7 @@ button.ally-card:disabled { filter: grayscale(.7) brightness(.7); cursor: defaul
 .rseat__lost { position: absolute; left: 0; right: 0; top: 40%; z-index: 1; display: flex; align-items: center; justify-content: center; gap: .1rem; padding: .14rem 0;
   font-size:max(calc(.24 * var(--t)), 14px); font-weight: 800; color: #ff7a8a; background: rgba(80, 10, 18, .85); }
 .rseat__lost .icon { width: 1.2em; height: 1.2em; }
-.rseat.is-offline .rseat__art img { filter: grayscale(.8) brightness(.6); }
+.rseat.is-offline .rseat__art :is(img, .dyn-cover) { filter: grayscale(.8) brightness(.6); }
 .rseat__state { position: absolute; left: 0; right: 0; bottom: .14rem; z-index: 1; display: flex; align-items: center; justify-content: center; gap: .1rem;
   font-size:max(calc(.26 * var(--t)), 14px); font-weight: 900; color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, .6); }
 .rseat:not(.is-ready) .rseat__state { color: #c9cecc; font-size:max(calc(.2 * var(--t)), 12px); }

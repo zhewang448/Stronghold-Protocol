@@ -121,7 +121,7 @@
 .sw-op__tier { position: absolute; left: 2px; bottom: 2px; min-width: max(.26rem, 16px); padding: 0 .03rem; font-family: var(--font-num); font-size: max(calc(.15 * var(--t)), 10px); font-weight: 900;
   line-height: max(.24rem, 15px); text-align: center; color: var(--tc); background: rgba(10, 12, 12, .85); border: 1px solid var(--tc); }
 .sw-op__sub { position: absolute; right: 0; top: 0; padding: 0 .04rem; font-size: max(calc(.12 * var(--t)), 9px); font-weight: 800; color: #1a1a1a; background: var(--amber, #f2b544); }
-.sw-op.is-standin img { filter: saturate(.55); }
+.sw-op.is-standin :is(img, .dyn-cover) { filter: saturate(.55); }
 /* enemy thumbnails */
 .sw-ethumbs { display: flex; flex-wrap: wrap; align-items: center; gap: .08rem; }
 .sw-ethumbs--grid { max-height: max(1.9rem, calc(96px * var(--sp-ui, 1))); overflow-y: auto; scrollbar-width: thin; }

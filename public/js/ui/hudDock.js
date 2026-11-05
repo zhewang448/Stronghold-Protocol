@@ -20,7 +20,7 @@ export function useHudMeasure(ref, measure, deps) {
     const update = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(measure); };
     const observer = new ResizeObserver(update);
     const hud = el.closest('.gm__hud');
-    for (const node of new Set([el, hud, el.parentElement, ...(hud?.querySelectorAll('.gm__corner, .shopbar, .shopbar-tab, .team, .gtop, .gm__bonds') || [])])) {
+    for (const node of new Set([el, hud, el.parentElement, ...(hud?.querySelectorAll('.gm__corner, .shopbar, .shopbar-tab, .team, .team__list, .team__row, .team__btn, .gtop, .gm__bonds') || [])])) {
       if (node) observer.observe(node);
     }
     measure();
@@ -44,19 +44,21 @@ export function useAvatarMessageDock(ref, playerId, messageKey) {
     const row = [...team.querySelectorAll('.team__row')].find(node => node.dataset.playerId === playerId);
     const avatar = row?.querySelector('.team__btn');
     if (!avatar) return;
-    const frame = hudFrame(el), origin = team.getBoundingClientRect();
+    const frame = hudFrame(el), origin = (el.offsetParent || team).getBoundingClientRect();
     const a = avatar.getBoundingClientRect(), card = row.getBoundingClientRect();
     const list = team.querySelector('.team__list').getBoundingClientRect();
     const offscreen = a.bottom <= list.top || a.top >= list.bottom;
     el.toggleAttribute('data-offscreen', offscreen);
     const shop = team.closest('.gm__hud').querySelector('.shopbar, .shopbar-tab');
-    const upperEdge = Math.max(frame.top, list.top);
-    const lowerEdge = Math.min(frame.bottom, list.bottom, shop?.getBoundingClientRect().top || frame.bottom);
     const box = el.getBoundingClientRect();
-    const top = Math.max(upperEdge, Math.min(a.top + a.height / 2 - box.height / 2, lowerEdge - box.height - 8));
     // The whole player card includes the name and LP tower to the avatar's right.
     // Anchor outside that card, not inside its information column.
     const left = Math.max(frame.left, Math.min(card.right + 8, frame.right - box.width));
+    const shopRect = shop?.getBoundingClientRect();
+    const overlapsShop = shopRect && left < shopRect.right && left + box.width > shopRect.left;
+    const lowerEdge = Math.min(frame.bottom, overlapsShop ? shopRect.top - 8 : frame.bottom);
+    // Only the viewport/shop can displace a visible sender's bubble. The last row is not a screen edge.
+    const top = Math.max(frame.top, Math.min(a.top + a.height / 2 - box.height / 2, lowerEdge - box.height));
     el.style.left = String(left - origin.left) + 'px';
     el.style.top = String(top - origin.top) + 'px';
   }, [playerId, messageKey]);

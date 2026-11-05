@@ -243,17 +243,17 @@
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_172_svrash_ambienceSynesthesia__4/dyn_illust_char_172_svrash_ambienceSynesthesia__4/dyn_illust_char_172_svrash_ambienceSynesthesia__4.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_172_svrash_ambienceSynesthesia__4/dyn_illust_char_172_svrash_ambienceSynesthesia__4/dyn_illust_char_172_svrash_ambienceSynesthesia__4.atlas",
       "frames": {
-        "avatar": {
-          "x": -134.744,
-          "y": -62.808,
-          "width": 284.469,
-          "height": 284.469
-        },
         "portrait": {
-          "x": -147.185,
-          "y": -291.358,
-          "width": 256.509,
-          "height": 513.019
+          "x": 41.069,
+          "y": 847.005,
+          "width": 202.383,
+          "height": 404.767
+        },
+        "avatar": {
+          "x": 36.666,
+          "y": 1015.429,
+          "width": 225.032,
+          "height": 225.032
         }
       },
       "bundle": "char_172_svrash_ambienceSynesthesia#4",
@@ -261,7 +261,49 @@
       "name": "不融冰",
       "group": "音律联觉/IV",
       "illust": "https://media.prts.wiki/6/62/%E7%AB%8B%E7%BB%98_%E9%93%B6%E7%81%B0_skin3.png",
-      "prtsFile": "立绘_银灰_skin3.png"
+      "prtsFile": "立绘_银灰_skin3.png",
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "7732cd5872f0d142797f2305a4cec6f91ec526b2f9bebb4210e8bf523d93f05d",
+        "skeletonSha256": "67e0067d2c5ed351a50b2f8e2242e7e26f8321ca455312691299d01c43b44420",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 116,
+            "inliers": 108,
+            "tileSha256": "243bd4dd53f376ee4ff67e15882ab3caff988128450dd831f4676ccbcbab762f",
+            "transform": [
+              [
+                0.843263356991777,
+                -0.0005512362198641454,
+                780.9010938629513
+              ],
+              [
+                0.0005512362198641454,
+                0.843263356991777,
+                490.62198324590963
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 64,
+            "inliers": 53,
+            "tileSha256": "c079f7e32eb3bc89243e33a4c5c5a553e3f5a7d928ba9956a8897954934976ca",
+            "transform": [
+              [
+                0.9375288481615177,
+                0.014132573857720557,
+                776.2371710501525
+              ],
+              [
+                -0.014132573857720557,
+                0.9375288481615177,
+                500.4355777566796
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_1026_gvial2@summer#12": {
       "charId": "char_1026_gvial2",
