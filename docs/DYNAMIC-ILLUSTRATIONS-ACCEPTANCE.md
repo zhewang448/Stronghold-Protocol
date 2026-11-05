@@ -1,5 +1,8 @@
 # 动态立绘与三位新干员：交接增补验收（2026-11-05）
 
+已合并到本地 `main` 并迁至 `E:\Stronghold-Protocol`；历史路径对应的素材、事务和证据现位于相同相对目录。
+最终合并及旧工作树清理见 [main 迁移记录](LOCAL-MAIN-MIGRATION-20261105.md)。
+
 实施工作树：`C:\Users\34948\.codex\worktrees\dynamic-illustrations-new-operators\Stronghold-Protocol`；分支 `codex/dynamic-illustrations-new-operators`；原始基线 `cbeb8d2a8d34ba7f39a31b746b34d8398b2d8a0e`。
 复用所有既有修改，未重置主目录、未发布、未合并。下方“此前阶段”保留原记录，本节与 [支持矩阵](DYNAMIC-ILLUSTRATIONS-SUPPORT.md) 是本次结果。
 

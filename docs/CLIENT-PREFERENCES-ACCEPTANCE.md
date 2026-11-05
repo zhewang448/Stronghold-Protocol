@@ -1,5 +1,8 @@
 # 客户端设置默认值与用户权限验收（2026-11-05）
 
+已合并到本地 `main` 并迁至 `E:\Stronghold-Protocol`。下文旧绝对路径保留当时验证位置，
+四个事务角色和截图现位于主目录下相同相对目录；当前状态见 [main 迁移记录](LOCAL-MAIN-MIGRATION-20261105.md)。
+
 实施工作树：`C:\Users\34948\.codex\worktrees\dynamic-illustrations-new-operators\Stronghold-Protocol`。分支：`codex/dynamic-illustrations-new-operators`。
 原始基线：`cbeb8d2a8d34ba7f39a31b746b34d8398b2d8a0e`。继承既有动态立绘、新干员和重复策略修改。
 
