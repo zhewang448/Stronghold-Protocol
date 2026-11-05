@@ -398,3 +398,5 @@ npm run golden       # 确定性战斗与整局黄金结果
 ## 四版本默认开放（本地扩展）
 
 可从大厅选择第二期下半、第二期上半、第一期下半、第一期上半，默认选中第二期下半。已有同盟通过房主提案及真人一致投票切换。历史版保留规则推算提示，本地联动仅默认版提供；服主可用 `--versions act2autochess` 限制单版，或用 `--versions <id,id> --version-default <id>` 指定列表与默认项，详见 [部署配置](docs/DEPLOY.md#11-四版本开放与部署配置)。
+
+Stardust 指定 UI 适配：感谢 [Stardust-minus/Stronghold-Protocol](https://github.com/Stardust-minus/Stronghold-Protocol/tree/7f39464c285fde4e5ee98825ad00936cffdfffa8) 的损伤环、脚下血条、过载显示、商店人像、小地图、名片底图、预计叠层与四候选选二实现（GPL-3.0-or-later）。本库具体范围、默认值与兼容见 [迁移说明](docs/STARDUST-UI-MIGRATION.md)。

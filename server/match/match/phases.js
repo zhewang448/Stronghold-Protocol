@@ -103,6 +103,33 @@ export class MatchPhases {
     }
   }
 
+  chooseDiy(ps, tier, charIds, revision) {
+    if (this.phase !== PHASE.INFO_CHECK || this.setupVote) return fail(ERR.WRONG_PHASE);
+    if (!ps || ps.isBot || ps.left || !ps.connected) return fail(ERR.NOT_IN_ROOM);
+    if (revision !== this.setupRevision) return fail(ERR.BAD_TARGET);
+    const candidate = Object.create(ps);
+    const result = candidate.chooseDiy(tier, charIds);
+    if (!result.ok) return fail(ERR.BAD_TARGET);
+    const off = new Set([...this.disabledBonds, ...this.staticInactiveBonds]);
+    let prepared;
+    try {
+      if (candidate.resolveDiy(off)) prepared = candidate.buildDiyStock(off);
+    } catch (e) { this.reportError('diy choice preparation', e); return fail(ERR.INTERNAL); }
+    ps.diyChoice = candidate.diyChoice;
+    if (prepared) {
+      ps.diy = candidate.diy; ps._diyRecords = candidate._diyRecords; ps.gd = candidate.gd;
+      ps.diyStock = prepared.stock; ps.diyBanned = prepared.banned;
+      ps.invalidateDeployMap();
+    }
+    if (this._infoAdvanceTimer) {
+      this.cancel(this._infoAdvanceTimer); this._infoAdvanceTimer = null;
+      this.setDeadline(this.soloUntimed ? 0 : this.gd.timer('infoCheck'), () => this.enterBandDraft());
+    }
+    ps.infoReady = false;
+    this.markPublic(); this.markPrivate(ps);
+    return OK;
+  }
+
   enterInfoCheck() {
     this.phase = PHASE.INFO_CHECK;
     for (const ps of this.order) if (ps.botControlled) ps.infoReady = true;

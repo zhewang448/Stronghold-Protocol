@@ -51,7 +51,7 @@ import { GuideButton } from '../ui/guide.js';
 import { openStats } from './stats.js';
 import { openFriends } from '../ui/friends.js';
 import { RoomInviteButton, PresenceSelector } from '../ui/social.js';
-import { NameCardLayer } from '../ui/namecards.js';
+import { NameCardLayer, NameCardPickerHost, openNamecardPicker } from '../ui/namecards.js';
 import { SettingsButton } from '../ui/settings.js';
 import { LoadoutButton } from './loadout.js';
 import { PluginTag, isModdedRoom } from '../ui/pluginTag.js';
@@ -292,8 +292,8 @@ function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvi
       onClick=${() => onRemoveBot(index)} title=${t('移除 AI 队友')} aria-label=${t('移除 AI 队友')}><${Icon} name="robot" /><${Icon} name="close" /></button>` : null}
     ${!seat.isBot && !isMe && facts.isHost ? html`<button type="button" class="rseat__kick" disabled=${busy === `kick${index}`}
       onClick=${() => onKick(index, seat.name, seat.playerId)} title=${t('将该博士移出同盟')} aria-label=${t('移出该博士')}><${Icon} name="user" /><${Icon} name="close" /></button>` : null}
-    <div class=${`rseat__plate${seatAccount?.card ? ' has-nc' : ''}`}>
-      <${NameCardLayer} card=${seatAccount?.card} />
+    <div class=${`rseat__plate${seat.namecard?.resolved ? ' has-room-nc' : ''}`}>
+      <${NameCardLayer} waitingRoom=${true} card=${seat.namecard} />
       ${isMe ? html`<span class="rseat__me" title=${t('你')}><${Icon} name="info" /></span>` : null}
       ${bondTip ? html`<${Tooltip} text=${bondTip.text} aside=${bondTip.aside} tap=${true} tipClass='rseat__avatar-tooltip'>
         <button type='button' class='rseat__avatar-help' aria-label=${t('查看预选盟约')}>
@@ -301,6 +301,7 @@ function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvi
         </button>
       <//>` : html`<${AvatarFrame} size='sm' name=${seat.name} src=${room.seatAvatars === true ? (seat.isBot ? undefined : seatAccount?.avatar || undefined) : cardAvatarUrl(seat.card, seat.cardSkin, portraits.m) || seatAccount?.avatar || undefined}
         m=${portraits.m} charId=${room.seatAvatars !== true ? seat.card : null} skin=${seat.cardSkin} seat=${index} bot=${seat.isBot} self=${isMe} />`}
+      ${isMe ? html`<button type="button" class="room-nc-open" onClick=${openNamecardPicker} title=${t('名片底图')} aria-label=${t('名片底图')}><${Icon} name="image" /></button>` : null}
       <span class="rseat__who">
         <${TrophyBadge} count=${seatAccount?.trophies} class="tbadge--inline" /><b class=${`rseat__name${owner ? ' sp-owner-name' : ''}`}>${seat.name || t('博士')}</b><${AccountTag} playerId=${seat.isBot ? null : seat.playerId} />
         ${owner ? html`<span class="sp-owner-badge">${t('服主')}</span>` : null}
@@ -625,6 +626,7 @@ export function RoomScreen() {
 
   return html`<div class=${`screen room-screen rs${coop ? '' : ' rs--solo'}${facts.seats.length > DEFAULT_SEATS ? ' rs--big' : ''}${exiting ? ' is-leaving' : ''}`} style=${`--d-color:${DIFFICULTY_COLORS[room.difficulty]}; --n:${facts.seats.length}`}>
     <div class="rs__bg" aria-hidden="true"></div>
+    <${NameCardPickerHost} />
     ${versionOpen ? html`<${VersionPicker} mode="room" versions=${versions || []} current=${roomVersion(room)} serverDefault=${serverDefault} roomMode=${room.mode} onClose=${() => setVersionOpen(false)} note=${versionWhy} editable=${!versionWhy && room.hostControls?.version !== false} onPick=${async version => { try { await net.request('room.proposeVersion', { version }); setVersionOpen(false); } catch (err) { toastError(err); } }} />` : null}
     <header class="rs-top">
       <div class="rs-top__left">

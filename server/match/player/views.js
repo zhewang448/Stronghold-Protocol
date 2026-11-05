@@ -3,6 +3,7 @@
 // Installed on PlayerState.prototype by server/match/PlayerState.js (a method container: never instantiated; `this` is
 // the player state).
 
+import { layerForecast } from '../layerForecast.js';
 import { PHASE } from '../../../shared/constants.js';
 import { boardOrder, pieceDir } from '../board.js';
 import { bondList, offBondCounts } from '../bondsMeta.js';
@@ -71,6 +72,7 @@ export class PlayerViews {
     for (const { r, c, piece } of boardOrder(this.board)) board.push(this.pieceView(piece, [r, c]));
     // a boss round's prep: the partner's board on its half of the boss field (Match.bossMateView, item 51)
     const bossMate = typeof this.m.bossMateView === 'function' ? this.m.bossMateView(this) : null;
+    const forecast = layerForecast(this.m, this);
     return {
       t: 'm.private',
       playerId: this.playerId,
@@ -128,7 +130,9 @@ export class PlayerViews {
       // (shared/diy.js diyRecord); `diyBanned`: the slotted slots out of the shop this match (every bond of the operator
       // switched off)
       diy: this.diy,
+      ...(this.m.phase === PHASE.INFO_CHECK && this.hasDiyChoice() ? { diyChoice: this.diyChoiceView(new Set([...this.m.disabledBonds, ...this.m.staticInactiveBonds])) } : {}),
       diyBanned: this.diyBanned,
+      ...(forecast ? { layerForecast: forecast } : {}),
       // 最终攻势 / 隐秘核心 prep (community report of 2026-10-06, item 51): `{ playerId, side, units }` — the pair partner's
       // board pieces as UnitInfo on its half of the boss field (mirrored on the right half, as the battle places them);
       // the own prep view draws them beside the own half, read-only. Absent otherwise.

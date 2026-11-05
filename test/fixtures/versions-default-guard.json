@@ -37,7 +37,15 @@
         "connected": true,
         "bondPlan": null,
         "card": null,
-        "cardSkin": null
+        "cardSkin": null,
+        "namecard": {
+          "mode": "auto",
+          "id": "",
+          "x": 50,
+          "y": 50,
+          "zoom": 100,
+          "resolved": null
+        }
       },
       null,
       null,

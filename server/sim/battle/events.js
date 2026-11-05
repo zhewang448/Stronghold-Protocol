@@ -5,7 +5,7 @@
 import { bondTimerView } from '../content/bonds/timers.js';
 import { EVENT_BUFFER_CAP } from '../constants.js';
 import { elementView } from '../attack.js';
-import { unitInfo, snapshotUnits, ammoView, wolfView, negView, moteView, coinView, mysticView, layerView, chargeView } from '../snapshot.js';
+import { overdriveView, unitInfo, snapshotUnits, ammoView, wolfView, negView, moteView, coinView, mysticView, layerView, chargeView } from '../snapshot.js';
 
 export class BattleEvents {
   fx(kind, params = {}) {
@@ -137,6 +137,8 @@ export class BattleEvents {
       if (timers.length) (snap.bondTimers || (snap.bondTimers = [])).push([u.id, timers]);
       const v = elementView(u, this.time);
       if (v) (elem || (elem = [])).push([u.id, v[0], v[1], v[2], v[3]]);
+      const od = overdriveView(u);
+      if (od != null) (snap.overdrive || (snap.overdrive = [])).push([u.id, od]);
       const am = ammoView(u);
       if (am) (ammo || (ammo = [])).push([u.id, am[0], am[1]]);
       const wv = wolfView(u);

@@ -24,6 +24,16 @@ test("preset names trim, count codepoints and reject blank, multiline and overlo
   assert.equal([...presetName("😀".repeat(24))].length, 24);
   for (const name of [" ", "x".repeat(25), "a\nb".replace("\n", String.fromCharCode(10))]) assert.throws(() => presetName(name), { code: "name" });
 });
+
+test('candidate presets preserve all version maps and use a library version older clients refuse', () => {
+  const value = structuredClone(current);
+  value.diy.act2autochess = { diyBench_5_1: { charId: 'char_601_cguard' } };
+  value.diy.act1autochess = { diyBench_6_2: { charId: 'char_609_acguad' } };
+  const lib = put(empty(), { snapshot: snapshotOf(value, DEFAULT_PARTS, Object.keys(value.diy)) });
+  assert.equal(lib.v, 4);
+  const storage = new MemoryStorage(); storage.setItem(PRESETS_KEY, JSON.stringify(lib));
+  assert.deepEqual(readLibrary(storage).items[0].snapshot.diy, value.diy);
+});
 test("CRUD preserves original snapshot, active identity, created timestamp and current settings", () => {
   const lib = put(empty());
   current.byChar.char_199_yak.skill = 2;

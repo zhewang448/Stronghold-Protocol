@@ -514,6 +514,10 @@ export function SettingsModal({ open, onClose }) {
       </div>
       </section>
       <section class="set-group" aria-labelledby="settings-battle"><h3 id="settings-battle">${t('战斗显示')}</h3>
+      <${Toggle} setting="settings.officialBattleHud" label=${t('还原战场状态条')} micro="BATTLE HUD" value=${s.officialBattleHud} onChange=${(v) => updateSettings({ officialBattleHud: v })} />
+      <p class="set-hint">${t('使用脚下血条、圆形损伤环和过载分段条；关闭恢复原显示。')}</p>
+      <${Toggle} setting="settings.shopPortraitFocus" label=${t('突出商店人像')} micro="SHOP PORTRAITS" value=${s.shopPortraitFocus} onChange=${(v) => updateSettings({ shopPortraitFocus: v })} />
+      <p class="set-hint">${t('放大并提亮商店与晋升奖励的人像，保持卡片和文字尺寸。')}</p>
       <${Toggle} setting="settings.damageNumbers" label=${t('显示伤害数字')} micro="DAMAGE NUMBERS" value=${s.damageNumbers} onChange=${(v) => updateSettings({ damageNumbers: v })} />
       <${Toggle} setting="settings.officialDamageNumbers" label=${t('官方伤害数字')} micro="OFFICIAL NUMBERS" value=${s.officialDamageNumbers} onChange=${(v) => updateSettings({ officialDamageNumbers: v })} />
       <p class="set-hint">${t('只显示达到官方暴击条件的红色数字。关闭时仍显示每一次命中。')}</p>

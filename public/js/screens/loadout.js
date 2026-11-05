@@ -70,7 +70,7 @@ import { ModuleGlyph, ModuleInfo, SkillOption, SkillIcon, SkillSection, ModuleSe
 export { ModuleGlyph, ModuleInfo, SkillOption };
 import { LoadoutStats } from '../ui/loadoutStats.js';
 export { LoadoutStats, statsPreview } from '../ui/loadoutStats.js';
-import { diyCount, sanitizeDiyPicks, setPick, serializeDiy, parseDiyImport, DIY_IMPORT_MAX_BYTES, diySlotList, slotRecord } from '../ui/diyModel.js';
+import { diyCount, sanitizeDiyPicks, setPick, serializeDiy, parseDiyImport, DIY_IMPORT_MAX_BYTES, diyPositions, diySlotList, slotRecord } from '../ui/diyModel.js';
 import { t, tParts, N_ } from '../../../shared/i18n.js';
 import { copyText } from '../ui/clipboard.js';
 import { toast } from '../ui/toasts.js';
@@ -610,7 +610,7 @@ export function DeckBar({ deckTab = 'ops', onDeckTab = null, counts, active, onJ
     <div class="lo-bbar__tiers">
       ${DECK_TIERS.map((tier) => html`<button key=${tier} type="button" class=${cx('lo-bbar__tier', active === tier && 'is-on')} disabled=${!counts[tier]}
           data-tier=${tier} onClick=${() => onJump(tier)} title=${t('{tier}阶', { tier })}>
-        ${diyOpen[tier] ? html`<span class="lo-bbar__diy" title=${t('{tier}阶 还有 {n} 个自选名额', { tier, n: diyOpen[tier] })}><${Icon} name="user" /><b class="num">${diyOpen[tier]}</b></span>` : null}
+        ${tier === 5 || tier === 6 ? html`<span class="lo-bbar__diy" title=${t('{tier}阶 已配置候选 {n}/4', { tier, n: diyOpen[tier] || 0 })}><${Icon} name="user" /><b class="num">${diyOpen[tier] || 0}/4</b></span>` : null}
         <span class="lo-bbar__roman num">${ROMAN[tier]}</span><span>${t('{tier}阶', { tier })}</span>
       </button>`)}
     </div>
@@ -717,6 +717,7 @@ function LoadoutScreen({ st }) {
   const presets = useLoadoutPresets(ready);
   const phase = useStore((s) => s.match?.public?.phase || null);
   const inMatch = useStore((s) => !!s.room?.inMatch);
+  const candidatesSupported = useStore((s) => s.uiMigration?.diyCandidates === true);
   // co-op briefing (INFO_CHECK, 25 s): the overlay covers the briefing's own countdown, so it shows the time left — the
   // match locks the loadout when it runs out (review fix: edits were silently only for the next match)
   const infoDeadline = useStore((s) => (s.match?.public?.phase === PHASE.INFO_CHECK ? s.match.public.deadline : 0));
@@ -782,7 +783,7 @@ function LoadoutScreen({ st }) {
   const codex = codexItems(data.get('items'));
   const ui = useRef({});
   ui.current = { drawer, menu, quick, setDrawer, setMenu, setQuick, allowedChars };
-  const diySlots = ready ? diySlotList(diyData()) : [];
+  const diySlots = ready ? diyPositions(diyData()) : [];
 
   const tab = st.tab === 'ownership' || st.tab === 'diy' ? st.tab : 'loadout';
   // leaving 干员调配 (干员持有, the 甄选干员 card, or openLoadout naming a tab) closes the card view's layers: hidden, they
@@ -880,7 +881,7 @@ function LoadoutScreen({ st }) {
   const openExport = () => setIo(tab === 'ownership'
     // (by operator, every version's — DESIGN §35.23; a v1 store still migrating exports what it has)
     ? { mode: 'export', kind: 'ownership', text: serializeOwnership(loadoutStore.get().notOwnedChars || []) }
-    : tab === 'diy' ? { mode: 'export', kind: 'diy', text: serializeDiy(loadoutStore.get().diy, { version: loadoutStore.get().diyVersion }) }
+    : tab === 'diy' ? { mode: 'export', kind: 'diy', compatible: false, text: serializeDiy(loadoutStore.get().diy, { version: loadoutStore.get().diyVersion }) }
       : { mode: 'export', kind: 'loadout', format: 'native', now: Date.now(), scopeMode: 'all', scopeVersions: [pageVersion()],
         parts: { skills: true, modules: true, potential: true, cultivate: true, skins: true, skinRandom: false, skinLocks: false },
         snapshot: { byChar: loadoutStore.get().byChar || {}, ops: loadoutStore.get().ops || {}, skins: skinsStore.get().skins,
@@ -1046,7 +1047,7 @@ function LoadoutScreen({ st }) {
   };
   const nFilters = ['tier', 'prof', 'bond', 'changedOnly'].filter((k) => !!st.filters?.[k]).length + (String(st.filters?.query || '').trim() ? 1 : 0) + (operatorMode !== 'all' ? 1 : 0);
   const tierCounts = deckTab === 'items' ? Object.fromEntries(DECK_TIERS.map(tier => [tier, codex.filter(x => x.tier === tier).length])) : Object.fromEntries(DECK_TIERS.map((tier) => [tier, list.filter((c) => c.tier === tier).length + (nFilters ? 0 : diySlots.filter((s) => s.tier === tier).length)]));
-  const diyOpen = Object.fromEntries(DECK_TIERS.map((tier) => [tier, diySlots.filter((s) => s.tier === tier && !diyLegal[s.slotId]).length]));
+  const diyOpen = Object.fromEntries(DECK_TIERS.map((tier) => [tier, diySlots.filter((s) => s.tier === tier && diyLegal[s.slotId]).length]));
   const clearFilters = () => loadoutStore.set({ filters: { ...st.filters, tier: null, prof: null, bond: null, query: '', changedOnly: false, operatorMode: 'all', operatorVersions: [] } });
 
   const [syncText, syncCls] = tab === 'ownership' ? OWN_SYNC_TEXT[st.ownSync] || OWN_SYNC_TEXT.idle
@@ -1177,7 +1178,7 @@ function LoadoutScreen({ st }) {
       : html`<p class=${cx('lo-note', locked && 'is-locked')}><${Icon} name="info" />${locked ? lockedText : fromText}</p>`}
     ${!ready ? html`<div class="lo-loading"><${Spinner} size="sm" />${t('正在载入干员数据（打开页面后仅载入一次）…')}</div>`
       : lost.length ? html`<${DataMissing} files=${lost} />` : tab === 'diy'
-      ? html`<${DiyPanel} m=${m} picks=${st.diy || {}} legal=${diyLegal} kitted=${st.diyKitted} onSet=${setDiySlot} ops=${st.ops} onOps=${setOpsOf} />`
+      ? html`${!candidatesSupported ? html`<p role="status">${t('当前服务器不支持四候选；候补保存在本机，本局仅同步每阶前两名。')}</p>` : null}<${DiyPanel} m=${m} picks=${st.diy || {}} legal=${diyLegal} kitted=${st.diyKitted} onSet=${setDiySlot} ops=${st.ops} onOps=${setOpsOf} />`
       : tab === 'ownership'
       ? html`<${OwnershipPanel} m=${m} roster=${ownRoster} notOwned=${st.notOwned} onToggle=${toggleOwned} />`
       : deck ? html`<main class="lo-deckwrap">
@@ -1234,6 +1235,10 @@ function LoadoutScreen({ st }) {
         : io.mode === 'export'
           ? html`${tParts('共 {n} 名干员已调整。复制或下载这份数据，即可在别的设备或浏览器上导入。', { n: html`<b class="num">${nChanged}</b>`, count: nChanged })}`
           : html`${t('把导出的内容粘贴到下方，或点「选择文件」。')}`}</p>
+      ${ioDiy && io.mode === 'export' ? html`<div class="lo-export__parts" role="group" aria-label=${t('导出格式')}>
+        <${Button} size="sm" active=${!io.compatible} onClick=${() => setIo({ ...io, compatible: false, text: serializeDiy(loadoutStore.get().diy, { version: loadoutStore.get().diyVersion }) })}>${t('完整候选（v2）')}<//>
+        <${Button} size="sm" active=${!!io.compatible} onClick=${() => setIo({ ...io, compatible: true, text: serializeDiy(loadoutStore.get().diy, { version: loadoutStore.get().diyVersion, compatible: true }) })}>${t('兼容导出（仅前两名）')}<//>
+      </div>${io.compatible ? html`<p class="lo-io__hint">${t('兼容导出只包含每阶原有的前两名候选；其余候选不会写入文件。')}</p>` : null}` : null}
       ${transferScopeControls}
       ${selectiveImport ? html`<fieldset class="lo-export" data-testid="loadout-import-options"><legend>${t('选择导入内容')}</legend>
         ${importData.ok ? html`<p class="lo-io__hint">${t('文件已识别：{n} 名干员包含自定义配置。', { n: new Set([...Object.keys(importData.byChar || importData.entries || {}), ...Object.keys(importData.ops || {}), ...Object.keys(importData.skins || {})]).size })}</p>

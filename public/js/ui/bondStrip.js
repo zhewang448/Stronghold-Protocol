@@ -1,3 +1,16 @@
+export function forecastSourceName(src) {
+  const rec = (file) => data.lookup(file, src.id);
+  switch (src.kind) {
+    case 'bond': return rec('bonds')?.name || src.id;
+    case 'band': return rec('bands')?.name || src.id;
+    case 'item': return rec('items')?.name || src.id;
+    case 'effect': return rec('effects')?.name || src.id;
+    case 'garrison': { const c = rec('chess'); return c ? t('{name} 的特质', { name: c.name }) : t('特质'); }
+    default: return t('特质');
+  }
+}
+
+/** The forecast layers of a bond (0 when none). */
 // Bond strip (active-bond discs under the top bar) and the bond detail popup: the key facts first (user playtest #2
 // item 9: name, members in play / next threshold, layers, reached tier and its threshold row, the current effect with
 // layer-resolved numbers), then the full description and the member list with owned / on-board state — operators that
@@ -88,7 +101,7 @@ function BondScroller({ count, children }) {
  * @param {{ bonds: any[], layersDisabled?: boolean, onOpen:(bondId:string)=>void, openId?: string|null,
  *   owner?: string|null }} props — owner: the watched teammate's name (null = your own bonds)
  */
-export function BondStrip({ bonds, layersDisabled = false, onOpen, openId = null, owner = null }) {
+export function BondStrip({ bonds, layersDisabled = false, onOpen, openId = null, owner = null , forecast = null }) {
   const sorted = sortBonds(bonds, (id) => data.lookup('bonds', id));
   if (!sorted.length) {
     return html`<div class=${cx('bstrip', 'bstrip--empty', owner && 'is-other')} data-owner=${owner || null}>
@@ -121,6 +134,7 @@ export function BondStrip({ bonds, layersDisabled = false, onOpen, openId = null
           layersDisabled=${layersDisabled} onClick=${() => onOpen(b.bondId)}
           title=${`${rec?.name || b.bondId} ${b.count ?? 0}/${next ?? th[th.length - 1] ?? '-'}${b.harmony > 0 ? t('（含调和 +{harmony}）', { harmony: b.harmony }) : ''}`} />
         <span class=${cx('bslot__count', 'num', next == null && 'is-max')}>${b.count ?? 0}<small>/${next ?? th[th.length - 1] ?? '-'}</small></span>
+        ${!layersDisabled && !owner && forecast?.bonds?.[b.bondId]?.n > 0 ? html`<span class="bslot__forecast num">+${forecast.bonds[b.bondId].n}</span>` : null}
       </div>`;
     })}
   </div>`;
@@ -142,7 +156,7 @@ export function BondStrip({ bonds, layersDisabled = false, onOpen, openId = null
  *   note, no 在场 count and no 当前效果 block (its numbers would promise an effect the mode never gives; the bond text stays).
  *   `entry.harmony` (the server's bond views: the +1 调和 added to `count`): 在场 n（含调和 +1） and the 调和 row
  */
-export function BondPopup({ bondId, entry, priv, stock = null, banned = [], onClose, onMember, place = null, over = false, beside = null, owner = null, ownerId, off = false, morphMode = 'official' }) {
+export function BondPopup({ bondId, entry, priv, stock = null, banned = [], onClose, onMember, place = null, over = false, beside = null, owner = null, ownerId, off = false, forecast = null, morphMode = 'official' }) {
   const b = data.lookup('bonds', bondId);
   if (!b) return null;
   const count = entry?.count ?? 0;
@@ -187,6 +201,12 @@ export function BondPopup({ bondId, entry, priv, stock = null, banned = [], onCl
         </div>
       </div>
     </header>
+    ${forecast && !owner && !off ? html`<section class="bpop__sec bpop__forecast"><h4>${t('预计叠层')}</h4>
+      <p><b class="num t-mint">+${forecast.bonds?.[bondId]?.n || 0}</b> ${t('层')}</p>
+      ${(forecast.bonds?.[bondId]?.sources || []).map(x => html`<p>${forecastSourceName(x)} +${x.n}</p>`)}
+      <small>${t('仅计算本人休整期结束时的确定性加层；队友贡献与后续奖励未计入。')}</small>
+      ${forecast.random ? html`<p>${t('随机效果未计入')}</p>` : null}${forecast.partial ? html`<p>${t('插件效果未计入')}</p>` : null}
+    </section>` : null}
     ${off ? html`<p class="bpop__off" role="note">${t('本模式下该盟约不会激活（其干员仍可能因所属的其他盟约出现）')}</p>` : null}
     <div class="bpop__tiers">
       ${th.map((n, i) => html`<span key=${i} class=${cx('bpop__tier', i < tier && 'is-on')}><b class="num">${n}</b><small>${b.maxCount != null ? t('名及以下') : tc('bond-threshold', '名')}</small></span>`)}

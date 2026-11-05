@@ -33,7 +33,7 @@ export function recoveryIdentity(root) {
 export function recoveryPayload(m, snap) {
   return {
     seed: m.seed,
-    seats: m.order.map(p => ({ seat: p.seat, playerId: p.playerId, name: p.name, isBot: p.isBot, connected: p.isBot, botBand: p.botBand, loadout: p.loadout, ops: p.ops, skins: p.skins, card: p.card, cardSkin: p.cardSkin, notOwned: p.standIns, diy: p.diy })),
+    seats: m.order.map(p => ({ seat: p.seat, playerId: p.playerId, name: p.name, isBot: p.isBot, connected: p.isBot, botBand: p.botBand, loadout: p.loadout, ops: p.ops, skins: p.skins, card: p.card, cardSkin: p.cardSkin, notOwned: p.standIns, diy: p.diy, diyPreset: p.diyPreset, diyChoice: p.diyChoice })),
     flags: Object.fromEntries(m.order.map(p => [p.playerId, { autoplay: p.autoplay, left: p.left }])),
     fixed: Object.fromEntries(FIXED.map(k => [k, m[k]])), schedule: m.factions.schedule,
     elapsedMs: Math.max(0, snap.at - m.startedAt), snapshot: snap.data,
@@ -50,7 +50,16 @@ export function restoreMatch(m, record) {
   m.startedAt = m.sched.now() - record.elapsedMs;
   m.stage = m.gd.stage(m.stageId);
   const off = new Set([...m.disabledBonds, ...m.staticInactiveBonds]);
-  for (const ps of m.order) ps.initDiyStock(off);
+  for (const ps of m.order) {
+    const seat = record.seats.find(s => s.playerId === ps.playerId);
+    // A PREP checkpoint has a locked mapping. Restore it verbatim, including older two-pick records.
+    if (!ps.isBot && seat) {
+      ps.setDiy(seat.diyPreset ?? seat.diy ?? {}, m.diyKitted ? { kitted: m.diyKitted } : undefined);
+      ps.setDiyChoiceState(seat.diyChoice);
+      ps.applyDiySlots(seat.diy || {});
+    }
+    ps.initDiyStock(off);
+  }
   m.replay = record.replay;
   m.replayDisabled = record.replayDisabled;
   for (const ps of m.order) {
@@ -106,7 +115,7 @@ export function createRecovery({ lobby, root, dir = path.join(root, 'logs', 'rec
       if (!CODE.test(room.code)) throw new Error('恢复房间号无效');
       const sessions = [...room.seats, ...room.spectators].filter(s => s && !s.isBot)
         .map(s => lobby.registry.byId(s.playerId)).filter(Boolean)
-        .map(s => Object.fromEntries(['playerId', 'token', 'name', 'loadout', 'ops', 'skins', 'card', 'cardSkin', 'notOwned', 'diy', 'resumeWindowMs', 'presenceStatus'].map(k => [k, s[k]])));
+        .map(s => Object.fromEntries(['playerId', 'token', 'name', 'loadout', 'ops', 'skins', 'card', 'cardSkin', 'namecard', 'bondPlan', 'notOwned', 'diy', 'resumeWindowMs', 'presenceStatus'].map(k => [k, s[k]])));
       const record = { ...payload, format: 1, identity, matchNo: room.matchCount, sessions,
         room: { ...(room.private ? { private: true } : {}), code: room.code, mode: room.mode, difficulty: room.difficulty, capacity: room.capacity, version: room.version, soloUnlimited: room.soloUnlimited, convenience: room.convenience, enemyHpMultiplier: room.enemyHpMultiplier, independentPools: room.independentPools, allowDuplicateBands: room.allowDuplicateBands, rescueEnabled: room.rescueEnabled, hostId: room.hostId, seats: room.seats, spectators: room.spectators, aiPicksLast: room.aiPicksLast, uniteLayerGains: room.uniteLayerGains, customIllust: room.customIllust, createdAt: room.createdAt } };
       fs.mkdirSync(dir, { recursive: true });

@@ -51,6 +51,7 @@ import { registerBuiltins } from './builtinMeta.js';
 import { msg, dn } from '../../shared/i18n.js';
 import { onGiftTicker } from './botEmotes.js';
 import { previewContext } from './preview.js';
+import { LayerLedger } from './layerForecast.js';
 import { deriveSeed } from '../sim/rng.js';
 
 export const HOOKS = Object.freeze([
@@ -80,6 +81,7 @@ export class MetaRegistry {
     this._h = new Map();
     /** registration problems that do not throw (unknown hook names — usually a typo) */
     this.warnings = [];
+    this._official = new WeakSet();
   }
 
   /**
@@ -99,6 +101,9 @@ export class MetaRegistry {
     this._h.set(key, h);
     return this;
   }
+
+  markOfficial() { for (const h of this._h.values()) this._official.add(h); return this; }
+  isOfficial(h) { return !!h && this._official.has(h); }
 
   unregister(key) { return this._h.delete(key); }
   get(key) { return this._h.get(key) ?? null; }
@@ -132,6 +137,7 @@ export function createRegistry({ builtins = true, content = true, log = console 
   if (content) {
     try { registerAllMeta(reg); } catch (e) { log.error?.('[meta] registerAllMeta failed', e); }
   }
+  reg.markOfficial();
   if (content) registerExtensionMeta(reg);
   if (reg.warnings.length) log.warn?.(`[meta] ${reg.warnings.length} handler method(s) are not hooks and will never run, e.g. ${reg.warnings.slice(0, 3).join('; ')}`);
   return reg;
@@ -165,6 +171,7 @@ export class EffectDispatcher {
   }
 
   _report(key, hook, e) {
+    if (this.preview?.ledger) throw new Error(`forecast ${key}.${hook}: ${e?.message || e}`, { cause: e });
     if (this.preview) return;
     this.errors++;
     const msg = `${key}.${hook}: ${e && e.message ? e.message : e}`;
@@ -191,6 +198,7 @@ export class EffectDispatcher {
   _call(ps, key, handler, hook, source, ev, repeat = 1) {
     const fn = typeof handler[hook] === 'function' ? handler[hook] : source.kind === 'garrison' && typeof handler.run === 'function' ? handler.run : null;
     if (!fn) return;
+    if (this.preview?.ledger && !this.registry.isOfficial(handler)) { this.preview.ledger.partial = true; return; }
     let ctx;
     if (this.preview) {
       try { ctx = makeCtx(this.m, ps, source, hook, ev, this.preview); }
@@ -198,8 +206,24 @@ export class EffectDispatcher {
     } else ctx = makeCtx(this.m, ps, source, hook, ev);
     for (let i = 0; i < repeat; i++) {
       if (!this._allowScript(handler,hook)) break;
+      const mark = this.preview?.ledger?.mark(this.preview.rng);
       try { fn.call(handler, ctx, ev); } catch (e) { this._report(key, hook, e); }
+      if (mark) this.preview.ledger.settle(mark, this.preview.rng, source);
     }
+  }
+
+  forecastLayers(ps, hook = 'onPrepEnd', ev = { round: this.m.round, preview: true }) {
+    const isolated = new EffectDispatcher(this.m, this.registry);
+    const ledger = new LayerLedger(ps.playerId);
+    // the detached game-data view (preview.js dataView) is kept for the match: copying the data again for every forecast
+    // took ~50 ms of the node's main thread per player action (rel20). Its records are copies, never the match's own.
+    this._forecastData ??= new Map();
+    const player = Object.create(ps);
+    for (const key of ['board', 'hand', 'temp', 'layers', 'bonds', 'effects', 'counters', 'round']) player[key] = structuredClone(ps[key]);
+    isolated.preview = { rng: this.m.rngMeta.clone(), data: this._forecastData, players: new Map([[ps.playerId, player]]), ledger, dispatcher: isolated };
+    ps = player;
+    isolated.dispatch(ps, hook, structuredClone(ev), { quiet: true });
+    return ledger.result();
   }
 
   /** 获得时 multiplier from 投资人 (investShip): ×2 while active, ×3 at ≥ 100 layers (research 02 §3.17). */
@@ -339,7 +363,12 @@ export class EffectDispatcher {
         if (!g) continue;
         const key = `garrison:${g.effectKey}`;
         const h = this.registry.get(key);
-        if (!h || !this._garrisonHooks(h, g).includes(hook)) continue;
+        if (!h) continue;
+        if (this.preview?.ledger && !this.registry.isOfficial(h)) {
+          if (GARRISON_HOOK[g.eventType] === hook || typeof h.garrisonHooks === 'function') this.preview.ledger.partial = true;
+          continue;
+        }
+        if (!this._garrisonHooks(h, g).includes(hook)) continue;
         if (where === 'hand' && g.bbStr && g.bbStr.conditionkey === 'character_target_inboard') continue;
         const repeat = hook === 'onGain' ? this.investRepeat(ps) : 1;
         this._call(ps, key, h, hook, { kind: 'garrison', key, piece, garrisonId: gid, garrison: g, bb: g.bb || {}, bbStr: g.bbStr || {}, where }, ev, repeat);
@@ -770,8 +799,10 @@ export function makeCtx(m, ps, source, hook, ev = null, preview = null) {
   };
   if (!preview) return ctx;
   const forPlayer = (p) => makeCtx(m, preview.players.get(p.playerId) || p, source, hook, null, preview);
-  return previewContext(ctx, preview, {
+  const out = previewContext(ctx, preview, {
     teammates: () => m.alivePlayers().filter((p) => p.playerId !== ps.playerId).map(forPlayer),
     player: (id) => { const p = m.players.get(id); return p?.alive ? forPlayer(p) : null; },
   });
+  if (preview.ledger?.playerId === ps.playerId) preview.ledger.bind(out, ps, source, preview);
+  return out;
 }

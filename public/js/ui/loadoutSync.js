@@ -774,6 +774,7 @@ export function installCardSync({ net, timers, target = cardStore, getChessReady
 export function installDiySync({ net, timers, target = loadoutStore, notify, content = appContentSet, app = store, gate = null } = {}) {
   // the picker's list: welcome's, and the operators the room's content set adds while it plays one (DESIGN §32.6)
   let welcomeList = null;
+  let candidatesSupported = false;
   let joined = { base: null, extra: null, list: null };
   const pickList = () => {
     const extra = content?.get().status === 'ready' ? content.get().kitted : null;
@@ -782,6 +783,8 @@ export function installDiySync({ net, timers, target = loadoutStore, notify, con
     return joined.list;
   };
   const offKit = net.on('welcome', (msg) => {
+    candidatesSupported = msg?.uiMigration?.diyCandidates === true;
+    app?.set?.({ uiMigration: msg?.uiMigration || {} });
     welcomeList = msg && Array.isArray(msg.diyKitted) ? msg.diyKitted.filter((x) => typeof x === 'string') : null;
     target.set({ diyKitted: pickList() });
   });
@@ -791,7 +794,8 @@ export function installDiySync({ net, timers, target = loadoutStore, notify, con
     lockedText: N_('自选编队是局外设置，修改将在下一局生效'),
     async prepare() {
       if (target === loadoutStore) refreshViews(); // the picks of the version on screen
-      return cleanPicks(target.get().diy);
+      const picks = cleanPicks(target.get().diy);
+      return candidatesSupported ? picks : Object.fromEntries(Object.entries(picks).filter(([key]) => !key.startsWith('diyBench_')));
     },
   });
   return { flush: sync.flush, dispose() { offKit?.(); offKitContent?.(); sync.dispose(); } };

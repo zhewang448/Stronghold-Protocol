@@ -204,6 +204,7 @@ export async function createFieldView(host, options = {}) {
   const settings = { damageNumbers: true, officialDamageNumbers: false, ammoEnergyCount: false, quality: 'high', officialFx: 'auto', fpsLimit: 0, ...(opts.settings || {}) };
   // 设置「显示其他玩家的皮肤」 (docs/SKINS.md), on unless the caller said off: kept out of the literal above so the shape
   // the other settings the units read every frame are pinned by stays one line (test/ui/ammo-count.test.js)
+  settings.officialBattleHud = settings.officialBattleHud !== false;
   settings.otherSkins = settings.otherSkins !== false;
   // the 3D board (three.js + the official art) loads in parallel with everything else
   const boardPref = boardPreference(opts.board);
@@ -2263,6 +2264,7 @@ export async function createFieldView(host, options = {}) {
         settings.fpsLimit = applyFrameRate(app.ticker, s.fpsLimit);
         if (before !== settings.fpsLimit) { slowFor = fastFor = 0; frameMs = renderFrameBudget(settings.fpsLimit); lastNow = performance.now(); }
       }
+      if (typeof s.officialBattleHud === 'boolean') settings.officialBattleHud = s.officialBattleHud;
       if (typeof s.officialDamageNumbers === 'boolean') settings.officialDamageNumbers = s.officialDamageNumbers;
       if (typeof s.ammoEnergyCount === 'boolean') settings.ammoEnergyCount = s.ammoEnergyCount; // the units read it every frame (ctx.settings)
       // 设置「显示其他玩家的皮肤」 (docs/SKINS.md): the views already up keep the appearance they were built on, so the

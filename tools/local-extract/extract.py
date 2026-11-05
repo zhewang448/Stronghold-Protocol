@@ -256,6 +256,7 @@ JOBS = [
     ('arts/maps/map_autochess/res.ab', 'map/autochess', {'Texture2D', 'Material'}),
     ('arts/maps/map_autochesssand/res.ab', 'map/autochesssand', {'Texture2D', 'Material'}),
     ('ui/autochess/[uc]autochesscommon.ab', 'ui/common', {'Sprite'}),
+    ('arts/ui/[uc]battlecommon.ab', 'ui/ep', {'Sprite'}, r'^(slider_ep_|sprite_ep_)'),
     ('ui/autochess/[uc]autochessbattle.ab', 'ui/battle', {'Sprite', 'TextAsset'}),
     ('ui/autochess/[uc]autochessouter.ab', 'ui/outer', {'Sprite'}),
     *[(f'ui/emoticon/theme/[uc]{theme}.ab', f'emoticon/{sub}', {'Sprite'}, BATTLE_EMOTE) for theme, sub in EMOTE_THEMES],

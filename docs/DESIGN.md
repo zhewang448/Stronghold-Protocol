@@ -152,3 +152,5 @@ Offline checks and game runtime never fetch them; derived records and the plugin
 | §36 | [history/0.3.3.md](history/0.3.3.md) | 0.3.3 — released 2026-10-25，0.3.2 的热修复；第一期商店装备核查与空栏显示（§36.1）、满休整区互换（§36.2）、跨版本装备图标缓存（§36.3） |
 
 Default-off spectator AI handover (maintainer decision 2026-10-24, §35.100): [AI handover rules](history/0.3.2/ai-handover.md).
+
+指定 Stardust UI 迁移的当前范围、默认开关、预计叠层和四候选选二扩展见 [实施说明](STARDUST-UI-MIGRATION.md)，来源与五批计划见 [计划](STARDUST-UI-PLAN.md)。当前规则同步到 design/client、match、network。

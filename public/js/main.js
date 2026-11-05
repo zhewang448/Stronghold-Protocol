@@ -71,6 +71,7 @@ import { markGameEntry } from './ui/domainRecoveryModel.js';
 import { installRehearsal } from './battle/rehearsal.js';
 import { recordResult, installStatsRecorder } from './ui/stats.js';
 import { installSettingsViews, loadoutStore, installLoadoutSync, installOwnershipSync, installDiySync, installSkinsSync, installCardSync, installAvatarSync } from './ui/loadoutSync.js';
+import { installNamecardSync } from './ui/namecards.js';
 import { installBondPlanSync } from './ui/bondPlan.js';
 import { installIllustSync } from './ui/customIllust.js';
 
@@ -513,6 +514,7 @@ async function boot() {
   installSkinsSync({ net });
   installAutoSkinRandom(store);
   installBondPlanSync({ net });
+installNamecardSync({ net });
   installOwnershipSync({ net });
   installDiySync({ net });
   installCardSync({ net });

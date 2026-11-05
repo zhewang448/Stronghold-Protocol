@@ -172,7 +172,7 @@ test('快速配置: the skills, the elite\'s modules (不装备 first) or the �
   assert.equal(textOf(byClass(noElite, 'lo-op__none')[0]), '无精锐');
 });
 
-test('the bottom bar: a tier with nothing is disabled, a jump names its tier, open 自选 slots badge 5 / 6, 确认配置 only in 快速配置', () => {
+test('the bottom bar: a tier with nothing is disabled, a jump names its tier, configured 自选 candidates /4 at tiers 5 / 6, 确认配置 only in 快速配置', () => {
   const jumps = [];
   const counts = { 1: 20, 2: 20, 3: 20, 4: 0, 5: 20, 6: 16 };
   const bar = DeckBar({ counts, active: 2, onJump: (t) => jumps.push(t), diyOpen: { 5: 2, 6: 0 }, quick: null, onConfirm() {} });
@@ -183,8 +183,9 @@ test('the bottom bar: a tier with nothing is disabled, a jump names its tier, op
   tiers[4].props.onClick();
   assert.deepEqual(jumps, [5]);
   const diy = byClass(bar, 'lo-bbar__diy');
-  assert.equal(diy.length, 1, 'only tier 5 has open slots');
-  assert.equal(textOf(diy[0]).trim(), '2');
+  assert.equal(diy.length, 2, 'both tiers show configured candidate counts, including zero');
+  assert.equal(textOf(diy[0]).trim(), '2/4');
+  assert.equal(textOf(diy[1]).trim(), '0/4');
   assert.equal(byClass(bar, 'lo-confirm').length, 0);
   const done = [];
   const quickBar = DeckBar({ counts, active: 1, onJump() {}, diyOpen: {}, quick: 'skill', onConfirm: () => done.push(1) });

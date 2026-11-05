@@ -693,7 +693,8 @@ describe('websocket lobby', () => {
     assert.equal(st.difficulty, 'HARD');
     assert.equal(st.inMatch, false);
     assert.equal(st.seats.length, DEFAULT_SEATS);
-    assert.deepEqual(st.seats[0], { seat: 0, playerId: host.id, name: 'Host', isBot: false, ready: false, connected: true, bondPlan: null, card: null, cardSkin: null });
+    assert.deepEqual(st.seats[0], { seat: 0, playerId: host.id, name: 'Host', isBot: false, ready: false, connected: true, bondPlan: null, card: null, cardSkin: null,
+      namecard: { mode: 'auto', id: '', x: 50, y: 50, zoom: 100, resolved: null } });
     assert.deepEqual(st.seats.slice(1), Array(DEFAULT_SEATS - 1).fill(null));
 
     const guest = await pool.player('Guest');
@@ -1051,7 +1052,8 @@ describe('websocket lobby', () => {
     assert.equal(w.token, guest.token);
     const restored = await back.waitFor('room.state');
     assert.equal(restored.code, st.code);
-    assert.deepEqual(seatOf(restored, guest.id), { seat: 1, playerId: guest.id, name: 'Guest2', isBot: false, ready: true, connected: true, bondPlan: null, card: null, cardSkin: null });
+    assert.deepEqual(seatOf(restored, guest.id), { seat: 1, playerId: guest.id, name: 'Guest2', isBot: false, ready: true, connected: true, bondPlan: null, card: null, cardSkin: null,
+      namecard: { mode: 'auto', id: '', x: 50, y: 50, zoom: 100, resolved: null } });
     await host.waitFor('room.state', (s) => seatOf(s, guest.id)?.connected === true);
 
     // an unknown token just creates a new identity
