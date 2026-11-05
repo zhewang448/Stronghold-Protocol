@@ -3,7 +3,7 @@ import { html, Button, Icon, Modal } from './components.js';
 import { toast } from './toasts.js';
 import { t } from '../../../shared/i18n.js';
 import { ILLUST_SOURCE_MAX_BYTES, encodeIllust, uploadOwnIllust, removeOwnIllust, useOwnIllust, ownIllustSnapshot } from './customIllust.js';
-import { ensureCardArtCss, cardArtOf, setCardArt, useArtGestures, useCardArt, CardArtImage } from './cardArt.js';
+import { ensureCardArtCss, cardArtOf, setCardArt, useArtGestures, useCardArt, CardArtImage, CARD_ART_MIN_ZOOM, CARD_ART_MAX_ZOOM } from './cardArt.js';
 import { illustrationCropRect } from '../../../shared/illustration.js';
 import { PicturePresets } from './picturePresets.js';
 import { currentAccount } from './accounts.js';
@@ -24,7 +24,7 @@ export function IllustDialog({ onClose }) {
   const activeFrame = picture ? frame : localFrame;
   const adjust = next => picture ? update(next) : setCardArt('custom', next);
   const editable = !!(picture || own) && !busy && !decoding;
-  const gestures = useArtGestures(preview, activeFrame, adjust, { enabled: editable, minimum: picture ? 1 : 0.8, maximum: picture ? 3 : 2 });
+  const gestures = useArtGestures(preview, activeFrame, adjust, { enabled: editable, minimum: picture ? 1 : CARD_ART_MIN_ZOOM, maximum: picture ? 3 : CARD_ART_MAX_ZOOM });
   useEffect(() => () => { generation.current++; }, []);
   useEffect(() => () => { if (picture?.url) URL.revokeObjectURL(picture.url); }, [picture]);
   useEffect(() => {
@@ -91,7 +91,7 @@ export function IllustDialog({ onClose }) {
           : t('导入时可拖动取景，使用滑块、滚轮或双指缩放；确认后按 1:2 裁切并分享给同房间成员。')}</p>
         ${picture || own ? html`<div class="illust-picker__adjust">
           <label class="illust-picker__zoom" for="illust-zoom"><span>${t('缩放')}</span><output for="illust-zoom">${Math.round(activeFrame.zoom * 100)}%</output>
-            <input id="illust-zoom" type="range" min=${picture ? '1' : '0.8'} max=${picture ? '3' : '2'} step="0.01" value=${activeFrame.zoom}
+            <input id="illust-zoom" type="range" min=${picture ? 1 : CARD_ART_MIN_ZOOM} max=${picture ? 3 : CARD_ART_MAX_ZOOM} step="0.01" value=${activeFrame.zoom}
               disabled=${busy || decoding} data-testid=${picture ? 'illust-crop-zoom' : 'card-art-zoom'} onInput=${event => adjust({ ...activeFrame, zoom: Number(event.currentTarget.value) })} /></label>
           <${Button} size="sm" icon="refresh" disabled=${busy || decoding} data-testid=${picture ? 'illust-crop-reset' : 'card-art-reset'} onClick=${() => adjust({ zoom: 1, ox: 0, oy: 0 })}>${t('重置')}<//>
         </div>` : null}

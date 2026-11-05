@@ -128,7 +128,7 @@ export async function installDynamicIllustrations(ids, { root = ROOT, offline = 
       } catch { /* no earlier web installation */ }
       const dynamic = { skel: '/assets/' + rel + stem + '.' + ext, atlas: '/assets/' + rel + atlasName, textures, pma,
         anims: { idle: meta.animations.find(n => /^idle$/i.test(n)) || meta.animations[0] }, animations: meta.durations,
-        bounds: native?.viewBounds || meta.bounds, frames: r.frames, identity: sha256(bytes), ...(edgeCorrections.length ? { edgeCorrections } : {}),
+        bounds: native?.viewBounds || meta.bounds, frames: r.frames, ...(r.frameSource ? { frameSource: r.frameSource } : {}), identity: sha256(bytes), ...(edgeCorrections.length ? { edgeCorrections } : {}),
         ...(native?.viewBounds ? { skeletonBounds: meta.bounds, extraTracks: native.extraTracks, nativeLayers: { particles: native.nativeParticles, holders: native.nativeHolders } } : {}),
         installationFiles: [...new Set(['/assets/' + rel + stem + '.source.atlas', ...info.pages.map(p => '/assets/' + rel + p),
           ...originalFiles, ...(previous?.installationFiles || []), ...(previous ? [previous.skel, previous.atlas, ...previous.textures] : [])])],

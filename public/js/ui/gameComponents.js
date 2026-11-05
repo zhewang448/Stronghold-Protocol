@@ -90,7 +90,7 @@ export function OperatorImage({ m, chess, ownerId, skin = null, portrait = false
   const art = portrait ? chessPortraitUrl(m, chess, { skin: selected }) : null;
   const src = art || (!portrait || avatarFallback ? chessAvatarUrl(m, chess, { skin: selected }) : null);
   return html`<${Img} ...${props} src=${src} class=${art ? portraitClass ?? props.class : avatarClass ?? props.class} />
-    <${LiveArt} m=${m} charId=${chess?.charId} skin=${selected} kind=${art ? 'portrait' : 'avatar'} elite=${!!chess?.isGolden || chess?.status?.phase === 2} />`;
+    <${LiveArt} m=${m} charId=${chess?.charId} skin=${selected} kind=${art ? 'portrait' : 'avatar'} elite=${!!chess?.isGolden || chess?.status?.phase === 2} staticSrc=${src} />`;
 }
 
 /** Official UI sprite by 'group/key' with a fallback. */

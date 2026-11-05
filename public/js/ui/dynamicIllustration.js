@@ -111,8 +111,8 @@ export function CoverIllustration({ entry, framing = {}, playing = true, explici
   </span>`;
 }
 
-export function LiveArt({ m, charId, skin = null, kind = 'portrait', elite = true, posX = null, posY = null, frame = null }) {
-  const entry = dynamicOf(m, charId, skin, kind, elite), crop = cropFraming(entry, kind, posX ?? 50, posY ?? 50);
+export function LiveArt({ m, charId, skin = null, kind = 'portrait', elite = true, posX = null, posY = null, frame = null, staticSrc = null }) {
+  const entry = dynamicOf(m, charId, skin, kind, elite, staticSrc), crop = cropFraming(entry, kind, posX ?? 50, posY ?? 50);
   // Only a verified official crop may replace the small static picture.
   return crop ? html`<${CoverIllustration} entry=${entry} framing=${{ ...crop, autoPosition: posX == null && posY == null, ...frame }} />` : null;
 }

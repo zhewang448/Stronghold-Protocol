@@ -8,6 +8,13 @@
 
 ## 2026-11-05 交接增补
 
+同日缺漏补齐：普通动态目录扩展为 101 项（27 精二原皮、74 皮肤），目录外普通动态皮肤为零。
+27 个原皮和 27 个新增皮肤的裁切来源保存在 `docs/research/dynamic-crops.json`；通过
+`node tools/update-dynamic-catalogue.mjs <skin_table.json> --include-missing --frames=docs/research/dynamic-crops.json`
+更新注册表与研究皮肤目录，再运行 `node tools/build-data.mjs --skins-only --offline` 和现有动态安装器。
+精二头像取源、房间 `#1` / `#2` 身份及自动分配已接通；阿米娅转职皮肤从对应转职角色 `skinpack` 取得高清图。
+下文历史 47 套皮肤与目录外 27 项为补齐前记录，当前范围以支持矩阵为准。
+
 下文保留前阶段设计；本次来源与支持范围以 [支持矩阵](DYNAMIC-ILLUSTRATIONS-SUPPORT.md) 和最新验收为准。
 「三位无动态大立绘」已被本机客户端中的塔露拉精二资源纠正，不能沿用历史结论。
 

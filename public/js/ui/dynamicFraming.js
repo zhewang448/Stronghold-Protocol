@@ -17,16 +17,22 @@ export function framingLayout(w, h, bounds, frame = {}) {
     y: h / 2 + (l.y - h / 2) * zoom + h * (frame.oy || 0) / 100 };
 }
 
-export function dynamicOf(m, charId, skin = null, kind = 'portrait', elite = true) {
+export function dynamicOf(m, charId, skin = null, kind = 'portrait', elite = true, staticSrc = null) {
   const rec = m?.chars?.[charId];
+  if (skin === `${charId}#1`) elite = false;
+  else if (skin === `${charId}#2`) elite = true;
   // A missing skin must use its default art; never animate another appearance underneath it.
   const appearance = skin && rec?.skins?.[skin] ? rec.skins[skin] : rec;
-  const d = kind === 'avatar' ? appearance?.dynamicAvatar || appearance?.dynamic
+  const d = kind === 'avatar' ? appearance?.dynamicAvatar || (elite && appearance?.dynamicE2) || appearance?.dynamic
     : (elite && appearance?.dynamicE2) || appearance?.dynamic;
   // A picture-only overlay must keep its own pixels. Installed crop provenance
   // prevents an inherited skeleton from covering a replacement portrait/avatar.
   const artKind = kind === 'illustration' ? 'illust' : kind;
   const field = elite && appearance?.[artKind + 'E2'] ? artKind + 'E2' : artKind;
+  if (staticSrc && !skin && appearance?.[field]) {
+    const logical = url => url.replace(/\/~[0-9a-f]{8,64}(?=\/)/g, '');
+    if (logical(staticSrc) !== logical(appearance[field])) return null;
+  }
   if (d?.staticArt?.[field] && appearance?.[field] !== d.staticArt[field]) return null;
   return d && typeof d.skel === 'string' && typeof d.atlas === 'string' ? d : null;
 }

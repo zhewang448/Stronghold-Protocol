@@ -4,7 +4,7 @@ import { DEFAULT_VERSION, roomVersion, serverDefaultVersion, versionLabel, needs
 import { useAccount, AccountTag } from '../ui/accounts.js';
 import { useCustomIllust, useOwnIllust, ownIllustSnapshot, removeOwnIllust } from '../ui/customIllust.js';
 import { IllustDialog } from '../ui/illustPicker.js';
-import { CardArtImage } from '../ui/cardArt.js';
+import { CardArtImage, CardArtDialog, cardArtKey } from '../ui/cardArt.js';
 import { TrophyBadge } from '../ui/trophies.js';
 import { isOwnerName, decorateOwnerName } from '../ui/ownerName.js';
 import { enabled as federationEnabled, currentNode } from '../federation.js';
@@ -60,7 +60,7 @@ import { net } from '../net.js';
 import { store, useStore, shallowEqual, emptyMatch, isSpectating, serverNow, loadPref, savePref } from '../store.js';
 import { data, useData, getConfig } from '../data.js';
 import { chessAvatarUrl } from '../ui/assetUrls.js';
-import { CARD_PREF, CARD_KEY, CARD_SKIN_KEY, cardStore, setCard, cardOperators, seatPortrait, cardAvatarUrl } from '../ui/seatArt.js';
+import { CARD_PREF, CARD_KEY, CARD_SKIN_KEY, cardStore, setCard, cardOperators, seatPortrait, seatOperator, cardAvatarUrl } from '../ui/seatArt.js';
 import { C2S } from '../../../shared/protocol.js';
 import { difficultyInfo, ProtoCard } from './lobby.js';
 import { ProtocolScene } from '../ui/protocolScene.js';
@@ -190,13 +190,16 @@ const CAN_PRIVATE = !!C2S && Object.hasOwn(C2S, 'room.setPrivate');
 
 
 /** 名片干员 picker: search, rarity, the operators' avatars; 默认 clears the pick. */
-function CardPicker({ current, currentSkin, list, m, onPick, onClose, customAllowed = true }) {
+function CardPicker({ current, currentSkin, list, m, art, onPick, onClose, customAllowed = true }) {
   const [q, setQ] = useState('');
   const [star, setStar] = useState(0);
   const [selected, setSelected] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [adjusting, setAdjusting] = useState(false);
   const ownIllust = useOwnIllust();
   if (uploading) return html`<${IllustDialog} onClose=${() => setUploading(false)} />`;
+  if (adjusting && art?.src) return art.custom ? html`<${IllustDialog} onClose=${() => setAdjusting(false)} />`
+    : html`<${CardArtDialog} ...${art} onClose=${() => setAdjusting(false)} />`;
   if (selected) return html`<${Modal} open=${true} title=${selected.name} onClose=${onClose} width="min(9.6rem, 94vw)" class="cardpick" actions=${html`<${Button} onClick=${onClose}>${t('关闭')}<//>`}>
     <${Button} size="sm" onClick=${() => setSelected(null)}>${t('返回')}<//>
     <div class="cardpick__grid cardpick__grid--skins">
@@ -215,6 +218,7 @@ function CardPicker({ current, currentSkin, list, m, onPick, onClose, customAllo
         ${[[0, t('全部')], [6, '6★'], [5, '5★'], [4, '4★']].map(([v, label]) => html`<button key=${v} type="button" role="radio" aria-checked=${star === v ? 'true' : 'false'}
           class=${star === v ? 'is-on' : ''} onClick=${() => setStar(v)}>${label}</button>`)}
       </div>
+      <${Button} size="sm" variant="secondary" icon="edit" data-testid="operator-art-adjust" disabled=${!art?.src} onClick=${() => setAdjusting(true)}>${t('立绘调整')}<//>
     </div>
     <div class="cardpick__grid">
       <button type="button" class="cardpick__op cardpick__op--auto cardpick__op--custom" data-testid="custom-illust-entry" disabled=${!customAllowed}
@@ -264,10 +268,12 @@ function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvi
   const offline = seat.connected === false && !seat.isBot;
   const ready = seat.ready || seat.isBot || isHostSeat;
   const portrait = seat.isBot ? null : seatPortrait(seat, portraits);
+  const portraitOperator = seatOperator(seat, portraits, { myId, myCard: portraits.myCard });
   const portraitDefault = seat.isBot ? null : seatPortrait({ ...seat, cardSkin: null }, { ...portraits, mySkin: '' });
   const src = portrait && bad !== portrait ? portrait : portraitDefault && bad !== portraitDefault ? portraitDefault : null;
   const custom = customIllust && customIllust !== badCustom ? customIllust : null;
-  const frameKey = custom ? (isMe ? 'custom' : 'custom:' + seat.playerId) : (seat.card || portraits.myCard || 'default');
+  const frameKey = custom ? (isMe ? 'custom' : 'custom:' + seat.playerId)
+    : cardArtKey(portraitOperator?.chess?.charId, isMe ? portraits.mySkin : seat.cardSkin);
   const owner = isOwnerName(seat.name);
   const canPick = isMe && !seat.isBot && !!onPickCard;
   return html`<article class=${`rseat${ready ? ' is-ready' : ''}${flash ? ' is-flash' : ''}${isMe ? ' is-me' : ''}${isHostSeat ? ' is-host' : ''}${offline ? ' is-offline' : ''}${seat.isBot ? ' is-bot' : ''}`}
@@ -278,7 +284,7 @@ function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvi
     <header class="rseat__strip"><i></i><span class="num">P${index + 1}</span></header>
     <div class=${`rseat__art${canPick ? ' is-pickable' : ''}`} onClick=${canPick ? onPickCard : undefined} title=${canPick ? t('点击更换名片干员') : undefined}>
       ${custom ? html`<${CardArtImage} frameKey=${frameKey} src=${custom} custom=${true} interactive=${canPick} onError=${() => setBadCustom(custom)} />`
-        : src ? html`<${CardArtImage} frameKey=${frameKey} src=${src} m=${portraits.m} charId=${isMe ? portraits.myCard || seat.card : seat.card}
+        : src ? html`<${CardArtImage} frameKey=${frameKey} src=${src} m=${portraits.m} charId=${portraitOperator?.chess?.charId} interactive=${canPick}
           skin=${isMe ? portraits.mySkin : seat.cardSkin} onError=${() => setBad(src)} />`
         : html`<span class="rseat__glyph">${seat.isBot ? html`<${Icon} name="robot" />` : [...(seat.name || '?')][0]}</span>`}
       ${canPick ? html`<button type="button" class="rseat__pick" onClick=${(e) => { e.stopPropagation(); onPickCard(); }} aria-label=${t('更换名片干员')}><${Icon} name="edit" /><span>${t('更换立绘')}</span></button>` : null}
@@ -481,14 +487,16 @@ export function RoomScreen() {
     [data.get('chess'), data.get('seat-art'), m, data.get('skins')]);
   const myCard = useStore(s => s[CARD_KEY], Object.is, cardStore);
   const mySkin = useStore(s => s[CARD_SKIN_KEY], Object.is, cardStore);
+  const myCustomIllust = useCustomIllust(me.playerId);
   const [picking, setPicking] = useState(false);
+  const [artAdjusting, setArtAdjusting] = useState(false);
   const portraits = useMemo(() => ({
     pool: cardList.filter((c) => (c.rarity ?? 0) >= 5 && c.assets).sort((a, b) => (a.charId < b.charId ? -1 : 1)),
     byChar: new Map(cardList.map((c) => [c.charId, c])), m, myId: me.playerId, myCard, mySkin,
   }), [cardList, m, me.playerId, myCard, mySkin]);
   const pickCard = (charId, skinId = '') => run('card', async () => {
     if (facts.mine?.illust || await ownIllustSnapshot()) await removeOwnIllust();
-    setCard(charId, skinId); setPicking(false);
+    setCard(charId, skinId); setPicking(false); setArtAdjusting(true);
   });
   // arrived through 搜寻队友 (match.found for this room): 搜寻成功 once
   useEffect(() => {
@@ -502,6 +510,11 @@ export function RoomScreen() {
   const online = conn.status === 'online';
   const coop = room ? room.mode !== 'solo' : false;
   const facts = room ? roomFacts(room, me.playerId) : null;
+  const mineOperator = facts?.mine ? seatOperator(facts.mine, portraits, { myId: me.playerId, myCard }) : null;
+  const mineChar = mineOperator?.chess?.charId;
+  const currentArt = { frameKey: myCustomIllust ? 'custom' : cardArtKey(mineChar, mySkin),
+    src: myCustomIllust || (facts?.mine ? seatPortrait({ ...facts.mine, card: myCard, cardSkin: mySkin }, portraits) : null), custom: !!myCustomIllust,
+    m, charId: mineChar, skin: mySkin, name: mineOperator?.chess?.name };
   const vote = room?.versionVote;
   const versionWhy = isModdedRoom(room) ? t('请先关闭改变玩法的插件') : null;
   const searchable = CAN_QUEUE && !!room && coop && facts.isHost && room.private !== true && !room.test && !isModdedRoom(room) && !room.versionVote && room.aiPicksLast === true && !room.aiTakeoverEnabled && !room.uniteLayerGains && !room.independentPools && !room.allowDuplicateBands && !room.rescueEnabled && (room.enemyHpMultiplier ?? 1) === 1 && Object.entries(CONVENIENCE_DEFAULTS).every(([key, value]) => room.convenience?.[key] === value) && facts.seats.length === DEFAULT_SEATS && facts.humans.every(s => s.connected) && !room.inMatch;
@@ -723,7 +736,8 @@ export function RoomScreen() {
       tags=${[{ key: 'mode', label: t('精确搜寻'), icon: html`<${Icon} name="search" />` },
         { key: 'diff', label: t(DIFFICULTY_NAMES[room.difficulty]), color: DIFFICULTY_COLORS[room.difficulty], icon: html`<${DifficultyIcon} difficulty=${room.difficulty} />` }]} />` : null}
     ${foundShown ? html`<${FoundPanel} class=${foundLeaving ? 'is-leaving' : ''} seats=${facts.seats.length} text=${t('同盟集结完毕')} />` : null}
-    ${picking ? html`<${CardPicker} current=${myCard} currentSkin=${mySkin} list=${cardList} m=${m} customAllowed=${room.customIllust !== false} onPick=${pickCard} onClose=${() => setPicking(false)} />` : null}
+    ${picking ? html`<${CardPicker} current=${myCard} currentSkin=${mySkin} list=${cardList} m=${m} art=${currentArt} customAllowed=${room.customIllust !== false} onPick=${pickCard} onClose=${() => setPicking(false)} />` : null}
+    ${artAdjusting && currentArt.src && !currentArt.custom ? html`<${CardArtDialog} ...${currentArt} onClose=${() => setArtAdjusting(false)} />` : null}
     ${protoShown ? html`<${RoomProtocol} room=${room} variant=${variant} busy=${busy} onClose=${() => setPicker(false)} onPick=${setDifficulty} leaving=${protoLeaving} />` : null}
   </div>`;
 }

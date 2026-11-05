@@ -64,6 +64,7 @@ test('choosing standard seat artwork replaces an applied custom preset on both c
   };
   const assertStandard = async (charId, skinId = '') => {
     await host.waitForSelector('.cardpick', { hidden: true });
+    if (await host.$('.operator-art-editor')) await host.click('[data-testid="operator-art-done"]');
     testContext.diagnostic(JSON.stringify({ requested: { charId, skinId }, customActive: !!server.lobby.illusts.get(room.hostId),
       displayed: await host.$eval('.rseat.is-me .rseat__art img', image => image.dataset.art) }));
     assert.equal(!!server.lobby.illusts.get(room.hostId), false, 'a standard artwork choice deactivates the current custom picture');

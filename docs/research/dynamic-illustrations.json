@@ -1251,7 +1251,65 @@
       "illust": "https://media.prts.wiki/3/39/%E7%AB%8B%E7%BB%98_W_2.png",
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_113_cqbw_2/dyn_illust_char_113_cqbw_2/dyn_illust_char_113_cqbw_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_113_cqbw_2/dyn_illust_char_113_cqbw_2/dyn_illust_char_113_cqbw_2.atlas",
-      "prtsFile": "立绘_W_2.png"
+      "prtsFile": "立绘_W_2.png",
+      "frames": {
+        "portrait": {
+          "x": -156.367,
+          "y": 973.703,
+          "width": 178.891,
+          "height": 357.782
+        },
+        "avatar": {
+          "x": -164.706,
+          "y": 1118.902,
+          "width": 201.778,
+          "height": 201.778
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "0484bce702b73cfe3cb0d944ad717500d10f1a08c09527fd568f902ca5403d95",
+        "skeletonSha256": "16919341589800f777600b71613a144c2f17b588dee13cecc8d06c3fec7d4afb",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 43,
+            "inliers": 25,
+            "fromPortrait": false,
+            "tileSha256": "fdc3949fb0acd381b7b47b5f0bb099a3d25a88ab09cc2d9adff4332d23a4c0f8",
+            "transform": [
+              [
+                0.7452648636247682,
+                0.013085040524005727,
+                577.879887286717
+              ],
+              [
+                -0.013085040524005727,
+                0.7452648636247682,
+                427.58472923502075
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 9,
+            "inliers": 5,
+            "fromPortrait": true,
+            "tileSha256": "7d519d62cff4b3a73adab8204434030469811644148713a100f19047d86e8fe8",
+            "transform": [
+              [
+                0.8405635789348197,
+                0.017291078016611092,
+                572.4303816266865
+              ],
+              [
+                -0.017291078016611096,
+                0.8405635789348195,
+                436.0618927421283
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_391_rosmon#2": {
       "charId": "char_391_rosmon",
@@ -1264,7 +1322,65 @@
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_391_rosmon_2/dyn_illust_char_391_rosmon_2/dyn_illust_char_391_rosmon_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_391_rosmon_2/dyn_illust_char_391_rosmon_2/dyn_illust_char_391_rosmon_2.atlas",
       "illust": "https://media.prts.wiki/0/07/%E7%AB%8B%E7%BB%98_%E8%BF%B7%E8%BF%AD%E9%A6%99_2.png",
-      "prtsFile": "立绘_迷迭香_2.png"
+      "prtsFile": "立绘_迷迭香_2.png",
+      "frames": {
+        "portrait": {
+          "x": -312.757,
+          "y": 845.004,
+          "width": 164.536,
+          "height": 329.072
+        },
+        "avatar": {
+          "x": -323.658,
+          "y": 979.554,
+          "width": 180.291,
+          "height": 180.291
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "5f951b6b739d75a94d13f46f213dfe7a20b16021fd84559a4b700c26aeac44cb",
+        "skeletonSha256": "131bac05a75249a4d383d0d91c764e456d7c81515cfc83c5541a135579367176",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 63,
+            "inliers": 36,
+            "fromPortrait": false,
+            "tileSha256": "b1bd39afef44a658cb3d40b22998b5cc387deb156bcc9060e1a4c7fe788a118b",
+            "transform": [
+              [
+                0.5077203004712691,
+                -0.010430414841293287,
+                550.3553240306592
+              ],
+              [
+                0.010430414841293287,
+                0.5077203004712691,
+                596.8159064650964
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 39,
+            "inliers": 31,
+            "fromPortrait": false,
+            "tileSha256": "24395053a754e1e5b24e9f0deeb240487d677a547067e188d8a0cefe112d1960",
+            "transform": [
+              [
+                0.5562778902552652,
+                -0.013935678860050706,
+                543.6820198733354
+              ],
+              [
+                0.013935678860050706,
+                0.5562778902552652,
+                604.4033115606961
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_1035_wisdel#2": {
       "charId": "char_1035_wisdel",
@@ -1277,7 +1393,65 @@
       "illust": "https://media.prts.wiki/9/94/%E7%AB%8B%E7%BB%98_%E7%BB%B4%E4%BB%80%E6%88%B4%E5%B0%94_2.png",
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1035_wisdel_2/dyn_illust_char_1035_wisdel_2/dyn_illust_char_1035_wisdel_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1035_wisdel_2/dyn_illust_char_1035_wisdel_2/dyn_illust_char_1035_wisdel_2.atlas",
-      "prtsFile": "立绘_维什戴尔_2.png"
+      "prtsFile": "立绘_维什戴尔_2.png",
+      "frames": {
+        "portrait": {
+          "x": -69.042,
+          "y": 706.753,
+          "width": 165.9,
+          "height": 331.801
+        },
+        "avatar": {
+          "x": -69.301,
+          "y": 844.301,
+          "width": 182.208,
+          "height": 182.208
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "a1652bb5cc49521eabd14e69b05180f87437154b4ae7be2a0e5371e8f4032b88",
+        "skeletonSha256": "8d756d37e803d5edb9b5a111e5b74f2b08787cac4617c344fd61a4cfa5373c44",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 95,
+            "inliers": 69,
+            "fromPortrait": false,
+            "tileSha256": "d60007ea36dc762cfe01d398ad3763e9f0a152fa469d4631bc88d0de0f14070d",
+            "transform": [
+              [
+                0.6912491359500914,
+                0.001843096564687419,
+                625.88720486682
+              ],
+              [
+                -0.001843096564687419,
+                0.6912491359500914,
+                526.2509047981013
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 53,
+            "inliers": 48,
+            "fromPortrait": false,
+            "tileSha256": "0105c8e011e3cb6846848c1cccb1264b50f6fdf2a7aa24abc4199ef51d245834",
+            "transform": [
+              [
+                0.7591704130527067,
+                0.00647080091430593,
+                625.4441333103856
+              ],
+              [
+                -0.00647080091430593,
+                0.7591704130527067,
+                535.7031305879287
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_1013_chen2#2": {
       "charId": "char_1013_chen2",
@@ -1290,7 +1464,65 @@
       "illust": "https://media.prts.wiki/4/4e/%E7%AB%8B%E7%BB%98_%E5%81%87%E6%97%A5%E5%A8%81%E9%BE%99%E9%99%88_2.png",
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1013_chen2_2/dyn_illust_char_1013_chen2_2/dyn_illust_char_1013_chen2_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1013_chen2_2/dyn_illust_char_1013_chen2_2/dyn_illust_char_1013_chen2_2.atlas",
-      "prtsFile": "立绘_假日威龙陈_2.png"
+      "prtsFile": "立绘_假日威龙陈_2.png",
+      "frames": {
+        "portrait": {
+          "x": -212.015,
+          "y": 683.553,
+          "width": 229.497,
+          "height": 458.994
+        },
+        "avatar": {
+          "x": -217.855,
+          "y": 874.152,
+          "width": 251.131,
+          "height": 251.131
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "31c37e2072b5749cfb262dead10f9443a250ed99525f802f39bb0f2841ac4de9",
+        "skeletonSha256": "7aa91a1ffd5da1570a9bad91cb83f9a18c04759ed477cfd45e62ee81a6a38f6e",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 149,
+            "inliers": 127,
+            "fromPortrait": false,
+            "tileSha256": "40fd4d5a6a7e91b167ce8d43a227f9e2b378c6258ebe6577504e2851dbf75751",
+            "transform": [
+              [
+                0.9561870095863763,
+                0.009874787744546192,
+                589.2157193391703
+              ],
+              [
+                -0.009874787744546192,
+                0.9561870095863763,
+                568.9873826318145
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 64,
+            "inliers": 58,
+            "fromPortrait": false,
+            "tileSha256": "54a25dbfc49c507551c220b18171bd79448e5fec9de2212c441fd7397c909415",
+            "transform": [
+              [
+                1.0463776946295902,
+                0.002662863099807745,
+                586.3697740567437
+              ],
+              [
+                -0.002662863099807745,
+                1.0463776946295902,
+                581.2773935472097
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_249_mlyss#2": {
       "charId": "char_249_mlyss",
@@ -1303,7 +1535,65 @@
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_249_mlyss_2/dyn_illust_char_249_mlyss_2/dyn_illust_char_249_mlyss_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_249_mlyss_2/dyn_illust_char_249_mlyss_2/dyn_illust_char_249_mlyss_2.atlas",
       "illust": "https://media.prts.wiki/c/c7/%E7%AB%8B%E7%BB%98_%E7%BC%AA%E5%B0%94%E8%B5%9B%E6%80%9D_2.png",
-      "prtsFile": "立绘_缪尔赛思_2.png"
+      "prtsFile": "立绘_缪尔赛思_2.png",
+      "frames": {
+        "portrait": {
+          "x": 162.211,
+          "y": 952.91,
+          "width": 179.371,
+          "height": 358.741
+        },
+        "avatar": {
+          "x": 163.233,
+          "y": 1105.92,
+          "width": 189.624,
+          "height": 189.624
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "0a69cf74d50e6cdf601f58bfee509074c96eaaf0bde7a60ebfc25ac328f5d6ed",
+        "skeletonSha256": "819d183f1773135e271398391a61f6b7480c0fb1b6d78f9ee0ea16b54aad5497",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 113,
+            "inliers": 74,
+            "fromPortrait": false,
+            "tileSha256": "55a5c669e5eaa54fa345a1d2df9673a5bbaa6b8b5daae922d949b07c9de27b0e",
+            "transform": [
+              [
+                0.7473723341575519,
+                -0.002810114476191809,
+                922.414502516243
+              ],
+              [
+                0.002810114476191809,
+                0.7473723341575519,
+                422.26000255957564
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 66,
+            "inliers": 54,
+            "fromPortrait": false,
+            "tileSha256": "8aa14106e5f05291068c942f992464d38201db97149d6f621fbe80b1e2f93122",
+            "transform": [
+              [
+                0.7900530729012246,
+                -0.008450687681613249,
+                923.4395037574902
+              ],
+              [
+                0.008450687681613249,
+                0.7900530729012246,
+                433.83563557182094
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_1045_svash2#2": {
       "charId": "char_1045_svash2",
@@ -1316,7 +1606,65 @@
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1045_svash2_2/dyn_illust_char_1045_svash2_2/dyn_illust_char_1045_svash2_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1045_svash2_2/dyn_illust_char_1045_svash2_2/dyn_illust_char_1045_svash2_2.atlas",
       "illust": "https://media.prts.wiki/b/b2/%E7%AB%8B%E7%BB%98_%E5%87%9B%E5%BE%A1%E9%93%B6%E7%81%B0_2.png",
-      "prtsFile": "立绘_凛御银灰_2.png"
+      "prtsFile": "立绘_凛御银灰_2.png",
+      "frames": {
+        "portrait": {
+          "x": -72.765,
+          "y": 1010.173,
+          "width": 130.005,
+          "height": 260.011
+        },
+        "avatar": {
+          "x": -83.542,
+          "y": 1112.824,
+          "width": 141.952,
+          "height": 141.952
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "412323aabf091f9091c7891123d275e813a027609da0ce9306fceebf25f3768c",
+        "skeletonSha256": "83dcb73eca87f372177039528039f5e1865fb59e26e839bb0fd4bb4daec1e373",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 44,
+            "inliers": 23,
+            "fromPortrait": false,
+            "tileSha256": "4f6ada8f9d2f31fb0e34a881c754529866441a3b15cf00a92454cc0802092078",
+            "transform": [
+              [
+                0.5158005414410857,
+                0.00985321827244502,
+                696.2597983714398
+              ],
+              [
+                -0.00985321827244502,
+                0.5158005414410857,
+                490.0582184324593
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 30,
+            "inliers": 22,
+            "fromPortrait": false,
+            "tileSha256": "7c0de5e4f3dea5790db8f3b200c752b1ad1159f0f0cc2d9085b9ae3a3530622a",
+            "transform": [
+              [
+                0.5630783177063231,
+                0.01589798064516626,
+                688.9164165971122
+              ],
+              [
+                -0.01589798064516626,
+                0.5630783177063231,
+                501.61051226085823
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_2015_dusk#2": {
       "charId": "char_2015_dusk",
@@ -1329,7 +1677,65 @@
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2015_dusk_2/dyn_illust_char_2015_dusk_2/dyn_illust_char_2015_dusk_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2015_dusk_2/dyn_illust_char_2015_dusk_2/dyn_illust_char_2015_dusk_2.atlas",
       "illust": "https://media.prts.wiki/0/0a/%E7%AB%8B%E7%BB%98_%E5%A4%95_2.png",
-      "prtsFile": "立绘_夕_2.png"
+      "prtsFile": "立绘_夕_2.png",
+      "frames": {
+        "portrait": {
+          "x": -121.989,
+          "y": 1150.966,
+          "width": 177.053,
+          "height": 354.106
+        },
+        "avatar": {
+          "x": -129.92,
+          "y": 1296.582,
+          "width": 191.342,
+          "height": 191.342
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "febf9e77812d44837540036d4ee06673ea04d9f4fe45a66ae6fb7bfe9d75a43c",
+        "skeletonSha256": "c7da467bc61fd76b7d453bf2023aa193f05ab26c58e863650673a9e9b063d2c5",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 102,
+            "inliers": 81,
+            "fromPortrait": false,
+            "tileSha256": "a530ae9ac2097db8f293ef734a3d190a98397d5a093a2750159c9299d2d0a0c8",
+            "transform": [
+              [
+                0.6706265780578967,
+                -0.006214857001066622,
+                667.9466812852509
+              ],
+              [
+                0.006214857001066622,
+                0.6706265780578967,
+                405.07862053140246
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 44,
+            "inliers": 37,
+            "fromPortrait": false,
+            "tileSha256": "e07bee2b2f5c6f30fc4a236fd42719bd463fbe93c229d09a9ba31ab6627a5dbc",
+            "transform": [
+              [
+                0.724769624101534,
+                0.00358503052551495,
+                661.0963310634481
+              ],
+              [
+                -0.00358503052551495,
+                0.724769624101534,
+                417.64839598940995
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_1038_whitw2#2": {
       "charId": "char_1038_whitw2",
@@ -1342,7 +1748,65 @@
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1038_whitw2_2/dyn_illust_char_1038_whitw2_2/dyn_illust_char_1038_whitw2_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1038_whitw2_2/dyn_illust_char_1038_whitw2_2/dyn_illust_char_1038_whitw2_2.atlas",
       "illust": "https://media.prts.wiki/0/0b/%E7%AB%8B%E7%BB%98_%E8%8D%92%E8%8A%9C%E6%8B%89%E6%99%AE%E5%85%B0%E5%BE%B7_2.png",
-      "prtsFile": "立绘_荒芜拉普兰德_2.png"
+      "prtsFile": "立绘_荒芜拉普兰德_2.png",
+      "frames": {
+        "portrait": {
+          "x": -70.655,
+          "y": 531.529,
+          "width": 139.503,
+          "height": 279.005
+        },
+        "avatar": {
+          "x": -73.998,
+          "y": 647.427,
+          "width": 149.11,
+          "height": 149.11
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "54a6735b6826fda7cd4cbe0c2d16e8be0cdf58c6205a0f23154ef94aadfb8ded",
+        "skeletonSha256": "2a9883826692c4919567a164d85d3e5a7f0a8c4e42fb42e49ce2d5eb168ecd67",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 89,
+            "inliers": 80,
+            "fromPortrait": false,
+            "tileSha256": "36bd65e74a4113d74b1cc7b77d006a89b7598ac4208e9035bff6316f1274416d",
+            "transform": [
+              [
+                0.5642805077308205,
+                0.007512755462019961,
+                684.0979106005418
+              ],
+              [
+                -0.007512755462019961,
+                0.5642805077308205,
+                451.75284208385864
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 37,
+            "inliers": 33,
+            "fromPortrait": false,
+            "tileSha256": "69518d1dae2b0ac36c715c3e551fa358087a6c805c534009caa8b36e2944bdde",
+            "transform": [
+              [
+                0.6031442398608188,
+                0.007927756827174188,
+                682.3023806365859
+              ],
+              [
+                -0.007927756827174188,
+                0.6031442398608188,
+                461.97780333676417
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_1012_skadi2#2": {
       "charId": "char_1012_skadi2",
@@ -1355,7 +1819,65 @@
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1012_skadi2_2/dyn_illust_char_1012_skadi2_2/dyn_illust_char_1012_skadi2_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1012_skadi2_2/dyn_illust_char_1012_skadi2_2/dyn_illust_char_1012_skadi2_2.atlas",
       "illust": "https://media.prts.wiki/b/b3/%E7%AB%8B%E7%BB%98_%E6%B5%8A%E5%BF%83%E6%96%AF%E5%8D%A1%E8%92%82_2.png",
-      "prtsFile": "立绘_浊心斯卡蒂_2.png"
+      "prtsFile": "立绘_浊心斯卡蒂_2.png",
+      "frames": {
+        "portrait": {
+          "x": -83.543,
+          "y": 755.206,
+          "width": 178.532,
+          "height": 357.064
+        },
+        "avatar": {
+          "x": -81.5,
+          "y": 898.261,
+          "width": 196.748,
+          "height": 196.748
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "d786dd23b6c2a495d1579471320475863d4acca27b462db6584068dc00be6996",
+        "skeletonSha256": "944db9530ca30b034b840ae355dd8890eab34a533ee4628fe48f41088f9b32d2",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 98,
+            "inliers": 90,
+            "fromPortrait": false,
+            "tileSha256": "379f767075d2600551126708204c18fd91bb1878f520530e04bdd557cba5deb9",
+            "transform": [
+              [
+                0.6762568035678297,
+                -0.0008450801437847377,
+                693.1908693987516
+              ],
+              [
+                0.0008450801437847377,
+                0.6762568035678297,
+                441.5584179329915
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 74,
+            "inliers": 64,
+            "fromPortrait": false,
+            "tileSha256": "3c85def6caa55fcf0e13870ea46edfeaafc8db1b5a45ccf6dd1aafcc0df06051",
+            "transform": [
+              [
+                0.7452531937191994,
+                -0.002231306586183791,
+                694.6327903267058
+              ],
+              [
+                0.002231306586183791,
+                0.7452531937191994,
+                453.2029811269241
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_2023_ling#2": {
       "charId": "char_2023_ling",
@@ -1368,7 +1890,65 @@
       "illust": "https://media.prts.wiki/a/a3/%E7%AB%8B%E7%BB%98_%E4%BB%A4_2.png",
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2023_ling_2/dyn_illust_char_2023_ling_2/dyn_illust_char_2023_ling_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2023_ling_2/dyn_illust_char_2023_ling_2/dyn_illust_char_2023_ling_2.atlas",
-      "prtsFile": "立绘_令_2.png"
+      "prtsFile": "立绘_令_2.png",
+      "frames": {
+        "portrait": {
+          "x": -152.214,
+          "y": 1078.78,
+          "width": 170.305,
+          "height": 340.61
+        },
+        "avatar": {
+          "x": -157.967,
+          "y": 1221.704,
+          "width": 177.117,
+          "height": 177.117
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "44cecbfe2a8a0610804712d7bab267818aca5cd12ccf1a1c1a237a15c6e2e6f7",
+        "skeletonSha256": "013c5edf7ea7893d8540f8cf0531a8214309b0f36dfcf05c8d9dc11136e7848a",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 108,
+            "inliers": 83,
+            "fromPortrait": false,
+            "tileSha256": "86147a13e92acef3d3944cc3e4855f9f6821b29e443bd65a92c0c3a885f1933e",
+            "transform": [
+              [
+                0.567683790214492,
+                -0.00041248325307195917,
+                718.7457979638478
+              ],
+              [
+                0.00041248325307195917,
+                0.567683790214492,
+                528.3286536708943
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 69,
+            "inliers": 57,
+            "fromPortrait": false,
+            "tileSha256": "c5832f868f98ac5fc774a6ff0d29e1b3c75de99d2df047c5dfa9dfb3e57981ca",
+            "transform": [
+              [
+                0.5903883990244104,
+                0.0013478101231248363,
+                715.0984603042093
+              ],
+              [
+                -0.0013478101231248363,
+                0.5903883990244104,
+                540.8288259137114
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_245_cello#2": {
       "charId": "char_245_cello",
@@ -1381,7 +1961,65 @@
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_245_cello_2/dyn_illust_char_245_cello_2/dyn_illust_char_245_cello_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_245_cello_2/dyn_illust_char_245_cello_2/dyn_illust_char_245_cello_2.atlas",
       "illust": "https://media.prts.wiki/b/b2/%E7%AB%8B%E7%BB%98_%E5%A1%91%E5%BF%83_2.png",
-      "prtsFile": "立绘_塑心_2.png"
+      "prtsFile": "立绘_塑心_2.png",
+      "frames": {
+        "portrait": {
+          "x": -165.778,
+          "y": 736.353,
+          "width": 191.55,
+          "height": 383.099
+        },
+        "avatar": {
+          "x": -168.428,
+          "y": 894.748,
+          "width": 205.332,
+          "height": 205.332
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "1c95ab84711d23d07f8f99cda0af516210113aafe55e935213840903d29e07e4",
+        "skeletonSha256": "dc0af27d53a8fb9983281caf776b6d78c613b5001a9489260e439803eda4d3ec",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 57,
+            "inliers": 36,
+            "fromPortrait": false,
+            "tileSha256": "6ac2b1f63b2edb623ee5cc4bd32938b8fbe9d93f730f9e62dbb9d006e1a1d9b9",
+            "transform": [
+              [
+                0.7254636095450665,
+                -0.012219133240854406,
+                673.2691989815397
+              ],
+              [
+                0.012219133240854406,
+                0.7254636095450665,
+                667.4742865367181
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 17,
+            "inliers": 15,
+            "fromPortrait": false,
+            "tileSha256": "8b5a3c29828402afb8d6cea20ae0f01867de38b0be2e3d325a52c3c1b91b6f27",
+            "transform": [
+              [
+                0.7777574060482175,
+                -0.005086769273737071,
+                669.7130512181689
+              ],
+              [
+                0.005086769273737071,
+                0.7777574060482175,
+                681.306736108647
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_1028_texas2#2": {
       "charId": "char_1028_texas2",
@@ -1394,7 +2032,65 @@
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1028_texas2_2/dyn_illust_char_1028_texas2_2/dyn_illust_char_1028_texas2_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1028_texas2_2/dyn_illust_char_1028_texas2_2/dyn_illust_char_1028_texas2_2.atlas",
       "illust": "https://media.prts.wiki/f/f2/%E7%AB%8B%E7%BB%98_%E7%BC%84%E9%BB%98%E5%BE%B7%E5%85%8B%E8%90%A8%E6%96%AF_2.png",
-      "prtsFile": "立绘_缄默德克萨斯_2.png"
+      "prtsFile": "立绘_缄默德克萨斯_2.png",
+      "frames": {
+        "portrait": {
+          "x": -60.569,
+          "y": 290.229,
+          "width": 117.386,
+          "height": 234.773
+        },
+        "avatar": {
+          "x": -65.157,
+          "y": 386.147,
+          "width": 127.868,
+          "height": 127.868
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "886dfc1e62fc9fac3d8dad3fb6fd92589cc07ef7dc1f9f29a99dc305dd72b446",
+        "skeletonSha256": "b2edc56aa20ccbf1b7f401e9db2d4f14421499d833fdd84ecd51e24d4d08e443",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 99,
+            "inliers": 79,
+            "fromPortrait": false,
+            "tileSha256": "20e2360e2e406e1788f92e40304c2e876b7ff4be165b18e35605200227fcfaf4",
+            "transform": [
+              [
+                0.5501489547876608,
+                0.005801057605388108,
+                697.8599448678242
+              ],
+              [
+                -0.005801057605388108,
+                0.5501489547876608,
+                476.34150675333706
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 39,
+            "inliers": 29,
+            "fromPortrait": false,
+            "tileSha256": "14eec74d48142398793270dbe7de1c39a1426077ea4f9529d7c13e751de97b30",
+            "transform": [
+              [
+                0.5993060998959989,
+                -0.0012246427965418992,
+                695.1407573131579
+              ],
+              [
+                0.0012246427965418992,
+                0.5993060998959989,
+                484.9727433357294
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_1041_angel2#2": {
       "charId": "char_1041_angel2",
@@ -1407,7 +2103,65 @@
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1041_angel2_2/dyn_illust_char_1041_angel2_2/dyn_illust_char_1041_angel2_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1041_angel2_2/dyn_illust_char_1041_angel2_2/dyn_illust_char_1041_angel2_2.atlas",
       "illust": "https://media.prts.wiki/0/07/%E7%AB%8B%E7%BB%98_%E6%96%B0%E7%BA%A6%E8%83%BD%E5%A4%A9%E4%BD%BF_2.png",
-      "prtsFile": "立绘_新约能天使_2.png"
+      "prtsFile": "立绘_新约能天使_2.png",
+      "frames": {
+        "portrait": {
+          "x": 1.318,
+          "y": 1021.205,
+          "width": 143.267,
+          "height": 286.534
+        },
+        "avatar": {
+          "x": -7.499,
+          "y": 1139.105,
+          "width": 155.695,
+          "height": 155.695
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "031e6bc7497411b92a050c6136ba70e867f6f59df6100352e87a0db89c9a1615",
+        "skeletonSha256": "18c42baa6c063e807e823705764296a1343e4606871ca5dc77dfb1b64d51927c",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 127,
+            "inliers": 103,
+            "fromPortrait": false,
+            "tileSha256": "e61507ce91d03cd9c60df318d32c56685dcb213c7bd073c6cde81982226970fc",
+            "transform": [
+              [
+                0.5737796875956311,
+                0.01542697244450226,
+                748.1919377831093
+              ],
+              [
+                -0.01542697244450226,
+                0.5737796875956311,
+                497.0467480651233
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 53,
+            "inliers": 38,
+            "fromPortrait": false,
+            "tileSha256": "c1dfc2fb8c9a841108e6d2d53815755f6474f84eb0d0e2243f8bc2d6a3a013a9",
+            "transform": [
+              [
+                0.6237695012858417,
+                0.003215724268799047,
+                744.3037546975335
+              ],
+              [
+                -0.003215724268799047,
+                0.6237695012858417,
+                505.2423808952359
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_1023_ghost2#2": {
       "charId": "char_1023_ghost2",
@@ -1420,7 +2174,65 @@
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1023_ghost2_2/dyn_illust_char_1023_ghost2_2/dyn_illust_char_1023_ghost2_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1023_ghost2_2/dyn_illust_char_1023_ghost2_2/dyn_illust_char_1023_ghost2_2.atlas",
       "illust": "https://media.prts.wiki/1/16/%E7%AB%8B%E7%BB%98_%E5%BD%92%E6%BA%9F%E5%B9%BD%E7%81%B5%E9%B2%A8_2.png",
-      "prtsFile": "立绘_归溟幽灵鲨_2.png"
+      "prtsFile": "立绘_归溟幽灵鲨_2.png",
+      "frames": {
+        "portrait": {
+          "x": -18.137,
+          "y": 860.019,
+          "width": 137.295,
+          "height": 274.59
+        },
+        "avatar": {
+          "x": -24.627,
+          "y": 972.73,
+          "width": 152.187,
+          "height": 152.187
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "05524320098dfbfb4dd41d95c34b2a4826ed4767fd704b162567c40d9dd535fd",
+        "skeletonSha256": "a1cb034c26238fffd5377da1cbbf1b806aef0d5422d8a3ad234e2dc5708ef2a5",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 65,
+            "inliers": 46,
+            "fromPortrait": false,
+            "tileSha256": "aa2da8cdab0aec38cb87066e565392e071a665df3dd88a02f7b1216bbab499b9",
+            "transform": [
+              [
+                0.5719429143125445,
+                0.011679638802970632,
+                734.3056636081848
+              ],
+              [
+                -0.011679638802970632,
+                0.5719429143125445,
+                481.36631887130216
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 33,
+            "inliers": 25,
+            "fromPortrait": false,
+            "tileSha256": "af933525b809a9fdb849d8a5e8febd56fb1cb8178ac268ee492d7d407897a772",
+            "transform": [
+              [
+                0.6341006613389482,
+                -0.0035260542707881122,
+                731.8481912164776
+              ],
+              [
+                0.0035260542707881122,
+                0.6341006613389482,
+                487.24637031370884
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_2027_wang#2": {
       "charId": "char_2027_wang",
@@ -1433,7 +2245,65 @@
       "illust": "https://media.prts.wiki/3/35/%E7%AB%8B%E7%BB%98_%E6%9C%9B_2.png",
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2027_wang_2/dyn_illust_char_2027_wang_2/dyn_illust_char_2027_wang_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2027_wang_2/dyn_illust_char_2027_wang_2/dyn_illust_char_2027_wang_2.atlas",
-      "prtsFile": "立绘_望_2.png"
+      "prtsFile": "立绘_望_2.png",
+      "frames": {
+        "portrait": {
+          "x": -61.767,
+          "y": 891.572,
+          "width": 157.173,
+          "height": 314.347
+        },
+        "avatar": {
+          "x": -69.479,
+          "y": 1021.463,
+          "width": 175.337,
+          "height": 175.337
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "dc246a471f52668c8f50399902f37fa989e53616de17cfce4323ef125fd2abfc",
+        "skeletonSha256": "5e4a254b038f88e403950b5fb5b95755e309d3f9c1fdbf248a626c454336768b",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 138,
+            "inliers": 116,
+            "fromPortrait": false,
+            "tileSha256": "b81bb56a0a5bde0e6666e2c7c59418b16c2cf2440fe9d511fee04e26fffc7b8c",
+            "transform": [
+              [
+                0.6548754343887244,
+                0.004291368845386395,
+                627.903427086884
+              ],
+              [
+                -0.004291368845386395,
+                0.6548754343887244,
+                445.9492979481861
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 79,
+            "inliers": 66,
+            "fromPortrait": false,
+            "tileSha256": "c96c84fab1b2927446d1e7b0e4d06a67af1b505051b0cf4298300240e845f9ae",
+            "transform": [
+              [
+                0.730553957311931,
+                0.004807500674910854,
+                622.459690286743
+              ],
+              [
+                -0.004807500674910854,
+                0.730553957311931,
+                452.83396659718863
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_1015_aglna2#2": {
       "charId": "char_1015_aglna2",
@@ -1446,7 +2316,65 @@
       "illust": "https://media.prts.wiki/0/0a/%E7%AB%8B%E7%BB%98_%E4%BA%88%E6%84%BF%E5%AE%89%E6%B4%81%E8%8E%89%E5%A8%9C_2.png",
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1015_aglna2_2/dyn_illust_char_1015_aglna2_2/dyn_illust_char_1015_aglna2_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1015_aglna2_2/dyn_illust_char_1015_aglna2_2/dyn_illust_char_1015_aglna2_2.atlas",
-      "prtsFile": "立绘_予愿安洁莉娜_2.png"
+      "prtsFile": "立绘_予愿安洁莉娜_2.png",
+      "frames": {
+        "portrait": {
+          "x": -41.229,
+          "y": 1122.914,
+          "width": 213.757,
+          "height": 427.514
+        },
+        "avatar": {
+          "x": -36.139,
+          "y": 1303.235,
+          "width": 224.1,
+          "height": 224.1
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "79bcaeeefb8c5a3bf815978adf04de28681cfd9b84b25755e1e4691805ebb234",
+        "skeletonSha256": "bb8d460816953ec2dea8d9fdefad45d2cdf49b2e71ab1b0acda48a417c98bd80",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 96,
+            "inliers": 62,
+            "fromPortrait": false,
+            "tileSha256": "3048d7f3ea9d9913947031cebb98252a3392fd2f8fc3cc4b130e309c30c17336",
+            "transform": [
+              [
+                0.7744623526072991,
+                0.0053887635771698045,
+                726.6181931822623
+              ],
+              [
+                -0.0053887635771698045,
+                0.7744623526072991,
+                385.8147102485894
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 16,
+            "inliers": 9,
+            "fromPortrait": false,
+            "tileSha256": "9da4be8299a779819adcb6a039b7f9296194594097b5456a8e3ab0564e84b650",
+            "transform": [
+              [
+                0.8119546933822991,
+                -0.0009519931300658469,
+                730.9919914192318
+              ],
+              [
+                0.0009519931300658469,
+                0.8119546933822991,
+                400.3014360722775
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_1016_agoat2#2": {
       "charId": "char_1016_agoat2",
@@ -1459,7 +2387,65 @@
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1016_agoat2_2/dyn_illust_char_1016_agoat2_2/dyn_illust_char_1016_agoat2_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1016_agoat2_2/dyn_illust_char_1016_agoat2_2/dyn_illust_char_1016_agoat2_2.atlas",
       "illust": "https://media.prts.wiki/0/04/%E7%AB%8B%E7%BB%98_%E7%BA%AF%E7%83%AC%E8%89%BE%E9%9B%85%E6%B3%95%E6%8B%89_2.png",
-      "prtsFile": "立绘_纯烬艾雅法拉_2.png"
+      "prtsFile": "立绘_纯烬艾雅法拉_2.png",
+      "frames": {
+        "portrait": {
+          "x": -42.287,
+          "y": 724.414,
+          "width": 166.676,
+          "height": 333.352
+        },
+        "avatar": {
+          "x": -44.599,
+          "y": 862.715,
+          "width": 180.534,
+          "height": 180.534
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "3ca9afa8b6c51c82c01c7a57d04c6b0ca6f3f234878270086cd3e28047f29545",
+        "skeletonSha256": "0bf1257b16f249561704ec916066019558138a2b2b7fe45360912386de6adca2",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 128,
+            "inliers": 109,
+            "fromPortrait": false,
+            "tileSha256": "bf845ff8775f1f4ce7c7cf840f161fc14615658e97bf57e39329e2f346c7e176",
+            "transform": [
+              [
+                0.6313462485098912,
+                0.0015526748971693464,
+                681.3429584983566
+              ],
+              [
+                -0.0015526748971693464,
+                0.6313462485098912,
+                466.6632720039526
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 78,
+            "inliers": 69,
+            "fromPortrait": false,
+            "tileSha256": "baea70ca109893042facd3b1acef85105ccd2363d8a426789c1647d7192b35b5",
+            "transform": [
+              [
+                0.6838047550640722,
+                0.007102613967382368,
+                679.4101086777194
+              ],
+              [
+                -0.007102613967382368,
+                0.6838047550640722,
+                477.0634664345048
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_1052_kalts2#2": {
       "charId": "char_1052_kalts2",
@@ -1472,7 +2458,65 @@
       "illust": "https://media.prts.wiki/5/57/%E7%AB%8B%E7%BB%98_%E5%87%AF%E5%B0%94%E5%B8%8C%C2%B7%E6%80%9D%E8%A1%A1%E6%89%98_2.png",
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1052_kalts2_2/dyn_illust_char_1052_kalts2_2/dyn_illust_char_1052_kalts2_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1052_kalts2_2/dyn_illust_char_1052_kalts2_2/dyn_illust_char_1052_kalts2_2.atlas",
-      "prtsFile": "立绘_凯尔希·思衡托_2.png"
+      "prtsFile": "立绘_凯尔希·思衡托_2.png",
+      "frames": {
+        "portrait": {
+          "x": -7.106,
+          "y": 511.229,
+          "width": 145.465,
+          "height": 290.929
+        },
+        "avatar": {
+          "x": -10.32,
+          "y": 633.633,
+          "width": 151.384,
+          "height": 151.384
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "5254224deaa741852b2618d6cef6ec0f7a8ad485ff2ec86a9441e447b467f94a",
+        "skeletonSha256": "5f8166865f1eb2ae228ae756ce9fae8deff5970ff4566adc1b61fa35a88db307",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 104,
+            "inliers": 87,
+            "fromPortrait": false,
+            "tileSha256": "7bde9fa3389d9cc53f3223d132adc9dc48bb1c82fda2e8d9e5a9c85f8758e26c",
+            "transform": [
+              [
+                0.550487203229384,
+                0.00401645267093914,
+                721.9582111906315
+              ],
+              [
+                -0.00401645267093914,
+                0.550487203229384,
+                544.5340943484757
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 46,
+            "inliers": 31,
+            "fromPortrait": false,
+            "tileSha256": "36a8d206287f4deacd759d48aa1adb6f25ca342525d7936ead7d84d623145058",
+            "transform": [
+              [
+                0.572844681837727,
+                0.008329127534873007,
+                719.7460902385316
+              ],
+              [
+                -0.008329127534873007,
+                0.572844681837727,
+                556.601469827703
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_2025_shu#2": {
       "charId": "char_2025_shu",
@@ -1485,7 +2529,65 @@
       "illust": "https://media.prts.wiki/c/cf/%E7%AB%8B%E7%BB%98_%E9%BB%8D_2.png",
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2025_shu_2/dyn_illust_char_2025_shu_2/dyn_illust_char_2025_shu_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2025_shu_2/dyn_illust_char_2025_shu_2/dyn_illust_char_2025_shu_2.atlas",
-      "prtsFile": "立绘_黍_2.png"
+      "prtsFile": "立绘_黍_2.png",
+      "frames": {
+        "portrait": {
+          "x": -50.834,
+          "y": 893.238,
+          "width": 225.523,
+          "height": 451.046
+        },
+        "avatar": {
+          "x": -43.304,
+          "y": 1081.755,
+          "width": 241.01,
+          "height": 241.01
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "f6c403afb7b0d0de27b66aa4c29410be9365b26a473853ee0214770447a65d65",
+        "skeletonSha256": "7ff33c58860e51dfb6095d933d364f50d5f58315641eea0cf6105f9a42011526",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 163,
+            "inliers": 148,
+            "fromPortrait": false,
+            "tileSha256": "89b463fc35a342bffd9bc9326f93de3d60b29ad85890a25649883920af427ba6",
+            "transform": [
+              [
+                0.8949309553793117,
+                -0.0017286140175058287,
+                706.8585871589571
+              ],
+              [
+                0.0017286140175058287,
+                0.8949309553793117,
+                486.07027344880896
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 80,
+            "inliers": 65,
+            "fromPortrait": false,
+            "tileSha256": "d95b840ca09ae0d2e03356b83da0057e594e75bb50020d0bde691c055a7049ad",
+            "transform": [
+              [
+                0.9563717706263802,
+                0.005762681565135897,
+                711.4083727864266
+              ],
+              [
+                -0.005762681565135897,
+                0.9563717706263802,
+                502.1167674339982
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_2014_nian#2": {
       "charId": "char_2014_nian",
@@ -1498,7 +2600,65 @@
       "illust": "https://media.prts.wiki/1/15/%E7%AB%8B%E7%BB%98_%E5%B9%B4_2.png",
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2014_nian_2/dyn_illust_char_2014_nian_2/dyn_illust_char_2014_nian_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2014_nian_2/dyn_illust_char_2014_nian_2/dyn_illust_char_2014_nian_2.atlas",
-      "prtsFile": "立绘_年_2.png"
+      "prtsFile": "立绘_年_2.png",
+      "frames": {
+        "portrait": {
+          "x": -47.116,
+          "y": 864.318,
+          "width": 141.026,
+          "height": 282.052
+        },
+        "avatar": {
+          "x": -45.693,
+          "y": 980.59,
+          "width": 147.754,
+          "height": 147.754
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "9fd34a09262fb36ae3b39d866ff2a56436b8d19f9d4efe879ec0fd39ff1e5937",
+        "skeletonSha256": "8eb7d63b8427f690dee131aec374d9a80ffc0820f75b8c38e54fbf71c2532f76",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 80,
+            "inliers": 58,
+            "fromPortrait": false,
+            "tileSha256": "3968c347237cd539350ed33f415a86068fff27fa8ee6d4e153c8aba8c75b51a1",
+            "transform": [
+              [
+                0.5876078706889469,
+                0.0010658575406994686,
+                714.4709088961947
+              ],
+              [
+                -0.0010658575406994686,
+                0.5876078706889469,
+                389.0682681677443
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 31,
+            "inliers": 22,
+            "fromPortrait": false,
+            "tileSha256": "7a1dfd993f1b73adb35137d7caac6e1a1abcf33487161d63c92ab8ee27e7690f",
+            "transform": [
+              [
+                0.6156187542628905,
+                -0.005227698839951544,
+                716.2028719156648
+              ],
+              [
+                0.005227698839951544,
+                0.6156187542628905,
+                402.02372152428546
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_2026_yu#2": {
       "charId": "char_2026_yu",
@@ -1511,7 +2671,65 @@
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2026_yu_2/dyn_illust_char_2026_yu_2/dyn_illust_char_2026_yu_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2026_yu_2/dyn_illust_char_2026_yu_2/dyn_illust_char_2026_yu_2.atlas",
       "illust": "https://media.prts.wiki/1/1a/%E7%AB%8B%E7%BB%98_%E4%BD%99_2.png",
-      "prtsFile": "立绘_余_2.png"
+      "prtsFile": "立绘_余_2.png",
+      "frames": {
+        "portrait": {
+          "x": 9.459,
+          "y": 987.786,
+          "width": 172.086,
+          "height": 344.172
+        },
+        "avatar": {
+          "x": 11.985,
+          "y": 1134.723,
+          "width": 175.844,
+          "height": 175.844
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "00946e496831b9997b32b72b473d4b894f9f7640043c2ba3c4fb05e9b8278840",
+        "skeletonSha256": "7aec89ca135202a28012bc246735290a06ef95739be124c9ad6f422e7923634b",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 62,
+            "inliers": 43,
+            "fromPortrait": false,
+            "tileSha256": "1afe82cb274028bc8eaf36c27ea33d1dcfa5babd645573948f3f35474db7a53f",
+            "transform": [
+              [
+                0.6828759387363595,
+                -0.0023461501195478473,
+                757.1794374849986
+              ],
+              [
+                0.0023461501195478473,
+                0.6828759387363595,
+                441.2485452805074
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 32,
+            "inliers": 28,
+            "fromPortrait": false,
+            "tileSha256": "5cc3ae23f443b6cd6b6476b3928584353e52d2f2c6b8cf83aa595175886ff672",
+            "transform": [
+              [
+                0.6977522856162093,
+                -0.0076194349377584104,
+                759.2504411964011
+              ],
+              [
+                0.0076194349377584104,
+                0.6977522856162093,
+                456.0556204649738
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_1044_hsgma2#2": {
       "charId": "char_1044_hsgma2",
@@ -1524,7 +2742,65 @@
       "illust": "https://media.prts.wiki/6/6b/%E7%AB%8B%E7%BB%98_%E6%96%A9%E4%B8%9A%E6%98%9F%E7%86%8A_2.png",
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1044_hsgma2_2/dyn_illust_char_1044_hsgma2_2/dyn_illust_char_1044_hsgma2_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1044_hsgma2_2/dyn_illust_char_1044_hsgma2_2/dyn_illust_char_1044_hsgma2_2.atlas",
-      "prtsFile": "立绘_斩业星熊_2.png"
+      "prtsFile": "立绘_斩业星熊_2.png",
+      "frames": {
+        "portrait": {
+          "x": -83.337,
+          "y": 920.341,
+          "width": 138.742,
+          "height": 277.484
+        },
+        "avatar": {
+          "x": -84.317,
+          "y": 1035.6,
+          "width": 150.089,
+          "height": 150.089
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "866feae7d5b71f2ba3e8d07538828aba3ce478d659d666c31ef7c1bf1d733377",
+        "skeletonSha256": "30c302e87c2b687621c4a3533c71468dfe83e37f0db0c39500559e9306e83ae8",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 41,
+            "inliers": 30,
+            "fromPortrait": false,
+            "tileSha256": "fd26a4d65a76727320030f7db6b72da061f20a1c53c867842a4446f8733a0dca",
+            "transform": [
+              [
+                0.5505525134074986,
+                0.0036209868529305726,
+                681.9653657919148
+              ],
+              [
+                -0.0036209868529305726,
+                0.5505525134074986,
+                469.7381416334001
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 24,
+            "inliers": 16,
+            "fromPortrait": false,
+            "tileSha256": "76b234a7756ba3e3ff7ee80854160fe8132199c6daf927b85fffae7b05199c65",
+            "transform": [
+              [
+                0.5954893891593789,
+                0.010989725058370392,
+                680.9365882870197
+              ],
+              [
+                -0.010989725058370392,
+                0.5954893891593789,
+                479.07772354688404
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_2024_chyue#2": {
       "charId": "char_2024_chyue",
@@ -1537,7 +2813,65 @@
       "illust": "https://media.prts.wiki/a/a8/%E7%AB%8B%E7%BB%98_%E9%87%8D%E5%B2%B3_2.png",
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2024_chyue_2/dyn_illust_char_2024_chyue_2/dyn_illust_char_2024_chyue_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2024_chyue_2/dyn_illust_char_2024_chyue_2/dyn_illust_char_2024_chyue_2.atlas",
-      "prtsFile": "立绘_重岳_2.png"
+      "prtsFile": "立绘_重岳_2.png",
+      "frames": {
+        "portrait": {
+          "x": -77.079,
+          "y": 1111.565,
+          "width": 166.011,
+          "height": 332.022
+        },
+        "avatar": {
+          "x": -82.778,
+          "y": 1246.914,
+          "width": 178.317,
+          "height": 178.317
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "3438ec6e481faf761f4f91012372b5c4b88bb3af5234f2942348fbd905c1a233",
+        "skeletonSha256": "fe1b6e725f17e0973d43ecee4a6b3a3c48fa0537d9a4c71ff61e16d06267e41e",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 70,
+            "inliers": 53,
+            "fromPortrait": false,
+            "tileSha256": "62957cf70ecd1d7e4d46568a221891ba1e177efedc22b9dc0ef037598edb84f0",
+            "transform": [
+              [
+                0.6382182773063007,
+                0.004313573769635073,
+                673.3853017375936
+              ],
+              [
+                -0.004313573769635073,
+                0.6382182773063007,
+                485.6584392803383
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 29,
+            "inliers": 23,
+            "fromPortrait": false,
+            "tileSha256": "adf6c0df831bab5556a336296f73e4ff47cc963ed5ea4afe373742617e5c35ce",
+            "transform": [
+              [
+                0.6854447030293218,
+                0.011650032394865326,
+                669.1771708760176
+              ],
+              [
+                -0.011650032394865326,
+                0.6854447030293218,
+                499.02777829608215
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_4058_pepe#2": {
       "charId": "char_4058_pepe",
@@ -1550,7 +2884,65 @@
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4058_pepe_2/dyn_illust_char_4058_pepe_2/dyn_illust_char_4058_pepe_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4058_pepe_2/dyn_illust_char_4058_pepe_2/dyn_illust_char_4058_pepe_2.atlas",
       "illust": "https://media.prts.wiki/0/03/%E7%AB%8B%E7%BB%98_%E4%BD%A9%E4%BD%A9_2.png",
-      "prtsFile": "立绘_佩佩_2.png"
+      "prtsFile": "立绘_佩佩_2.png",
+      "frames": {
+        "portrait": {
+          "x": -76.684,
+          "y": 841.261,
+          "width": 208.367,
+          "height": 416.734
+        },
+        "avatar": {
+          "x": -75.972,
+          "y": 1022.23,
+          "width": 210.455,
+          "height": 210.455
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "34f767afc969a6efdfac2b7f7626c14f154c49bc1c6bb110f7e86b9b26418329",
+        "skeletonSha256": "7395972019ad04b8e35434f0b3038f0dad0e1bca3b3f0546f388196c5403c1bb",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 180,
+            "inliers": 147,
+            "fromPortrait": false,
+            "tileSha256": "5736084469c7c9e6cb956b76be53b4e7e8db8c5ae76d39b4af4c62f11b473915",
+            "transform": [
+              [
+                0.7885991746054978,
+                -0.03250376682264324,
+                703.6263989206791
+              ],
+              [
+                0.03250376682264324,
+                0.7885991746054978,
+                571.2895426926389
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 90,
+            "inliers": 70,
+            "fromPortrait": false,
+            "tileSha256": "524a90eec54b2c7f33aa8ed29d5993aab95aa1ac269df80a92da084992da5528",
+            "transform": [
+              [
+                0.7960173088916848,
+                -0.042995039913978746,
+                702.1748235719888
+              ],
+              [
+                0.042995039913978746,
+                0.7960173088916848,
+                587.5861934579892
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_1026_gvial2#2": {
       "charId": "char_1026_gvial2",
@@ -1563,7 +2955,65 @@
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1026_gvial2_2/dyn_illust_char_1026_gvial2_2/dyn_illust_char_1026_gvial2_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1026_gvial2_2/dyn_illust_char_1026_gvial2_2/dyn_illust_char_1026_gvial2_2.atlas",
       "illust": "https://media.prts.wiki/7/76/%E7%AB%8B%E7%BB%98_%E7%99%BE%E7%82%BC%E5%98%89%E7%BB%B4%E5%B0%94_2.png",
-      "prtsFile": "立绘_百炼嘉维尔_2.png"
+      "prtsFile": "立绘_百炼嘉维尔_2.png",
+      "frames": {
+        "portrait": {
+          "x": -337.052,
+          "y": 963.556,
+          "width": 201.878,
+          "height": 403.755
+        },
+        "avatar": {
+          "x": -345.564,
+          "y": 1131.999,
+          "width": 214.455,
+          "height": 214.455
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "564b3d6a936d3cf1c5af16a362a2d6b34f429ae8cf26afaa73e983ead99ddc17",
+        "skeletonSha256": "dfdb9f1184662e7f7f6e0155e8f12b5b72575ea9bc849c0f69ba989bf6d74d30",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 132,
+            "inliers": 103,
+            "fromPortrait": false,
+            "tileSha256": "0d517c05b5dd9867606a09ef313ad3312f42022f82a0132d49bd1d449926c37d",
+            "transform": [
+              [
+                0.6465822551621834,
+                0.024431141488957104,
+                637.7294212058523
+              ],
+              [
+                -0.024431141488957104,
+                0.6465822551621834,
+                557.6789321921325
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 73,
+            "inliers": 59,
+            "fromPortrait": false,
+            "tileSha256": "541d1abd49f70806eb98c86879eec8648bde063ef4721e86d83170a81745bc35",
+            "transform": [
+              [
+                0.6855196486285058,
+                0.050218245984818555,
+                632.8205606534952
+              ],
+              [
+                -0.050218245984818555,
+                0.6855196486285058,
+                572.1153059905197
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_1014_nearl2#2": {
       "charId": "char_1014_nearl2",
@@ -1576,7 +3026,65 @@
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1014_nearl2_2/dyn_illust_char_1014_nearl2_2/dyn_illust_char_1014_nearl2_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1014_nearl2_2/dyn_illust_char_1014_nearl2_2/dyn_illust_char_1014_nearl2_2.atlas",
       "illust": "https://media.prts.wiki/e/ec/%E7%AB%8B%E7%BB%98_%E8%80%80%E9%AA%91%E5%A3%AB%E4%B8%B4%E5%85%89_2.png",
-      "prtsFile": "立绘_耀骑士临光_2.png"
+      "prtsFile": "立绘_耀骑士临光_2.png",
+      "frames": {
+        "portrait": {
+          "x": -304.482,
+          "y": 876.4,
+          "width": 167.287,
+          "height": 334.575
+        },
+        "avatar": {
+          "x": -312.635,
+          "y": 1012.171,
+          "width": 183.525,
+          "height": 183.525
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "20f6ac2841e92354db031fceb9ff6fb2c3b1acb1bf2f6d0dede69739f3b79ae5",
+        "skeletonSha256": "0003cd43b380af87224f214721e9a23014f8731f63e6fa14b1501eac06ef6b7b",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 118,
+            "inliers": 102,
+            "fromPortrait": false,
+            "tileSha256": "e0992f9c6d1aaba7270604b5e4a1559d985fb1497461ffc986dddc22ddbff0c5",
+            "transform": [
+              [
+                0.6970233217097193,
+                -0.003106622686876574,
+                642.1983919363217
+              ],
+              [
+                0.003106622686876574,
+                0.6970233217097193,
+                516.4907305668723
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 50,
+            "inliers": 39,
+            "fromPortrait": false,
+            "tileSha256": "e2d3657eb9b2878aea358a99d90b0d43e11b26f47e440b10c73e008f15080237",
+            "transform": [
+              [
+                0.7646613411736474,
+                -0.006281213456919568,
+                636.0913854402291
+              ],
+              [
+                0.006281213456919568,
+                0.7646613411736474,
+                527.6648525315966
+              ]
+            ]
+          }
+        }
+      }
     },
     "char_4247_oxi#2": {
       "charId": "char_4247_oxi",
@@ -1589,175 +3097,1954 @@
       "illust": "https://media.prts.wiki/c/c4/%E7%AB%8B%E7%BB%98_%E5%A1%94%E9%9C%B2%E6%8B%89_2.png",
       "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4247_oxi_2/dyn_illust_char_4247_oxi_2/dyn_illust_char_4247_oxi_2.skel",
       "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4247_oxi_2/dyn_illust_char_4247_oxi_2/dyn_illust_char_4247_oxi_2.atlas",
-      "prtsFile": "立绘_塔露拉_2.png"
+      "prtsFile": "立绘_塔露拉_2.png",
+      "frames": {
+        "portrait": {
+          "x": -75.261,
+          "y": 362.144,
+          "width": 108.623,
+          "height": 217.247
+        },
+        "avatar": {
+          "x": -80.577,
+          "y": 450.901,
+          "width": 120.868,
+          "height": 120.868
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "457f3199566308a80c3eff846294474b57f2781e41841c8b37023f35394933a4",
+        "skeletonSha256": "fb870ec0ff110bd2209534493839dde7d65153bed1179c422f48ee1dc660ab00",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 72,
+            "inliers": 47,
+            "fromPortrait": false,
+            "tileSha256": "896146274877da9d209123d40b92fa67b18ba44234146dcee730eea0efb3fa23",
+            "transform": [
+              [
+                0.3896293905075522,
+                0.003951950927386175,
+                666.2950374719501
+              ],
+              [
+                -0.003951950927386175,
+                0.3896293905075522,
+                707.6137870794231
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 31,
+            "inliers": 20,
+            "fromPortrait": false,
+            "tileSha256": "f418f712e3316c7cbe5763ce45c851ea02a41e1c1ce3af6705345feda1e4a66a",
+            "transform": [
+              [
+                0.4335712724188513,
+                -0.0008365704516843737,
+                663.6476558558717
+              ],
+              [
+                0.0008365704516843737,
+                0.4335712724188513,
+                712.1001554225694
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_250_phatom@sale#4": {
+      "charId": "char_250_phatom",
+      "stem": "dyn_illust_char_250_phatom_sale__4",
+      "bundle": "char_250_phatom_sale#4",
+      "officialDynamic": true,
+      "name": "焦点",
+      "group": "忒斯特收藏/V",
+      "prtsFile": "立绘_傀影_skin2.png",
+      "illust": "https://media.prts.wiki/e/e8/%E7%AB%8B%E7%BB%98_%E5%82%80%E5%BD%B1_skin2.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_250_phatom_sale__4/dyn_illust_char_250_phatom_sale__4/dyn_illust_char_250_phatom_sale__4.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_250_phatom_sale__4/dyn_illust_char_250_phatom_sale__4/dyn_illust_char_250_phatom_sale__4.atlas",
+      "frames": {
+        "portrait": {
+          "x": -85.786,
+          "y": 1230.71,
+          "width": 165.545,
+          "height": 331.089
+        },
+        "avatar": {
+          "x": -91.078,
+          "y": 1364.945,
+          "width": 177.857,
+          "height": 177.857
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "fb535992d3a798e83f34e899bdad714d4a39598c9e94c111f3a1dac60edb19e7",
+        "skeletonSha256": "4a6e88bfac5c48175e6b26b58f0b265b2f0616aaed1a71b4b9fa464ab478f4b7",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 97,
+            "inliers": 87,
+            "fromPortrait": false,
+            "tileSha256": "86dddf65634085ea26636b353ca042bae2076765fc21e0f84838e42e58384061",
+            "transform": [
+              [
+                0.6270399816152126,
+                -0.005402145127212573,
+                692.4842000909298
+              ],
+              [
+                0.005402145127212573,
+                0.6270399816152126,
+                366.47306869957055
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 47,
+            "inliers": 41,
+            "fromPortrait": false,
+            "tileSha256": "48e9dab0cf346df173d1b6c9709c3063d4efd687f1dee23f83c57f8145683fca",
+            "transform": [
+              [
+                0.6737024914536279,
+                -0.000003240468363603817,
+                687.9018736494027
+              ],
+              [
+                0.000003240468363603817,
+                0.6737024914536279,
+                379.90700305851345
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_1037_amiya3@sale#13": {
+      "charId": "char_002_amiya",
+      "stem": "dyn_illust_char_1037_amiya3_sale__13",
+      "bundle": "char_1037_amiya3_sale#13",
+      "officialDynamic": true,
+      "name": "寰宇独奏",
+      "group": "忒斯特收藏/XIV",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1037_amiya3_sale__13/dyn_illust_char_1037_amiya3_sale__13/dyn_illust_char_1037_amiya3_sale__13.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1037_amiya3_sale__13/dyn_illust_char_1037_amiya3_sale__13/dyn_illust_char_1037_amiya3_sale__13.atlas",
+      "frames": {
+        "portrait": {
+          "x": -14.193,
+          "y": 914.188,
+          "width": 211.274,
+          "height": 422.548
+        },
+        "avatar": {
+          "x": -16.019,
+          "y": 1089.137,
+          "width": 220.517,
+          "height": 220.517
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "739bfa7f150bdf461cd8f191f1ebe9d1b03ee8ba37b083cbe29b3cfeae3d1f74",
+        "skeletonSha256": "13b7f4610e0585fdc5f72e101149a977309f60e4d6561e7cb2f3e2cabb0b58b4",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 123,
+            "inliers": 98,
+            "fromPortrait": false,
+            "tileSha256": "fa2b80e9cd8e277db23afd7a2177b531ae9a019c67d47a527524f7d63fa9308a",
+            "transform": [
+              [
+                0.854602832762733,
+                -0.010635280573701389,
+                662.216441332982
+              ],
+              [
+                0.010635280573701389,
+                0.854602832762733,
+                486.38264769519947
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 77,
+            "inliers": 69,
+            "fromPortrait": false,
+            "tileSha256": "972e4395b7b54448543f350b2eb67197f0cb24b7731e48c2dff400a2ab31681c",
+            "transform": [
+              [
+                0.892022922195375,
+                -0.00815295660077589,
+                659.7039381917768
+              ],
+              [
+                0.00815295660077589,
+                0.892022922195375,
+                506.31728372687604
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_124_kroos@sale#14": {
+      "charId": "char_124_kroos",
+      "stem": "dyn_illust_char_124_kroos_sale__14",
+      "bundle": "char_124_kroos_sale#14",
+      "officialDynamic": true,
+      "name": "星月漂流记",
+      "group": "忒斯特收藏/XV",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_124_kroos_sale__14/dyn_illust_char_124_kroos_sale__14/dyn_illust_char_124_kroos_sale__14.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_124_kroos_sale__14/dyn_illust_char_124_kroos_sale__14/dyn_illust_char_124_kroos_sale__14.atlas",
+      "frames": {
+        "portrait": {
+          "x": -291.163,
+          "y": 670.233,
+          "width": 200.229,
+          "height": 400.457
+        },
+        "avatar": {
+          "x": -312.08,
+          "y": 835.782,
+          "width": 216.973,
+          "height": 216.973
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "03b4ff4db86bc287f52595447bfef2236e2d9196e672c5373db599f5298a997e",
+        "skeletonSha256": "331b0a05717f0082fbda053adbfaed5ee869158f5674b7e1a557a8c489c4b0bc",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 163,
+            "inliers": 145,
+            "fromPortrait": false,
+            "tileSha256": "503f7efaa0410d16fb6e27e940c1d2bf857a802279277e711b84e2454cd1dc5c",
+            "transform": [
+              [
+                0.7847833153364757,
+                0.009493172745207811,
+                647.2879294538866
+              ],
+              [
+                -0.009493172745207811,
+                0.7847833153364757,
+                454.04647163906407
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 63,
+            "inliers": 54,
+            "fromPortrait": false,
+            "tileSha256": "4b0d04f35bbdc8b889bfc96d7488ebe8dc0ace607f114be5e7d285f00d6d0409",
+            "transform": [
+              [
+                0.8504157189517636,
+                0.009898501566284863,
+                633.3473849950706
+              ],
+              [
+                -0.009898501566284863,
+                0.8504157189517636,
+                466.7323328211307
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_1035_wisdel@sale#14": {
+      "charId": "char_1035_wisdel",
+      "stem": "dyn_illust_char_1035_wisdel_sale__14",
+      "bundle": "char_1035_wisdel_sale#14",
+      "officialDynamic": true,
+      "name": "超新星",
+      "group": "忒斯特收藏/XV",
+      "prtsFile": "立绘_维什戴尔_skin1.png",
+      "illust": "https://media.prts.wiki/b/b2/%E7%AB%8B%E7%BB%98_%E7%BB%B4%E4%BB%80%E6%88%B4%E5%B0%94_skin1.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1035_wisdel_sale__14/dyn_illust_char_1035_wisdel_sale__14/dyn_illust_char_1035_wisdel_sale__14.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1035_wisdel_sale__14/dyn_illust_char_1035_wisdel_sale__14/dyn_illust_char_1035_wisdel_sale__14.atlas",
+      "frames": {
+        "portrait": {
+          "x": -79.529,
+          "y": 625.837,
+          "width": 152.188,
+          "height": 304.375
+        },
+        "avatar": {
+          "x": -88.033,
+          "y": 751.208,
+          "width": 167.044,
+          "height": 167.044
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "df628de01e6534d9c37dcc94358d7680dce385520a12dfd1bce24264afe71a0f",
+        "skeletonSha256": "a2a596720eee46a4e2914dbab7e21375993f25af6886484c654beb087b9d186d",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 153,
+            "inliers": 138,
+            "fromPortrait": false,
+            "tileSha256": "b392d496229fe34131dbc2fe0feb3fbb55eb83c886f2a946f6f480aa7e33ef5e",
+            "transform": [
+              [
+                0.6341147446763502,
+                0.0005647887520942893,
+                690.2515616892939
+              ],
+              [
+                -0.0005647887520942893,
+                0.6341147446763502,
+                464.89197845157605
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 62,
+            "inliers": 54,
+            "fromPortrait": false,
+            "tileSha256": "b121c906fb9480f417a19cdbf4a9d88765bbdc52cc4bfbe9b748deecbe3ac61e",
+            "transform": [
+              [
+                0.696013688548112,
+                0.0021833451101367207,
+                683.7794003242175
+              ],
+              [
+                -0.0021833451101367207,
+                0.696013688548112,
+                474.00785485712834
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_003_kalts@sale#14": {
+      "charId": "char_003_kalts",
+      "stem": "dyn_illust_char_003_kalts_sale__14",
+      "bundle": "char_003_kalts_sale#14",
+      "officialDynamic": true,
+      "name": "时遗",
+      "group": "忒斯特收藏/XVI",
+      "prtsFile": "立绘_凯尔希_skin2.png",
+      "illust": "https://media.prts.wiki/9/98/%E7%AB%8B%E7%BB%98_%E5%87%AF%E5%B0%94%E5%B8%8C_skin2.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_003_kalts_sale__14/dyn_illust_char_003_kalts_sale__14/dyn_illust_char_003_kalts_sale__14.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_003_kalts_sale__14/dyn_illust_char_003_kalts_sale__14/dyn_illust_char_003_kalts_sale__14.atlas",
+      "frames": {
+        "portrait": {
+          "x": 17.808,
+          "y": 595.196,
+          "width": 150.041,
+          "height": 300.082
+        },
+        "avatar": {
+          "x": 9.805,
+          "y": 719.186,
+          "width": 166.812,
+          "height": 166.812
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "e3a1b3d1a8063270e0b9d86f3da8f98c3d0493f88c09dd56a78f21b4b3367841",
+        "skeletonSha256": "1c23786c13cbeaab4f5875338eaaa9a3f189ceb313034ddddae133b762884765",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 125,
+            "inliers": 102,
+            "fromPortrait": false,
+            "tileSha256": "9688deaa7e906bfde29b2593d4ccb6273068f01be285601c82dc5ec2952399fb",
+            "transform": [
+              [
+                0.6251701854916822,
+                0.0003576520863505725,
+                794.7914499980836
+              ],
+              [
+                -0.0003576520863505725,
+                0.6251701854916822,
+                456.5741071165649
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 61,
+            "inliers": 46,
+            "fromPortrait": false,
+            "tileSha256": "02ed45050132fda35f86483ba589e32dfa243e9ff8e25e355a3374aefc0bb24b",
+            "transform": [
+              [
+                0.6949224399464713,
+                0.013415106917881291,
+                787.6579096707518
+              ],
+              [
+                -0.013415106917881291,
+                0.6949224399464713,
+                464.71997869008266
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_1001_amiya2@sale#16": {
+      "charId": "char_002_amiya",
+      "stem": "dyn_illust_char_1001_amiya2_sale__16",
+      "bundle": "char_1001_amiya2_sale#16",
+      "officialDynamic": true,
+      "name": "于万千宇宙之中",
+      "group": "忒斯特收藏/XVIII",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1001_amiya2_sale__16/dyn_illust_char_1001_amiya2_sale__16/dyn_illust_char_1001_amiya2_sale__16.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1001_amiya2_sale__16/dyn_illust_char_1001_amiya2_sale__16/dyn_illust_char_1001_amiya2_sale__16.atlas",
+      "frames": {
+        "portrait": {
+          "x": 50.401,
+          "y": 1143.609,
+          "width": 126.126,
+          "height": 252.252
+        },
+        "avatar": {
+          "x": 46.144,
+          "y": 1249.651,
+          "width": 134.175,
+          "height": 134.175
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "fb16e34266a14e58ce40f64948f572486540b87982aef92cee6ae4b792c40a62",
+        "skeletonSha256": "6e67f4d743929029c63df648bcf3508f784aaa874d33c51a977e2d119ecfa6fc",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 64,
+            "inliers": 49,
+            "fromPortrait": false,
+            "tileSha256": "b81f7c966fa7832f2e098368591364d653a105c0317ea9a3e481a6664305dc30",
+            "transform": [
+              [
+                0.5004882779332139,
+                0.0033653879689293227,
+                831.1103375670274
+              ],
+              [
+                -0.0033653879689293227,
+                0.5004882779332139,
+                425.40465441804986
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 37,
+            "inliers": 30,
+            "fromPortrait": false,
+            "tileSha256": "362e1f3527c97b8013eefd362fe28da109c3f9873d32149723ea0ad9b9124ed2",
+            "transform": [
+              [
+                0.5323941524148356,
+                -0.007023673602249027,
+                829.3104192122386
+              ],
+              [
+                0.007023673602249027,
+                0.5323941524148356,
+                433.0674128486442
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_113_cqbw@epoque#7": {
+      "charId": "char_113_cqbw",
+      "stem": "dyn_illust_char_113_cqbw_epoque__7",
+      "bundle": "char_113_cqbw_epoque#7",
+      "officialDynamic": true,
+      "name": "恍惚",
+      "group": "时代/VII",
+      "prtsFile": "立绘_W_skin1.png",
+      "illust": "https://media.prts.wiki/a/a3/%E7%AB%8B%E7%BB%98_W_skin1.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_113_cqbw_epoque__7/dyn_illust_char_113_cqbw_epoque__7/dyn_illust_char_113_cqbw_epoque__7.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_113_cqbw_epoque__7/dyn_illust_char_113_cqbw_epoque__7/dyn_illust_char_113_cqbw_epoque__7.atlas",
+      "frames": {
+        "portrait": {
+          "x": -308.926,
+          "y": 740.994,
+          "width": 210.526,
+          "height": 421.052
+        },
+        "avatar": {
+          "x": -309.714,
+          "y": 912.431,
+          "width": 231.499,
+          "height": 231.499
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "a796aed4041a084828056449cb4d526ec821e9eebcf908eb335e6dd5183646c2",
+        "skeletonSha256": "05c7d2d1c5666e29300267d4cfc42c9ff979578ba50022d5fa145ac8555e319e",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 53,
+            "inliers": 36,
+            "fromPortrait": false,
+            "tileSha256": "03baeb3ba3ec8984e3dbf15cf5e87428830f60d3f664cacc25b7d7ebeb459d2c",
+            "transform": [
+              [
+                0.701749734033223,
+                0.0024091369026345085,
+                646.4110152275771
+              ],
+              [
+                -0.0024091369026345085,
+                0.701749734033223,
+                439.98988349214426
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 22,
+            "inliers": 16,
+            "fromPortrait": false,
+            "tileSha256": "6d1299c9584e6b907b600cf431b44a49e250148d8e7727e878c2867f4ec89bb1",
+            "transform": [
+              [
+                0.7716636820797292,
+                0.00062564985023616,
+                646.3150747500717
+              ],
+              [
+                -0.00062564985023616,
+                0.7716636820797292,
+                450.6982193894844
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_2014_nian@nian#4": {
+      "charId": "char_2014_nian",
+      "stem": "dyn_illust_char_2014_nian_nian__4",
+      "bundle": "char_2014_nian_nian#4",
+      "officialDynamic": true,
+      "name": "乐逍遥",
+      "group": "0011制造/III",
+      "prtsFile": "立绘_年_skin1.png",
+      "illust": "https://media.prts.wiki/6/6f/%E7%AB%8B%E7%BB%98_%E5%B9%B4_skin1.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2014_nian_nian__4/dyn_illust_char_2014_nian_nian__4/dyn_illust_char_2014_nian_nian__4.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2014_nian_nian__4/dyn_illust_char_2014_nian_nian__4/dyn_illust_char_2014_nian_nian__4.atlas",
+      "frames": {
+        "portrait": {
+          "x": 9.268,
+          "y": 406.835,
+          "width": 247.933,
+          "height": 495.867
+        },
+        "avatar": {
+          "x": 3.143,
+          "y": 610.278,
+          "width": 272.999,
+          "height": 272.999
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "443da2e30b0c90fce0986a3e4c06d9814fecb5ebf095e4ed5ced2c798f6f15cf",
+        "skeletonSha256": "36f18d8b197c48a8789c4dd9623cf95b9f3eef1c2dcca574850b192336a19c3d",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 151,
+            "inliers": 134,
+            "fromPortrait": false,
+            "tileSha256": "4169e4ab765326e88a53706d2e759b39adc8d6923c0adec3cabfe123db05faff",
+            "transform": [
+              [
+                0.9391419278038433,
+                0.00024539043883419886,
+                729.0020032047419
+              ],
+              [
+                -0.00024539043883419886,
+                0.9391419278038433,
+                311.8165368707156
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 53,
+            "inliers": 44,
+            "fromPortrait": false,
+            "tileSha256": "b1828f2c733a1b5dc46be796eea752fb271d6f8d7c5f96f6310f67fe15ab0c75",
+            "transform": [
+              [
+                1.0340857740313194,
+                -0.0025683924440529,
+                725.1020179057984
+              ],
+              [
+                0.0025683924440529,
+                1.0340857740313194,
+                324.807079448515
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_2023_ling@nian#9": {
+      "charId": "char_2023_ling",
+      "stem": "dyn_illust_char_2023_ling_nian__9",
+      "bundle": "char_2023_ling_nian#9",
+      "officialDynamic": true,
+      "name": "濯缨",
+      "group": "0011制造/VIII",
+      "prtsFile": "立绘_令_skin1.png",
+      "illust": "https://media.prts.wiki/5/5e/%E7%AB%8B%E7%BB%98_%E4%BB%A4_skin1.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2023_ling_nian__9/dyn_illust_char_2023_ling_nian__9/dyn_illust_char_2023_ling_nian__9.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2023_ling_nian__9/dyn_illust_char_2023_ling_nian__9/dyn_illust_char_2023_ling_nian__9.atlas",
+      "frames": {
+        "portrait": {
+          "x": -198.047,
+          "y": 935.922,
+          "width": 174.624,
+          "height": 349.247
+        },
+        "avatar": {
+          "x": -203.714,
+          "y": 1077.332,
+          "width": 193.881,
+          "height": 193.881
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "8c681afa6484bdc49b71c3a7c08878e2d040f24ece058a75dfabbe6f23b4085f",
+        "skeletonSha256": "5365bc18d232a3772b222d1ae9e590cf5788050535af97f81ed4fe4fc405a227",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 41,
+            "inliers": 25,
+            "fromPortrait": false,
+            "tileSha256": "b9ea8091447eb7d911e710399959fc94eb9de674ce291cb64ec4c1abe4e64777",
+            "transform": [
+              [
+                0.5026885757649406,
+                -0.019782352681001602,
+                697.5661330193964
+              ],
+              [
+                0.019782352681001602,
+                0.5026885757649406,
+                590.0391805978617
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 22,
+            "inliers": 13,
+            "fromPortrait": false,
+            "tileSha256": "e2e6aefef36d33e0df2e6df533740605b29afaf26501cb713debc8d9be8decfc",
+            "transform": [
+              [
+                0.5582459570335178,
+                -0.018651936998000624,
+                692.7384497533823
+              ],
+              [
+                0.018651936998000624,
+                0.5582459570335178,
+                597.3357511401955
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_2024_chyue@nian#10": {
+      "charId": "char_2024_chyue",
+      "stem": "dyn_illust_char_2024_chyue_nian__10",
+      "bundle": "char_2024_chyue_nian#10",
+      "officialDynamic": true,
+      "name": "何处栖",
+      "group": "0011制造/IX",
+      "prtsFile": "立绘_重岳_skin1.png",
+      "illust": "https://media.prts.wiki/a/a5/%E7%AB%8B%E7%BB%98_%E9%87%8D%E5%B2%B3_skin1.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2024_chyue_nian__10/dyn_illust_char_2024_chyue_nian__10/dyn_illust_char_2024_chyue_nian__10.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2024_chyue_nian__10/dyn_illust_char_2024_chyue_nian__10/dyn_illust_char_2024_chyue_nian__10.atlas",
+      "frames": {
+        "portrait": {
+          "x": -56.487,
+          "y": 955.51,
+          "width": 178.979,
+          "height": 357.958
+        },
+        "avatar": {
+          "x": -57.161,
+          "y": 1103.163,
+          "width": 193.378,
+          "height": 193.378
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "5dc18c820029764233422c4debac8297d142eba07fdd799a10139527988ecf96",
+        "skeletonSha256": "fd164fec9010c6f8ec8f69dba1c544753dd0262029912cffe55147f9f912b371",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 62,
+            "inliers": 46,
+            "fromPortrait": false,
+            "tileSha256": "a8ab4bd5c8cc1c1089c1cf8a7062691d476291094bc19f85b2dcf76c5c17d854",
+            "transform": [
+              [
+                0.7034908725644158,
+                -0.007741329702764648,
+                668.977238984007
+              ],
+              [
+                0.007741329702764648,
+                0.7034908725644158,
+                538.1307404246587
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 44,
+            "inliers": 36,
+            "fromPortrait": false,
+            "tileSha256": "5535ab55a7dc895e4e4b0f99ab43466de755bd24c124fb35c1caabd9aa373d97",
+            "transform": [
+              [
+                0.7601004483470071,
+                -0.007258074078473015,
+                667.7591825361877
+              ],
+              [
+                0.007258074078473015,
+                0.7601004483470071,
+                550.1464272279944
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_2025_shu@nian#11": {
+      "charId": "char_2025_shu",
+      "stem": "dyn_illust_char_2025_shu_nian__11",
+      "bundle": "char_2025_shu_nian#11",
+      "officialDynamic": true,
+      "name": "春日宴",
+      "group": "0011制造/XI",
+      "prtsFile": "立绘_黍_skin1.png",
+      "illust": "https://media.prts.wiki/5/52/%E7%AB%8B%E7%BB%98_%E9%BB%8D_skin1.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2025_shu_nian__11/dyn_illust_char_2025_shu_nian__11/dyn_illust_char_2025_shu_nian__11.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2025_shu_nian__11/dyn_illust_char_2025_shu_nian__11/dyn_illust_char_2025_shu_nian__11.atlas",
+      "frames": {
+        "portrait": {
+          "x": -123.479,
+          "y": 815.871,
+          "width": 264.562,
+          "height": 529.125
+        },
+        "avatar": {
+          "x": -133.143,
+          "y": 1036.492,
+          "width": 283.143,
+          "height": 283.143
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "36c5dd64137a6205a1f0376c229ba4b6686c8545aaff8711550b22b6f6da1408",
+        "skeletonSha256": "5f296e06bd455a0f121cb181192d5b93b3e1d4b4f407d8e79d5d383ab8c0836f",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 204,
+            "inliers": 188,
+            "fromPortrait": false,
+            "tileSha256": "f49e03013d3775c71b8e00c65349984edc2c3e2719cb6960fed545f2138c7897",
+            "transform": [
+              [
+                1.1023134960230192,
+                0.00808088370700854,
+                655.9390192745454
+              ],
+              [
+                -0.00808088370700854,
+                1.1023134960230192,
+                454.485801010609
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 86,
+            "inliers": 78,
+            "fromPortrait": false,
+            "tileSha256": "06a60a252d54bd1bac86448f45f69970f1664d00bd1155e1f8da5a84c4a0c90e",
+            "transform": [
+              [
+                1.179680905815351,
+                0.013747479755832329,
+                648.9129505001263
+              ],
+              [
+                -0.013747479755832329,
+                1.179680905815351,
+                474.018703421415
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_2023_ling@nian#12": {
+      "charId": "char_2023_ling",
+      "stem": "dyn_illust_char_2023_ling_nian__12",
+      "bundle": "char_2023_ling_nian#12",
+      "officialDynamic": true,
+      "name": "方遒卷",
+      "group": "0011制造/XII",
+      "prtsFile": "立绘_令_skin3.png",
+      "illust": "https://media.prts.wiki/e/e5/%E7%AB%8B%E7%BB%98_%E4%BB%A4_skin3.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2023_ling_nian__12/dyn_illust_char_2023_ling_nian__12/dyn_illust_char_2023_ling_nian__12.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2023_ling_nian__12/dyn_illust_char_2023_ling_nian__12/dyn_illust_char_2023_ling_nian__12.atlas",
+      "frames": {
+        "portrait": {
+          "x": -89.31,
+          "y": 1111.79,
+          "width": 156.099,
+          "height": 312.197
+        },
+        "avatar": {
+          "x": -98.962,
+          "y": 1239.298,
+          "width": 171.735,
+          "height": 171.735
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "6d6be12dd1d34ea1fee54250e7e9f2f7f4867c4d4da24e4bb28786b1374f83ab",
+        "skeletonSha256": "1b7a46c57ce6d8a8eb8d3acc3538a9576eaa5ec41749844712415f06aa954162",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 105,
+            "inliers": 91,
+            "fromPortrait": false,
+            "tileSha256": "f7c815ad3d171bed13223d672bff50e31fe89d8919a05f38977617ef998ea6fc",
+            "transform": [
+              [
+                0.5912442733136221,
+                -0.006763131975557396,
+                690.3279048794926
+              ],
+              [
+                0.006763131975557396,
+                0.5912442733136221,
+                460.31608866496816
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 45,
+            "inliers": 39,
+            "fromPortrait": false,
+            "tileSha256": "458def24497069c6290247b2a6b04be918dad92a8bb4a84ce807fc72e55bb691",
+            "transform": [
+              [
+                0.6504428495001341,
+                -0.009497536516104329,
+                683.3868768715913
+              ],
+              [
+                0.009497536516104329,
+                0.6504428495001341,
+                468.9013385336082
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_1044_hsgma2@whirlwind#11": {
+      "charId": "char_1044_hsgma2",
+      "stem": "dyn_illust_char_1044_hsgma2_whirlwind__11",
+      "bundle": "char_1044_hsgma2_whirlwind#11",
+      "officialDynamic": true,
+      "name": "一闪极意",
+      "group": "0011/飙系列/XI",
+      "prtsFile": "立绘_斩业星熊_skin1.png",
+      "illust": "https://media.prts.wiki/c/c6/%E7%AB%8B%E7%BB%98_%E6%96%A9%E4%B8%9A%E6%98%9F%E7%86%8A_skin1.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1044_hsgma2_whirlwind__11/dyn_illust_char_1044_hsgma2_whirlwind__11/dyn_illust_char_1044_hsgma2_whirlwind__11.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1044_hsgma2_whirlwind__11/dyn_illust_char_1044_hsgma2_whirlwind__11/dyn_illust_char_1044_hsgma2_whirlwind__11.atlas",
+      "frames": {
+        "portrait": {
+          "x": -28.216,
+          "y": 973.538,
+          "width": 125.543,
+          "height": 251.087
+        },
+        "avatar": {
+          "x": -39.574,
+          "y": 1076.572,
+          "width": 140.956,
+          "height": 140.956
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "ed5a19fc54b066d80f183db1331fcd907b2cee13a1788a709c0ec15a829c3644",
+        "skeletonSha256": "b99a3a21914405873830cbe0e14749b786d57c783f32c28c651bfcb22a61b4a4",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 83,
+            "inliers": 60,
+            "fromPortrait": false,
+            "tileSha256": "ec3756bbaa45f4b80970161618852dc7ea76b93729f563a79ff9a6b7833c60be",
+            "transform": [
+              [
+                0.47546738800124705,
+                0.008498877845694204,
+                745.4499985456954
+              ],
+              [
+                -0.008498877845694204,
+                0.47546738800124705,
+                521.197690689117
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 44,
+            "inliers": 34,
+            "fromPortrait": false,
+            "tileSha256": "1afe9ec63354dc39a54f37346a1ace8e4ffe5dbb5fbaa8e3af0d15edc7b8e871",
+            "transform": [
+              [
+                0.5338313168442899,
+                0.009891060444756569,
+                738.3463617427439
+              ],
+              [
+                -0.009891060444756569,
+                0.5338313168442899,
+                526.1565909694241
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_1013_chen2@summer#20": {
+      "charId": "char_1013_chen2",
+      "stem": "dyn_illust_char_1013_chen2_summer__20",
+      "bundle": "char_1013_chen2_summer#20",
+      "officialDynamic": true,
+      "name": "悠然假日 HD79",
+      "group": "珊瑚海岸/XX",
+      "prtsFile": "立绘_假日威龙陈_skin2.png",
+      "illust": "https://media.prts.wiki/f/f5/%E7%AB%8B%E7%BB%98_%E5%81%87%E6%97%A5%E5%A8%81%E9%BE%99%E9%99%88_skin2.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1013_chen2_summer__20/dyn_illust_char_1013_chen2_summer__20/dyn_illust_char_1013_chen2_summer__20.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1013_chen2_summer__20/dyn_illust_char_1013_chen2_summer__20/dyn_illust_char_1013_chen2_summer__20.atlas",
+      "frames": {
+        "portrait": {
+          "x": -63.384,
+          "y": 873.034,
+          "width": 189.608,
+          "height": 379.216
+        },
+        "avatar": {
+          "x": -70.21,
+          "y": 1029.399,
+          "width": 212.147,
+          "height": 212.147
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "ba53356d93a3d5a668e927aca8ad2e1619f67a3666e1f08c80c474fd58b3ea9a",
+        "skeletonSha256": "16ca0776c71ab044744d0ce5f5f8efee41094cb35e7e541391c02704870eee10",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 76,
+            "inliers": 62,
+            "fromPortrait": false,
+            "tileSha256": "eeefd1bc1eaddaa40fa703a6174aaf1afd5f12723c0155def2ee166be8e697d7",
+            "transform": [
+              [
+                0.767018410365548,
+                0.0022267901193161934,
+                703.4462034751195
+              ],
+              [
+                -0.0022267901193161934,
+                0.767018410365548,
+                416.5239925006232
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 35,
+            "inliers": 30,
+            "fromPortrait": false,
+            "tileSha256": "34776325295e981202614e9929b94b88841379b217a949789e554b20e16d9d4f",
+            "transform": [
+              [
+                0.8581979946952382,
+                0.0009773578332777308,
+                698.7880719870358
+              ],
+              [
+                -0.0009773578332777308,
+                0.8581979946952382,
+                424.20497366797093
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_322_lmlee@witch#3": {
+      "charId": "char_322_lmlee",
+      "stem": "dyn_illust_char_322_lmlee_witch__3",
+      "bundle": "char_322_lmlee_witch#3",
+      "officialDynamic": true,
+      "name": "手到牌来",
+      "group": "巫异盛宴/III",
+      "prtsFile": "立绘_老鲤_skin1.png",
+      "illust": "https://media.prts.wiki/0/00/%E7%AB%8B%E7%BB%98_%E8%80%81%E9%B2%A4_skin1.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_322_lmlee_witch__3/dyn_illust_char_322_lmlee_witch__3/dyn_illust_char_322_lmlee_witch__3.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_322_lmlee_witch__3/dyn_illust_char_322_lmlee_witch__3/dyn_illust_char_322_lmlee_witch__3.atlas",
+      "frames": {
+        "portrait": {
+          "x": -69.941,
+          "y": 613.07,
+          "width": 185.531,
+          "height": 371.063
+        },
+        "avatar": {
+          "x": -74.504,
+          "y": 767.559,
+          "width": 199.045,
+          "height": 199.045
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "890c0d70cc7d7904ee9d5e603070d073ad2b8b06fb63ffd97cf4edb91d3c2e25",
+        "skeletonSha256": "94bf04388cb0289d0a487ca8dfbd877be038c56504a64ee16de3e5cdd7e22ff4",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 116,
+            "inliers": 98,
+            "fromPortrait": false,
+            "tileSha256": "721e160869fd101c4b80eaeb9468fa0019d95cc1fc25243bc3244362f948cdf6",
+            "transform": [
+              [
+                0.6441736950331765,
+                -0.006478286809573859,
+                707.4562526741413
+              ],
+              [
+                0.006478286809573859,
+                0.6441736950331765,
+                415.59008224620567
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 45,
+            "inliers": 40,
+            "fromPortrait": false,
+            "tileSha256": "5921c7b8ca6bfaee36c338e2f486541a284322fd595f6c7df01f3b0d95d6c6fb",
+            "transform": [
+              [
+                0.6908761022310957,
+                -0.018706087249813638,
+                705.1413149771578
+              ],
+              [
+                0.018706087249813638,
+                0.6908761022310957,
+                425.46184796053166
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_4055_bgsnow@wild#7": {
+      "charId": "char_4055_bgsnow",
+      "stem": "dyn_illust_char_4055_bgsnow_wild__7",
+      "bundle": "char_4055_bgsnow_wild#7",
+      "officialDynamic": true,
+      "name": "字句中的雪原",
+      "group": "生命之地/VII",
+      "prtsFile": "立绘_鸿雪_skin1.png",
+      "illust": "https://media.prts.wiki/9/9d/%E7%AB%8B%E7%BB%98_%E9%B8%BF%E9%9B%AA_skin1.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4055_bgsnow_wild__7/dyn_illust_char_4055_bgsnow_wild__7/dyn_illust_char_4055_bgsnow_wild__7.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4055_bgsnow_wild__7/dyn_illust_char_4055_bgsnow_wild__7/dyn_illust_char_4055_bgsnow_wild__7.atlas",
+      "frames": {
+        "portrait": {
+          "x": -99.433,
+          "y": 454.163,
+          "width": 193.715,
+          "height": 387.431
+        },
+        "avatar": {
+          "x": -110.072,
+          "y": 612.746,
+          "width": 222.93,
+          "height": 222.93
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "435dd4aa0a4048ce7d3d142cdf53f3965e50787c971c64c552128756f07a54b2",
+        "skeletonSha256": "482e5cec23ce3f760adfd027a15de4b426c1244d934a9bb523ede83a4d2054e8",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 114,
+            "inliers": 77,
+            "fromPortrait": false,
+            "tileSha256": "01c446a7de64abb6f7d74d5a89ad8919617ec0dc9cb2e587823d63d7c5484db0",
+            "transform": [
+              [
+                0.8071385179819117,
+                -0.00375941582295771,
+                684.3524462393078
+              ],
+              [
+                0.00375941582295771,
+                0.8071385179819117,
+                440.2181182302281
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 42,
+            "inliers": 34,
+            "fromPortrait": false,
+            "tileSha256": "bdc3c078d86254e2615cb28a9037f22ef00782b92aba73da24354cb9e7a96c23",
+            "transform": [
+              [
+                0.9287533407992294,
+                0.015113240271131019,
+                674.3472341470184
+              ],
+              [
+                -0.015113240271131019,
+                0.9287533407992294,
+                446.3638348153358
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_003_kalts@boc#6": {
+      "charId": "char_003_kalts",
+      "stem": "dyn_illust_char_003_kalts_boc__6",
+      "bundle": "char_003_kalts_boc#6",
+      "officialDynamic": true,
+      "name": "残余",
+      "group": "斗争血脉/VI",
+      "prtsFile": "立绘_凯尔希_skin1.png",
+      "illust": "https://media.prts.wiki/0/0f/%E7%AB%8B%E7%BB%98_%E5%87%AF%E5%B0%94%E5%B8%8C_skin1.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_003_kalts_boc__6/dyn_illust_char_003_kalts_boc__6/dyn_illust_char_003_kalts_boc__6.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_003_kalts_boc__6/dyn_illust_char_003_kalts_boc__6/dyn_illust_char_003_kalts_boc__6.atlas",
+      "frames": {
+        "portrait": {
+          "x": -84.579,
+          "y": 708.767,
+          "width": 156.188,
+          "height": 312.376
+        },
+        "avatar": {
+          "x": -88.763,
+          "y": 837.215,
+          "width": 172.603,
+          "height": 172.603
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "8dbbc8a0b4f8c18a48d390f4951ba3bd5c382633de0f2a375d5226b7d63ac6ae",
+        "skeletonSha256": "9e2b90e7f291635394ab2ef05d7991866c3b248bc9eed890dc364b8afa698001",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 101,
+            "inliers": 84,
+            "fromPortrait": false,
+            "tileSha256": "7729b1a083406a8b4033f3358005358e5a8aa2f45fe39b0460f3605872d8ac6f",
+            "transform": [
+              [
+                0.5916109435465053,
+                -0.003378732713604587,
+                705.2140799709861
+              ],
+              [
+                0.003378732713604587,
+                0.5916109435465053,
+                464.60068518686285
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 40,
+            "inliers": 35,
+            "fromPortrait": false,
+            "tileSha256": "955422416b436b8ce100ae902670482843a916b515cf5381cbae25cf0d90c85b",
+            "transform": [
+              [
+                0.6537816042917534,
+                0.005014412586478013,
+                701.3029264310719
+              ],
+              [
+                -0.005014412586478013,
+                0.6537816042917534,
+                473.0771188566865
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_1013_chen2@boc#6": {
+      "charId": "char_1013_chen2",
+      "stem": "dyn_illust_char_1013_chen2_boc__6",
+      "bundle": "char_1013_chen2_boc#6",
+      "officialDynamic": true,
+      "name": "万重山",
+      "group": "斗争血脉/VI",
+      "prtsFile": "立绘_假日威龙陈_skin1.png",
+      "illust": "https://media.prts.wiki/f/f2/%E7%AB%8B%E7%BB%98_%E5%81%87%E6%97%A5%E5%A8%81%E9%BE%99%E9%99%88_skin1.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1013_chen2_boc__6/dyn_illust_char_1013_chen2_boc__6/dyn_illust_char_1013_chen2_boc__6.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1013_chen2_boc__6/dyn_illust_char_1013_chen2_boc__6/dyn_illust_char_1013_chen2_boc__6.atlas",
+      "frames": {
+        "portrait": {
+          "x": -162.292,
+          "y": 793.326,
+          "width": 212.338,
+          "height": 424.675
+        },
+        "avatar": {
+          "x": -166.197,
+          "y": 971.705,
+          "width": 225.551,
+          "height": 225.551
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "5cc5f85a36819382131e8e149b3f7dd059c4ddc3607c50e587f3ce3653a0544f",
+        "skeletonSha256": "9c1e25c26a2e885f49c9bb9729ded6b9357398278244f8f3333d8d1526d1b734",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 90,
+            "inliers": 69,
+            "fromPortrait": false,
+            "tileSha256": "2b3ebaabaee4a3d7c34354ec999582b145407c223f0bc47d71642a9d0f74ee83",
+            "transform": [
+              [
+                0.769253098622707,
+                -0.011492906115367503,
+                680.7987698963816
+              ],
+              [
+                0.011492906115367503,
+                0.769253098622707,
+                560.501826095823
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 67,
+            "inliers": 47,
+            "fromPortrait": false,
+            "tileSha256": "56baa4ca923c253c1107bd98c24525a30fb3dc7fabf2bc4edb10bb3f41db6bb3",
+            "transform": [
+              [
+                0.8169307702767115,
+                -0.02147773982506358,
+                678.1339727591413
+              ],
+              [
+                0.02147773982506358,
+                0.8169307702767115,
+                573.1431894449443
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_4179_monstr@boc#11": {
+      "charId": "char_4179_monstr",
+      "stem": "dyn_illust_char_4179_monstr_boc__11",
+      "bundle": "char_4179_monstr_boc#11",
+      "officialDynamic": true,
+      "name": "锋锐",
+      "group": "斗争血脉/XI",
+      "prtsFile": "立绘_Mon3tr_skin1.png",
+      "illust": "https://media.prts.wiki/3/30/%E7%AB%8B%E7%BB%98_Mon3tr_skin1.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4179_monstr_boc__11/dyn_illust_char_4179_monstr_boc__11/dyn_illust_char_4179_monstr_boc__11.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4179_monstr_boc__11/dyn_illust_char_4179_monstr_boc__11/dyn_illust_char_4179_monstr_boc__11.atlas",
+      "frames": {
+        "portrait": {
+          "x": -33.192,
+          "y": 901.626,
+          "width": 120.756,
+          "height": 241.511
+        },
+        "avatar": {
+          "x": -40.706,
+          "y": 1002.779,
+          "width": 129.096,
+          "height": 129.096
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "89e5c30028ab025fe603b0ae155f72e0e90bc288a5488602f906f8927ef56825",
+        "skeletonSha256": "c9de328b869096dec564a5b1068d08d1cf9dbf8a82d19b532f1363df7d3b0c18",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 76,
+            "inliers": 60,
+            "fromPortrait": false,
+            "tileSha256": "e17d347b036340dd11c13ffb764e601232e84eb9fcfaf6271f85aac38d7dc7d6",
+            "transform": [
+              [
+                0.47691727871603296,
+                0.000735289199268539,
+                731.9585910070905
+              ],
+              [
+                -0.000735289199268539,
+                0.47691727871603296,
+                510.39524246404073
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 41,
+            "inliers": 30,
+            "fromPortrait": false,
+            "tileSha256": "52df17514cb3aff817f0006adfbe36f3dc6aa020704ae421102c0ee5a691e0b8",
+            "transform": [
+              [
+                0.5098553504279479,
+                -0.0013747146310447225,
+                726.8728446374025
+              ],
+              [
+                0.0013747146310447225,
+                0.5098553504279479,
+                518.2119368910501
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_4133_logos@ambienceSynesthesia#6": {
+      "charId": "char_4133_logos",
+      "stem": "dyn_illust_char_4133_logos_ambienceSynesthesia__6",
+      "bundle": "char_4133_logos_ambienceSynesthesia#6",
+      "officialDynamic": true,
+      "name": "辉煌的静谧",
+      "group": "音律联觉/VI",
+      "prtsFile": "立绘_逻各斯_skin1.png",
+      "illust": "https://media.prts.wiki/d/dd/%E7%AB%8B%E7%BB%98_%E9%80%BB%E5%90%84%E6%96%AF_skin1.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4133_logos_ambienceSynesthesia__6/dyn_illust_char_4133_logos_ambienceSynesthesia__6/dyn_illust_char_4133_logos_ambienceSynesthesia__6.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4133_logos_ambienceSynesthesia__6/dyn_illust_char_4133_logos_ambienceSynesthesia__6/dyn_illust_char_4133_logos_ambienceSynesthesia__6.atlas",
+      "frames": {
+        "portrait": {
+          "x": 23.563,
+          "y": 747.334,
+          "width": 194.827,
+          "height": 389.654
+        },
+        "avatar": {
+          "x": 18.922,
+          "y": 910.111,
+          "width": 209.103,
+          "height": 209.103
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "da82bb4ee58d23bde15e4c72e09d8048ee19b59931dc83d4496f48b2505f2422",
+        "skeletonSha256": "33a485b9646fb81a5cb88d10477ef379d0a723364642bf2bac4331209370d2b6",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 150,
+            "inliers": 141,
+            "fromPortrait": false,
+            "tileSha256": "5dc80e4bef51485bb2f971122912d9bce5017c303bf580dad7997036db3315bb",
+            "transform": [
+              [
+                0.78813471921191,
+                0.0007053417217959843,
+                700.7684587894582
+              ],
+              [
+                -0.0007053417217959843,
+                0.78813471921191,
+                512.6936779078969
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 105,
+            "inliers": 99,
+            "fromPortrait": false,
+            "tileSha256": "0ed5fd5d4f3c39d10453922e097ee13dff28e1554afcf18186827663889ca765",
+            "transform": [
+              [
+                0.8458840478616053,
+                -0.000900153965256438,
+                697.5968595563211
+              ],
+              [
+                0.000900153965256438,
+                0.8458840478616053,
+                525.4919163127003
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_2023_ling@ncg#1": {
+      "charId": "char_2023_ling",
+      "stem": "dyn_illust_char_2023_ling_ncg__1",
+      "bundle": "char_2023_ling_ncg#1",
+      "officialDynamic": true,
+      "name": "崖高梦远",
+      "group": "国家地理",
+      "prtsFile": "立绘_令_skin2.png",
+      "illust": "https://media.prts.wiki/7/70/%E7%AB%8B%E7%BB%98_%E4%BB%A4_skin2.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2023_ling_ncg__1/dyn_illust_char_2023_ling_ncg__1/dyn_illust_char_2023_ling_ncg__1.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2023_ling_ncg__1/dyn_illust_char_2023_ling_ncg__1/dyn_illust_char_2023_ling_ncg__1.atlas",
+      "frames": {
+        "portrait": {
+          "x": -47.508,
+          "y": 971.451,
+          "width": 143.097,
+          "height": 286.193
+        },
+        "avatar": {
+          "x": -60.475,
+          "y": 1083.583,
+          "width": 165.629,
+          "height": 165.629
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "c71a16a39e087fccb154b2861224155b57c277252cb41725ed3d3879532a24d9",
+        "skeletonSha256": "4ed848fab1d0fd04d184ea1ebc1c23eb68b7651f38b3b9c647fbc198c83837a4",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 95,
+            "inliers": 67,
+            "fromPortrait": false,
+            "tileSha256": "f14dda9df17e98227ddd25298b3f47c4271fcb29506dc9893a74eee7f9c30513",
+            "transform": [
+              [
+                0.57790637398966,
+                0.03339176352786935,
+                709.4828914057741
+              ],
+              [
+                -0.03339176352786935,
+                0.57790637398966,
+                508.77767558349166
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 78,
+            "inliers": 68,
+            "fromPortrait": false,
+            "tileSha256": "618515a29a64cfca57eb3b08526e9163630ec95b70ef5e0d4f86ad1c361d18ab",
+            "transform": [
+              [
+                0.6699973118075866,
+                0.005560865221543483,
+                705.4667223158035
+              ],
+              [
+                -0.005560865221543483,
+                0.6699973118075866,
+                512.2413820684732
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_4132_ascln@iteration#4": {
+      "charId": "char_4132_ascln",
+      "stem": "dyn_illust_char_4132_ascln_iteration__4",
+      "bundle": "char_4132_ascln_iteration#4",
+      "officialDynamic": true,
+      "name": "趋光之暗",
+      "group": "命途迭代/IV",
+      "prtsFile": "立绘_阿斯卡纶_skin1.png",
+      "illust": "https://media.prts.wiki/0/0b/%E7%AB%8B%E7%BB%98_%E9%98%BF%E6%96%AF%E5%8D%A1%E7%BA%B6_skin1.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4132_ascln_iteration__4/dyn_illust_char_4132_ascln_iteration__4/dyn_illust_char_4132_ascln_iteration__4.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4132_ascln_iteration__4/dyn_illust_char_4132_ascln_iteration__4/dyn_illust_char_4132_ascln_iteration__4.atlas",
+      "frames": {
+        "portrait": {
+          "x": -39.821,
+          "y": 1180.441,
+          "width": 171.884,
+          "height": 343.769
+        },
+        "avatar": {
+          "x": -50.644,
+          "y": 1321.475,
+          "width": 191.41,
+          "height": 191.41
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "8a3e5e736a59e407df2917741c520edbd5256ffb455cd90128be57f9ec2d92bd",
+        "skeletonSha256": "acaff230c0cde02dd3d42a2e6c77dd7e6b7d6042d886f2d26550e000b3a42111",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 97,
+            "inliers": 85,
+            "fromPortrait": false,
+            "tileSha256": "0c35ac7c9cb9b84d7df946741d42cf1aadef0ab2a3e31c50843838645e2e279f",
+            "transform": [
+              [
+                0.6820799067312991,
+                0.0009613833279210625,
+                677.8118856744553
+              ],
+              [
+                -0.0009613833279210625,
+                0.6820799067312991,
+                389.2225441472156
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 50,
+            "inliers": 42,
+            "fromPortrait": false,
+            "tileSha256": "cba853a21ba1067f4fb60ef5ecaaba1812d13e779f8cb6ab4b9c8392165ea699",
+            "transform": [
+              [
+                0.7595613986054095,
+                -0.0012523948423753765,
+                670.3667666103551
+              ],
+              [
+                0.0012523948423753765,
+                0.7595613986054095,
+                397.11224695696535
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_4202_haruka@iteration#6": {
+      "charId": "char_4202_haruka",
+      "stem": "dyn_illust_char_4202_haruka_iteration__6",
+      "bundle": "char_4202_haruka_iteration#6",
+      "officialDynamic": true,
+      "name": "常世之幻",
+      "group": "命途迭代/VI",
+      "prtsFile": "立绘_遥_skin1.png",
+      "illust": "https://media.prts.wiki/d/dd/%E7%AB%8B%E7%BB%98_%E9%81%A5_skin1.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4202_haruka_iteration__6/dyn_illust_char_4202_haruka_iteration__6/dyn_illust_char_4202_haruka_iteration__6.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_4202_haruka_iteration__6/dyn_illust_char_4202_haruka_iteration__6/dyn_illust_char_4202_haruka_iteration__6.atlas",
+      "frames": {
+        "portrait": {
+          "x": -135.488,
+          "y": 818.464,
+          "width": 175.084,
+          "height": 350.169
+        },
+        "avatar": {
+          "x": -141.368,
+          "y": 960.94,
+          "width": 194.421,
+          "height": 194.421
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "97f255c6038a14cf8e887a346cb63445f0b401f58a746abf0fc8fe5e8113b9d6",
+        "skeletonSha256": "aa9c5c9e798798099053b11c778e93329b9490e137edeb82767dd5f0aa9770e7",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 110,
+            "inliers": 92,
+            "fromPortrait": false,
+            "tileSha256": "f826bfb8aaf6fa3d902329234b2b8e6f05165655f30d692e705375f702fa0a64",
+            "transform": [
+              [
+                0.6403909657724863,
+                0.011287950116245955,
+                698.9290174594161
+              ],
+              [
+                -0.011287950116245955,
+                0.6403909657724863,
+                520.1519832113393
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 54,
+            "inliers": 43,
+            "fromPortrait": false,
+            "tileSha256": "4d4b5e3a07da4fa598f032d694b25a0d1e09a07b19db3889603a90537887e9d9",
+            "transform": [
+              [
+                0.7109739856882957,
+                0.01890526168825999,
+                695.4007928964363
+              ],
+              [
+                -0.01890526168825999,
+                0.7109739856882957,
+                529.5818722090337
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_179_cgbird@sightseer#1": {
+      "charId": "char_179_cgbird",
+      "stem": "dyn_illust_char_179_cgbird_sightseer__1",
+      "bundle": "char_179_cgbird_sightseer#1",
+      "officialDynamic": true,
+      "name": "流辉",
+      "group": "错位巡礼/I",
+      "prtsFile": "立绘_夜莺_skin2.png",
+      "illust": "https://media.prts.wiki/e/e5/%E7%AB%8B%E7%BB%98_%E5%A4%9C%E8%8E%BA_skin2.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_179_cgbird_sightseer__1/dyn_illust_char_179_cgbird_sightseer__1/dyn_illust_char_179_cgbird_sightseer__1.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_179_cgbird_sightseer__1/dyn_illust_char_179_cgbird_sightseer__1/dyn_illust_char_179_cgbird_sightseer__1.atlas",
+      "frames": {
+        "portrait": {
+          "x": -301.283,
+          "y": 708.564,
+          "width": 208.509,
+          "height": 417.018
+        },
+        "avatar": {
+          "x": -316.814,
+          "y": 879.133,
+          "width": 234.146,
+          "height": 234.146
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "920804faf8675fd3aa0976620d04f2238c39c7cbe2d97ea24509a5868cc65538",
+        "skeletonSha256": "fbde9cdc2ac0178f6874138f01f4b8d8a3de76fc53e2af7854f01aac10fba474",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 220,
+            "inliers": 205,
+            "fromPortrait": false,
+            "tileSha256": "46f4fae4e9e31eb3ea992f8d1457afa35cf17f53ec266ea44818efc44f279979",
+            "transform": [
+              [
+                0.7554445938644574,
+                -0.00585411596399843,
+                554.5671080579568
+              ],
+              [
+                0.00585411596399843,
+                0.7554445938644574,
+                602.3583786269918
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 102,
+            "inliers": 95,
+            "fromPortrait": false,
+            "tileSha256": "3ea7fc91a6d685d2be92bda93985e98b772b3bedd8c9a636a36ddaa5db3168e7",
+            "transform": [
+              [
+                0.8482811211539146,
+                -0.011231210189373043,
+                544.3997323962159
+              ],
+              [
+                0.011231210189373043,
+                0.8482811211539146,
+                609.9005376989495
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_1042_phatm2@sightseer#4": {
+      "charId": "char_1042_phatm2",
+      "stem": "dyn_illust_char_1042_phatm2_sightseer__4",
+      "bundle": "char_1042_phatm2_sightseer#4",
+      "officialDynamic": true,
+      "name": "真我自扼",
+      "group": "错位巡礼/IV",
+      "prtsFile": "立绘_酒神_skin1.png",
+      "illust": "https://media.prts.wiki/9/90/%E7%AB%8B%E7%BB%98_%E9%85%92%E7%A5%9E_skin1.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1042_phatm2_sightseer__4/dyn_illust_char_1042_phatm2_sightseer__4/dyn_illust_char_1042_phatm2_sightseer__4.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_1042_phatm2_sightseer__4/dyn_illust_char_1042_phatm2_sightseer__4/dyn_illust_char_1042_phatm2_sightseer__4.atlas",
+      "frames": {
+        "portrait": {
+          "x": -215.715,
+          "y": 1029.172,
+          "width": 165.781,
+          "height": 331.563
+        },
+        "avatar": {
+          "x": -221.473,
+          "y": 1161.661,
+          "width": 195.252,
+          "height": 195.252
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "32694e701a91daeb446aa30ab72a2359040a56d9d89c0144e7f1dcd11a704c2c",
+        "skeletonSha256": "8e2e96f90ec6f384944676e73134482674166ac7610bb122ea03c5ad823ef3fe",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 52,
+            "inliers": 25,
+            "fromPortrait": false,
+            "tileSha256": "ebce8dfde12cec07a2f17c28a0db8819294b3bb5188909710e3d21500e741aee",
+            "transform": [
+              [
+                0.5426012090163362,
+                -0.03221034691461748,
+                630.2724420629509
+              ],
+              [
+                0.03221034691461748,
+                0.5426012090163362,
+                524.5491661272147
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 38,
+            "inliers": 28,
+            "fromPortrait": false,
+            "tileSha256": "c54e1a950852bce34494742b2b6432dbf8a618cf25814f1340053bfcb32fbfba",
+            "transform": [
+              [
+                0.6398533747588787,
+                -0.02059118051185615,
+                622.8735053858128
+              ],
+              [
+                0.02059118051185615,
+                0.6398533747588787,
+                527.7081510351142
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_2014_nian@cfa#1": {
+      "charId": "char_2014_nian",
+      "stem": "dyn_illust_char_2014_nian_cfa__1",
+      "bundle": "char_2014_nian_cfa#1",
+      "officialDynamic": true,
+      "name": "霹雳导演",
+      "group": "中国电影资料馆",
+      "prtsFile": "立绘_年_skin2.png",
+      "illust": "https://media.prts.wiki/4/41/%E7%AB%8B%E7%BB%98_%E5%B9%B4_skin2.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2014_nian_cfa__1/dyn_illust_char_2014_nian_cfa__1/dyn_illust_char_2014_nian_cfa__1.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2014_nian_cfa__1/dyn_illust_char_2014_nian_cfa__1/dyn_illust_char_2014_nian_cfa__1.atlas",
+      "frames": {
+        "portrait": {
+          "x": -132.543,
+          "y": 684.647,
+          "width": 209.34,
+          "height": 418.68
+        },
+        "avatar": {
+          "x": -143.502,
+          "y": 856.884,
+          "width": 228.974,
+          "height": 228.974
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "551f02a619b28a88f7bc8d3289312f133a6960e5c8f124efd5645ee25af77a92",
+        "skeletonSha256": "c96bdd5afc81b34a43385970da99bab904bd5de8c58559e36540d10f779609b0",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 77,
+            "inliers": 58,
+            "fromPortrait": false,
+            "tileSha256": "6423d015cfe51a265a6b4a9dc29dae0c8c9ecdcd3d5acb611b510b7520d9503e",
+            "transform": [
+              [
+                0.8189862045075342,
+                0.006668622863603776,
+                655.4616801667004
+              ],
+              [
+                -0.006668622863603776,
+                0.8189862045075342,
+                301.07953258996497
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 37,
+            "inliers": 29,
+            "fromPortrait": false,
+            "tileSha256": "095f773ec36a981c72af0fc32249222c144742962831cd286eef5ac5527c420c",
+            "transform": [
+              [
+                0.8958117156059464,
+                0.005661077711265095,
+                648.4341484335134
+              ],
+              [
+                -0.005661077711265095,
+                0.8958117156059464,
+                313.28728727322476
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "char_2024_chyue@cfa#1": {
+      "charId": "char_2024_chyue",
+      "stem": "dyn_illust_char_2024_chyue_cfa__1",
+      "bundle": "char_2024_chyue_cfa#1",
+      "officialDynamic": true,
+      "name": "全能演员",
+      "group": "中国电影资料馆",
+      "prtsFile": "立绘_重岳_skin2.png",
+      "illust": "https://media.prts.wiki/6/6e/%E7%AB%8B%E7%BB%98_%E9%87%8D%E5%B2%B3_skin2.png",
+      "skeleton": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2024_chyue_cfa__1/dyn_illust_char_2024_chyue_cfa__1/dyn_illust_char_2024_chyue_cfa__1.skel",
+      "atlas": "https://static.prts.wiki/spine38/dyn/dyn_illust_char_2024_chyue_cfa__1/dyn_illust_char_2024_chyue_cfa__1/dyn_illust_char_2024_chyue_cfa__1.atlas",
+      "frames": {
+        "portrait": {
+          "x": -156.172,
+          "y": 691.831,
+          "width": 296.087,
+          "height": 592.175
+        },
+        "avatar": {
+          "x": -162.255,
+          "y": 935.746,
+          "width": 306.479,
+          "height": 306.479
+        }
+      },
+      "frameSource": {
+        "method": "official-image-to-rendered-idle-feature-match",
+        "fullSha256": "c8636b45e4be3dadf4feb78626a6c37dcb776ed1cf5d47a53cc8b3f5371b3486",
+        "skeletonSha256": "590798e5aa72a08f2a98f5dd53cc9ae95bd2d976ad9b91ed7787957c54196213",
+        "boundsSource": "official-client-camera",
+        "samples": {
+          "portrait": {
+            "matches": 90,
+            "inliers": 49,
+            "fromPortrait": false,
+            "tileSha256": "9a7f00666764d6fcd02fb5df9b8592bfd1854be9e039c4aef542e982402165fe",
+            "transform": [
+              [
+                1.1748761484779988,
+                -0.01319252639426133,
+                612.258139572423
+              ],
+              [
+                0.01319252639426133,
+                1.1748761484779988,
+                460.25041992557647
+              ]
+            ]
+          },
+          "avatar": {
+            "matches": 35,
+            "inliers": 19,
+            "fromPortrait": false,
+            "tileSha256": "63e96fc4290ae3a74c41ce1b4837b05d443bdcbf45388cf73e123a0453783c4c",
+            "transform": [
+              [
+                1.2156777411374893,
+                -0.035170366454823285,
+                608.7433978359267
+              ],
+              [
+                0.035170366454823285,
+                1.2156777411374893,
+                488.14815366585685
+              ]
+            ]
+          }
+        }
+      }
     }
   },
   "official": {
     "source": "https://github.com/Kengxxiao/ArknightsGameData/blob/master/zh_CN/gamedata/excel/skin_table.json",
     "sha256": "ef0dfc4fbe0824349b8de5043a1e6ead1a69b072cff66c734ea0f6ae2a4895a4",
-    "outsideCatalogue": [
-      {
-        "id": "char_250_phatom@sale#4",
-        "charId": "char_250_phatom",
-        "name": "焦点",
-        "dynIllustId": "dyn_illust_char_250_phatom_sale#4"
-      },
-      {
-        "id": "char_1037_amiya3@sale#13",
-        "charId": "char_002_amiya",
-        "name": "寰宇独奏",
-        "dynIllustId": "dyn_illust_char_1037_amiya3_sale#13"
-      },
-      {
-        "id": "char_124_kroos@sale#14",
-        "charId": "char_124_kroos",
-        "name": "星月漂流记",
-        "dynIllustId": "dyn_illust_char_124_kroos_sale#14"
-      },
-      {
-        "id": "char_1035_wisdel@sale#14",
-        "charId": "char_1035_wisdel",
-        "name": "超新星",
-        "dynIllustId": "dyn_illust_char_1035_wisdel_sale#14"
-      },
-      {
-        "id": "char_003_kalts@sale#14",
-        "charId": "char_003_kalts",
-        "name": "时遗",
-        "dynIllustId": "dyn_illust_char_003_kalts_sale#14"
-      },
-      {
-        "id": "char_1001_amiya2@sale#16",
-        "charId": "char_002_amiya",
-        "name": "于万千宇宙之中",
-        "dynIllustId": "dyn_illust_char_1001_amiya2_sale#16"
-      },
-      {
-        "id": "char_113_cqbw@epoque#7",
-        "charId": "char_113_cqbw",
-        "name": "恍惚",
-        "dynIllustId": "dyn_illust_char_113_cqbw_epoque#7"
-      },
-      {
-        "id": "char_2014_nian@nian#4",
-        "charId": "char_2014_nian",
-        "name": "乐逍遥",
-        "dynIllustId": "dyn_illust_char_2014_nian_nian#4"
-      },
-      {
-        "id": "char_2023_ling@nian#9",
-        "charId": "char_2023_ling",
-        "name": "濯缨",
-        "dynIllustId": "dyn_illust_char_2023_ling_nian#9"
-      },
-      {
-        "id": "char_2024_chyue@nian#10",
-        "charId": "char_2024_chyue",
-        "name": "何处栖",
-        "dynIllustId": "dyn_illust_char_2024_chyue_nian#10"
-      },
-      {
-        "id": "char_2025_shu@nian#11",
-        "charId": "char_2025_shu",
-        "name": "春日宴",
-        "dynIllustId": "dyn_illust_char_2025_shu_nian#11"
-      },
-      {
-        "id": "char_2023_ling@nian#12",
-        "charId": "char_2023_ling",
-        "name": "方遒卷",
-        "dynIllustId": "dyn_illust_char_2023_ling_nian#12"
-      },
-      {
-        "id": "char_1044_hsgma2@whirlwind#11",
-        "charId": "char_1044_hsgma2",
-        "name": "一闪极意",
-        "dynIllustId": "dyn_illust_char_1044_hsgma2_whirlwind#11"
-      },
-      {
-        "id": "char_1013_chen2@summer#20",
-        "charId": "char_1013_chen2",
-        "name": "悠然假日 HD79",
-        "dynIllustId": "dyn_illust_char_1013_chen2_summer#20"
-      },
-      {
-        "id": "char_322_lmlee@witch#3",
-        "charId": "char_322_lmlee",
-        "name": "手到牌来",
-        "dynIllustId": "dyn_illust_char_322_lmlee_witch#3"
-      },
-      {
-        "id": "char_4055_bgsnow@wild#7",
-        "charId": "char_4055_bgsnow",
-        "name": "字句中的雪原",
-        "dynIllustId": "dyn_illust_char_4055_bgsnow_wild#7"
-      },
-      {
-        "id": "char_003_kalts@boc#6",
-        "charId": "char_003_kalts",
-        "name": "残余",
-        "dynIllustId": "dyn_illust_char_003_kalts_boc#6"
-      },
-      {
-        "id": "char_1013_chen2@boc#6",
-        "charId": "char_1013_chen2",
-        "name": "万重山",
-        "dynIllustId": "dyn_illust_char_1013_chen2_boc#6"
-      },
-      {
-        "id": "char_4179_monstr@boc#11",
-        "charId": "char_4179_monstr",
-        "name": "锋锐",
-        "dynIllustId": "dyn_illust_char_4179_monstr_boc#11"
-      },
-      {
-        "id": "char_4133_logos@ambienceSynesthesia#6",
-        "charId": "char_4133_logos",
-        "name": "辉煌的静谧",
-        "dynIllustId": "dyn_illust_char_4133_logos_ambienceSynesthesia#6"
-      },
-      {
-        "id": "char_2023_ling@ncg#1",
-        "charId": "char_2023_ling",
-        "name": "崖高梦远",
-        "dynIllustId": "dyn_illust_char_2023_ling_ncg#1"
-      },
-      {
-        "id": "char_4132_ascln@iteration#4",
-        "charId": "char_4132_ascln",
-        "name": "趋光之暗",
-        "dynIllustId": "dyn_illust_char_4132_ascln_iteration#4"
-      },
-      {
-        "id": "char_4202_haruka@iteration#6",
-        "charId": "char_4202_haruka",
-        "name": "常世之幻",
-        "dynIllustId": "dyn_illust_char_4202_haruka_iteration#6"
-      },
-      {
-        "id": "char_179_cgbird@sightseer#1",
-        "charId": "char_179_cgbird",
-        "name": "流辉",
-        "dynIllustId": "dyn_illust_char_179_cgbird_sightseer#1"
-      },
-      {
-        "id": "char_1042_phatm2@sightseer#4",
-        "charId": "char_1042_phatm2",
-        "name": "真我自扼",
-        "dynIllustId": "dyn_illust_char_1042_phatm2_sightseer#4"
-      },
-      {
-        "id": "char_2014_nian@cfa#1",
-        "charId": "char_2014_nian",
-        "name": "霹雳导演",
-        "dynIllustId": "dyn_illust_char_2014_nian_cfa#1"
-      },
-      {
-        "id": "char_2024_chyue@cfa#1",
-        "charId": "char_2024_chyue",
-        "name": "全能演员",
-        "dynIllustId": "dyn_illust_char_2024_chyue_cfa#1"
-      }
-    ]
+    "outsideCatalogue": []
   }
 }

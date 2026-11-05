@@ -65,6 +65,7 @@ export function seatPortrait(seat, { pool, byChar, m, myId, myCard, mySkin = '' 
 /** A profile image is independent of equipping a battle model. Only installed manifest URLs are returned. */
 export function cardAvatarUrl(charId, skinId, manifest) {
   const rec = manifest?.chars?.[charId];
+  if (skinId === `${charId}#2`) return rec?.avatarE2 || rec?.avatar || null;
   return rec?.skins?.[skinId]?.avatar || rec?.avatar || null;
 }
 export function chosenPortrait(charId, skinId, manifest, catalogue, chess = []) {

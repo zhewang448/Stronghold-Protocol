@@ -7,7 +7,7 @@
 .illust-picker__preview img { width: 100%; height: 100%; object-fit: cover; }
 .illust-picker__preview.is-editable { cursor: grab; touch-action: none; user-select: none; }
 .illust-picker__preview.is-editable img { pointer-events: none; }
-.illust-picker__preview.is-editable:active, .cardart__still.is-interactive:active { cursor: grabbing; }
+.illust-picker__preview.is-editable:active, .cardart__surface.is-interactive:active { cursor: grabbing; }
 .illust-picker__preview:focus-visible { outline: 2px solid var(--mint-400); outline-offset: 3px; }
 .illust-picker__empty { display: grid; justify-items: center; gap: 12px; padding: 12px; text-align: center; font-size: 12px; }
 .illust-picker__empty .icon { width: 40px; height: 40px; color: var(--text-lo); }
@@ -25,7 +25,9 @@
 .illust-picker .illust-picker__remove { color: var(--red-premium); }
 .illust-picker__error { color: var(--red-premium); }
 .cardart__still { width: 100%; height: 100%; object-fit: cover; transform-origin: center; }
-.cardart__still.is-interactive { cursor: grab; touch-action: none; user-select: none; }
+.cardart__surface { position: absolute; inset: 0; display: block; overflow: hidden; }
+.cardart__surface.is-interactive { cursor: grab; touch-action: none; user-select: none; }
+.cardart__surface:focus-visible { outline: 2px solid var(--mint-400); outline-offset: -3px; }
 .cardpick__op--custom { position: relative; }
 @media (max-width: 520px) {
   .illust-picker__workspace { grid-template-columns: minmax(80px, 32%) minmax(0, 1fr); align-items: start; gap: 16px; }

@@ -3736,5 +3736,7 @@
   "随机抽取一个策略（可与队友重复），并额外获得 1 生命值和 1 资金。": "Draw a random strategy (duplicates allowed) and gain 1 extra LP and 1 fund.",
   "精二": "Elite 2",
   "主机管理的设置": "Host-managed setting",
-  "由主机控制，允许自行修改后恢复你的设置。": "Controlled by the host. Your saved preference returns when changes are allowed again."
+  "由主机控制，允许自行修改后恢复你的设置。": "Controlled by the host. Your saved preference returns when changes are allowed again.",
+  "水平位置": "Horizontal position",
+  "垂直位置": "Vertical position"
 }
