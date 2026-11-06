@@ -11,7 +11,7 @@ import { githubSourceUrl } from './assets/sources.mjs';
 
 const digest = bytes => ({ size: bytes.length, sha256: crypto.createHash('sha256').update(bytes).digest('hex') });
 const groupOf = rel => rel === 'data/local-fx.json' || rel.startsWith('public/assets/local/fx/') ? 'fx'
-  : rel === 'data/local-assets.json' || rel.startsWith('public/assets/local/') ? 'local' : 'common';
+  : rel === 'data/local-assets.json' || rel.startsWith('public/assets/local/') || rel.startsWith('public/assets/dynamic/') ? 'local' : 'common';
 
 export function splitRelease(fullZip, tag, out, { ledgerPath } = {}) {
   if (!/^v\d+\.\d+\.\d+(?:-extended\.\d+)?$/.test(tag)) throw new Error('invalid release tag');

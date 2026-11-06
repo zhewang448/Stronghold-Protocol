@@ -21,6 +21,7 @@ test('signed split packages reuse local assets and download only missing groups'
     'data/local-fx.json': JSON.stringify({ effect: '/assets/local/fx/effect.png' }),
     'public/assets/common.png': 'common',
     'public/assets/local/scene.png': 'scene',
+    'public/assets/dynamic/portrait.png': 'dynamic',
     'public/assets/local/fx/effect.png': 'effect',
   };
   const full = storedZip(Object.entries({ ...files, ...art, 'MANIFEST.json': manifest(files) })
@@ -32,6 +33,8 @@ test('signed split packages reuse local assets and download only missing groups'
   fs.writeFileSync(ledger, JSON.stringify({ files: { 'common.png': { url: source, bytes: Buffer.byteLength(art['public/assets/common.png']) } } }));
   const result = splitRelease(fullPath, tag, out, { ledgerPath: ledger });
   assert.deepEqual(Object.keys(result.groups).sort(), ['common', 'fx', 'local']);
+  const splitIndex=JSON.parse(fs.readFileSync(path.join(out,result.index),'utf8'));
+  assert.equal(splitIndex.files['public/assets/dynamic/portrait.png'].group,'local','dynamic art shares the local group to keep common below attachment limits');
   const liteName = `Stronghold-Protocol-${tag}-lite.zip`;
   const lite = storedZip(Object.entries({ ...files, 'data/assets.json': art['data/assets.json'], 'MANIFEST.json': manifest(files) })
     .map(([rel, body]) => [`Stronghold-Protocol/${rel}`, body]));
@@ -74,6 +77,13 @@ test('signed split packages reuse local assets and download only missing groups'
   assert.equal(read(installation, 'server/index.js'), 'old');
   applyReleaseStage(installation, staged.stage);
   for (const [rel, body] of Object.entries({ ...files, ...art })) assert.equal(read(installation, rel), body, rel);
+  const splitOnly={...release,assets:release.assets.filter(asset=>asset.name!==fullName)};
+  const blank=path.join(root,'split-only');
+  put(blank,'package.json',files['package.json']);put(blank,'server/index.js','old');
+  const complete=await downloadAndStage({root:blank,release:splitOnly,releases:[splitOnly],request,keys,platform:'linux'});
+  assert.equal(complete.split,true,'a signed lite+art release works without a monolithic full ZIP');
+  applyReleaseStage(blank,complete.stage);
+  for(const[rel,body]of Object.entries({...files,...art}))assert.equal(read(blank,rel),body,rel);
   const sourceInstall = path.join(root, 'source-install');
   put(sourceInstall, 'package.json', files['package.json']);
   put(sourceInstall, 'server/index.js', 'old');

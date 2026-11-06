@@ -57,7 +57,7 @@ Windows 服主从同版本 Release 下载 StrongholdProtocolLauncher-v1.3.0-win-
 
 ### 下载整合包
 
-从[本库 Releases](https://github.com/zhewang448/Stronghold-Protocol/releases)选择附件，解压到新目录：
+从[本库 Releases](https://github.com/zhewang448/Stronghold-Protocol/releases)选择附件，解压到新目录。**v0.3.3-extended.11 的完整安装由 lite 程序包＋common/local/fx 三组素材分包组成**；动态立绘使单体完整包超过 GitHub 附件限制，推荐使用启动器自动组装，手动安装则将四个 ZIP 中的同名文件夹合并。下表的单体 assets.zip 适用于仍提供它的较早版本：
 
 | 附件 | 适合的情况 |
 | --- | --- |
