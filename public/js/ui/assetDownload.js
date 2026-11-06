@@ -6,21 +6,21 @@ import { createStore, useStore } from '../store.js';
 import { assetDownload } from '../assetDownload.js';
 import { t } from '../../../shared/i18n.js';
 
-const downloadUi = createStore({ open: false });
+const downloadUi = createStore({ open: false, dynamic: false });
 // Only the resource manager's primary action reaches this compatibility host.
-export function openAssetDownload() {
-  downloadUi.set({ open: true });
-  if (assetDownload.get().phase !== 'complete') void assetDownload.start();
+export function openAssetDownload(dynamic = false) {
+  downloadUi.set({ open: true, dynamic });
+  void assetDownload.start({ dynamic });
 }
 
 export function AssetDownloadHost() {
-  const { open } = useStore((s) => s, Object.is, downloadUi);
+  const { open, dynamic } = useStore((s) => s, Object.is, downloadUi);
   const [state, setState] = useState(() => assetDownload.get());
   useEffect(() => assetDownload.subscribe(setState), []);
   const busy = ['preparing', 'downloading'].includes(state.phase);
   const close = () => {
     assetDownload.pause();
-    downloadUi.set({ open: false });
+    downloadUi.set({ open: false, dynamic: false });
   };
   const status = state.phase === 'complete' ? t('本次素材下载完成')
     : state.phase === 'preparing' ? t('正在读取素材清单…')
@@ -32,7 +32,7 @@ export function AssetDownloadHost() {
   const missing = Math.max(0, (state.total || 0) - ready);
   return html`<${Modal} open=${open} onClose=${close} title=${t('下载完整素材')} class="asset-download" actions=${html`
       ${busy ? html`<${Button} onClick=${() => assetDownload.pause()}>${t('暂停下载')}<//>`
-        : html`<${Button} variant="primary" data-testid="asset-download-resume" onClick=${() => void assetDownload.start()}>
+        : html`<${Button} variant="primary" data-testid="asset-download-resume" onClick=${() => void assetDownload.start({ dynamic })}>
           ${state.phase === 'complete' ? t('重新检查') : state.phase === 'paused' ? t('继续下载素材') : t('重试下载')}<//>`}
       <${Button} onClick=${close}>${t('关闭')}<//>`}>
       <p role="status" data-testid="asset-download-status">${status}</p>

@@ -3856,5 +3856,11 @@
   "应用名单": "Apply roster",
   "调整": "Adjust",
   "部署时按格子吸附": "Snap to tile when deploying",
-  "关闭后，拖动中的干员自由跟随指针；松开时仍放入指针下的合法格子。": "When off, dragged operators follow the pointer freely. Releasing still places them on the legal tile under the pointer."
+  "关闭后，拖动中的干员自由跟随指针；松开时仍放入指针下的合法格子。": "When off, dragged operators follow the pointer freely. Releasing still places them on the legal tile under the pointer.",
+  "下载动态立绘": "Download dynamic illustrations",
+  "默认不下载；静态图片照常使用。取消勾选保留已有素材，可随时勾选补装；播放方式在设置中选择。": "Not downloaded by default; static pictures remain available. Unchecking keeps existing files. Enable later to add them; choose playback mode in Settings.",
+  "当前浏览器使用兼容下载：下载所选素材到浏览器缓存，关闭下载窗口会暂停。预载、缓存 ZIP 和本地导入需要 HTTPS 或 localhost 及浏览器缓存支持。": "This browser uses compatibility downloads: selected assets are saved in its cache; closing the download window pauses them. Preloading, cache ZIPs and local imports require HTTPS or localhost and browser cache support.",
+  "【启动器】下载动态立绘（可选）": "Download dynamic illustrations (optional)",
+  "【启动器】默认不下载，静态图片照常使用。以后可在控制台的版本更新中勾选动态立绘，修复当前版本以补装。": "Off by default; static pictures remain available. To add them later, enable dynamic illustrations under Version Updates in the console and repair the current version.",
+  "【启动器】选择空目录，自动下载游戏、所选素材和所需运行环境。已有服务可继续运行。": "Choose an empty directory to download the game, selected assets and required runtime. Existing servers can keep running."
 }

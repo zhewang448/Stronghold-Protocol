@@ -71,7 +71,7 @@ function stateText(st, enabled) {
   if (st.phase === 'foreign') return t('另一标签页处理中');
   if (busy(st)) return t('处理中');
   if (st.complete) return t('全部已保存');
-  if (st.selectionComplete && st.tier1Total) return st.optional ? t('所选资源已齐全。') : t('必备已保存');
+  if (st.selectionComplete && st.tier1Total) return st.optional || st.dynamic ? t('所选资源已齐全。') : t('必备已保存');
   return enabled ? t('已暂停') : t('未开启');
 }
 
@@ -137,7 +137,7 @@ function ResourceTier({ st, tier, optional, onOptional, voiceLang, onVoiceLang, 
 }
 
 /** Mounted once in main.js, above all screens including the settings modal. */
-export function ResourceHost({ enabled, optional, voiceLang = 'cn', onVoiceLang, onChange, onOptional }) {
+export function ResourceHost({ enabled, optional, dynamic = false, onDynamic, voiceLang = 'cn', onVoiceLang, onChange, onOptional }) {
   const { open } = useStore((s) => s, Object.is, resourceUi);
   const st = useResources();
   const fileInput = useRef(null);
@@ -166,13 +166,19 @@ export function ResourceHost({ enabled, optional, voiceLang = 'cn', onVoiceLang,
   };
   return html`<${Modal} open=${open} onClose=${closeResources} title=${t('素材与资源')} micro="RESOURCE MANAGER" class="resource-modal" utility=${true}
     actions=${html`
-      ${compatibility ? html`<${Button} variant="primary" icon="play" data-testid="resource-download" onClick=${() => { closeResources(); openAssetDownload(); }}>${t('开始下载')}<//>`
+      ${compatibility ? html`<${Button} variant="primary" icon="play" data-testid="resource-download" onClick=${() => { closeResources(); openAssetDownload(dynamic); }}>${t('开始下载')}<//>`
         : busy(st) ? html`<${Button} variant="secondary" icon="hourglass" onClick=${pauseResources}>${archiveBusy ? t('取消处理') : t('暂停下载')}<//>`
         : html`<${ClientPreference} name="settings.preload"><${Button} variant="primary" icon="play" data-testid="resource-download" disabled=${!st.supported}
           onClick=${() => enabled ? startResources() : onChange(true)}>${st.selectionComplete ? t('检查资源') : enabled ? t('继续下载') : t('开始预载')}<//><//>`}
       <${Button} variant="secondary" onClick=${closeResources}>${t('关闭')}<//>`}>
     <div class="resource-manager">
-      <p class="resource-manager__intro">${compatibility ? t('当前浏览器使用兼容下载：下载全部素材到浏览器缓存，关闭下载窗口会暂停。预载、缓存 ZIP 和本地导入需要 HTTPS 或 localhost 及浏览器缓存支持。') : t('先预载必备资源；可选资源可按需加载。关闭此窗口后，下载会在后台继续。')}</p>
+      <p class="resource-manager__intro">${compatibility ? t('当前浏览器使用兼容下载：下载所选素材到浏览器缓存，关闭下载窗口会暂停。预载、缓存 ZIP 和本地导入需要 HTTPS 或 localhost 及浏览器缓存支持。') : t('先预载必备资源；可选资源可按需加载。关闭此窗口后，下载会在后台继续。')}</p>
+      <${ClientPreference} name="settings.preloadDynamic"><div class="resource-archive">
+        <label class="resource-choice"><input type="checkbox" data-testid="preload-dynamic" checked=${dynamic} disabled=${archiveBusy || (compatibility && busy(st))}
+          onChange=${(e) => onDynamic(e.currentTarget.checked)} />${t('下载动态立绘')}
+          ${st.groups.find(g => g.id === 'dynamic')?.totalBytes ? html`<span class="num">${formatBytes(st.groups.find(g => g.id === 'dynamic').totalBytes)}</span>` : null}</label>
+        <p>${t('默认不下载；静态图片照常使用。取消勾选保留已有素材，可随时勾选补装；播放方式在设置中选择。')}</p>
+      </div><//>
       ${compatibility ? html`<p class="resource-manager__warn">${compatibilityReason}</p>` : html`<div class="resource-manager__tiers">
         <${ResourceTier} st=${st} tier=${1} />
         <${ResourceTier} st=${st} tier=${2} optional=${optional} onOptional=${onOptional} voiceLang=${voiceLang} onVoiceLang=${onVoiceLang} disabled=${archiveBusy} />

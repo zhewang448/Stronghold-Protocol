@@ -18,6 +18,32 @@ import { archive, storedZip, releaseFor, files, manifest, put, read, tag, sha, s
 const temp = (t) => { const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-release-')); t.after(() => fs.rmSync(root, { recursive: true, force: true })); put(root, 'package.json', JSON.stringify({ version: APP_VERSION })); return root; };
 const fetchRelease = async () => new Response(JSON.stringify([releaseFor()]));
 
+test('download choice detects animation, persists separately and invalidates a differently prepared stage', async t => {
+  const root = temp(t);
+  put(root, 'public/assets/dynamic/skin/portrait.png', 'static');
+  const options = { root, fetchImpl: fetchRelease, onReady() {} };
+  assert.equal(createReleaseUpdater(options).status().downloadOptions.includeDynamic, false, 'static fallback alone is not an installed animation');
+  put(root, 'public/assets/dynamic/skin/anim.skel', 'animation');
+  assert.equal(createReleaseUpdater(options).status().downloadOptions.includeDynamic, true);
+  let active = false;
+  const choices = [];
+  const updater = createReleaseUpdater({ ...options, hasActive: () => active, schedule: async () => {},
+    stageRelease: async ({ includeDynamic }) => {
+      choices.push(includeDynamic); active = true;
+      return { tag, stage: path.join(root, `logs/update-staging/run-${choices.length}/Stronghold-Protocol`) };
+    } });
+  assert.equal(updater.configureDownloads(false).saved, true);
+  assert.equal(createReleaseUpdater(options).status().downloadOptions.includeDynamic, false);
+  assert.match(updater.configureDownloads('yes').error, /必须为开或关/);
+  await updater.check();
+  updater.install({ tag });
+  await until(() => updater.status().state === 'active-matches');
+  updater.configureDownloads(true);
+  updater.install({ tag, force: true });
+  await until(() => updater.status().state === 'scheduled');
+  assert.deepEqual(choices, [false, true], 'changing the choice restages before install');
+});
+
 test('signing refuses dirty worktrees, changed tags, and changed artifacts under a signed release tag', async (t) => {
   const expected = 'v0.3.1-extended.7', root = 'unused';
   assert.throws(() => assertReleaseRevision('v0.3.1-extended.6', { expected, root, run: () => assert.fail('wrong tag stops first') }), /递增/);

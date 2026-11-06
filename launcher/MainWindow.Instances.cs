@@ -255,7 +255,7 @@ public partial class MainWindow
             // Prepare the runtime first. A failed game download leaves no half-created instance.
             var node = await Task.Run(NodeRuntime.Find);
             if (node?.IsSupported != true) await installer.EnsureRuntimeAsync(progress, _installCancellation.Token);
-            var root = await installer.InstallAsync(target, progress, _installCancellation.Token);
+            var root = await installer.InstallAsync(target, progress, _installCancellation.Token, InstallDynamicCheck.IsChecked == true);
             var profile = new InstanceProfile(Guid.NewGuid().ToString("N"), InstanceNaming.DefaultName(root), root,
                 InstanceProfiles.AvailablePort(_profiles, HostLauncher.PortHasListener), "local");
             _profiles.Add(profile);

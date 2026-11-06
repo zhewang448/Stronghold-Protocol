@@ -1,6 +1,7 @@
 // Explicit title-screen predownload. Reuse the game's HTTP cache and exact manifest URLs;
 // never decode every model/image/audio file into RAM or persist an unverified "complete" flag.
 // A URL already stored by a local import (assetPack.js) is marked done and not requested again.
+import { isOptionalDynamicArt } from '../../shared/dynamicDownload.js';
 import { mediaUrl } from './media.js';
 import { listImportedPaths } from './assetCache.js';
 
@@ -29,12 +30,13 @@ export function collectAssetUrls(...manifests) {
 export function createAssetDownload({ fetch: doFetch = (...args) => globalThis.fetch(...args),
   concurrency = 4, timeoutMs = 60000, retries = 2, lookupImported = listImportedPaths } = {}) {
   let state = { phase: 'idle', total: 0, done: 0, bytes: 0, failures: [], localMissing: false, cached: 0 };
+  let includeDynamic = false;
   let urls = null, running = null, controller = null, paused = false, lastNotice = 0;
   const complete = new Set(), failures = new Map(), listeners = new Set();
   const emit = (force = false) => {
     if (!force && Date.now() - lastNotice < 100) return;
     lastNotice = Date.now();
-    state = { ...state, done: complete.size, failures: [...failures.values()] };
+    state = { ...state, done: urls ? urls.filter(url => complete.has(url)).length : 0, failures: [...failures.values()] };
     for (const listener of listeners) listener(state);
   };
 
@@ -103,7 +105,8 @@ export function createAssetDownload({ fetch: doFetch = (...args) => globalThis.f
         if (!assets || typeof assets !== 'object' || Array.isArray(assets)
           || (local !== null && (!local || typeof local !== 'object' || !local.groups))
           || (fx !== null && (!fx || typeof fx !== 'object' || !fx.groups))) throw new Error('Invalid asset manifest');
-        const list = collectAssetUrls(assets, local, fx);
+        const list = collectAssetUrls(assets, local, fx).filter(url => includeDynamic
+          || !isOptionalDynamicArt('public' + url.replace(/\/assets\/~[^/]+\//, '/assets/')));
         if (!list.length) throw new Error('Empty asset manifest');
         urls = list;
         state = { ...state, total: urls.length, localMissing: local === null };
@@ -155,8 +158,14 @@ export function createAssetDownload({ fetch: doFetch = (...args) => globalThis.f
   return {
     get: () => state,
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
-    start() {
-      if (running) return running;
+    start({ dynamic = includeDynamic } = {}) {
+      if (running) {
+        if (!paused && includeDynamic === dynamic) return running;
+        paused = true; controller.abort();
+        return running.then(() => this.start({ dynamic }));
+      }
+      if (includeDynamic !== dynamic) { urls = null; failures.clear(); }
+      includeDynamic = dynamic;
       paused = false;
       controller = new AbortController();
       // A new check after completion revalidates the manifest and all files through the HTTP cache.

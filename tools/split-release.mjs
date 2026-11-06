@@ -8,16 +8,17 @@ import { readZip } from '../server/release-zip.js';
 import { isSetupArt, parseManifest, pathProblem, removalProblem } from '../server/update.js';
 import { zipFolder } from './package.mjs';
 import { githubSourceUrl } from './assets/sources.mjs';
+import { isOptionalDynamicArt } from '../shared/dynamicDownload.js';
 
 const digest = bytes => ({ size: bytes.length, sha256: crypto.createHash('sha256').update(bytes).digest('hex') });
-const groupOf = rel => rel === 'data/local-fx.json' || rel.startsWith('public/assets/local/fx/') ? 'fx'
+const groupOf = rel => isOptionalDynamicArt(rel) ? 'dynamic' : rel === 'data/local-fx.json' || rel.startsWith('public/assets/local/fx/') ? 'fx'
   : rel === 'data/local-assets.json' || rel.startsWith('public/assets/local/') || rel.startsWith('public/assets/dynamic/') ? 'local' : 'common';
 
 export function splitRelease(fullZip, tag, out, { ledgerPath } = {}) {
   if (!/^v\d+\.\d+\.\d+(?:-extended\.\d+)?$/.test(tag)) throw new Error('invalid release tag');
   const destination = path.resolve(out);
   fs.mkdirSync(destination, { recursive: true });
-  const names = ['common', 'local', 'fx'].map(group => `Stronghold-Protocol-${tag}-${group}-art.zip`);
+  const names = ['common', 'local', 'fx', 'dynamic'].map(group => `Stronghold-Protocol-${tag}-${group}-art.zip`);
   const indexName = `Stronghold-Protocol-${tag}-art-index.json`;
   for (const name of [...names, indexName]) if (fs.existsSync(path.join(destination, name))) throw new Error(`output exists: ${name}`);
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-split-release-'));
@@ -57,7 +58,7 @@ export function splitRelease(fullZip, tag, out, { ledgerPath } = {}) {
       if (!got || got.size !== expected.size || got.sha256 !== expected.sha256) throw new Error(`package program differs from manifest: ${rel}`);
     }
     const groups = {};
-    for (const [index, group] of ['common', 'local', 'fx'].entries()) {
+    for (const [index, group] of ['common', 'local', 'fx', 'dynamic'].entries()) {
       if (!Object.values(files).some(file => file.group === group)) continue;
       zipFolder(path.join(work, group), path.join(destination, names[index]));
       groups[group] = names[index];

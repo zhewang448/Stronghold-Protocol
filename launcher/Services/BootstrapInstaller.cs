@@ -22,7 +22,7 @@ public sealed class BootstrapInstaller(HttpClient http, string[]? releaseKeys = 
         client.DefaultRequestHeaders.UserAgent.ParseAdd("StrongholdProtocolLauncher/2.0");
         return client;
     }
-    public async Task<string> InstallAsync(string target, IProgress<InstallProgress>? progress = null, CancellationToken token = default)
+    public async Task<string> InstallAsync(string target, IProgress<InstallProgress>? progress = null, CancellationToken token = default, bool includeDynamic = false)
     {
         target = Path.GetFullPath(target);
         if (File.Exists(target) || Directory.Exists(target) && Directory.EnumerateFileSystemEntries(target).Any()) throw new IOException("Choose an empty installation directory.");
@@ -60,9 +60,10 @@ public sealed class BootstrapInstaller(HttpClient http, string[]? releaseKeys = 
             var zip = Path.Combine(work, "game.zip");
             var stage = Path.Combine(work, "stage");
             var root = await TrySplitAsync(assets, tag, sums, signatureAsset.ValueKind != JsonValueKind.Undefined,
-                asset, work, stage, progress, token);
+                asset, work, stage, progress, token, includeDynamic);
             if (root is null)
             {
+                if (!includeDynamic) throw new IOException("This release cannot omit dynamic art. Select Download dynamic illustrations to install its complete archive.");
                 if (asset.ValueKind == JsonValueKind.Undefined) throw new IOException("No usable complete or split release is available.");
                 if (Directory.Exists(stage)) Directory.Delete(stage, true);
                 await DownloadAsync(ReleaseUrl(asset, tag), zip, "download", progress, token);
@@ -100,7 +101,7 @@ public sealed class BootstrapInstaller(HttpClient http, string[]? releaseKeys = 
         foreach (var property in index.GetProperty("groups").EnumerateObject())
         {
             var name = property.Value.GetString() ?? "";
-            if (property.Name is not ("common" or "local" or "fx") || name != $"Stronghold-Protocol-{tag}-{property.Name}-art.zip"
+            if (property.Name is not ("common" or "local" or "fx" or "dynamic") || name != $"Stronghold-Protocol-{tag}-{property.Name}-art.zip"
                 || !groups.TryAdd(property.Name, name)) throw new IOException("Invalid asset group.");
         }
         var files = new Dictionary<string, SplitFile>(StringComparer.OrdinalIgnoreCase);
@@ -118,12 +119,18 @@ public sealed class BootstrapInstaller(HttpClient http, string[]? releaseKeys = 
             if (!ValidAssetPath(relative) || !groups.ContainsKey(group) || size < 0 || size > MaxExtracted
                 || !Regex.IsMatch(hash, "^[a-f0-9]{64}$") || !files.TryAdd(relative, new(relative, group, size, hash, source)))
                 throw new IOException("Invalid asset index entry.");
+            if (group == "dynamic" && !OptionalDynamicPath(relative)) throw new IOException("Optional group contains required art.");
+            if (groups.ContainsKey("dynamic") && OptionalDynamicPath(relative) && group != "dynamic") throw new IOException("Invalid dynamic asset group.");
             total = checked(total + size);
             if (total > MaxExtracted || files.Count > 200000) throw new IOException("Asset index exceeds limits.");
         }
         if (!files.ContainsKey("data/assets.json")) throw new IOException("Asset index lacks the asset manifest.");
         return new(app, groups, files);
     }
+
+    private static bool OptionalDynamicPath(string relative)
+        => relative.StartsWith("public/assets/dynamic/", StringComparison.Ordinal)
+            && !Regex.IsMatch(relative, @"/(?:avatar|portrait|illust(?:-client)?)\.(?:png|webp|jpe?g)$");
 
     private static bool ValidAssetPath(string relative)
     {
@@ -142,7 +149,7 @@ public sealed class BootstrapInstaller(HttpClient http, string[]? releaseKeys = 
             && length > 0 && length <= MaxDownload ? length : -1;
 
     private async Task<string?> TrySplitAsync(JsonElement[] assets, string tag, string sums, bool signed, JsonElement full,
-        string work, string stage, IProgress<InstallProgress>? progress, CancellationToken token)
+        string work, string stage, IProgress<InstallProgress>? progress, CancellationToken token, bool includeDynamic)
     {
         var liteName = $"Stronghold-Protocol-{tag}-lite.zip";
         var indexName = $"Stronghold-Protocol-{tag}-art-index.json";
@@ -155,7 +162,11 @@ public sealed class BootstrapInstaller(HttpClient http, string[]? releaseKeys = 
             var actual = LauncherSelfUpdate.Hash(Encoding.UTF8.GetBytes(indexText));
             if (!actual.Equals(Checksum(sums, indexName), StringComparison.OrdinalIgnoreCase)) throw new IOException("Asset index checksum failed.");
             var plan = ParseSplitIndex(indexText, tag);
-            var groups = plan.Groups.Where(group => plan.Files.Values.Any(file => file.Group == group.Key))
+            if (!includeDynamic && plan.Files.Values.Any(file => OptionalDynamicPath(file.Path) && file.Group != "dynamic"))
+                throw new IOException("This older release has no separate dynamic art package. Select Download dynamic illustrations.");
+            var selected = plan with { Files = plan.Files.Where(file => includeDynamic || file.Value.Group != "dynamic")
+                .ToDictionary(file => file.Key, file => file.Value, StringComparer.OrdinalIgnoreCase) };
+            var groups = plan.Groups.Where(group => includeDynamic || group.Key != "dynamic").Where(group => plan.Files.Values.Any(file => file.Group == group.Key))
                 .Select(group => (Group: group.Key, Name: group.Value,
                     Asset: assets.FirstOrDefault(asset => asset.GetProperty("name").GetString() == group.Value))).ToArray();
             var splitSize = AssetSize(lite);
@@ -169,7 +180,7 @@ public sealed class BootstrapInstaller(HttpClient http, string[]? releaseKeys = 
                 splitSize = checked(splitSize + (sources ? Math.Min(sourceSize, AssetSize(group.Asset)) : AssetSize(group.Asset)));
             }
             var fullSize = AssetSize(full);
-            if (fullSize > 0 && splitSize >= fullSize) return null;
+            if (includeDynamic && fullSize > 0 && splitSize >= fullSize) return null;
             var zip = Path.Combine(work, "split.zip");
             await DownloadAsync(ReleaseUrl(lite, tag), zip, "download", progress, token);
             await VerifyAsync(zip, Checksum(sums, liteName), token);
@@ -210,25 +221,27 @@ public sealed class BootstrapInstaller(HttpClient http, string[]? releaseKeys = 
                     }
                     catch (OperationCanceledException) when (!token.IsCancellationRequested) { }
                 }
-                if (fullSize > 0 && AssetSize(group.Asset) >= fullSize) return null;
+                if (includeDynamic && fullSize > 0 && AssetSize(group.Asset) >= fullSize) return null;
                 await DownloadAsync(ReleaseUrl(group.Asset, tag), zip, "download", progress, token);
                 await VerifyAsync(zip, Checksum(sums, group.Name), token);
                 var groupStage = Path.Combine(work, "group-" + group.Group);
                 await Task.Run(() => Extract(zip, groupStage, token), token);
                 await MergeGroupAsync(groupStage, root, plan, group.Group, token);
             }
-            await VerifyAssetsAsync(root, plan, token);
+            await VerifyAssetsAsync(root, selected, token, includeDynamic);
             return root;
         }
         catch (Exception error) when (error is IOException or HttpRequestException or JsonException or InvalidOperationException
             or KeyNotFoundException or FormatException or OverflowException)
         {
             token.ThrowIfCancellationRequested();
+            if (!includeDynamic) throw new IOException("Installation without dynamic art failed: " + error.Message, error);
             if (full.ValueKind == JsonValueKind.Undefined) throw new IOException("Split installation failed and no full package is available.", error);
             return null;
         }
         catch (OperationCanceledException error) when (!token.IsCancellationRequested)
         {
+            if (!includeDynamic) throw new IOException("Split installation timed out. Retry to keep dynamic art excluded.", error);
             if (full.ValueKind == JsonValueKind.Undefined) throw new IOException("Split installation timed out and no full package is available.", error);
             return null;
         }
@@ -254,7 +267,7 @@ public sealed class BootstrapInstaller(HttpClient http, string[]? releaseKeys = 
         if (plan.Files.Values.Any(file => file.Group == group && !seen.Contains(file.Path))) throw new IOException("Asset archive is incomplete.");
     }
 
-    private static async Task VerifyAssetsAsync(string root, SplitPlan plan, CancellationToken token)
+    private static async Task VerifyAssetsAsync(string root, SplitPlan plan, CancellationToken token, bool includeDynamic)
     {
         foreach (var expected in plan.Files.Values)
         {
@@ -267,21 +280,22 @@ public sealed class BootstrapInstaller(HttpClient http, string[]? releaseKeys = 
         {
             if (!plan.Files.ContainsKey(relative)) continue;
             using var document = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(root, relative.Replace('/', Path.DirectorySeparatorChar)), token));
-            VerifyAssetReferences(document.RootElement, plan.Files);
+            VerifyAssetReferences(document.RootElement, plan.Files, includeDynamic);
         }
     }
 
-    private static void VerifyAssetReferences(JsonElement value, Dictionary<string, SplitFile> files)
+    private static void VerifyAssetReferences(JsonElement value, Dictionary<string, SplitFile> files, bool includeDynamic)
     {
         if (value.ValueKind == JsonValueKind.Object)
-            foreach (var property in value.EnumerateObject()) VerifyAssetReferences(property.Value, files);
+            foreach (var property in value.EnumerateObject()) VerifyAssetReferences(property.Value, files, includeDynamic);
         else if (value.ValueKind == JsonValueKind.Array)
-            foreach (var item in value.EnumerateArray()) VerifyAssetReferences(item, files);
+            foreach (var item in value.EnumerateArray()) VerifyAssetReferences(item, files, includeDynamic);
         else if (value.ValueKind == JsonValueKind.String)
         {
             var reference = value.GetString() ?? "";
             if (!reference.StartsWith("/assets/", StringComparison.Ordinal) && !reference.StartsWith("/fonts/", StringComparison.Ordinal)) return;
             var relative = "public/" + string.Join('/', reference.Split('/').Where(part => part.Length > 0).Select(Uri.UnescapeDataString));
+            if (!includeDynamic && OptionalDynamicPath(relative)) return;
             if (!files.ContainsKey(relative)) throw new IOException("Asset reference is missing: " + relative);
         }
     }

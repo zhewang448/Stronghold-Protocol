@@ -11,7 +11,7 @@
 用户设置仍沿用原 key、稀疏保存和别名迁移；锁定只覆盖生效层。测试入口为 `test/client-preferences.test.js` 和
 启用 `SP_E2E=1` 的 `test/ui/client-preferences.e2e.test.js`。
 
-当前版本为 `v0.3.3-extended.11`，基础游戏 0.3.3、启动器 1.3.0；实际验证和附件状态见 [本轮发布记录](RELEASE-V0.3.3-EXTENDED.11.md)。
+当前版本为 `v0.3.3-extended.12`，基础游戏 0.3.3、启动器 1.4.0；实际验证和附件状态见 [本轮发布记录](RELEASE-V0.3.3-EXTENDED.12.md)。
 
 v0.3.3 整合候选及验证边界见 [整合说明](UPSTREAM-V0.3.3-INTEGRATION.md)。
 
@@ -55,7 +55,7 @@ v0.3.3 整合候选及验证边界见 [整合说明](UPSTREAM-V0.3.3-INTEGRATION
 - 合并上游新版本时从 `main` 开功能分支，完成适配与测试后再合并回 `main`。
 - 同步上游：`git fetch upstream` → `git merge upstream/master` → `npm install` → `npm run setup`（上游常会加素材）→ `node --test`。
 - 素材 `public/assets/`、`.cache/`、`.claude/` 都在 `.gitignore` 里，不进仓库。新机器 clone 后要先 `npm install && npm run setup`。
-- 当前版本为 `v0.3.3-extended.10`，基于上游 `v0.3.3`；新增表情弹幕，修复启动头像与随机策略文案。保留盟约库存、头像/立绘预设、可选独立卡池、救援和自动增量选路；签名素材分包与启动器 1.3.0 的发布方式见部署说明。
+- 当前版本为 `v0.3.3-extended.10`，基于上游 `v0.3.3`；新增表情弹幕，修复启动头像与随机策略文案。保留盟约库存、头像/立绘预设、可选独立卡池、救援和自动增量选路；签名素材分包与启动器 1.4.0 的发布方式见部署说明。
 
 当前源码已整合上游 `v0.3.3`；`package.json` / APP_VERSION 为基础版本 0.3.3；`server/release-version.js` 单独记录扩展标签。发布附件与公开状态以 Releases 为准。
 

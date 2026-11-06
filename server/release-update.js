@@ -18,6 +18,7 @@ import { DEFAULT_GITHUB_PROXY, normalizeProxyPrefix } from '../tools/assets/sour
 import { assertUpdateSpace } from './update-backups.js';
 import { pickLauncherAsset, stageLauncherArchive, launcherTargets, launcherReceiptMatches } from './release-launcher.js';
 import { parseSplitIndex } from './release-split.js';
+import { isOptionalDynamicArt } from '../shared/dynamicDownload.js';
 
 export const UPDATE_REPOSITORY = 'zhewang448/Stronghold-Protocol';
 const API = `https://api.github.com/repos/${UPDATE_REPOSITORY}/releases`;
@@ -497,7 +498,7 @@ async function stageDeltaRoute({ root, work, release, releases, request, keys, p
     asset: archives.get(targetTag).asset.name, route };
 }
 
-async function stageSplitRelease({ root, work, release, request, keys, progress, full, planOnly = false, cachedPlan = null }) {
+async function stageSplitRelease({ root, work, release, request, keys, progress, full, planOnly = false, cachedPlan = null, includeDynamic = true }) {
   const tag = release.tag_name, assets = release.assets || [];
   const indexAsset = assets.find(asset => asset.name === `Stronghold-Protocol-${tag}-art-index.json`);
   const lite = assets.find(asset => asset.name === `Stronghold-Protocol-${tag}-lite.zip`);
@@ -511,8 +512,9 @@ async function stageSplitRelease({ root, work, release, request, keys, progress,
       return bytes.toString('utf8');
     });
     index = parseSplitIndex(text, tag);
-    initial = await runSplitWorker({ root, tag, splitIndex: text, planSplit: true });
+    initial = await runSplitWorker({ root, tag, splitIndex: text, planSplit: true, options: { includeDynamic } });
   }
+  if (!includeDynamic && [...index.files].some(([rel, file]) => isOptionalDynamicArt(rel) && file.group !== 'dynamic')) throw new Error('该旧版没有独立动态素材包，请勾选下载动态立绘后重试');
   const groupAsset = group => {
     const asset = assets.find(item => item.name === index.groups.get(group));
     if (!asset) throw new Error(`缺少素材分包：${group}`);
@@ -528,7 +530,7 @@ async function stageSplitRelease({ root, work, release, request, keys, progress,
       && missing.every(rel => index.files.get(rel).source && index.files.get(rel).size <= 32 * 1024 * 1024);
     return total + (publicSources ? Math.min(rawBytes, asset.size) : asset.size);
   }, lite.size);
-  if (full && Number.isSafeInteger(full.size) && full.size > 0 && estimate >= full.size) return null;
+  if (includeDynamic && full && Number.isSafeInteger(full.size) && full.size > 0 && estimate >= full.size) return null;
   if (planOnly) return { text, index, initial, estimate };
   const download = async (asset, filename) => {
     const want = await expectedHash({ release, asset, request, listing: 'mirror', keys });
@@ -554,7 +556,7 @@ async function stageSplitRelease({ root, work, release, request, keys, progress,
   const manifest = await stageReleaseArchive(zip, stage, tag, root, false, { allowIncompleteArt: true });
   if (manifest.app !== index.app) throw new Error('精简包与素材索引版本不符');
   let sourcedBytes = 0;
-  let plan = await runSplitWorker({ root, stage, tag, splitIndex: text, planSplit: true });
+  let plan = await runSplitWorker({ root, stage, tag, splitIndex: text, planSplit: true, options: { includeDynamic } });
   const common = plan.missing.filter(rel => index.files.get(rel).group === 'common');
   const commonBytes = common.reduce((sum, rel) => sum + index.files.get(rel).size, 0);
   if (common.length && common.length <= 64 && commonBytes <= 128 * 1024 * 1024
@@ -582,30 +584,30 @@ async function stageSplitRelease({ root, work, release, request, keys, progress,
         progress({ state: 'downloading', asset: rel, received: bytes.length, size: bytes.length, split: true });
       } catch { break; }
     }
-    plan = await runSplitWorker({ root, stage, tag, splitIndex: text, planSplit: true });
+    plan = await runSplitWorker({ root, stage, tag, splitIndex: text, planSplit: true, options: { includeDynamic } });
   }
   const groupAssets = plan.needed.map(group => ({ group, asset: groupAsset(group) }));
   const bytes = lite.size + sourcedBytes + groupAssets.reduce((total, item) => total + item.asset.size, 0);
-  if (full && Number.isSafeInteger(full.size) && full.size > 0 && bytes >= full.size) throw new Error('完整包比素材分包更小');
+  if (includeDynamic && full && Number.isSafeInteger(full.size) && full.size > 0 && bytes >= full.size) throw new Error('完整包比素材分包更小');
   for (const { group, asset } of groupAssets) {
     await download(asset, zip);
     assertUpdateSpace(root, zipUnpackedSize(zip));
     progress({ state: 'verifying', asset: asset.name, split: true });
     await runSplitWorker({ zip, root, stage, tag, splitIndex: text, splitGroup: group });
   }
-  await runSplitWorker({ root, stage, tag, splitIndex: text, finishSplit: true });
+  await runSplitWorker({ root, stage, tag, splitIndex: text, finishSplit: true, options: { includeDynamic } });
   fs.rmSync(zip, { force: true });
-  return { stage, app: manifest.app, tag, asset: lite.name, split: true, groups: plan.needed, downloadBytes: bytes };
+  return { stage, app: manifest.app, tag, asset: lite.name, split: true, groups: plan.needed, downloadBytes: bytes, includeDynamic };
 }
 
 /** Stream with backpressure, verify published ZIP SHA-256, then verify individual program files. */
 export async function downloadAndStage({ root, release, fetchImpl = fetch, listing = 'direct', keys, progress = () => {}, platform = process.platform,
-  releases = [], request = async (url, consume, timeout) => consume(await responseFor(url, fetchImpl, timeout), 'direct') }) {
+  includeDynamic = true, releases = [], request = async (url, consume, timeout) => consume(await responseFor(url, fetchImpl, timeout), 'direct') }) {
   const full = pickReleaseAsset(release);
   const installed = installedTag(root);
   const delta = preferredUpdate(release, installed);
-  const candidates = [...(delta ? [delta] : []), ...(full ? [full] : [])];
-  if (!candidates.length && !release.assets?.some(asset => asset.name === `Stronghold-Protocol-${release.tag_name}-art-index.json`)) {
+  const candidates = includeDynamic ? [...(delta ? [delta] : []), ...(full ? [full] : [])] : [];
+  if (!delta && !full && !release.assets?.some(asset => asset.name === `Stronghold-Protocol-${release.tag_name}-art-index.json`)) {
     throw new Error('这个 Release 缺少完整素材包，无法保证素材完整');
   }
   const base = path.join(root, 'logs', 'update-staging');
@@ -617,11 +619,11 @@ export async function downloadAndStage({ root, release, fetchImpl = fetch, listi
     let routed = null;
     let split = null;
     let splitPlan = null;
-    if (releases.length || !delta) {
-      try { splitPlan = await stageSplitRelease({ root, work, release, request, keys, progress, full, planOnly: true }); }
+    if (!includeDynamic || releases.length || !delta) {
+      try { splitPlan = await stageSplitRelease({ root, work, release, request, keys, progress, full, includeDynamic, planOnly: true }); }
       catch (error) { lastError = error; }
     }
-    if (delta && releases.length) {
+    if (includeDynamic && delta && releases.length) {
       const fullSize = Number.isSafeInteger(full?.size) && full.size > 0 ? full.size : Infinity;
       try { routed = await stageDeltaRoute({ root, work, release, releases, request, keys, progress, maxBytes: Math.min(fullSize, splitPlan?.estimate ?? Infinity) }); }
       catch (error) {
@@ -638,7 +640,7 @@ export async function downloadAndStage({ root, release, fetchImpl = fetch, listi
     if (!routed && splitPlan) {
       try {
         fs.rmSync(path.join(work, 'Stronghold-Protocol'), { recursive: true, force: true });
-        split = await stageSplitRelease({ root, work, release, request, keys, progress, full, cachedPlan: splitPlan });
+        split = await stageSplitRelease({ root, work, release, request, keys, progress, full, includeDynamic, cachedPlan: splitPlan });
         if (split) {
           candidates.unshift(release.assets.find(asset => asset.name === split.asset));
           progress({ state: 'verifying', asset: split.asset, split: true, fallback: false, fallbackReason: undefined,
@@ -651,7 +653,7 @@ export async function downloadAndStage({ root, release, fetchImpl = fetch, listi
           split: false, fallback: true, fallbackReason: error.message });
       }
     }
-    if (!candidates.length) throw lastError || new Error('没有可用的更新包');
+    if (!candidates.length) throw lastError || new Error(includeDynamic ? '没有可用的更新包' : '该 Release 没有可独立选择的动态素材包，请勾选下载动态立绘后重试');
     for (const asset of candidates) {
       let gameStaged = false;
       try {
@@ -709,7 +711,7 @@ export async function downloadAndStage({ root, release, fetchImpl = fetch, listi
           }
         }
         progress({ state: 'verifying', asset: staged.asset, received: 0, size: asset.size || 0, launcher });
-        return { ...staged, launcher };
+        return { ...staged, launcher, includeDynamic };
       } catch (e) {
         lastError = e;
         if (asset === delta && full && !gameStaged) {
@@ -754,6 +756,22 @@ export async function scheduleInstall({ root, stage, tag, parentPid = process.pi
 export function createReleaseUpdater({ root, port = Number(process.env.PORT) || 3000, log = console, onReady, hasActive = () => false,
   fetchImpl = networkFetch, stageRelease = downloadAndStage, schedule = scheduleInstall } = {}) {
   let current = { state: 'idle' }, releases = [], prepared = null, opened = false, checking = null, page = 0, hasMore = false;
+  const hasAnimation = directory => {
+    let entries;
+    try { entries = fs.readdirSync(directory, { withFileTypes: true }); } catch { return false; }
+    return entries.some(entry => entry.isDirectory() ? hasAnimation(path.join(directory, entry.name))
+      : entry.isFile() && /\.(?:skel|json)$/.test(entry.name));
+  };
+  let downloadOptions = { includeDynamic: hasAnimation(path.join(root, 'public/assets/dynamic')) };
+  const downloadOptionsFile = path.join(root, 'logs/release-download-options.json');
+  try { const saved = JSON.parse(fs.readFileSync(downloadOptionsFile, 'utf8'));
+    if (typeof saved.includeDynamic === 'boolean') downloadOptions = { includeDynamic: saved.includeDynamic };
+  } catch { /* first installation keeps animations optional */ }
+  const saveDownloadOptions = (includeDynamic) => {
+    fs.mkdirSync(path.dirname(downloadOptionsFile), { recursive: true });
+    fs.writeFileSync(downloadOptionsFile, JSON.stringify({ includeDynamic }));
+    downloadOptions = { includeDynamic };
+  };
   const listedVia = new Map(); // tag → route its Release entry was last listed through
   let network = normalizeUpdateNetwork({});
   try { network = normalizeUpdateNetwork(JSON.parse(fs.readFileSync(updatePaths(root).network, 'utf8'))); }
@@ -769,7 +787,7 @@ export function createReleaseUpdater({ root, port = Number(process.env.PORT) || 
     const split = release.assets?.some(item => item.name === SIGNATURE_ASSET)
       && release.assets?.some(item => item.name === `Stronghold-Protocol-${release.tag_name}-art-index.json`)
       ? release.assets.find(item => item.name === `Stronghold-Protocol-${release.tag_name}-lite.zip`) : null;
-    const asset = delta || full || split;
+    const asset = !downloadOptions.includeDynamic && split ? split : delta || full || split;
     let reason = '';
     let launcherAsset;
     try {
@@ -793,6 +811,8 @@ export function createReleaseUpdater({ root, port = Number(process.env.PORT) || 
     return { tag: release.tag_name, relation: relation > 0 ? 'new' : relation < 0 ? 'old' : 'current',
       asset: asset?.name, size: asset?.size || 0, publishedAt: release.published_at,
       fallbackAsset: delta ? full?.name : undefined, fallbackSize: delta ? (full?.size || 0) : undefined,
+      dynamicOptional: release.assets?.some(a => a.name === `Stronghold-Protocol-${release.tag_name}-dynamic-art.zip`) || false,
+      dynamicSize: release.assets?.find(a => a.name === `Stronghold-Protocol-${release.tag_name}-dynamic-art.zip`)?.size || 0,
       launcherAsset: launcherAsset?.name,
       signed: !!release.assets?.some((a) => a.name === SIGNATURE_ASSET), installable: !reason, reason };
   }
@@ -806,7 +826,7 @@ export function createReleaseUpdater({ root, port = Number(process.env.PORT) || 
     const currentVersion = installedTag(root);
     if (!versions.some((r) => r.relation === 'current')) versions.push({ tag: currentVersion, relation: 'current', installable: false });
     versions.sort((a, b) => compareReleaseTags(b.tag, a.tag));
-    return { ...current, currentVersion, latestVersion: releases[0]?.tag_name, repository: UPDATE_REPOSITORY, canInstall: typeof onReady === 'function', versions, hasMore, network: { ...network } };
+    return { ...current, currentVersion, latestVersion: releases[0]?.tag_name, repository: UPDATE_REPOSITORY, canInstall: typeof onReady === 'function', versions, hasMore, downloadOptions: { ...downloadOptions }, network: { ...network } };
   };
   const request = (url, consume, timeout) => createUpdateRequest(network, { fetchImpl,
     onSource: (source) => { current = { ...current, source }; } })(url, consume, timeout);
@@ -898,7 +918,14 @@ export function createReleaseUpdater({ root, port = Number(process.env.PORT) || 
         return { ...status(), saved: true };
       } catch (e) { return { ...status(), error: e.message }; }
     },
-    install({ force = false, tag, allowDowngrade = false, repairAssets = false } = {}) {
+    configureDownloads(includeDynamic) {
+      if (typeof includeDynamic !== 'boolean') return { ...status(), error: '动态素材下载选项必须为开或关' };
+      if (BUSY.has(current.state)) return { ...status(), error: '更新进行中，暂不能修改下载范围' };
+      try { saveDownloadOptions(includeDynamic); return { ...status(), saved: true }; }
+      catch (e) { return { ...status(), error: e.message }; }
+    },
+    install({ force = false, tag, allowDowngrade = false, repairAssets = false, includeDynamic = downloadOptions.includeDynamic } = {}) {
+      if (typeof includeDynamic !== 'boolean') return { ...status(), error: '动态素材下载选项必须为开或关' };
       if (current.state === 'recovery-required') return { ...status(), error: '更新需要人工恢复，请按恢复说明操作后重新启动服务器。' };
       if (BUSY.has(current.state)) return status();
       if (current.launcher?.state === 'pending') return { ...status(), error: '启动器仍待替换，请先关闭启动器并等待完成后再安装其他版本。' };
@@ -910,12 +937,13 @@ export function createReleaseUpdater({ root, port = Number(process.env.PORT) || 
       if (!view.installable) return { ...status(), error: view.reason };
       if (view.relation === 'old' && !allowDowngrade) return { ...status(), error: '回退旧版本需要确认', code: 'DOWNGRADE_CONFIRM' };
       if (hasActive() && !force) return { ...status(), state: 'active-matches', target: tag };
-      if (prepared && prepared.tag !== tag) {
+      if (prepared && (prepared.tag !== tag || prepared.includeDynamic !== includeDynamic)) {
         const base = path.join(root, 'logs', 'update-staging');
         const relative = path.relative(base, prepared.stage);
         if (relative && !relative.startsWith('..') && !path.isAbsolute(relative)) fs.rmSync(path.dirname(prepared.stage), { recursive: true, force: true });
         prepared = null;
       }
+      try { saveDownloadOptions(includeDynamic); } catch (e) { return { ...status(), error: e.message }; }
       const preparedAsset = prepared?.asset && release.assets?.find((a) => a.name === prepared.asset);
       current = { ...current, ...view, ...(preparedAsset ? { asset: preparedAsset.name, size: preparedAsset.size || 0 } : {}),
         target: tag, state: prepared ? 'verifying' : 'downloading', error: undefined, received: 0,
@@ -926,7 +954,7 @@ export function createReleaseUpdater({ root, port = Number(process.env.PORT) || 
       (async () => {
         try {
           const candidates = prepared ? releases : await routeReleases();
-          prepared ||= await stageRelease({ root, release, releases: candidates, fetchImpl, request, listing: listedVia.get(tag), progress: (p) => { current = { ...current, ...p }; } });
+          prepared ||= { ...await stageRelease({ root, release, includeDynamic, releases: candidates, fetchImpl, request, listing: listedVia.get(tag), progress: (p) => { current = { ...current, ...p }; } }), includeDynamic };
           current = { ...current, ...(prepared.route ? { route: prepared.route } : {}),
             ...(prepared.split ? { split: true, groups: prepared.groups, downloadBytes: prepared.downloadBytes } : {}) };
           if (prepared.launcher) current = { ...current, launcher: prepared.launcher };

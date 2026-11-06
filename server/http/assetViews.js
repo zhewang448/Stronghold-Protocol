@@ -23,6 +23,7 @@ import { hashedPath } from '../../shared/assetPaths.js';
 import { hash16 } from './assetIndex.js';
 import { noopLog } from './config.js';
 import { mergeLocalChars } from '../plugins/artReferences.js';
+import { isOptionalDynamicArt } from '../../shared/dynamicDownload.js';
 export { mergeLocalChars } from '../plugins/artReferences.js';
 
 /** The manifests that have a view, by their name under data/. */
@@ -30,6 +31,36 @@ export const VIEW_MANIFESTS = Object.freeze(['assets.json', 'local-assets.json',
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const ART_URL = /^\/(?:assets|fonts)\/./;
+
+/** Missing optional animation never hides the mandatory static skin pictures. */
+export async function pruneMissingDynamicArt(doc, hasFile) {
+  const out = structuredClone(doc), candidates = [];
+  let changed = false;
+  const references = value => {
+    if (typeof value === 'string') {
+      const rel = relOf(value);
+      return rel && isOptionalDynamicArt('public/' + rel) ? [rel] : [];
+    }
+    return value && typeof value === 'object' ? Object.values(value).flatMap(references) : [];
+  };
+  const visit = value => {
+    if (!value || typeof value !== 'object') return;
+    for (const [key, child] of Object.entries(value)) {
+      if ((key === 'dynamic' || key === 'dynamicE2') && isObj(child)) candidates.push({ value, key, refs: [...new Set(references(child))] });
+      else visit(child);
+    }
+  };
+  visit(out);
+  const availability = new Map();
+  const exists = rel => {
+    if (!availability.has(rel)) availability.set(rel, Promise.resolve(hasFile(rel)));
+    return availability.get(rel);
+  };
+  await Promise.all(candidates.map(async ({ value, key, refs }) => {
+    if (refs.length && !(await Promise.all(refs.map(exists))).every(Boolean)) { delete value[key]; changed = true; }
+  }));
+  return changed ? out : doc;
+}
 
 /** URL path of a manifest → the index's rel path ('/assets/a%20b.png' → 'assets/a b.png'), or null. */
 export function relOf(url) {
@@ -125,9 +156,9 @@ export function rewriteManifest(doc, name, index) {
 
 /**
  * The views of one server.
- * @param {{ dataDir: string, index?: ReturnType<typeof import('./assetIndex.js').createAssetIndex> | null, log?: object }} opts
+ * @param {{ dataDir: string, publicDir?: string, index?: ReturnType<typeof import('./assetIndex.js').createAssetIndex> | null, log?: object }} opts
  */
-export function createManifestViews({ dataDir, index, log = noopLog }) {
+export function createManifestViews({ dataDir, publicDir = path.resolve(dataDir, '..', 'public'), index, log = noopLog }) {
   const dir = path.resolve(dataDir);
   /** @type {Map<string, { key: string, view: { body: Buffer, hash: string, hashed: number, plain: number } | null, models: string[][] }>} */
   const cache = new Map();
@@ -144,7 +175,7 @@ export function createManifestViews({ dataDir, index, log = noopLog }) {
     const localFile = path.join(dir, 'local-assets.json');
     const localStat = name === 'assets.json' ? await fsp.stat(localFile).catch(() => null) : null;
     const indexed = index?.ready && index.size > 0;
-    if (!indexed && !localStat) return null;
+    if (!indexed && !localStat && name !== 'assets.json') return null;
     const file = path.join(dir, name);
     const st = await fsp.stat(file).catch(() => null);
     if (!st || !st.isFile()) {
@@ -163,12 +194,21 @@ export function createManifestViews({ dataDir, index, log = noopLog }) {
       pushModels();
       return null;
     }
+    const original = doc;
     if (localStat) {
       let local;
       try { local = JSON.parse(await fsp.readFile(localFile, 'utf8')); } catch { /* optional local art */ }
       const merged = mergeLocalChars(doc, local);
-      if (!indexed && merged === doc) return null;
       doc = merged;
+    }
+    if (name === 'assets.json') doc = await pruneMissingDynamicArt(doc, async rel => {
+      const stat = await fsp.stat(path.join(publicDir, rel)).catch(() => null);
+      return !!stat?.isFile();
+    });
+    if (!indexed && doc === original) {
+      cache.set(name, { key, view: null, models: [] });
+      pushModels();
+      return null;
     }
     // one synchronous step: the view and the model lists the index checks a model's URLs against
     const { doc: out, models, hashed, plain } = rewriteManifest(doc, name, indexed ? index : plainIndex);

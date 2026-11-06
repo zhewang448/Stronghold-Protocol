@@ -5,12 +5,12 @@ import { finishSplitStage, neededAssetGroups, parseSplitIndex, stageAssetGroup }
 
 const { zip, stage, tag, root, incremental = false, inspect = false, splitGroup, splitIndex, planSplit = false, finishSplit = false, options = {} } = workerData;
 if (inspect) parentPort.postMessage(inspectUpdateZip(zip, tag));
-else if (planSplit) parentPort.postMessage(neededAssetGroups(root, parseSplitIndex(splitIndex, tag), stage));
+else if (planSplit) parentPort.postMessage(neededAssetGroups(root, parseSplitIndex(splitIndex, tag), stage, options));
 else if (splitGroup) {
   stageAssetGroup(zip, root, stage, parseSplitIndex(splitIndex, tag), splitGroup);
   parentPort.postMessage({ ok: true });
 } else if (finishSplit) {
-  finishSplitStage(root, stage, parseSplitIndex(splitIndex, tag));
+  finishSplitStage(root, stage, parseSplitIndex(splitIndex, tag), options);
   parentPort.postMessage({ ok: true });
 }
 else {

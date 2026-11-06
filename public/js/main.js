@@ -437,7 +437,7 @@ function App() {
     <${VoteOverOverlays} />
     <${PersonalDataHost} />
     <${RecoveryHost} />
-    <${ResourceHost} enabled=${resources.preload} optional=${resources.preloadOptional} voiceLang=${resources.preloadVoiceLang}
+    <${ResourceHost} enabled=${resources.preload} optional=${resources.preloadOptional} dynamic=${resources.preloadDynamic} onDynamic=${(preloadDynamic) => updateSettings({ preloadDynamic })} voiceLang=${resources.preloadVoiceLang}
       onChange=${(preload) => updateSettings({ preload })} onOptional=${(preloadOptional) => updateSettings({ preloadOptional })}
       onVoiceLang=${(preloadVoiceLang) => updateSettings({ preloadVoiceLang })} />
   </div>`;
@@ -506,7 +506,7 @@ async function boot() {
   }));
 
   wireNet();
-  const syncPreload = (s) => { if (!unsupportedReason()) void syncResources(s.preload, s.preloadOptional, s.preloadVoiceLang); };
+  const syncPreload = (s) => { if (!unsupportedReason()) void syncResources(s.preload, s.preloadOptional, s.preloadVoiceLang, s.preloadDynamic); };
   settingsStore.subscribe(syncPreload); syncPreload(settingsStore.get());
   installStatsRecorder(store); // follows the match on screen, so a 放弃模拟 can be recorded (ui/stats.js)
   installSettingsViews();

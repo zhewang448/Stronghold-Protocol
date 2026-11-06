@@ -1,6 +1,6 @@
 # 卫戍协议：盟约 · Stronghold Protocol: Alliance
 
-![扩展版本](https://img.shields.io/badge/version-0.3.3--extended.11-blue)
+![扩展版本](https://img.shields.io/badge/version-0.3.3--extended.12-blue)
 ![上游基础版本](https://img.shields.io/badge/version-0.3.3-2ea44f)
 ![许可](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
 
@@ -12,13 +12,13 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 [下载正式版](https://github.com/zhewang448/Stronghold-Protocol/releases/latest) · [开始运行](#开始运行) · [特色图鉴](docs/FORK-FEATURES.md) · [本库特色详解](#本库特色详解) · [和朋友一起玩](#和朋友一起玩) · [更新记录](docs/LOCAL-CHANGELOG.md) · [反馈问题](https://github.com/zhewang448/Stronghold-Protocol/issues)
 
-> 当前版本为 **`v0.3.3-extended.11`**（本次大更新），基于上游 0.3.3。**2026-11-06 大更新**：四版本开局每阶四候选、可带 0–2 名；还原战场状态条、策略小地图、等待室名片底图、预计叠层、动态外观修复和默认方舟鼠标。本次还包含动态立绘与三位新增自选、服主客户端偏好及控制台可选登录；详细变化与升级方式见[发布说明](docs/RELEASE-V0.3.3-EXTENDED.11.md)。如果喜欢这次更新，欢迎点一下右上角 Star ⭐。
+> 当前版本为 **`v0.3.3-extended.12`**（本次大更新），基于上游 0.3.3。**2026-11-06 大更新**：四版本开局每阶四候选、可带 0–2 名；还原战场状态条、策略小地图、等待室名片底图、预计叠层、动态外观修复和默认方舟鼠标。本次新增浏览器、控制台与启动器的动态立绘可选下载，并包含三位新增自选、服主客户端偏好及控制台可选登录；详细变化与升级方式见[发布说明](docs/RELEASE-V0.3.3-EXTENDED.12.md)。如果喜欢这次更新，欢迎点一下右上角 Star ⭐。
 >
 > 非官方、非商业同人项目，与《明日方舟》官方无隶属或授权关系。游戏素材与数据的权利归原权利人；代码、素材及截图的许可边界见 [NOTICE.md](NOTICE.md)。
 
-## 启动器有新版本：1.3.0
+## 启动器有新版本：1.4.0
 
-1.1.0 及更早版本请从本次 Release 下载 StrongholdProtocolLauncher-v1.3.0-win-x64.zip，关闭旧启动器，解压替换 EXE 后重新打开。1.2.0 可使用顶部「启动器更新」。关闭窗口不会停止后台游戏服务；控制台同步更新需要先升级游戏更新器，实例外 EXE 需新版运行后登记位置。详见 [启动器说明](launcher/README.md)。
+1.1.0 及更早版本请从本次 Release 下载 StrongholdProtocolLauncher-v1.4.0-win-x64.zip，关闭旧启动器，解压替换 EXE 后重新打开。1.2.0 可使用顶部「启动器更新」。关闭窗口不会停止后台游戏服务；控制台同步更新需要先升级游戏更新器，实例外 EXE 需新版运行后登记位置。1.4.0 新增动态立绘下载选择，默认关闭；已有实例在游戏控制台选择是否更新或补装动态素材。详见 [启动器说明](launcher/README.md)。
 
 如果本项目帮到了你，欢迎点一下仓库右上角的 Star ⭐，也欢迎反馈问题，帮助这个非商业同人项目继续改进。
 
@@ -49,7 +49,7 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 ## 开始运行
 
-Windows 服主从同版本 Release 下载 StrongholdProtocolLauncher-v1.3.0-win-x64.zip，解压后双击 StrongholdProtocolLauncher.exe。可新建空目录自动安装游戏和便携 Node.js，也可导入已有根目录；EXE 可放在实例目录外。启动器支持多实例、监听端口＋索引发现、回收站删除和安全控制，不提供文件搜索。
+Windows 服主从同版本 Release 下载 StrongholdProtocolLauncher-v1.4.0-win-x64.zip，解压后双击 StrongholdProtocolLauncher.exe。可新建空目录自动安装游戏和便携 Node.js，也可导入已有根目录；EXE 可放在实例目录外。启动器支持多实例、监听端口＋索引发现、回收站删除和安全控制，不提供文件搜索。
 
 **关闭启动器窗口后服务继续运行；停服请点击「停止服务器」。** 公网隧道另需 cloudflared。使用与构建见 [启动器说明](launcher/README.md)，原脚本继续可用。
 
@@ -57,7 +57,7 @@ Windows 服主从同版本 Release 下载 StrongholdProtocolLauncher-v1.3.0-win-
 
 ### 下载整合包
 
-从[本库 Releases](https://github.com/zhewang448/Stronghold-Protocol/releases)选择附件，解压到新目录。**v0.3.3-extended.11 的完整安装由 lite 程序包＋common/local/fx 三组素材分包组成**；动态立绘使单体完整包超过 GitHub 附件限制，推荐使用启动器自动组装，手动安装则将四个 ZIP 中的同名文件夹合并。下表的单体 assets.zip 适用于仍提供它的较早版本：
+从[本库 Releases](https://github.com/zhewang448/Stronghold-Protocol/releases)选择附件，解压到新目录。**v0.3.3-extended.12 的基础安装由 lite 程序包＋common/local/fx 三组素材分包组成，动态立绘另为可选的 dynamic-art.zip**。新安装默认不下载动画；头像、竖图和静态立绘保留。推荐启动器自动组装；手动安装将四个基础 ZIP 的同名文件夹合并，需要动画时再合并第五个 dynamic ZIP。下表的单体 assets.zip 适用于仍提供它的较早版本：
 
 | 附件 | 适合的情况 |
 | --- | --- |
@@ -65,6 +65,7 @@ Windows 服主从同版本 Release 下载 StrongholdProtocolLauncher-v1.3.0-win-
 | `*-lite.zip` | 带同版代码与运行依赖，首次启动时联网下载默认素材；官方战场场景、棋盘等本地素材和可选皮肤需另行导入 / 安装 |
 | `*-update.zip` | 发布时若提供，为控制台升级使用的增量附件；不能当作新安装包，版本不适配时改用完整包 |
 | `*-common-art.zip`、`*-local-art.zip`、`*-fx-art.zip` | 签名素材分包，由支持分包的更新器和启动器按需下载 |
+| `*-dynamic-art.zip` | 可选动态动画包，默认不下载；可随时补装，取消选择不会删除已有素材 |
 | `SHA256SUMS.txt` | 用于核对安装包的 SHA-256 校验值 |
 | `SHA256SUMS.txt.sig` | 维护者对校验值的 Ed25519 签名，控制台更新据此确认安装包来自本库；更早的版本没有此附件 |
 

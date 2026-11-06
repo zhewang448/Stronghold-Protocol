@@ -34,6 +34,9 @@ test('console displays signed companion launcher and pending/completed state on 
     try { await page.waitForSelector('#launcher-update-state', {timeout:10000}); }
     catch(error) { throw new Error(JSON.stringify({errors,text:await page.$eval('body',el=>el.innerText),status:await(await fetch(admin.url+'/api/update',{headers:{'x-admin-token':admin.token}})).json()}),{cause:error}); }
     assert.match(await page.$eval('#launcher-update-state',el=>el.textContent),/等待关闭启动器/);
+    assert.equal(await page.$eval('#update-dynamic', el => el.checked), false);
+    await page.click('#update-dynamic');
+    await page.waitForFunction(() => document.querySelector('#update-dynamic')?.checked && !document.querySelector('#update-dynamic')?.disabled);
     for(const [name,width,height] of [['desktop',1440,900],['phone',390,844]]){
       await page.setViewport({width,height});
       await page.$eval('#release-update',el=>el.scrollIntoView());
@@ -44,6 +47,7 @@ test('console displays signed companion launcher and pending/completed state on 
     fs.writeFileSync(updatePaths(root).status,JSON.stringify({state:'installed',tag,backup,launcher:{state:'installed',asset:release.assets[1].name}}));
     await page.reload({waitUntil:'domcontentloaded'});await page.click('[data-tab="settings"]');
     await page.waitForFunction(()=>document.querySelector('#launcher-update-state')?.textContent.includes('已更新'));
+    assert.equal(await page.$eval('#update-dynamic', el => el.checked), true, 'host download scope persists after reload');
     await page.waitForSelector('[data-update-check]:not([disabled])');
     for (let attempt=0;attempt<3;attempt++) {
       try { await page.click('[data-update-check]'); break; }

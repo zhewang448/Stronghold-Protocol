@@ -16,12 +16,14 @@ test('signed split packages reuse local assets and download only missing groups'
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   const files = { 'package.json': JSON.stringify({ version: APP_VERSION }), 'server/index.js': 'new' };
   const art = {
-    'data/assets.json': JSON.stringify({ image: '/assets/common.png' }),
+    'data/assets.json': JSON.stringify({ image: '/assets/common.png', skin: { portrait: '/assets/dynamic/skin/portrait.png', dynamic: { skel: '/assets/dynamic/skin/anim.skel', textures: ['/assets/dynamic/skin/page.png'] } } }),
     'data/local-assets.json': JSON.stringify({ scene: '/assets/local/scene.png' }),
     'data/local-fx.json': JSON.stringify({ effect: '/assets/local/fx/effect.png' }),
     'public/assets/common.png': 'common',
     'public/assets/local/scene.png': 'scene',
-    'public/assets/dynamic/portrait.png': 'dynamic',
+    'public/assets/dynamic/skin/portrait.png': 'static fallback',
+    'public/assets/dynamic/skin/anim.skel': 'skeleton',
+    'public/assets/dynamic/skin/page.png': 'dynamic texture',
     'public/assets/local/fx/effect.png': 'effect',
   };
   const full = storedZip(Object.entries({ ...files, ...art, 'MANIFEST.json': manifest(files) })
@@ -32,9 +34,9 @@ test('signed split packages reuse local assets and download only missing groups'
   const ledger = path.join(root, 'ledger.json');
   fs.writeFileSync(ledger, JSON.stringify({ files: { 'common.png': { url: source, bytes: Buffer.byteLength(art['public/assets/common.png']) } } }));
   const result = splitRelease(fullPath, tag, out, { ledgerPath: ledger });
-  assert.deepEqual(Object.keys(result.groups).sort(), ['common', 'fx', 'local']);
+  assert.deepEqual(Object.keys(result.groups).sort(), ['common', 'dynamic', 'fx', 'local']);
   const splitIndex=JSON.parse(fs.readFileSync(path.join(out,result.index),'utf8'));
-  assert.equal(splitIndex.files['public/assets/dynamic/portrait.png'].group,'local','dynamic art shares the local group to keep common below attachment limits');
+  assert.equal(splitIndex.files['public/assets/dynamic/skin/anim.skel'].group,'dynamic','animation is independently optional');
   const liteName = `Stronghold-Protocol-${tag}-lite.zip`;
   const lite = storedZip(Object.entries({ ...files, 'data/assets.json': art['data/assets.json'], 'MANIFEST.json': manifest(files) })
     .map(([rel, body]) => [`Stronghold-Protocol/${rel}`, body]));
@@ -84,6 +86,28 @@ test('signed split packages reuse local assets and download only missing groups'
   assert.equal(complete.split,true,'a signed lite+art release works without a monolithic full ZIP');
   applyReleaseStage(blank,complete.stage);
   for(const[rel,body]of Object.entries({...files,...art}))assert.equal(read(blank,rel),body,rel);
+  const withoutDynamic = path.join(root, 'without-dynamic');
+  put(withoutDynamic, 'package.json', files['package.json']); put(withoutDynamic, 'server/index.js', 'old');
+  put(withoutDynamic, 'public/assets/dynamic/old/anim.skel', 'retained old animation');
+  calls.length = 0;
+  const minimal = await downloadAndStage({ root: withoutDynamic, release: splitOnly, releases: [splitOnly], request, keys, platform: 'linux', includeDynamic: false });
+  assert.equal(minimal.includeDynamic, false);
+  assert.ok(!calls.includes(result.groups.dynamic));
+  assert.ok(!calls.includes(deltaName) && !calls.includes(fullName), 'opt-out never fetches an all-art archive');
+  applyReleaseStage(withoutDynamic, minimal.stage);
+  assert.equal(read(withoutDynamic, 'public/assets/dynamic/old/anim.skel'), 'retained old animation');
+  assert.equal(read(withoutDynamic, 'public/assets/dynamic/skin/portrait.png'), 'static fallback');
+  assert.equal(fs.existsSync(path.join(withoutDynamic, 'public/assets/dynamic/skin/anim.skel')), false);
+  calls.length = 0;
+  const supplement = await downloadAndStage({ root: withoutDynamic, release: splitOnly, releases: [splitOnly], request, keys, platform: 'linux', includeDynamic: true });
+  assert.deepEqual(supplement.groups, ['dynamic'], 'later supplementation downloads only the missing animation group');
+  applyReleaseStage(withoutDynamic, supplement.stage);
+  assert.equal(read(withoutDynamic, 'public/assets/dynamic/skin/anim.skel'), 'skeleton');
+  calls.length = 0;
+  const keep = await downloadAndStage({ root: withoutDynamic, release: splitOnly, releases: [splitOnly], request, keys, platform: 'linux', includeDynamic: false });
+  applyReleaseStage(withoutDynamic, keep.stage);
+  assert.equal(read(withoutDynamic, 'public/assets/dynamic/skin/anim.skel'), 'skeleton');
+  assert.ok(!calls.includes(result.groups.dynamic), 'opting out on an existing install preserves its animations');
   const sourceInstall = path.join(root, 'source-install');
   put(sourceInstall, 'package.json', files['package.json']);
   put(sourceInstall, 'server/index.js', 'old');

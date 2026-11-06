@@ -125,7 +125,9 @@ public partial class MainWindow : Window
         ImportHintText.Text = t("运行中实例通过本机监听端口识别，停服实例读取索引；无需遍历磁盘。发现后勾选导入。");
         ImportDiscoveredButton.Content = t("导入所选实例");
         CancelDiscoveryButton.Content = t("收起");
-        InstallHint.Text = t("选择空目录，自动下载完整游戏包和所需运行环境。已有服务可继续运行。");
+        InstallHint.Text = t("选择空目录，自动下载游戏、所选素材和所需运行环境。已有服务可继续运行。");
+        InstallDynamicCheck.Content = t("下载动态立绘（可选）");
+        InstallDynamicHint.Text = t("默认不下载，静态图片照常使用。以后可在控制台的版本更新中勾选动态立绘，修复当前版本以补装。");
         InstallFolderButton.Content = t("选择位置");
         InstallButton.Content = t("下载并安装");
         CancelInstallButton.Content = t("取消安装");
@@ -257,6 +259,7 @@ public partial class MainWindow : Window
         DiscoverInstancesButton.IsEnabled = !_operating;
         InstallButton.IsEnabled = !_operating;
         InstallPathBox.IsEnabled = !_operating;
+        InstallDynamicCheck.IsEnabled = !_operating;
         InstallFolderButton.IsEnabled = !_operating;
         StopButton.IsEnabled = !_operating && _service?.CanShutdown == true;
         RestartButton.IsEnabled = !_operating && _service?.CanRestart == true;

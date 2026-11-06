@@ -23,7 +23,7 @@ export const CLIENT_PREFERENCE_FIELDS = Object.freeze([
     ['bondTimers', '盟约效果剩余时间', false], ['combatMetrics', '作战统计', true], ['chatBubbles', '显示消息提示气泡', true],
     ['deploymentZoom', '部署时镜头缩放', false], ['deploySnap', '部署时按格子吸附', true], ['showFps', '显示帧率', true], ['preload', '预载资源', false],
     ['officialBattleHud', '还原战场状态条', true], ['shopPortraitFocus', '突出商店人像', false],
-    ['preloadOptional', '预载可选资源', false], ['otherSkins', '显示其他玩家的皮肤', true],
+    ['preloadOptional', '预载可选资源', false], ['preloadDynamic', '下载动态立绘', false], ['otherSkins', '显示其他玩家的皮肤', true],
     ['upstreamReleaseNotes', '显示上游更新内容', true], ['extensionReleaseNotes', '显示扩展更新内容', true],
   ].map(([key, label, value]) => bool('settings.' + key, label, value, settings)),
   choice('settings.fpsLimit', '帧率上限', 0, [0, 30, 60, 120], settings),

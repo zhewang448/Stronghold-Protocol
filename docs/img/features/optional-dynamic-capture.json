@@ -1,0 +1,83 @@
+{
+  "checked": false,
+  "groups": [
+    {
+      "id": "map",
+      "totalBytes": 20343468,
+      "total": 95
+    },
+    {
+      "id": "character",
+      "totalBytes": 170198448,
+      "total": 1254
+    },
+    {
+      "id": "spine",
+      "totalBytes": 274273161,
+      "total": 2356
+    },
+    {
+      "id": "ui",
+      "totalBytes": 357293505,
+      "total": 4619
+    },
+    {
+      "id": "skins",
+      "totalBytes": 890367635,
+      "total": 1773
+    },
+    {
+      "id": "dynamic",
+      "totalBytes": 1396997673,
+      "total": 772
+    },
+    {
+      "id": "voice_cn",
+      "totalBytes": 76962148,
+      "total": 3023
+    },
+    {
+      "id": "voice_jp",
+      "totalBytes": 101464780,
+      "total": 3092
+    },
+    {
+      "id": "voice_en",
+      "totalBytes": 78446973,
+      "total": 2734
+    },
+    {
+      "id": "voice_kr",
+      "totalBytes": 91845489,
+      "total": 2827
+    },
+    {
+      "id": "fx",
+      "totalBytes": 377225795,
+      "total": 20949
+    },
+    {
+      "id": "voice",
+      "totalBytes": 20677819,
+      "total": 686
+    },
+    {
+      "id": "sfx",
+      "totalBytes": 15452392,
+      "total": 1070
+    },
+    {
+      "id": "music",
+      "totalBytes": 28198895,
+      "total": 19
+    }
+  ],
+  "tag": "v0.3.3-extended.12",
+  "viewport": [
+    1440,
+    900
+  ],
+  "source": "Real local server resource inventory; no downloads started",
+  "image": "optional-dynamic-download.webp",
+  "sha256": "d94f71ae2c18e53c72ccd3756afddf57cfd990afcb537800c6ba6726c0388a9d"
+}

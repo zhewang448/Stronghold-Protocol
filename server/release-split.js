@@ -3,7 +3,8 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { readZip, zipUnpackedSize } from './release-zip.js';
 import { isSetupArt, parseManifest, pathProblem, removalProblem, digestFile } from './update.js';
-import { ART_STAGE_FILE, releaseTarget, verifyStagedArt } from './release-art.js';
+import { ART_STAGE_FILE, releaseTarget, readStagedArt, verifyStagedArt } from './release-art.js';
+import { isOptionalDynamicArt } from '../shared/dynamicDownload.js';
 
 export function parseSplitIndex(text, tag) {
   const value = JSON.parse(text);
@@ -13,12 +14,14 @@ export function parseSplitIndex(text, tag) {
   if (/^v(\d+\.\d+\.\d+)(?:-extended\.\d+)?$/.exec(tag)?.[1] !== manifest.app) throw new Error('素材索引版本不符');
   const groups = new Map(), files = new Map(), seen = new Set();
   for (const [group, name] of Object.entries(value.groups)) {
-    if (!['common', 'local', 'fx'].includes(group) || name !== `Stronghold-Protocol-${tag}-${group}-art.zip`) throw new Error('素材分包名称无效');
+    if (!['common', 'local', 'fx', 'dynamic'].includes(group) || name !== `Stronghold-Protocol-${tag}-${group}-art.zip`) throw new Error('素材分包名称无效');
     groups.set(group, name);
   }
   for (const [rel, expected] of manifest.files) {
     const group = value.files[rel].group, key = rel.toLowerCase();
     if (!isSetupArt(rel) || removalProblem(rel) || seen.has(key) || !groups.has(group)) throw new Error(`素材索引路径无效：${rel}`);
+    if (group === 'dynamic' && !isOptionalDynamicArt(rel)) throw new Error(`可选动态分包包含必备素材：${rel}`);
+    if (groups.has('dynamic') && isOptionalDynamicArt(rel) && group !== 'dynamic') throw new Error(`动态素材分组错误：${rel}`);
     seen.add(key);
     const source = value.files[rel].source;
     if (source !== undefined) {
@@ -33,9 +36,10 @@ export function parseSplitIndex(text, tag) {
   return { app: manifest.app, tag, groups, files };
 }
 
-export function neededAssetGroups(root, index, stage = null) {
+export function neededAssetGroups(root, index, stage = null, { includeDynamic = true } = {}) {
   const needed = new Set(), missing = [], checkedParents = new Set(), stagedParents = new Set();
   for (const [rel, expected] of index.files) {
+    if (!includeDynamic && expected.group === 'dynamic') continue;
     const staged = stage ? releaseTarget(stage, rel, stagedParents) : null;
     const got = staged && fs.existsSync(staged) ? digestFile(staged) : digestFile(releaseTarget(root, rel, checkedParents));
     if (!got || got.size !== expected.size || got.sha256 !== expected.sha256) { needed.add(expected.group); missing.push(rel); }
@@ -62,8 +66,10 @@ export function stageAssetGroup(zip, root, stage, index, group) {
   for (const [rel, expected] of index.files) if (expected.group === group && !seen.has(rel.toLowerCase())) throw new Error(`素材分包缺少文件：${rel}`);
 }
 
-export function finishSplitStage(root, stage, index) {
-  const files = Object.fromEntries([...index.files].map(([rel, { size, sha256 }]) => [rel, { size, sha256 }]));
-  fs.writeFileSync(path.join(stage, ART_STAGE_FILE), JSON.stringify({ format: 1, app: index.app, files }));
-  verifyStagedArt(root, stage, new Map(Object.entries(files)));
+export function finishSplitStage(root, stage, index, { includeDynamic = true } = {}) {
+  const files = Object.fromEntries([...index.files].filter(([, file]) => includeDynamic || file.group !== 'dynamic')
+    .map(([rel, { size, sha256 }]) => [rel, { size, sha256 }]));
+  fs.writeFileSync(path.join(stage, ART_STAGE_FILE), JSON.stringify({ format: 1, app: index.app, files,
+    ...(!includeDynamic ? { optionalDynamic: true } : {}) }));
+  verifyStagedArt(root, stage, readStagedArt(stage, index.app));
 }

@@ -1397,6 +1397,8 @@ function drawReleaseUpdate() {
     ${d.warning ? `<p class="note" role="status">${esc(d.warning)}</p>` : ''}
     ${d.recovery ? `<p class="note">停服后，在安装目录运行：<code>${esc(d.recovery)}</code>。程序会核对备份和当前文件；状态不匹配时会拒绝覆盖。</p>` : ''}
     ${d.state === 'recovery-required' ? '<p class="note">先关闭启动窗口、服务及外部守护器，再离线恢复。恢复完成后重新启动服务器并刷新本页。恢复不会续接已经被跨版本更新结束的对局。</p>' : ''}
+    <label class="meta"><input type="checkbox" id="update-dynamic" ${d.downloadOptions?.includeDynamic ? 'checked' : ''} ${busy ? 'disabled' : ''}> 下载动态立绘${selected?.dynamicSize ? `（完整包 ${(selected.dynamicSize / 1048576).toFixed(0)} MB，本机有效文件会复用）` : ''}</label>
+    <p class="meta">新安装默认不下载；取消勾选保留已有动态素材，静态图片照常使用。之后选择当前版本，勾选此项并点击“修复素材并重启”即可补装。旧版没有独立动态包时需勾选此项。</p>
     <div class="row"><button data-update-check ${busy || d.state === 'reconnecting' || d.state === 'active-matches' ? 'disabled' : ''}>检查更新</button>
       ${d.hasMore ? `<button data-update-more ${busy ? 'disabled' : ''}>加载更早版本</button>` : ''}
       <button class="primary" data-update-install ${busy || d.state === 'reconnecting' || !d.canInstall || !selected?.installable ? 'disabled' : ''}>${d.state === 'active-matches' ? '继续安装并重启' : selected?.relation === 'current' ? '修复素材并重启' : selected?.relation === 'old' ? '回退并重启' : '下载并安装'}</button></div>
@@ -1413,6 +1415,7 @@ function drawReleaseUpdate() {
 }
 
 document.addEventListener('change', (e) => {
+  if (e.target.id === 'update-dynamic') { void saveDynamicDownload(e.target.checked); return; }
   if (e.target.id !== 'release-version-select') return;
   selectedRelease = e.target.value;
   releaseSelectionTouched = true;
@@ -1425,6 +1428,16 @@ document.addEventListener('input', (e) => {
   networkFeedback = '有未保存的修改';
   $('#update-network-feedback').textContent = networkFeedback;
 });
+async function saveDynamicDownload(includeDynamic) {
+  if (updateRequest) return;
+  updateRequest = true; drawReleaseUpdate();
+  try {
+    const result = await api('/api/update', { action: 'downloads', includeDynamic });
+    if (result.saved) releaseUpdate = result;
+    else say(result.error || '保存失败，请重试', true);
+  } catch { say('连接失败，请重试', true); }
+  finally { updateRequest = false; drawReleaseUpdate(); }
+}
 async function saveUpdateNetwork() {
   if (updateRequest) return;
   const network = { proxy: $('#update-proxy').value, mirror: $('#update-mirror').value };
@@ -1505,7 +1518,7 @@ async function updateRelease(action, force = false, allowDowngrade = false) {
   if (action === 'check' || action === 'more') releaseUpdate = { ...releaseUpdate, state: 'checking', error: undefined };
   drawReleaseUpdate();
   try {
-    releaseUpdate = await api('/api/update', { action, tag: selectedRelease, force, allowDowngrade,
+    releaseUpdate = await api('/api/update', { action, tag: selectedRelease, force, allowDowngrade, includeDynamic: releaseUpdate.downloadOptions?.includeDynamic,
       repairAssets: action === 'install' && releaseUpdate.versions?.find((r) => r.tag === selectedRelease)?.relation === 'current' });
     if (releaseUpdate.state === 'active-matches' && action === 'install' && !force) {
       updateRequest = false;

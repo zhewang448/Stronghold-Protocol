@@ -56,6 +56,7 @@ let activeRun = null;
 let transferPromise = null;
 let archiveController = null;
 let optional = false;
+let dynamic = false;
 let voiceLang = 'cn';
 let syncRevision = 0;
 
@@ -102,10 +103,10 @@ const counters = (s) => ({
   // migration (kept bytes) vs network (fetched bytes): 0 unless a run is/was in flight
   adopted: s.adopted ?? 0,
   downloaded: s.downloaded ?? 0,
-  ...resourceSelection(s, optional, voiceLang),
+  ...resourceSelection(s, optional, voiceLang, dynamic),
 });
 
-const selectionComplete = (s) => resourceSelection(s, optional, voiceLang).selectionComplete;
+const selectionComplete = (s) => resourceSelection(s, optional, voiceLang, dynamic).selectionComplete;
 
 /** Why this browser cannot keep the resources (empty ⇒ it can). */
 export function unsupportedReason() {
@@ -125,7 +126,8 @@ export function resourceContext() {
     if (reason) return { unsupported: reason }; // no point in asking for a list this browser cannot store
     let res;
     try {
-      const signal = typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(10000) : undefined;
+      // A cold host hashes several GiB of installed art before returning its first inventory.
+      const signal = typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(120000) : undefined;
       // Revalidate the HTTP cache on every page load. On a wire-level 304 the browser supplies the cached JSON body.
       res = await fetch(MANIFEST_URL, { cache: 'no-cache', signal });
     } catch (err) {
@@ -174,16 +176,17 @@ async function dropWorker() {
  * Turn the preload on or off (idempotent: the settings store fires on every volume change).
  * @param {boolean} enabled
  */
-export async function syncResources(enabled, includeOptional = optional, preloadVoiceLang = voiceLang) {
+export async function syncResources(enabled, includeOptional = optional, preloadVoiceLang = voiceLang, includeDynamic = dynamic) {
   enabled = !!enabled;
   const nextVoiceLang = normalizePreloadVoiceLang(preloadVoiceLang);
-  const changed = optional !== !!includeOptional || JSON.stringify(voiceLang) !== JSON.stringify(nextVoiceLang);
+  const changed = dynamic !== !!includeDynamic || optional !== !!includeOptional || JSON.stringify(voiceLang) !== JSON.stringify(nextVoiceLang);
   if (enabled === current && !changed) { set({ enabled }); return; }
   const revision = ++syncRevision;
   current = enabled;
   optional = !!includeOptional;
+  dynamic = !!includeDynamic;
   voiceLang = nextVoiceLang;
-  set({ enabled, optional, voiceLang, ...resourceSelection(state, optional, voiceLang), error: false, message: '' });
+  set({ enabled, optional, dynamic, voiceLang, ...resourceSelection(state, optional, voiceLang, dynamic), error: false, message: '' });
   if (!enabled) {
     controller?.abort();
     archiveController?.abort();
@@ -266,7 +269,7 @@ async function startDownload(signal) {
     ...before.checkTimings, durationMs: performance.now() - checkStart, cached: before.count, files: before.total });
   if (!current || signal.aborted) { set({ phase: 'paused' }); return; }
   const ready = selectionComplete(before);
-  set({ ...counters(before), phase: ready ? 'ready' : 'download', message: ready ? optional ? t('所选资源已齐全。') : t('必备资源已预载完成；可选资源按需加载。') : '' });
+  set({ ...counters(before), phase: ready ? 'ready' : 'download', message: ready ? optional || dynamic ? t('所选资源已齐全。') : t('必备资源已预载完成；可选资源按需加载。') : '' });
   if (ready) { if (before.complete) await withDownloadLock(() => store.prune()); return; }
   const onProgress = (p) => {
     // "整理" instead of "下载" when the files came out of an older cache: nothing is being fetched (store.js 的迁移).
@@ -281,8 +284,8 @@ async function startDownload(signal) {
       await runPreload(['/vendor/pixi.min.js', '/vendor/pixi-spine.js', '/vendor/three.module.js', '/vendor/three.core.js'], { signal });
       await preloadTransportPacks(store, ctx.packs, signal, onProgress);
       await store.download({ tiers: [TIER_ESSENTIAL], signal, onProgress });
-      if (optional) await store.download({ tiers: [TIER_REST], signal, onProgress,
-        includeFile: (file) => selectedResourceGroup(resourceGroup(file), true, voiceLang) });
+      await store.download({ tiers: [TIER_REST], signal, onProgress,
+        includeFile: (file) => selectedResourceGroup(resourceGroup(file), optional, voiceLang, dynamic) });
       return { busy: false };
     });
     if (outcome.busy) { await watchOtherTab(store); return; }
@@ -291,7 +294,7 @@ async function startDownload(signal) {
       ...counters(after),
       phase: 'ready',
       error: false,
-      message: !optional && selectionComplete(after) ? t('必备资源已预载完成；可选资源按需加载。') : after.complete
+      message: !optional && !dynamic && selectionComplete(after) ? t('必备资源已预载完成；可选资源按需加载。') : after.complete
         ? t('资源已全部预载完成（{0}）。', { 0: formatBytes(after.bytes) })
         : selectionComplete(after) ? t('所选资源已齐全。') : t('已保存 {count}/{total} 个文件；未完成的会在下次开启时重试。', { count: after.count, total: after.total }),
     });
@@ -318,9 +321,14 @@ async function preloadTransportPacks(store, packs, signal, onProgress) {
   const status = await store.status();
   for (const pack of packs) {
     checkAbort(signal);
+    // Never fetch a mixed ZIP containing deselected art, even when most entries are selected.
+    if (pack.files.some(row => {
+      const file = current.get(resourcePath(row.url));
+      return !file || !selectedResourceGroup(resourceGroup(file), optional, voiceLang, dynamic);
+    })) continue;
     const candidates = pack.files.map((row) => ({ row, file: current.get(resourcePath(row.url)) }))
       .filter(({ row, file }) => file && row.hash === file.hash && (file.size == null || row.size === file.size)
-        && selectedResourceGroup(resourceGroup(file), optional, voiceLang) && !status.present.has(store.keyOf(file.url)));
+        && selectedResourceGroup(resourceGroup(file), optional, voiceLang, dynamic) && !status.present.has(store.keyOf(file.url)));
     // Small updates stay incremental instead of downloading a mostly cached ZIP.
     if (!candidates.length || candidates.length < pack.files.length / 2) continue;
     try {
@@ -416,7 +424,7 @@ function transferArchive(kind, file) {
     if (outcome.busy) throw new Error('另一个标签页正在处理资源，请暂停后重试');
     checkAbort(signal);
     const status = await ctx.store.status();
-    const missing = resourceSelection(status, optional, voiceLang).selectedMissing;
+    const missing = resourceSelection(status, optional, voiceLang, dynamic).selectedMissing;
     set({ ...counters(status), failed: 0, phase: selectionComplete(status) ? 'ready' : 'paused',
       message: kind === 'export'
         ? t('已导出 {count} 个资源文件。', { count: outcome.count })
@@ -472,7 +480,7 @@ export async function clearResources() {
     phase: current ? 'paused' : 'off',
     message: t('已清理预载资源缓存。'),
     selectionComplete: false,
-    ...resourceSelection({ groups: state.groups.map((g) => ({ ...g, present: 0, bytes: 0 })) }, optional, voiceLang),
+    ...resourceSelection({ groups: state.groups.map((g) => ({ ...g, present: 0, bytes: 0 })) }, optional, voiceLang, dynamic),
   });
 }
 

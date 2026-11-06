@@ -49,12 +49,14 @@ static class LauncherSplitInstallChecks
             {
                 ["data/assets.json"] = ("common", Encoding.UTF8.GetBytes("{\"image\":\"/assets/common.png\"}")),
                 ["public/assets/common.png"] = ("common", Encoding.UTF8.GetBytes("common")),
+                ["public/assets/dynamic/skin/portrait.png"] = ("local", Encoding.UTF8.GetBytes("static")),
+                ["public/assets/dynamic/skin/anim.skel"] = ("dynamic", Encoding.UTF8.GetBytes("animation")),
                 ["data/local-assets.json"] = ("local", Encoding.UTF8.GetBytes("{\"scene\":\"/assets/local/scene.png\"}")),
                 ["public/assets/local/scene.png"] = ("local", Encoding.UTF8.GetBytes("scene")),
                 ["data/local-fx.json"] = ("fx", Encoding.UTF8.GetBytes("{\"effect\":\"/assets/local/fx/effect.png\"}")),
                 ["public/assets/local/fx/effect.png"] = ("fx", Encoding.UTF8.GetBytes("effect"))
             };
-            var names = new[] { "common", "local", "fx" }.ToDictionary(group => group,
+            var names = new[] { "common", "local", "fx", "dynamic" }.ToDictionary(group => group,
                 group => $"Stronghold-Protocol-{tag}-{group}-art.zip");
             var liteName = $"Stronghold-Protocol-{tag}-lite.zip";
             var fullName = $"Stronghold-Protocol-{tag}-assets.zip";
@@ -97,7 +99,7 @@ static class LauncherSplitInstallChecks
             using var client = new HttpClient(handler);
             var installer = new BootstrapInstaller(client, [publicKey]);
             var target = Path.Combine(directory, "split");
-            await installer.InstallAsync(target);
+            await installer.InstallAsync(target, includeDynamic: true);
             Check(InstallationLocator.IsProjectRoot(target) && art.All(file => File.ReadAllBytes(Path.Combine(target, file.Key)).SequenceEqual(file.Value.Bytes)),
                 "signed lite and asset groups produce a complete new installation");
             Check(handler.Requests.Contains(prefix + liteName) && handler.Requests.Contains(source)
@@ -108,7 +110,7 @@ static class LauncherSplitInstallChecks
             handler.Requests.Clear();
             routes[source] = Encoding.UTF8.GetBytes("broken");
             var sourceFallback = Path.Combine(directory, "source-fallback");
-            await installer.InstallAsync(sourceFallback);
+            await installer.InstallAsync(sourceFallback, includeDynamic: true);
             Check(handler.Requests.Contains(prefix + names["common"]) && !handler.Requests.Contains(prefix + fullName)
                 && File.ReadAllText(Path.Combine(sourceFallback, "public/assets/common.png")) == "common",
                 "mismatched public asset falls back to the signed asset group");
@@ -116,7 +118,7 @@ static class LauncherSplitInstallChecks
 
             handler.Requests.Clear();
             SetListing(1);
-            await installer.InstallAsync(Path.Combine(directory, "full"));
+            await installer.InstallAsync(Path.Combine(directory, "full"), includeDynamic: true);
             Check(handler.Requests.Contains(prefix + fullName) && !handler.Requests.Contains(prefix + liteName),
                 "smaller full archive is selected without downloading split packages");
 
@@ -124,14 +126,14 @@ static class LauncherSplitInstallChecks
             SetListing(1000000);
             routes[prefix + names["fx"]] = [1, 2, 3];
             var fallback = Path.Combine(directory, "fallback");
-            await installer.InstallAsync(fallback);
+            await installer.InstallAsync(fallback, includeDynamic: true);
             Check(handler.Requests.Contains(prefix + fullName) && File.ReadAllText(Path.Combine(fallback, "public/assets/local/fx/effect.png")) == "effect",
                 "corrupt split archive falls back to the verified full archive");
             routes[prefix + names["fx"]] = packages[names["fx"]];
 
             handler.Requests.Clear();
             routes[prefix + indexName] = Encoding.UTF8.GetBytes("{}");
-            await installer.InstallAsync(Path.Combine(directory, "index-fallback"));
+            await installer.InstallAsync(Path.Combine(directory, "index-fallback"), includeDynamic: true);
             Check(handler.Requests.Contains(prefix + fullName) && !handler.Requests.Contains(prefix + liteName),
                 "tampered asset index falls back before downloading lite");
             routes[prefix + indexName] = packages[indexName];
@@ -139,7 +141,7 @@ static class LauncherSplitInstallChecks
             handler.Requests.Clear();
             routes[prefix + "SHA256SUMS.txt.sig"] = Encoding.UTF8.GetBytes(new string('A', 86) + "==");
             var rejected = Path.Combine(directory, "bad-signature");
-            try { await installer.InstallAsync(rejected); throw new Exception("Expected signature failure"); }
+            try { await installer.InstallAsync(rejected, includeDynamic: true); throw new Exception("Expected signature failure"); }
             catch (IOException) { }
             Check(!Directory.Exists(rejected) && !handler.Requests.Contains(prefix + fullName), "invalid release signature installs nothing");
             routes[prefix + "SHA256SUMS.txt.sig"] = signature;
@@ -147,8 +149,15 @@ static class LauncherSplitInstallChecks
             handler.Requests.Clear();
             SetListing(0, false);
             var splitOnly = Path.Combine(directory, "split-only");
-            await installer.InstallAsync(splitOnly);
+            await installer.InstallAsync(splitOnly, includeDynamic: true);
             Check(InstallationLocator.IsProjectRoot(splitOnly), "signed split-only releases can install without a full archive");
+            handler.Requests.Clear();
+            var noDynamic = Path.Combine(directory, "no-dynamic");
+            await installer.InstallAsync(noDynamic);
+            Check(!handler.Requests.Contains(prefix + names["dynamic"]) && !handler.Requests.Contains(prefix + fullName),
+                "default installation never downloads animation or full archive");
+            Check(File.ReadAllText(Path.Combine(noDynamic, "public/assets/dynamic/skin/portrait.png")) == "static"
+                && !File.Exists(Path.Combine(noDynamic, "public/assets/dynamic/skin/anim.skel")), "static fallback remains installed without animation");
             Console.WriteLine($"RESULT split_install=true checks={checks}");
         }
         finally { Directory.Delete(directory, true); }

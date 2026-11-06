@@ -2,8 +2,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { isSetupArt, removalProblem, parseManifest, listedArtFiles, digestFile } from './update.js';
+import { isOptionalDynamicArt } from '../shared/dynamicDownload.js';
 
 export const ART_STAGE_FILE = 'RELEASE-ART.json';
+const optionalDynamicInventories = new WeakSet();
 
 /** Reject linked destinations before reading, backing up or replacing any installation file. */
 export function releaseTarget(root, rel, checkedParents = null) {
@@ -25,7 +27,11 @@ export function releaseTarget(root, rel, checkedParents = null) {
 export function readStagedArt(stage, app) {
   const file = path.join(stage, ART_STAGE_FILE);
   if (!fs.existsSync(file)) return new Map(); // pending stages created by an older updater
-  const manifest = parseManifest(fs.readFileSync(file, 'utf8'));
+  const text = fs.readFileSync(file, 'utf8');
+  const raw = JSON.parse(text);
+  if (raw.optionalDynamic !== undefined && typeof raw.optionalDynamic !== 'boolean') throw new Error('动态素材选项无效');
+  const manifest = parseManifest(text);
+  if (raw.optionalDynamic === true) optionalDynamicInventories.add(manifest.files);
   if (manifest.app !== app) throw new Error('素材清单与程序版本不一致');
   for (const rel of manifest.files.keys()) {
     if (!isSetupArt(rel) || removalProblem(rel)) throw new Error(`素材清单包含非法路径：${rel}`);
@@ -58,6 +64,7 @@ export function verifyStagedArt(root, stage, files, { installed = false, previou
     if (!files.has(rel)) continue;
     const manifest = JSON.parse(fs.readFileSync(source(rel), 'utf8'));
     for (const ref of listedArtFiles(manifest)) {
+      if (optionalDynamicInventories.has(files) && isOptionalDynamicArt(ref)) continue;
       if (!files.has(ref)) throw new Error(`完整包素材缺失：${ref}（${rel}）`);
     }
   }

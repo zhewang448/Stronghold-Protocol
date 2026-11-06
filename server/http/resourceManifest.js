@@ -1,3 +1,4 @@
+import { isOptionalDynamicArt } from '../../shared/dynamicDownload.js';
 import { routeResourcePacks } from '../../shared/resourcePackRoutes.js';
 // Machine-local preload metadata. It inventories installed bytes; no gameplay/generated game table is modified.
 import { opendir, readFile } from 'node:fs/promises';
@@ -24,7 +25,7 @@ export async function buildResourceManifest({ publicDir, dataDir, cdnBase = '', 
     while (next < paths.length) {
       const item = paths[next++], bytes = await readFile(item.file);
       const ext = path.extname(item.file).toLowerCase();
-      files.push({ url: cdnBase ? cdnBase + item.url : item.url, tier: AUDIO_EXTS.includes(ext) || item.url.startsWith('/assets/local/fx/') || item.url.startsWith('/assets/dynamic/') ? 2 : 1,
+      files.push({ url: cdnBase ? cdnBase + item.url : item.url, tier: AUDIO_EXTS.includes(ext) || item.url.startsWith('/assets/local/fx/') || isOptionalDynamicArt('public' + decodeURI(item.url)) ? 2 : 1,
         hash: createHash('sha1').update(bytes).digest('hex').slice(0,12),
         assetHash: createHash('sha256').update(bytes).digest('hex').slice(0,16), size: bytes.length });
     }

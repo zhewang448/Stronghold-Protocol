@@ -1,3 +1,4 @@
+import { isOptionalDynamicArt } from '../../../shared/dynamicDownload.js';
 import { dataUrl } from '../../../shared/cdn.js';
 import { DATA_CDN } from '../asset-cdn.js';
 import { isResourcePackUrl } from '../../../shared/resourcePackRoutes.js';
@@ -51,7 +52,10 @@ export const RESOURCE_GROUPS = Object.freeze({
 
 export function resourceGroup(file) {
   const path = new URL(file.url, 'https://resources.invalid').pathname;
-  if (/\/assets\/dynamic\//.test(path)) return 'dynamic';
+  if (/\/assets\/(?:~[^/]+\/)?dynamic\//.test(path)) {
+    const plain = path.replace(/\/assets\/~[^/]+\//, '/assets/');
+    return isOptionalDynamicArt('public' + plain) ? 'dynamic' : 'skins';
+  }
   if (/\/(?:avatar\/skin|char\/skin_avatar)\//.test(path) || /\/spine\/op\/[^/]+\/[^/]+\/(?:front|back)\//.test(path)) return 'skins';
   if (file.tier === TIER_REST) {
     if (/\/voice\/cn\//.test(path)) return 'voice_cn';
@@ -85,7 +89,8 @@ export function normalizePreloadVoiceLang(value, fallback = 'cn') {
   return PRELOAD_VOICE_LANGS.includes(fallback) ? [fallback] : ['cn'];
 }
 
-export function selectedResourceGroup(id, includeOptional, voiceLang = 'cn') {
+export function selectedResourceGroup(id, includeOptional, voiceLang = 'cn', includeDynamic = false) {
+  if (id === 'dynamic') return includeDynamic;
   const group = RESOURCE_GROUPS[id];
   if (!group) return false;
   if (group.tier === TIER_ESSENTIAL) return true;
@@ -100,9 +105,9 @@ export function selectedResourceGroup(id, includeOptional, voiceLang = 'cn') {
 }
 
 /** UI/download completion uses the short, incrementally maintained category list, not manifest rescans. */
-export function resourceSelection(status, includeOptional, voiceLang) {
+export function resourceSelection(status, includeOptional, voiceLang, includeDynamic = false) {
   const groups = (status.groups || []).map((group) => ({ ...group,
-    selected: selectedResourceGroup(group.id, includeOptional, voiceLang) }));
+    selected: selectedResourceGroup(group.id, includeOptional, voiceLang, includeDynamic) }));
   const chosen = groups.filter((g) => g.selected);
   const selectedWanted = chosen.reduce((n, g) => n + g.wanted, 0);
   const selectedDone = chosen.reduce((n, g) => n + g.present, 0);
