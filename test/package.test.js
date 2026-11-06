@@ -253,6 +253,22 @@ test('dry-run on a temporary checkout: the full and the lite file lists, the sum
   }
 });
 
+test('full packages include known installed cursor images; lite packages and unrelated cursor files stay excluded', () => {
+  const {dir, put}=fakeCheckout();
+  try {
+    const prefix='public/assets/cursor/arknights-e1249037/';
+    put(prefix+'96/normal.png',PNG);put(prefix+'32/grab.png',PNG);put(prefix+'normal.png',PNG);
+    put(prefix+'provenance.json','{"source":"pinned"}');put(prefix+'private-note.txt','not a cursor');
+    const full=plan(dir,{allowDirty:true,env:ENV,scan:false,measure:false});
+    assert.deepEqual(full.art.filter(file=>file.startsWith(prefix)),[
+      prefix+'32/grab.png',prefix+'96/normal.png',prefix+'normal.png',prefix+'provenance.json',
+    ]);
+    assert.equal(plan(dir,{lite:true,allowDirty:true,env:ENV,scan:false,measure:false}).art.length,0);
+    const shipped=selectTracked(['tools/install-cursors.mjs','docs/CURSOR.md','docs/FORK-FEATURES.md']).keep;
+    assert.deepEqual(shipped,['docs/CURSOR.md','docs/FORK-FEATURES.md','tools/install-cursors.mjs']);
+  } finally { fs.rmSync(dir,{recursive:true,force:true}); }
+});
+
 test('scans and guards: home paths and the account name in shipped files (art too), missing art, a stray import, uncommitted files', () => {
   const { dir, put, rm } = fakeCheckout();
   const check = (opts = {}) => plan(dir, { allowDirty: true, env: ENV, ...opts }).problems;

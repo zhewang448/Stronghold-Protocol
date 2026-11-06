@@ -1,6 +1,6 @@
 # 卫戍协议：盟约 · Stronghold Protocol: Alliance
 
-![扩展版本](https://img.shields.io/badge/version-0.3.3--extended.10-blue)
+![扩展版本](https://img.shields.io/badge/version-0.3.3--extended.11-blue)
 ![上游基础版本](https://img.shields.io/badge/version-0.3.3-2ea44f)
 ![许可](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
 
@@ -12,7 +12,7 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 [下载正式版](https://github.com/zhewang448/Stronghold-Protocol/releases/latest) · [开始运行](#开始运行) · [特色图鉴](docs/FORK-FEATURES.md) · [本库特色详解](#本库特色详解) · [和朋友一起玩](#和朋友一起玩) · [更新记录](docs/LOCAL-CHANGELOG.md) · [反馈问题](https://github.com/zhewang448/Stronghold-Protocol/issues)
 
-> 当前版本为 **`v0.3.3-extended.10`**（正式发布标签），基于上游 0.3.3。**2026-11-06 本地 main 还包含尚未发布的改动**：四版本开局每阶四候选、可带 0–2 名；还原战场状态条、策略小地图、等待室名片底图、预计叠层、动态外观修复和默认方舟鼠标。下方图鉴展示当前源码；下载包是否包含这些功能，以 Releases 的发布说明为准，详见[扩展更新记录](docs/LOCAL-CHANGELOG.md)。
+> 当前版本为 **`v0.3.3-extended.11`**（本次大更新），基于上游 0.3.3。**2026-11-06 大更新**：四版本开局每阶四候选、可带 0–2 名；还原战场状态条、策略小地图、等待室名片底图、预计叠层、动态外观修复和默认方舟鼠标。本次还包含动态立绘与三位新增自选、服主客户端偏好及控制台可选登录；详细变化与升级方式见[发布说明](docs/RELEASE-V0.3.3-EXTENDED.11.md)。如果喜欢这次更新，欢迎点一下右上角 Star ⭐。
 >
 > 非官方、非商业同人项目，与《明日方舟》官方无隶属或授权关系。游戏素材与数据的权利归原权利人；代码、素材及截图的许可边界见 [NOTICE.md](NOTICE.md)。
 
