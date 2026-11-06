@@ -1,10 +1,11 @@
 {
   "schema": 1,
-  "capturedAt": "2026-11-05T18:47:41.826169+00:00",
-  "codeCommit": "bd6bbd6f87aabec252a78097f24f5b93c32d7ac1",
+  "capturedAt": "2026-11-06T05:15:21.846786+00:00",
+  "codeCommit": "f215f1d5c1e055cf26ebc63b568881e47f5b82c2",
+  "workingTreeChanges": true,
   "browser": "Google Chrome (puppeteer-core, headless)",
   "freshBrowserProfiles": true,
-  "runtimeCodeChanged": false,
+  "runtimeCodeChanged": true,
   "imageRights": "见根目录 NOTICE.md 第 2 节；游戏截图不属于 GPL 美术授权",
   "notes": [
     "全局图片仅作界面文档展示，未提交独立官方美术素材",
@@ -14,8 +15,8 @@
   "files": [
     {
       "file": "diy-four-choose-two.webp",
-      "source": "diy-choice.png",
-      "sourceSha256": "31c5feaadfe9caaf17d4e504a080dca92a994b6ef99f94444c521e9f45246a57",
+      "source": "editor-1440.png",
+      "sourceSha256": "6b9781d8d9b2b38910774f82c44f09d0fc81f6e3788186638e874b9db33c3f67",
       "viewport": [
         1440,
         900
@@ -25,9 +26,13 @@
         1440,
         900
       ],
-      "bytes": 225662,
-      "sha256": "4f76569c071241b52aba7927ce85130f922c0a1a6318c6aaa91b9a36e06d641e",
-      "description": "真实开局简报；正常房间协议配置每阶四名候选"
+      "bytes": 60086,
+      "sha256": "8368f5f71a64a5221e89db593fbfd067ec5c2be8ba11850b9d070b7f96d7e469",
+      "description": "当前实际开局简报选择弹窗；每阶 4 候选，允许 0–2 名并需应用",
+      "captureCode": {
+        "base": "f215f1d5c1e055cf26ebc63b568881e47f5b82c2",
+        "workingTreeChanges": true
+      }
     },
     {
       "file": "namecard-backgrounds.webp",
@@ -49,7 +54,10 @@
       ],
       "bytes": 15938,
       "sha256": "4987b84a0f531f505b6b4c5192ef7d00fa11f88e1faea5d8067fa4de08c7d5db",
-      "description": "真实等待室名片底图弹窗；默认跟随炎盟约"
+      "description": "真实等待室名片底图弹窗；默认跟随炎盟约",
+      "captureCode": {
+        "base": "bd6bbd6f87aabec252a78097f24f5b93c32d7ac1"
+      }
     },
     {
       "file": "namecard-room.webp",
@@ -71,7 +79,10 @@
       ],
       "bytes": 30184,
       "sha256": "91f261d8f0609ed3cc76e959ef7efe99e5220a4740e07ab294f8b66fff76a3e6",
-      "description": "真实等待室席位；人物立绘与姓名牌底图独立"
+      "description": "真实等待室席位；人物立绘与姓名牌底图独立",
+      "captureCode": {
+        "base": "bd6bbd6f87aabec252a78097f24f5b93c32d7ac1"
+      }
     },
     {
       "file": "battle-hud-original.webp",
@@ -93,7 +104,10 @@
       ],
       "bytes": 25938,
       "sha256": "4039ab2f54324174773ad64694a952a521968dec4406dc7b3b5d340db86dd8e1",
-      "description": "真实战场渲染器、固定演示快照；总开关关闭"
+      "description": "真实战场渲染器、固定演示快照；总开关关闭",
+      "captureCode": {
+        "base": "bd6bbd6f87aabec252a78097f24f5b93c32d7ac1"
+      }
     },
     {
       "file": "battle-hud-official.webp",
@@ -115,7 +129,10 @@
       ],
       "bytes": 27126,
       "sha256": "1614be1edb8e7f0a5e1d15a673e9e20590f20914a870abbe5c4e172c5934b94a",
-      "description": "与原状态条相同演示输入；总开关开启，程序圆环回退"
+      "description": "与原状态条相同演示输入；总开关开启，程序圆环回退",
+      "captureCode": {
+        "base": "bd6bbd6f87aabec252a78097f24f5b93c32d7ac1"
+      }
     },
     {
       "file": "shop-portrait-default.webp",
@@ -137,7 +154,10 @@
       ],
       "bytes": 27430,
       "sha256": "ce7679696a6de25c96368ff597823a4d287be08da3217826027532abd0e4b609",
-      "description": "实际商店组件与演示库存；突出商店人像关闭"
+      "description": "实际商店组件与演示库存；突出商店人像关闭",
+      "captureCode": {
+        "base": "bd6bbd6f87aabec252a78097f24f5b93c32d7ac1"
+      }
     },
     {
       "file": "shop-portrait-focus.webp",
@@ -159,7 +179,10 @@
       ],
       "bytes": 29848,
       "sha256": "638e9682d64bb9ad49b5ec87820a6579ebe0eed30091789072ae39b720db3756",
-      "description": "相同商店输入；突出商店人像开启"
+      "description": "相同商店输入；突出商店人像开启",
+      "captureCode": {
+        "base": "bd6bbd6f87aabec252a78097f24f5b93c32d7ac1"
+      }
     },
     {
       "file": "strategy-minimap.webp",
@@ -176,7 +199,10 @@
       ],
       "bytes": 209934,
       "sha256": "3812e59a75de594b1e692dd1b2f224b35368cd23cf8b49ff8d5c95bbb8f5ef1d",
-      "description": "真实策略选择页；按本局 stageId 绘制小地图"
+      "description": "真实策略选择页；按本局 stageId 绘制小地图",
+      "captureCode": {
+        "base": "bd6bbd6f87aabec252a78097f24f5b93c32d7ac1"
+      }
     },
     {
       "file": "bond-forecast.webp",
@@ -198,7 +224,10 @@
       ],
       "bytes": 53216,
       "sha256": "f9aab94e5cd712b6c8299e96e1bf22a48f00558d1d94193dfc780d6ae88c6089",
-      "description": "实际盟约组件与可重复的准备期预测夹具；非完整真人对局"
+      "description": "实际盟约组件与可重复的准备期预测夹具；非完整真人对局",
+      "captureCode": {
+        "base": "bd6bbd6f87aabec252a78097f24f5b93c32d7ac1"
+      }
     },
     {
       "file": "cursor-settings.webp",
@@ -220,7 +249,10 @@
       ],
       "bytes": 33364,
       "sha256": "7b876e4b6f932553c7053c92a2b936bd13d1c3ab730d1aec54721a95a72f6208",
-      "description": "真实设置弹窗与已安装素材；截图中的鼠标为实际大小预览"
+      "description": "真实设置弹窗与已安装素材；截图中的鼠标为实际大小预览",
+      "captureCode": {
+        "base": "bd6bbd6f87aabec252a78097f24f5b93c32d7ac1"
+      }
     },
     {
       "file": "dynamic-skin-states.webp",
@@ -242,12 +274,15 @@
       ],
       "bytes": 121252,
       "sha256": "ded5db46cfc248562fd09004048ff69e954343f532154387ee25e09fea0a8003",
-      "description": "实际动态立绘、半身、小图、商店和详情组件；银灰不融冰演示状态"
+      "description": "实际动态立绘、半身、小图、商店和详情组件；银灰不融冰演示状态",
+      "captureCode": {
+        "base": "bd6bbd6f87aabec252a78097f24f5b93c32d7ac1"
+      }
     },
     {
       "file": "briefing-mobile.webp",
-      "source": "briefing-mobile.png",
-      "sourceSha256": "c2c41c17f3d15f36693c6319984fd7aa4c3d44c4cc31a66e33276a8faacafde6",
+      "source": "summary-mobile.png",
+      "sourceSha256": "0fedfcbf5fb847b63f48a617421488adf26dd3dd22ba4a15ea3743b25dbf705d",
       "viewport": [
         844,
         390
@@ -257,9 +292,13 @@
         844,
         390
       ],
-      "bytes": 65524,
-      "sha256": "02ff4dad32fb6f72a6914b13f43f80fa20fcb6d5332ac5080739c9ba8c374c4e",
-      "description": "真实开局简报；844×390 浏览器视口，非实体手机验证"
+      "bytes": 67760,
+      "sha256": "11b977243f57e3fb1ba95202275a3a84c94318908def30e572e93abada254ab4",
+      "description": "当前开局简报；844×390 横屏摘要和本局信息，无候选占屏",
+      "captureCode": {
+        "base": "f215f1d5c1e055cf26ebc63b568881e47f5b82c2",
+        "workingTreeChanges": true
+      }
     },
     {
       "file": "branch-overview.webp",
@@ -273,9 +312,28 @@
         1440,
         1120
       ],
-      "bytes": 131804,
-      "sha256": "c04b183a7e32fbc15e188e30a9b7aa645e7d11b9c95fe12b69a57a47a0257137",
-      "description": "四张实际截图的拼接封面；新增标题与说明，不生成或改画游戏界面"
+      "bytes": 115770,
+      "sha256": "b326481c78cf6ad5159cb19d993b6c89c535f4d327b6ea908ee2584e31891419",
+      "description": "四张实际截图的拼接封面；新增标题与说明，不生成或改画游戏界面",
+      "captureCode": {
+        "composite": true,
+        "sources": [
+          "diy-four-choose-two.webp",
+          "namecard-backgrounds.webp",
+          "strategy-minimap.webp",
+          "battle-hud-official.webp"
+        ]
+      }
     }
-  ]
+  ],
+  "runtimeSourceHashes": {
+    "public/js/ui/diyChoice.js": "f00b9203698fce2be66b31b2439aa890371549950759f29312782e14ec4682f8",
+    "public/js/screens/briefing.js": "e3dd35581984879041cff0939457f5e34c8b746f2ea2a26cab5c79c6dd6b0084",
+    "public/css/screens/briefing.css": "e298cb15aa5836ad3bf8060c63583aea8a827ef14980f856254b8aa3721eb704",
+    "shared/diy.js": "63177fa07f923edffad26d9e1db0874372e63c7a707a2e625d4e4e711ce960d8",
+    "shared/protocol.js": "774a80a3336b01956fb2b991986ed0d970ade79c18a0ce961c5c34a967f3d2f2",
+    "server/match/player/diy.js": "3adaa8dc771df2a55928b37412551f30dcd6ca442c6cc1a3ef5bcc885b5ba706",
+    "server/match/match/phases.js": "283dc2e06eb406a704009564e4c9d5b6ef5e98847928df121499c89b3ac38e59",
+    "server/match/match/intents.js": "da89fd1c63d93a9d46c22785941a30d1e7f359ae8ead9486e0197c32520f4323"
+  }
 }

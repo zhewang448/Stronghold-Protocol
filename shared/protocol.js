@@ -575,6 +575,8 @@ export const C2S = {
   // picks its seat had when it started; during a match they are stored for the next one: ROOM_STARTED)
   'room.diy': { picks: isDiyPicks },
   'g.diyChoose': { tier: v => v === 5 || v === 6, charIds: v => isList(v, 2, isCharId) && v.length > 0 && new Set(v).size === v.length, setupRevision: v => isInt(v, 0, 2 ** 31) },
+  'g.diyApply': { choices: v => isMap(v, 2, k => k === '5' || k === '6', ids => isList(ids, 2, isCharId) && new Set(ids).size === ids.length) && Object.keys(v).length > 0,
+    setupRevision: v => isInt(v, 0, 2 ** 31) },
   // spectator seats (remake feature, community report #26; MAX_SPECTATORS): take one of a co-op room's spectator seats —
   // in its lobby or while its match runs — never a player seat; the host frees one by playerId (the spectator gets
   // room.closed { reason: 'kicked' }). room.leave / g.leave leave a spectator seat like a player seat.

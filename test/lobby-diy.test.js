@@ -68,6 +68,8 @@ describe('room.diy (lobby, stub match)', () => {
     const c = await pool.player('Kit');
     assert.deepEqual(c.welcome.diyKitted, [...KITTED_CHARS]);
     assert.ok(c.welcome.diyKitted.includes(SIEGE.charId));
+    assert.equal(c.welcome.uiMigration.diyCandidates, true);
+    assert.equal(c.welcome.uiMigration.diyBatchApply, true);
   });
 
   test('lenient: malformed picks are BAD_MSG; illegal ones dropped; stored per session and seat; bots none; the next match takes a change', async () => {

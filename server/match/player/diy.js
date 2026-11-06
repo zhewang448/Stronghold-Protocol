@@ -198,12 +198,12 @@ export class PlayerDiy {
     this.gd = records.size ? diyGameData(gd, records) : gd;
   }
 
-  /** 候补 (see the header): whether this player's preset leaves a choice (a tier with more candidates than slots). */
+  /** Whether this human's preset has candidates to include or omit in the briefing. */
   hasDiyChoice() {
     return !this.isBot && hasDiyChoice(this.diyPreset, this.m.gd.raw);
   }
 
-  /** Restore only complete, distinct choices that still name candidates in the checked preset. */
+  /** Restore distinct legal selections, preserving an explicit empty tier separately from no choice. */
   setDiyChoiceState(value) {
     const next = {};
     if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -211,7 +211,7 @@ export class PlayerDiy {
         const want = value[tier] ?? value[String(tier)];
         const count = Math.min(diyTierSlotIds(tier, this.m.gd.raw).length, list.length);
         const ids = list.map(c => c.pick.charId);
-        if (Array.isArray(want) && want.length === count && new Set(want).size === count && want.every(id => ids.includes(id))) {
+        if (Array.isArray(want) && want.length <= count && new Set(want).size === want.length && want.every(id => ids.includes(id))) {
           next[tier] = Object.freeze([...want]);
         }
       }
@@ -237,19 +237,18 @@ export class PlayerDiy {
   }
 
   /**
-   * g.diyChoose (候补): the candidates of `tier` that fill its slots — exactly min(slots, candidates) distinct charIds of
-   * the tier's candidates. Records the choice only (the match fields it: resolveDiy).
-   * @param {unknown} tier @param {unknown} charIds
+   * g.diyApply accepts a partial count; the legacy g.diyChoose path retains its exact-count contract.
+   * @param {unknown} tier @param {unknown} charIds @param {boolean} allowFewer
    * @returns {{ ok: true } | { error: string }}
    */
-  chooseDiy(tier, charIds) {
+  chooseDiy(tier, charIds, allowFewer = false) {
     const data = this.m.gd.raw;
     const list = Number.isInteger(tier) ? diyCandidates(this.diyPreset, data).get(tier) : null;
     const slots = Number.isInteger(tier) ? diyTierSlotIds(tier, data).length : 0;
-    if (!list || list.length <= slots) return { error: `no 自选 choice at tier ${tier}` }; // i18n-ignore: developer detail
-    const ids = Array.isArray(charIds) ? charIds : [];
+    if (!list?.length || !slots || (!allowFewer && list.length <= slots) || !Array.isArray(charIds)) return { error: `no 自选 choice at tier ${tier}` }; // i18n-ignore: developer detail
+    const ids = charIds;
     const n = Math.min(slots, list.length);
-    if (ids.length !== n || new Set(ids).size !== n) return { error: `choose ${n} distinct candidates` };
+    if (ids.length > n || (!allowFewer && ids.length !== n) || new Set(ids).size !== ids.length) return { error: `choose ${allowFewer ? 'at most ' : ''}${n} distinct candidates` };
     if (!ids.every((id) => list.some((c) => c.pick.charId === id))) return { error: 'not a candidate of the tier' };
     this.diyChoice = Object.freeze({ ...(this.diyChoice || {}), [tier]: Object.freeze([...ids]) });
     return { ok: true };
@@ -282,7 +281,7 @@ export class PlayerDiy {
     const tiers = [];
     for (const [tier, list] of diyCandidates(this.diyPreset, data)) {
       const slotIds = diyTierSlotIds(tier, data);
-      if (list.length <= slotIds.length) continue;
+      if (!list.length || !slotIds.length) continue;
       const fielded = new Set(slotIds.map((id) => this.diy?.[id]?.charId).filter(Boolean));
       tiers.push({
         tier, slots: slotIds.length,
@@ -294,7 +293,7 @@ export class PlayerDiy {
         picked: Array.isArray(this.diyChoice?.[tier]),
       });
     }
-    return { tiers };
+    return { allowFewer: true, batchApply: true, tiers };
   }
 
   /**

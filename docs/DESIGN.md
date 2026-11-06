@@ -153,4 +153,4 @@ Offline checks and game runtime never fetch them; derived records and the plugin
 
 Default-off spectator AI handover (maintainer decision 2026-10-24, §35.100): [AI handover rules](history/0.3.2/ai-handover.md).
 
-指定 Stardust UI 迁移的当前范围、默认开关、预计叠层和四候选选二扩展见 [实施说明](STARDUST-UI-MIGRATION.md)，来源与五批计划见 [计划](STARDUST-UI-PLAN.md)。当前规则同步到 design/client、match、network。
+指定 Stardust UI 迁移的当前范围、默认开关、预计叠层和四候选可选上场扩展见 [实施说明](STARDUST-UI-MIGRATION.md)，来源与五批计划见 [计划](STARDUST-UI-PLAN.md)。当前规则同步到 design/client、match、network。

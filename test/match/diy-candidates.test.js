@@ -37,10 +37,11 @@ for (const version of VERSIONS) {
     assert.equal(tier.chosen.length, 2);
     const next = tier.candidates.slice(2).map(x => x.charId);
     const before = ps.diy, stock = ps.diyStock;
-    assert.ok(choose(m, next.slice(0, 1)).error);
-    assert.equal(ps.diy, before); assert.equal(ps.diyStock, stock);
     assert.ok(choose(m, [next[0], next[0]]).error);
     assert.ok(choose(m, ['char_missing', next[1]]).error);
+    assert.equal(ps.diy, before); assert.equal(ps.diyStock, stock);
+    assert.ok(choose(m, next.slice(0, 1)).error, 'the legacy single-tier command still requires the full tier size');
+    assert.equal(ps.diy, before); assert.equal(ps.diyStock, stock);
     ps.infoReady = true;
     assert.deepEqual(choose(m, next), { ok: true });
     assert.equal(ps.infoReady, false);

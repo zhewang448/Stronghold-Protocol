@@ -35,6 +35,7 @@ export function BriefingScreen() {
   const gd = useGameData();
   const [exit, setExit] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [editingDiy, setEditingDiy] = useState(false);
   if (!pub) return null;
 
   const players = sortedPlayers(pub);
@@ -54,7 +55,7 @@ export function BriefingScreen() {
   const m = gd.m;
 
   const ready = async () => {
-    if (busy || me?.ready) return;
+    if (busy || editingDiy || me?.ready) return;
     setBusy(true);
     await actions.infoReady(pub.setupRevision ?? 0);
     setBusy(false);
@@ -98,17 +99,22 @@ export function BriefingScreen() {
         <${MatchInfo} model=${info} />
       </section>
     </main>
-    ${priv?.diyChoice ? html`<div class="brief__diy-dock"><${DiyChoice} key=${pub.setupRevision || 0} priv=${priv} dock=${true} ready=${!!me?.ready} disabled=${!me || !!pub.rerollVote}
-      onChoose=${(tier, charIds) => act('g.diyChoose', { tier, charIds, setupRevision: pub.setupRevision || 0 })} /></div>` : null}
     <${SetupReroll} pub=${pub} />
     <footer class="brief__foot">
       <${LoadoutButton} from="briefing" size="lg" class="brief-loadout" />
+      ${priv?.diyChoice ? html`<${DiyChoice} key=${pub.setupRevision || 0} priv=${priv} onEditingChange=${setEditingDiy} disabled=${!me || !!pub.rerollVote}
+        onApply=${async choices => {
+          const setupRevision = pub.setupRevision || 0;
+          if (priv.diyChoice.batchApply === true) return act('g.diyApply', { choices, setupRevision });
+          for (const [tier, charIds] of Object.entries(choices)) if (!await act('g.diyChoose', { tier: Number(tier), charIds, setupRevision })) return false;
+          return true;
+        }} />` : null}
       <div class="brief-ready">
         <span class="brief-ready__txt">${t('已就绪')} <b class="num">${readyN}</b><span class="num">/${players.length}</span></span>
         <span class=${cx('brief-ready__pips', players.length > 8 && 'is-many')}>${players.map((p) => html`<i key=${p.playerId} class=${cx(p.ready && 'on', p.playerId === myId && 'me')} title=${p.name}><${Icon} name="user" /></i>`)}</span>
       </div>
       <${Button} variant="primary" size="xl" icon=${me?.ready ? 'check' : me ? 'play' : 'eye'} active=${!!me?.ready} loading=${busy}
-        disabled=${!!me?.ready || !me || !!pub.rerollVote} onClick=${ready}>${me?.ready ? t('已就绪') : me ? t('准备就绪') : t('观战中')}<//>
+        disabled=${!!me?.ready || !me || !!pub.rerollVote || editingDiy} data-testid="brief-ready" onClick=${ready}>${me?.ready ? t('已就绪') : me ? t('准备就绪') : t('观战中')}<//>
     </footer>
     <${ExitModal} open=${exit} onClose=${() => setExit(false)} solo=${solo} />
   </div>`;

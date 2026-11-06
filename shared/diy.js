@@ -171,9 +171,9 @@ export function diyCandidates(picks, data) {
   return out;
 }
 
-/** Whether a picks map leaves a choice to make: a tier with more candidates than slots. @param {any} picks @param {DiyData} data */
+/** Whether a picks map has human-editable candidates, including choosing none. @param {any} picks @param {DiyData} data */
 export function hasDiyChoice(picks, data) {
-  for (const [tier, list] of diyCandidates(picks, data)) if (list.length > diyTierSlotIds(tier, data).length) return true;
+  for (const [tier, list] of diyCandidates(picks, data)) if (list.length && diyTierSlotIds(tier, data).length) return true;
   return false;
 }
 
@@ -197,8 +197,8 @@ export function diyPickOff(data, charId, off) {
 
 /**
  * The slot picks a match fields from a checked preset (候补, feedback #114; see DIY_BENCH_SIZE). Per tier: the candidates
- * `choice[tier]` names (charIds — taken only when they are exactly min(slots, candidates) distinct candidates of the
- * tier), else the default — the first candidates in the player's order whose bonds are not all off this match
+ * `choice[tier]` names (zero to min(slots, candidates) distinct candidates of the tier; [] explicitly fields nobody),
+ * else the default — the first candidates in the player's order whose bonds are not all off this match
  * (diyPickOff with `off`), then the others in order (owner-approved extension, not an official rule).
  * A chosen candidate that sits in a slot keeps that slot; the other chosen ones fill the free slots
  * in preset order — so a preset without a bench, or whose slotted picks are the chosen ones, comes back exactly as it
@@ -217,7 +217,7 @@ export function resolveDiySlots(picks, data, { choice = null, off = null } = {})
     const want = isObj(choice) && Array.isArray(choice[tier]) ? choice[tier] : null;
     const ids = list.map((c) => c.pick.charId);
     let chosen;
-    if (want && want.length === n && new Set(want).size === n && want.every((id) => ids.includes(id))) {
+    if (want && want.length <= n && new Set(want).size === want.length && want.every((id) => ids.includes(id))) {
       chosen = list.filter((c) => want.includes(c.pick.charId));
     } else {
       const ranked = [...list.filter((c) => !diyPickOff(data, c.pick.charId, off)), ...list.filter((c) => diyPickOff(data, c.pick.charId, off))].slice(0, n);

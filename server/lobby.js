@@ -1812,7 +1812,7 @@ export class Lobby {
       // Catalogue metadata, never part of a room or match; omitted when no loaded plugin publishes a notice.
       if (this.plugins?.hasNotices?.()) info.content.notices = true;
     }
-    info.uiMigration = { diyCandidates: true, namecards: true };
+    info.uiMigration = { diyCandidates: true, diyBatchApply: true, namecards: true };
     // Omitted when the switch is off, so a welcome from a normal server stays identical.
     if (this.testEnabled === true) info.testMode = true;
     // Default-on is omitted for compatibility with older servers and clients.

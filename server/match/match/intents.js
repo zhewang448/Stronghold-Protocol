@@ -23,6 +23,7 @@ export class MatchIntents {
         return OK;
       case 'g.rerollVote': return this.voteSetupReroll(ps, msg.voteId, msg.agree);
       case 'g.diyChoose': return this.chooseDiy(ps, msg.tier, msg.charIds, msg.setupRevision);
+      case 'g.diyApply': return this.applyDiyChoices(ps, msg.choices, msg.setupRevision);
       case 'g.band': return this.pickBand(ps, msg.bandId, msg);
       case 'g.bandSkip': return this.skipBand(ps, msg);
       // the strategy highlighted in the draft screen (what a timed-out turn takes, timeoutBand)

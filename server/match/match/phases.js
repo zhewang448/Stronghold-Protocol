@@ -104,15 +104,23 @@ export class MatchPhases {
   }
 
   chooseDiy(ps, tier, charIds, revision) {
+    if (tier !== 5 && tier !== 6) return fail(ERR.BAD_TARGET);
+    return this.applyDiyChoices(ps, { [tier]: charIds }, revision, false);
+  }
+
+  /** Apply every edited tier together; invalid input or a stock build failure leaves the whole selection intact. */
+  applyDiyChoices(ps, choices, revision, allowFewer = true) {
     if (this.phase !== PHASE.INFO_CHECK || this.setupVote) return fail(ERR.WRONG_PHASE);
     if (!ps || ps.isBot || ps.left || !ps.connected) return fail(ERR.NOT_IN_ROOM);
     if (revision !== this.setupRevision) return fail(ERR.BAD_TARGET);
+    if (!choices || typeof choices !== 'object' || Array.isArray(choices)) return fail(ERR.BAD_TARGET);
+    const entries = Object.entries(choices);
+    if (!entries.length || entries.length > 2 || entries.some(([tier]) => tier !== '5' && tier !== '6')) return fail(ERR.BAD_TARGET);
     const candidate = Object.create(ps);
-    const result = candidate.chooseDiy(tier, charIds);
-    if (!result.ok) return fail(ERR.BAD_TARGET);
     const off = new Set([...this.disabledBonds, ...this.staticInactiveBonds]);
     let prepared;
     try {
+      for (const [tier, charIds] of entries) if (!candidate.chooseDiy(Number(tier), charIds, allowFewer).ok) return fail(ERR.BAD_TARGET);
       if (candidate.resolveDiy(off)) prepared = candidate.buildDiyStock(off);
     } catch (e) { this.reportError('diy choice preparation', e); return fail(ERR.INTERNAL); }
     ps.diyChoice = candidate.diyChoice;
