@@ -332,6 +332,20 @@ describe('drag controller', () => {
 // standing on the tile under the pointer while that is a legal target, and held under the pointer elsewhere. The tile
 // is the drag target itself, so the pick, tileHover, the highlight and the drop stay the pointer's tile.
 describe('the tile a dragged unit stands on (dragStandTile)', () => {
+  test('the optional setting changes only the drawn stand tile; both modes keep the same legal drop', () => {
+    for (const pointerType of ['mouse', 'touch']) {
+      const h = harness({ canPlace: () => true });
+      h.c.setEditable(true);
+      h.ev('pointerDown', 50, 550, { pointerType });
+      h.ev('pointerMove', 450, 350, { pointerType });
+      const move = h.events.filter(e => e[0] === 'pieceDragMove').at(-1)[1];
+      assert.deepEqual(dragStandTile(move, GEO, true), { row: 9, col: 4, bench: false });
+      assert.equal(dragStandTile(move, GEO, false), null);
+      h.ev('pointerUp', 450, 350, { pointerType });
+      assert.deepEqual(h.events.find(e => e[0] === 'pieceDrop')[1].target, { area: 'board', row: 9, col: 4 });
+    }
+  });
+
   test('a legal board tile or bench slot is stood on; an illegal tile, a temp slot, no target hold it under the pointer', () => {
     assert.deepEqual(dragStandTile({ target: { area: 'board', row: 10, col: 3 }, legal: true }), { row: 10, col: 3, bench: false });
     assert.deepEqual(dragStandTile({ target: { area: 'hand', idx: 6 }, legal: true }), { row: GEO.HAND_ROW, col: 6, bench: true });

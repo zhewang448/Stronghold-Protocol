@@ -557,6 +557,8 @@ export function SettingsModal({ open, onClose }) {
       <${Toggle} setting="settings.combatMetrics" label=${t('作战统计')} micro="COMBAT STATS" value=${s.combatMetrics} onChange=${(v) => updateSettings({ combatMetrics: v })} />
       <p class="set-hint">${t('打开后，对局左下角可以查看自己干员的伤害、治疗和 DPS / HPS。官方界面没有这个窗口。改变玩法的插件对局在 Worker 里演算，统计不到，按钮不显示。')}</p>
       <${Toggle} setting="settings.deploymentZoom" label=${t('部署时镜头缩放')} micro="DEPLOYMENT ZOOM" value=${s.deploymentZoom} onChange=${(v) => updateSettings({ deploymentZoom: v })} />
+      <div data-testid="deploy-snap-setting"><${Toggle} setting="settings.deploySnap" label=${t('部署时按格子吸附')} micro="SNAP TO TILE" value=${s.deploySnap} onChange=${v => updateSettings({ deploySnap: v })} /></div>
+      <p class="set-hint">${t('关闭后，拖动中的干员自由跟随指针；松开时仍放入指针下的合法格子。')}</p>
       <p class="set-hint">${t('拖起干员、装备或召唤物，以及放下后选择朝向时，临时收起商店并放大棋盘。关闭后，拿起时既不改变商店的收起状态，也不缩放镜头。')}</p>
       </section>
       <section class="set-group" aria-labelledby="settings-display"><h3 id="settings-display">${t('画面与性能')}</h3>

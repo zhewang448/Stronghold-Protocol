@@ -21,7 +21,7 @@ export const CLIENT_PREFERENCE_FIELDS = Object.freeze([
     ['muted', '静音', false], ['damageNumbers', '显示伤害数字', true], ['officialDamageNumbers', '官方伤害数字', false],
     ['ammoEnergyCount', '显示弹药与能量数量', false], ['fullscreenWakeLock', '全屏时保持屏幕常亮', false],
     ['bondTimers', '盟约效果剩余时间', false], ['combatMetrics', '作战统计', true], ['chatBubbles', '显示消息提示气泡', true],
-    ['deploymentZoom', '部署时镜头缩放', false], ['showFps', '显示帧率', true], ['preload', '预载资源', false],
+    ['deploymentZoom', '部署时镜头缩放', false], ['deploySnap', '部署时按格子吸附', true], ['showFps', '显示帧率', true], ['preload', '预载资源', false],
     ['officialBattleHud', '还原战场状态条', true], ['shopPortraitFocus', '突出商店人像', false],
     ['preloadOptional', '预载可选资源', false], ['otherSkins', '显示其他玩家的皮肤', true],
     ['upstreamReleaseNotes', '显示上游更新内容', true], ['extensionReleaseNotes', '显示扩展更新内容', true],

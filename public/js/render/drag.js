@@ -88,8 +88,10 @@ export function resolveDrop(p) {
  * (no target, an illegal tile, a temp slot, the pointer over DOM UI such as the shop bar): the unit is then held under
  * the pointer. As in the official deploy drag (the owner's recording of 2026-10-09) the model stands on the tile the
  * finger is on, and moving within that tile leaves it where it is. app.js never snaps an item plate.
+ * `deploySnap: false` suppresses this visual anchor only; the controller's target and drop remain untouched.
  */
-export function dragStandTile(move, geo = GEO) {
+export function dragStandTile(move, geo = GEO, deploySnap = true) {
+  if (deploySnap === false) return null;
   const t = move && move.legal === true ? move.target : null;
   if (!t) return null;
   if (t.area === 'board' && Number.isInteger(t.row) && Number.isInteger(t.col)) return { row: t.row, col: t.col, bench: false };

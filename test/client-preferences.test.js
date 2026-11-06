@@ -51,6 +51,25 @@ test('live lock uses the host default without touching sparse saved values, then
   assert.equal(saved.get().bgm, 0.21); assert.equal(saved.get().voice, 0.5); assert.equal(fresh.get().bgm, 0.6);
 });
 
+test('deploy snapping defaults on, preserves explicit off, and restores it after a host lock', t => {
+  const previous = globalThis.localStorage, values = new Map();
+  globalThis.localStorage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
+  t.after(() => { setClientPreferencePolicy(null); globalThis.localStorage = previous; });
+  assert.equal(DEFAULT_SETTINGS.deploySnap, true);
+  assert.equal(sanitizeSettings({}).deploySnap, true);
+  assert.equal(sanitizeSettings({ deploySnap: 'false' }).deploySnap, true);
+  const saved = createClientPreferenceStore({ prefix: 'settings', preference: 'test.deploySnap', initial: { deploySnap: false }, normalize: sanitizeSettings, migrate: migrateClientSettings });
+  const fresh = createClientPreferenceStore({ prefix: 'settings', preference: 'test.deploySnapFresh', initial: null, normalize: sanitizeSettings, migrate: migrateClientSettings });
+  setClientPreferencePolicy({ defaults: { 'settings.deploySnap': true }, userControls: { 'settings.deploySnap': false } });
+  assert.equal(saved.get().deploySnap, true); saved.set({ deploySnap: false });
+  assert.equal(values.has('sp.pref.test.deploySnap'), false, 'a forced value does not write personal storage');
+  setClientPreferencePolicy({ defaults: { 'settings.deploySnap': true } });
+  assert.equal(saved.get().deploySnap, false); assert.equal(fresh.get().deploySnap, true);
+  saved.set({ deploySnap: true }); saved.set({ deploySnap: false });
+  const reloaded = createClientPreferenceStore({ prefix: 'settings', preference: 'test.deploySnap', initial: JSON.parse(values.get('sp.pref.test.deploySnap')), normalize: sanitizeSettings, migrate: migrateClientSettings });
+  assert.equal(reloaded.get().deploySnap, false);
+});
+
 test('retired explicit off preferences remain off while new keys override stale aliases', t => {
   t.after(() => setClientPreferencePolicy(null));
   for (const raw of [{ dynamicIllust: false }, { dynamicIllustrations: false }, { dynamicIllustrations: 'static' }]) {

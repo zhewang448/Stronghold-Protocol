@@ -3854,5 +3854,7 @@
   "当前显示已确认名单": "Showing the confirmed roster",
   "放弃更改": "Discard changes",
   "应用名单": "Apply roster",
-  "调整": "Adjust"
+  "调整": "Adjust",
+  "部署时按格子吸附": "Snap to tile when deploying",
+  "关闭后，拖动中的干员自由跟随指针；松开时仍放入指针下的合法格子。": "When off, dragged operators follow the pointer freely. Releasing still places them on the legal tile under the pointer."
 }

@@ -65,7 +65,7 @@
 //   view.holdPiece(uid, {row,col} | null)       keep a dropped prep piece standing on a tile while its direction is
 //                                               chosen / the move is in flight (null releases; setPrep then settles it)
 //   view.setPieceDir(uid, dir)                  show a prep piece facing UP|RIGHT|DOWN|LEFT (wheel preview / stored dir)
-//   view.setSettings({ damageNumbers, officialDamageNumbers, ammoEnergyCount, officialFx, quality: 'high'|'medium'|'low' }) ; view.resize() ; view.destroy()
+//   view.setSettings({ deploySnap, damageNumbers, officialDamageNumbers, ammoEnergyCount, officialFx, quality: 'high'|'medium'|'low' }) ; view.resize() ; view.destroy()
 //                                               (ammoEnergyCount: 设置「显示弹药与能量数量」, the count under an ammo skill's
 //                                                bar and a 秘术师's stored/cap — PR #552 / PR #636, one switch since 0.3.1;
 //                                                officialFx: 设置「官方特效」 'auto'|'off'|'lite'|'full', the official battle
@@ -185,7 +185,7 @@ export { releaseGl } from './app/host.js';
 /**
  * Create the battlefield view inside `host` (an element sized by CSS; the canvas fills it).
  * @param {HTMLElement} host
- * @param {{ data?: any, assets?: any, audio?: any, settings?: { damageNumbers?: boolean, officialDamageNumbers?: boolean, ammoEnergyCount?: boolean, otherSkins?: boolean, quality?: string }, signal?: AbortSignal,
+ * @param {{ data?: any, assets?: any, audio?: any, settings?: { deploySnap?: boolean, damageNumbers?: boolean, officialDamageNumbers?: boolean, ammoEnergyCount?: boolean, otherSkins?: boolean, quality?: string }, signal?: AbortSignal,
  *           padding?: object|((kind:string, size:{width:number,height:number}) => object),
  *           hud?: {top:number,bottom:number}|((kind:'prep'|'bossPrep', size:{width:number,height:number}, o:{shop:boolean}) => {top:number,bottom:number}|null) }} [opts]
  *   settings.otherSkins (docs/SKINS.md, default on): draw the appearance another player chose. The player the view
@@ -206,6 +206,7 @@ export async function createFieldView(host, options = {}) {
   // the other settings the units read every frame are pinned by stays one line (test/ui/ammo-count.test.js)
   settings.officialBattleHud = settings.officialBattleHud !== false;
   settings.otherSkins = settings.otherSkins !== false;
+  settings.deploySnap = settings.deploySnap !== false;
   // the 3D board (three.js + the official art) loads in parallel with everything else
   const boardPref = boardPreference(opts.board);
   const want3d = boardPref !== '2d' && webgl2Available(boardPref === '3d');
@@ -1313,7 +1314,7 @@ export async function createFieldView(host, options = {}) {
     // a unit over a legal drop target — the tile under the pointer, on the board or the bench (render/drag.js
     // dragStandTile) — stands on it, lifted, as in the official deploy drag (the owner's recording of 2026-10-09): the
     // world point the drop tween goes to (boardWorld, the prep field transform applied), set at once, no tween
-    const stand = item ? null : dragStandTile(p);
+    const stand = item ? null : dragStandTile(p, GEO, settings.deploySnap);
     if (stand) {
       const w = boardWorld(stand.row, stand.col, stand.bench);
       v.x = w.x; v.y = w.y; v.z = w.z;
@@ -2263,6 +2264,10 @@ export async function createFieldView(host, options = {}) {
       if (!s || typeof s !== 'object') return;
       const q = settings.quality;
       if (typeof s.damageNumbers === 'boolean') settings.damageNumbers = s.damageNumbers;
+      if (typeof s.deploySnap === 'boolean' && s.deploySnap !== settings.deploySnap) {
+        settings.deploySnap = s.deploySnap;
+        drag.refresh(); // apply immediately even when the pointer has stopped during a drag
+      }
       if ('fpsLimit' in s) {
         const before = settings.fpsLimit;
         settings.fpsLimit = applyFrameRate(app.ticker, s.fpsLimit);

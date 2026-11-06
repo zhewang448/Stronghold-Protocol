@@ -89,5 +89,39 @@
       "bytes": 5457,
       "sha256": "71e133b93b45d3686a6e6d175aec3de4d1dd14b4234a253eadd8d062ba755b85"
     }
-  ]
+  ],
+  "deploySnap": {
+    "commit": "7f39464c285fde4e5ee98825ad00936cffdfffa8",
+    "license": "GPL-3.0-or-later",
+    "field": "settings.deploySnap",
+    "referenceDefault": false,
+    "localDefault": true,
+    "reason": "Maintainer explicitly requested the original label and default on; local legal target picking and pointer hold offset stay in place.",
+    "files": [
+      {
+        "path": "public/js/ui/gameLogic/settings.js",
+        "bytes": 8279,
+        "sha256": "4eef9fd46bd282fa57fe81d93a68e65d9cac1ee16b4161b8b1fb731a12a581d3",
+        "gitBlob": "077f11f6ca6436060dc96cc21a056b8d2cc74b78"
+      },
+      {
+        "path": "public/js/ui/settings.js",
+        "bytes": 40569,
+        "sha256": "8b915ea8a1e6f14998b3855bac2cbeb4053fc349db690e3758c10b8285b2ca46",
+        "gitBlob": "e13d1fd9d640b8dae5447ae37dbe093ba29a9c37"
+      },
+      {
+        "path": "public/js/render/drag.js",
+        "bytes": 13917,
+        "sha256": "0298621c0d83415adecb5d116ceb4899a5abb43cac0cc7f624587ec997db06e0",
+        "gitBlob": "c44a132fa861c6c2abcf6c5ec062402f268b520e"
+      },
+      {
+        "path": "public/js/render/app.js",
+        "bytes": 140631,
+        "sha256": "fefea05eb611fbf0b504e78d3773d3e2112ff7b7a5eccea458bf06990497a603",
+        "gitBlob": "ad599c756d6ccf8a52b12a26db48adcd340b1f7c"
+      }
+    ]
+  }
 }
