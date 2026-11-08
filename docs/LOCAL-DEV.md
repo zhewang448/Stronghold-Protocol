@@ -11,7 +11,7 @@
 用户设置仍沿用原 key、稀疏保存和别名迁移；锁定只覆盖生效层。测试入口为 `test/client-preferences.test.js` 和
 启用 `SP_E2E=1` 的 `test/ui/client-preferences.e2e.test.js`。
 
-当前版本为 `v0.3.3-extended.12`，基础游戏 0.3.3、启动器 1.4.0；实际验证和附件状态见 [本轮发布记录](RELEASE-V0.3.3-EXTENDED.12.md)。
+当前版本为 `v0.3.3-extended.13`，基础游戏 0.3.3、启动器 1.4.0；实际验证和附件状态见 [本轮发布记录](RELEASE-V0.3.3-EXTENDED.13.md)。
 
 v0.3.3 整合候选及验证边界见 [整合说明](UPSTREAM-V0.3.3-INTEGRATION.md)。
 

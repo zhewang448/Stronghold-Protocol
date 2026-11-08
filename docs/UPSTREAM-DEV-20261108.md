@@ -2,7 +2,7 @@
 
 2026-11-08 的源码改动，基于本库 073081bf，选择性适配原上游
 [eff7d93a](https://github.com/sganggs/Stronghold-Protocol/tree/eff7d93abbd1bd6986e2e9c2d7a1e066b1975bbc)。
-基础版本仍为 0.3.3；本文不代表上游 0.3.4 或新的扩展整合包已经发布。
+本轮纳入 v0.3.3-extended.13；基础版本仍为 0.3.3，属于原上游开发线的选择性适配。
 移植代码中 §37 的编号指原上游该提交的 docs/history/0.3.4.md。
 
 ## 战斗与数据
