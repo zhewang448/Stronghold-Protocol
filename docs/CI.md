@@ -58,8 +58,9 @@ node tools/ci-shards.mjs --write --timings report.xml
 ## 2026-11-08 发布验证的远端时序修正
 
 原上游 AI 升级后，远端 run 42457169217 的合作全流程单文件在 Ubuntu/Windows 均触及既有 600 秒文件上限。
-将原 NORMAL/HARD/ABYSS 三组分别放入 fullmatch-coop.test.js、fullmatch-coop-hard.test.js 和 fullmatch-coop-abyss.test.js；
-每组仍保留 MATCH_SEEDS 默认 20、seed 101–120、真实模拟及零错误断言。分片自动发现所有文件，不减少种子或场景，也不修改 20 分钟任务或 600 秒文件上限。
+将原 NORMAL/HARD 两组分别放入 fullmatch-coop.test.js、fullmatch-coop-hard.test.js，ABYSS 按种子序号模 4 分入 fullmatch-coop-abyss.test.js、fullmatch-coop-abyss2.test.js、fullmatch-coop-abyss3.test.js、fullmatch-coop-abyss4.test.js；
+每个难度仍覆盖 MATCH_SEEDS 默认 20、seed 101–120、真实模拟及零错误断言，ABYSS 四文件对任意 MATCH_SEEDS 都恰好各覆盖一次。首次只按难度拆分时，本机 ABYSS 单文件仍触及 600 秒，因此再按种子拆分；NORMAL/HARD 的完整 20 种子已通过。
+分片自动发现所有文件，不减少种子或场景，也不修改 20 分钟任务或 600 秒文件上限。
 新增文件暂按 defaultMs，原权重作为历史采样保留，不把超时的截断用时伪记为完整测量。
 
 同轮 Windows 测试中，文件锁持有者以 stdout 在真正取得原生锁后握手，由原有 15 秒测试期限统一约束，代替额外的 5 秒轮询期限。
