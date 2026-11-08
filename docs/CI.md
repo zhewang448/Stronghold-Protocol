@@ -53,3 +53,15 @@ node tools/ci-shards.mjs --write --timings report.xml
 ## 2026-11-08 新测试的权重
 
 本次仅为新增的 22 个测试文件补充权重，来自 Node 24 JUnit 的逐文件记录；[采样清单](UPSTREAM-DEV-20261108-TEST-TIMINGS.json)保留来源。既有 CI 采样的每个权重保持原值，未把其他未采样文件的默认值伪记为测量值，也没有调整超时或减少测试集合。
+
+
+## 2026-11-08 发布验证的远端时序修正
+
+原上游 AI 升级后，远端 run 42457169217 的合作全流程单文件在 Ubuntu/Windows 均触及既有 600 秒文件上限。
+将原 NORMAL/HARD/ABYSS 三组分别放入 fullmatch-coop.test.js、fullmatch-coop-hard.test.js 和 fullmatch-coop-abyss.test.js；
+每组仍保留 MATCH_SEEDS 默认 20、seed 101–120、真实模拟及零错误断言。分片自动发现所有文件，不减少种子或场景，也不修改 20 分钟任务或 600 秒文件上限。
+新增文件暂按 defaultMs，原权重作为历史采样保留，不把超时的截断用时伪记为完整测量。
+
+同轮 Windows 测试中，文件锁持有者以 stdout 在真正取得原生锁后握手，由原有 15 秒测试期限统一约束，代替额外的 5 秒轮询期限。
+看门狗故障测试将专用 fixture 的阈值设为 4 秒以容纳冷启动；真实挂起请求仍须在既有 1–10 秒窗口内失败、返回 INTERNAL、关闭 worker 并恢复房间。
+这些改动只影响测试驱动，不改变发布程序或生产看门狗设置。

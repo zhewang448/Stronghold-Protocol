@@ -129,13 +129,20 @@ test('launcher backup tampering aborts recovery before any game file changes', t
 test('a real Windows file lock defers launcher replacement until the holder releases it', { skip: process.platform !== 'win32', timeout: 15000 }, async t => {
   const root = fixture(t), old = pe('locked-old'), next = pe('unlocked-new');put(root, LAUNCHER_EXE, old);
   const ready = path.join(root, 'locked.ready'), done = path.join(root, 'release.lock');
-  const script = '$f=[System.IO.File]::Open($env:SP_TEST_EXE,[System.IO.FileMode]::Open,[System.IO.FileAccess]::Read,[System.IO.FileShare]::Read); try {[System.IO.File]::WriteAllText($env:SP_TEST_READY,"ready"); while(-not [System.IO.File]::Exists($env:SP_TEST_DONE)){Start-Sleep -Milliseconds 50}} finally {$f.Dispose()}';
+  const script = '$f=[System.IO.File]::Open($env:SP_TEST_EXE,[System.IO.FileMode]::Open,[System.IO.FileAccess]::Read,[System.IO.FileShare]::Read); try {[System.IO.File]::WriteAllText($env:SP_TEST_READY,"ready"); [Console]::Out.WriteLine("ready"); while(-not [System.IO.File]::Exists($env:SP_TEST_DONE)){Start-Sleep -Milliseconds 50}} finally {$f.Dispose()}';
   const ps = path.join(process.env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
   const holder = spawn(ps, ['-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(script,'utf16le').toString('base64')],
-    { env:{...process.env,SP_TEST_EXE:path.join(root,LAUNCHER_EXE),SP_TEST_READY:ready,SP_TEST_DONE:done},windowsHide:true,stdio:'ignore' });
+    { env:{...process.env,SP_TEST_EXE:path.join(root,LAUNCHER_EXE),SP_TEST_READY:ready,SP_TEST_DONE:done},windowsHide:true,stdio:['ignore','pipe','pipe'] });
   t.after(() => { if (holder.exitCode === null) holder.kill(); });
-  const wait = async predicate => { for(let i=0;i<100;i++){if(predicate())return;await new Promise(resolve=>setTimeout(resolve,50));}throw new Error('File lock wait timed out'); };
-  await wait(() => fs.existsSync(ready));
+  // Wait for the actual lock-acquired handshake. The existing 15 s test deadline bounds a cold PowerShell start.
+  await new Promise((resolve,reject) => {
+    let output='',diagnostic='',locked=false;
+    holder.stdout.on('data',chunk => {output+=String(chunk);if(!locked&&output.includes('ready')){locked=true;resolve();}});
+    holder.stderr.on('data',chunk => {diagnostic=(diagnostic+String(chunk)).slice(-1000);});
+    holder.once('error',reject);
+    holder.once('exit',code => {if(!locked)reject(new Error('File lock holder exited before ready: '+code+' '+diagnostic));});
+  });
+  assert.ok(fs.existsSync(ready),'the handshake follows acquisition of the real file lock');
   const result = applyReleaseStage(root, stage(t, root, next), { to:tag });
   assert.equal(result.launcher.state,'pending');assert.deepEqual(fs.readFileSync(path.join(root,LAUNCHER_EXE)),old);
   markBackup(root,path.basename(result.backup),{state:'verified'});

@@ -210,7 +210,9 @@ describe('match hosts in rooms (P1c): verification, the watchdog, crashes', () =
     const errors = [];
     const log = { ...quiet, warn: (...a) => errors.push(a.join(' ')), error: (...a) => errors.push(a.map(String).join(' ')) };
     const srv = await startServer({ port: 0, host: '127.0.0.1', log, pluginsDir: dir, assetIndex: false,
-      matchHost: { matchModule: FIXTURE, watchdogMs: 1500, heartbeatMs: 100 } });
+      // Cold Windows workers can need several seconds for their first useful turn under the full shard load.
+      // The actual hung-request assertion below still requires watchdog recovery within ten seconds.
+      matchHost: { matchModule: FIXTURE, watchdogMs: 4000, heartbeatMs: 100 } });
     servers.push(srv);
     const host = await player(srv, 'Kal');
     const st = await moddedRoom(srv, host, 'rules');
