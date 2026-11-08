@@ -428,3 +428,11 @@ until the cast clip ends too. `attackTurnSkill` returns the selected ability or 
 瑕光 S3 先贤化身 is a sourced guardian exception (§35.91, #789): DEFAULT activates with an attackable enemy in her
 attack range, even at full HP. The official TAKE_DAMAGE row remains rawRule for provenance. The maintainer accepted
 the author video BV1UdAHzNEVj and their recall on 2026-10-24; other guardian skills keep their class rule.
+
+
+### 2026-11-08 上游战斗修复
+
+同一干员拥有的每份同款装备使用独立效果作用域，重复借用仍刷新原借用。圣杯令范围内地面敌人保留 5% 伤害，其余由圣杯以真实伤害承担；既有防抗前分摊等 ASSUMED 保留。
+乌尔比安的移动/返回清空元素损伤和爆发锁；脚下或无合法落点也执行原地移动，不留返回标记。缇缇 S2 按生命比例、最后部署、创建顺序选择。
+持续施法仅停止自主走路，被控制或目标失效时结束，并从结束计算冷却；路线等待、传送、漏怪和恐惧不被无条件冻结。
+默认版本四个新模组及克莱门莎数据随固定官方表生成。来源、逐项约定和 ASSUMED 见 [适配记录](../UPSTREAM-DEV-20261108.md)。

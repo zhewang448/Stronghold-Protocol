@@ -12,6 +12,7 @@ import { waveSource } from '../enemyPicks.js';
 import { bossPairSalt, pairPlayers } from '../finalAssault.js';
 import { createRng, deriveSeed } from '../../sim/rng.js';
 import { OK, fail, DELAYS, BAND_TURN_SECONDS } from './common.js';
+import { LEGACY_BOT } from '../botStrategyContract.js';
 
 /** Single-pool diagnostics and old fixtures keep their readable/writable first-group fields. */
 export function installDraftFacade(stage, fields) {
@@ -172,7 +173,10 @@ export class MatchPhases {
     this.phase = PHASE.BAND_DRAFT;
     const skips = this.isSolo ? 0 : this.gd.bandDraft.skipsPerPlayer;
     const untimed = this.soloUntimed;
-    const groups = this.makeDraftGroups({ includeDeparted: this.draftGroups.length === 1 });
+    const groups = this.makeDraftGroups({ includeDeparted: true });
+    for (const group of groups) {
+      if (group.playerIds.every(pid => this.players.get(pid)?.left || !this.players.get(pid)?.alive)) group.order = [];
+    }
     for (const g of groups) g.skipsLeft = Object.fromEntries(g.order.map((pid) => [pid, skips]));
     this.draft = installDraftFacade({
       id: this.nextDraftId('band'), groups, picks: {}, untimed,
@@ -201,7 +205,7 @@ export class MatchPhases {
     // loop-cap: idx walks g.order once
     while (g.idx < g.order.length) {
       const ps = this.players.get(g.order[g.idx]);
-      if (ps && ps.alive && !ps.left && !d.picks[ps.playerId]) break;
+      if (ps && !d.picks[ps.playerId]) break;
       g.idx++;
     }
     this.prioritizeDraftOrder(g.order, g.idx);
@@ -233,7 +237,7 @@ export class MatchPhases {
     }
     this.syncDraftDeadline(d);
     const cur = this.players.get(g.order[g.idx]);
-    if (cur && cur.botControlled) this.scheduleBandBot(g);
+    if (cur && (cur.botControlled || !cur.alive || cur.left)) this.scheduleBandBot(g);
     this.markPublic();
   }
 
@@ -246,20 +250,24 @@ export class MatchPhases {
     this.later(0, () => {
       if (this.phase !== PHASE.BAND_DRAFT || this.draft !== d || token !== g.token) return;
       const ps = this.players.get(g.order[g.idx]);
-      if (!ps || !ps.botControlled) return;
-      if (ps.isBot && ps.botBand && this.gd.bandAllowed(ps.botBand) && !this.bandTaken(ps.botBand, ps.playerId)) {
+      if (!ps) return;
+      const departed = !this.isSolo && (!ps.alive || ps.left);
+      if (!ps.botControlled && !departed) return;
+      // A departed seat uses the team's deterministic pick, independently of its former AI policy.
+      const bot = departed ? LEGACY_BOT : this.bot;
+      if (!departed && ps.isBot && ps.botBand && this.gd.bandAllowed(ps.botBand) && !this.bandTaken(ps.botBand, ps.playerId)) {
         this._applyBand(ps, ps.botBand, { dedupe: true });
         return;
       }
-      if (ps.isBot && ps.botBand) this.toast(this.players.get(this.hostId), 'warn', msg('AI 队友 {name} 的预设策略不可用，已自动改选', { name: ps.name }));
+      if (!departed && ps.isBot && ps.botBand) this.toast(this.players.get(this.hostId), 'warn', msg('AI 队友 {name} 的预设策略不可用，已自动改选', { name: ps.name }));
       const fallback = () => {
       // a strategy a teammate already took is not selectable (队友已选): the bot re-draws, else the first free one
-      let id = this.bot.pickBand(this, ps);
-      for (let k = 0; k < 8 && this.bandTaken(id, ps.playerId); k++) id = this.bot.pickBand(this, ps);
+      let id = bot.pickBand(this, ps);
+      for (let k = 0; k < 8 && this.bandTaken(id, ps.playerId); k++) id = bot.pickBand(this, ps);
       if (this.bandTaken(id, ps.playerId)) id = this.gd.bandIds().find((b) => !this.bandTaken(b, ps.playerId)) || id;
       this._applyBand(ps, id, { dedupe: true });
       };
-      if (this.bot.decide?.(this, ps, { kind: 'band', valid: () => this.phase === PHASE.BAND_DRAFT && this.draft === d && token === g.token, complete: () => this.draft !== d || token !== g.token || !!d.picks[ps.playerId], fallback })) return;
+      if (bot.decide?.(this, ps, { kind: 'band', valid: () => this.phase === PHASE.BAND_DRAFT && this.draft === d && token === g.token, complete: () => this.draft !== d || token !== g.token || !!d.picks[ps.playerId], fallback })) return;
       fallback();
     });
   }
@@ -340,7 +348,7 @@ export class MatchPhases {
   _applyBand(ps, bandId, { dedupe = false } = {}) {
     const d = this.draft;
     const g = ps && this.draftGroup(ps.playerId);
-    if (!d || !g || !ps.alive || ps.left || d.picks[ps.playerId]) return;
+    if (!d || !g || !ps || d.picks[ps.playerId]) return;
     const randomBonus = bandId === RANDOM_BAND_ID;
     let id = randomBonus ? this.rngDraft.pick(this.gd.bandIds().filter(candidate => !this.bandTaken(candidate, ps.playerId)))
       : this.gd.bandAllowed(bandId) ? bandId : this.defaultBand(ps.playerId);
@@ -349,8 +357,10 @@ export class MatchPhases {
     d.picks[ps.playerId] = id;
     g.picks[ps.playerId] = id;
     ps.bandId = id;
-    ps.lp = this.gd.startLp(id) + (randomBonus ? 1 : 0);
-    if (randomBonus) ps.funds += 1;
+    if (ps.alive && !ps.left) {
+      ps.lp = this.gd.startLp(id) + (randomBonus ? 1 : 0);
+      if (randomBonus) ps.funds += 1;
+    }
     this.markPrivate(ps);
     this.markPublic();
     this.startDraftTurn(g);
@@ -396,14 +406,13 @@ export class MatchPhases {
     if (this.phase !== PHASE.BAND_DRAFT) return;
     for (const g of this.draft.groups) this.clearDraftGroupTimer(g);
     for (const ps of this.order) {
-      if (!ps.alive || ps.left) continue;
       if (!this.draft.picks[ps.playerId]) {
         // One after another in seat order, so each default sees earlier assignments within its group.
         const id = this.defaultBand(ps.playerId);
         this.draft.picks[ps.playerId] = id;
         this.draftGroup(ps.playerId).picks[ps.playerId] = id;
         ps.bandId = id;
-        ps.lp = this.gd.startLp(id);
+        if (ps.alive && !ps.left) ps.lp = this.gd.startLp(id);
       }
       this.markPrivate(ps);
     }

@@ -162,6 +162,7 @@
 //     a player seat (the seat is kept and given back on resume).
 
 import { namecardSource, validNamecard, normalizeNamecard, resolveNamecard } from '../shared/namecards.js';
+import { isCardArtFrame, isCardArtKey, normalizeCardArt } from '../shared/cardArt.js';
 import { randomBytes, randomInt } from 'node:crypto';
 import { DEFAULT_VERSION } from '../shared/versions.js';
 import { aiTakeover, resetAiTakeover, reconcileAiTakeover } from './aiTakeover.js';
@@ -429,6 +430,7 @@ export class Room {
           ...(s.isBot && s.botBand ? { botBand: s.botBand } : {}),
           ...(!s.isBot && Object.hasOwn(s, 'card') ? { card: s.card || null, cardSkin: s.cardSkin || null } : {}),
           ...(!s.isBot ? { namecard: s.namecard || resolveNamecard(null, s.bondPlan, null) } : {}),
+          ...(!s.isBot && s.cardArt ? { cardArt: s.cardArt } : {}),
           ...(!s.isBot && s.illust ? { illust: s.illust } : {}),
           ...(s.skins && Object.keys(s.skins).length ? { skins: s.skins } : {}),
           // a room with gameplay plugins (header "Gameplay plugins"): has this player's page loaded and checked its content?
@@ -802,6 +804,7 @@ export class Lobby {
       case 'room.loadout': return this.loadout(session, msg);
       case 'room.namecard': return this.namecard(session, msg.selection);
       case 'room.card': return this.card(session, msg);
+      case 'room.cardArt': return this.cardArt(session, msg);
       case 'room.avatar': return this.avatar(session, msg);
       case 'room.bondPlan': return this.bondPlan(session, msg);
       case 'room.ownership': return this.ownership(session, msg);
@@ -1812,7 +1815,7 @@ export class Lobby {
       // Catalogue metadata, never part of a room or match; omitted when no loaded plugin publishes a notice.
       if (this.plugins?.hasNotices?.()) info.content.notices = true;
     }
-    info.uiMigration = { diyCandidates: true, diyBatchApply: true, namecards: true };
+    info.uiMigration = { diyCandidates: true, diyBatchApply: true, namecards: true, cardArt: true };
     // Omitted when the switch is off, so a welcome from a normal server stays identical.
     if (this.testEnabled === true) info.testMode = true;
     // Default-on is omitted for compatibility with older servers and clients.
@@ -2245,6 +2248,19 @@ export class Lobby {
     return OK;
   }
 
+  /** Only this session's seat receives its bounded frame; source keys keep delayed outfit edits separate. */
+  cardArt(session, { key, frame, code }) {
+    if (!isCardArtKey(key) || !isCardArtFrame(frame)) return fail(ERR.BAD_MSG);
+    const room = this.roomOf(session), seat = room?.seatOf(session.playerId);
+    if (!seat || code && room.code !== code) return fail(ERR.NOT_IN_ROOM);
+    const value = { key, frame: normalizeCardArt(frame) };
+    if (JSON.stringify(session.cardArt) === JSON.stringify(value)) return OK;
+    session.cardArt = value;
+    seat.cardArt = value;
+    this.broadcastState(room);
+    return OK;
+  }
+
   /** Cosmetic preferences may change during a match; they never touch its battle specification. */
   humanSeat(idx, session, room = null) {
     const data = this.dataFor(room);
@@ -2255,6 +2271,7 @@ export class Lobby {
       seat: idx, playerId: session.playerId, name: session.name, isBot: false, ready: false, connected: session.connected, left: false,
       loadout: session.loadout || null,
       ...cardFields,
+      ...(session.cardArt ? { cardArt: session.cardArt } : {}),
       namecard: resolveNamecard(session.namecard, session.bondPlan, this.safeData().assets),
       ...(this.illusts?.get(session.playerId)?.etag ? { illust: this.illusts.get(session.playerId).etag } : {}),
       bondPlan: session.bondPlan || null,

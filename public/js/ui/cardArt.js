@@ -1,24 +1,20 @@
 import { useEffect, useRef } from '../../vendor/hooks.module.js';
 import { html, Button, Icon, Modal } from './components.js';
-import { createStore, loadPref, savePref, useStore } from '../store.js';
+import { savePref, useStore } from '../store.js';
 import { t } from '../../../shared/i18n.js';
 import { LiveArt } from './dynamicIllustration.js';
+import { cardArtStore as frames, retryCardArtSync } from './cardArtModel.js';
+import { normalizeCardArt, CARD_ART_MIN_ZOOM, CARD_ART_MAX_ZOOM } from '../../../shared/cardArt.js';
+export { normalizeCardArt, cardArtKey, CARD_ART_MIN_ZOOM, CARD_ART_MAX_ZOOM } from '../../../shared/cardArt.js';
+export { setCardArtScope } from './cardArtModel.js';
 
-const frames = createStore({ values: loadPref('room.cardArt', {}) || {} });
 export function ensureCardArtCss() {
   if (typeof document === 'undefined' || document.querySelector('link[data-card-art]')) return;
   const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = '/css/screens/card-art.css'; link.dataset.cardArt = '1'; document.head.appendChild(link);
 }
 const clamp = (value, minimum, maximum) => Math.max(minimum, Math.min(maximum, value));
-export const CARD_ART_MIN_ZOOM = 0.5;
-export const CARD_ART_MAX_ZOOM = 3;
-export function normalizeCardArt(value) {
-  const number = (field, fallback) => typeof value?.[field] === 'number' && Number.isFinite(value[field]) ? value[field] : fallback;
-  return { zoom: clamp(number('zoom', 1), CARD_ART_MIN_ZOOM, CARD_ART_MAX_ZOOM), ox: clamp(number('ox', 0), -100, 100), oy: clamp(number('oy', 0), -100, 100) };
-}
 export function cardArtOf(key) { return normalizeCardArt(frames.get().values[key]); }
 /** Keep each operator appearance's local framing independent; preserve the original default key. */
-export function cardArtKey(charId, skinId = '') { return charId ? charId + (skinId ? ':' + skinId : '') : 'default'; }
 export function useCardArt(key) { return normalizeCardArt(useStore(state => state.values[key], Object.is, frames)); }
 export function setCardArt(key, value) {
   const values = { ...frames.get().values, [key]: normalizeCardArt(value) };
@@ -78,9 +74,10 @@ export function useArtGestures(elementRef, value, onChange, { enabled = true, mi
         oy: frame.oy + (event.key === 'ArrowUp' ? -2 : event.key === 'ArrowDown' ? 2 : 0) });
     } };
 }
-export function CardArtImage({ frameKey, src, class: className = '', custom = false, onError = null, interactive = false, m = null, charId = null, skin = null }) {
+export function CardArtImage({ frameKey, frame: sharedFrame = undefined, src, class: className = '', custom = false, onError = null, interactive = false, m = null, charId = null, skin = null }) {
   ensureCardArtCss();
-  const frame = useCardArt(frameKey);
+  const localFrame = useCardArt(frameKey);
+  const frame = sharedFrame === undefined ? localFrame : normalizeCardArt(sharedFrame);
   const surface = useRef(null);
   const gestures = useArtGestures(surface, frame, next => setCardArt(frameKey, next), { enabled: interactive });
   return html`<span ref=${surface} class=${`cardart__surface${interactive ? ' is-interactive' : ''}`}
@@ -89,6 +86,14 @@ export function CardArtImage({ frameKey, src, class: className = '', custom = fa
       style=${`object-fit:cover;transform:translate(${frame.ox}%,${frame.oy}%) scale(${frame.zoom})`} onError=${onError} />
     ${!custom ? html`<${LiveArt} m=${m} charId=${charId} skin=${skin} frame=${frame} staticSrc=${src} />` : null}
   </span>`;
+}
+
+export function CardArtSyncStatus() {
+  const sync = useStore(state => state.sync, Object.is, frames);
+  const text = sync === 'synced' ? t('取景已同步') : sync === 'pending' || sync === 'sending' ? t('正在同步取景…')
+    : sync === 'error' ? t('取景同步失败') : t('取景已保存在本机');
+  return html`<span role="status">${text}
+    ${sync === 'error' ? html`<${Button} size="sm" variant="ghost" onClick=${retryCardArtSync}>${t('重试')}<//>` : null}</span>`;
 }
 
 export function CardArtDialog({ frameKey, src, m, charId, skin, name, onClose }) {
@@ -105,7 +110,7 @@ export function CardArtDialog({ frameKey, src, m, charId, skin, name, onClose })
       </div>
       <div class="illust-picker__controls">
         <h3><${Icon} name="edit" />${name || t('名片干员')}</h3>
-        <p class="illust-picker__hint">${t('拖动调整位置，滑块、滚轮或双指缩放；取景仅保存在本机。')}</p>
+        <p class="illust-picker__hint">${t('拖动调整位置，滑块、滚轮或双指缩放；位置和大小会同步给同房间成员。')} <${CardArtSyncStatus} /></p>
         <div class="illust-picker__adjust">
           <label class="illust-picker__zoom" for="operator-art-zoom"><span>${t('缩放')}</span><output for="operator-art-zoom">${Math.round(frame.zoom * 100)}%</output>
             <input id="operator-art-zoom" type="range" min=${CARD_ART_MIN_ZOOM} max=${CARD_ART_MAX_ZOOM} step="0.01" value=${frame.zoom} data-testid="operator-art-zoom"

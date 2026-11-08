@@ -119,18 +119,16 @@ test('data/i18n/en.json: shape, the 盟约 season of the EN build, coverage and 
   assert.equal(OVERLAY.lang, 'en');
   assert.equal(OVERLAY.meta.source.season, 'act2autochess', 'built from an EN client that has 卫戍协议：盟约 下半');
   // 0.2.3 adds Clementia before her EN release: official untranslated names/skills/talents remain Chinese.
-  // local-tools + 0.2.3: Clementia and the unreleased collab picks keep official Chinese fallback texts.
-  // Measured 2026-10-10: total 96.9%, skills 95.1%, talents 94%; other category floors stay unchanged.
+  // CN 2.7.91 brings four modules before their overseas release (upstream history 37.91).
+  // Keep collab/new-operator fallback accounting; the pinned increment's base coverage is 96.8%.
   const totals = OVERLAY.meta.extension?.baseTotals || OVERLAY.meta.totals;
-  // New November operators retain Chinese until official overseas releases; protect
-  // the established release's original floors separately from overall coverage.
-  assert.ok(totals.pct >= 96.9, `base coverage ${totals.pct} %`);
+  assert.ok(totals.pct >= 96.5, `base coverage ${totals.pct} %`);
   for (const kind of ['operators', 'skills', 'talents', 'modules', 'traits', 'enemies', 'bonds', 'items', 'effects', 'bands', 'garrisons', 'stages', 'tokens', 'choices', 'config']) {
     const c = OVERLAY.meta.extension?.baseCoverage[kind] || OVERLAY.meta.coverage[kind];
     assert.ok(c && c.texts > 0, `coverage of ${kind}`);
-    // local-tools: talents 94 % — Clementia and the collab picks (tools/build-data.mjs DIY_COLLAB_ALLOWED) 焰狐龙梓兰 and 结城理 are not
+    // local-tools: keep the upstream CN 2.7.91 talent floor (93.4%); Clementia and the collab picks are not
     // in the EN client
-    const min = kind === 'talents' ? 94 : ['operators', 'skills', 'modules'].includes(kind) ? 95 : 98;
+    const min = kind === 'talents' ? 93.4 : ['operators', 'skills', 'modules'].includes(kind) ? 95 : 98;
     assert.ok(c.pct >= min, `${kind}: ${c.pct} %`);
   }
   assert.deepEqual(Object.keys(OVERLAY.files).filter((f) => !DATA_FILES.includes(f)), []);

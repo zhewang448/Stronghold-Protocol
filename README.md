@@ -47,6 +47,9 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 本版已整合上游 **v0.3.3**，包含 Forge 导入与工作台扩展、测试房间、联防及干员规则修复，详见 [更新记录](docs/LOCAL-CHANGELOG.md)。
 
+2026-11-08 源码后续适配了原上游 dev 的战斗修复、四个新模组与内置 AI，并加入房间立绘位置/大小同步。
+这是尚未发布整合包的源码更新，范围和验证见 [实施记录](docs/UPSTREAM-DEV-20261108.md)。
+
 ## 开始运行
 
 Windows 服主从同版本 Release 下载 StrongholdProtocolLauncher-v1.4.0-win-x64.zip，解压后双击 StrongholdProtocolLauncher.exe。可新建空目录自动安装游戏和便携 Node.js，也可导入已有根目录；EXE 可放在实例目录外。启动器支持多实例、监听端口＋索引发现、回收站删除和安全控制，不提供文件搜索。

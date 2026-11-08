@@ -624,3 +624,10 @@ The WebSocket handshake records only a bounded, valid HTTP(S) Origin host (inclu
 ## 指定 UI 迁移可选协议
 
 `welcome.uiMigration={diyCandidates:true,diyBatchApply:true,namecards:true}` 声明新能力。`room.namecard {selection:{mode,id,x,y,zoom}}` 独立于 `room.card`，服务端只接受目录身份并在 `room.state.seats[].namecard` 同步模式、取景与 `resolved`；自动模式随预选盟约更新，AI 不提供底图。`m.private.diyChoice` 在简报私有视图提供本人已确认名单、候选和禁用信息。`g.diyApply {choices:{'5':charIds,'6':charIds},setupRevision}` 可只提交一个或多个修改阶；每阶数组可为 0 至该阶名额的去重候选，空数组明确表示不带该阶自选，省略的阶继续沿用原决定。仅本人 `INFO_CHECK` 且无重刷投票时接受。服务器先在副本中校验全部阶并构造新映射与库存，成功才整体替换；失败不改变任一阶。仍支持旧 `g.diyChoose {tier,charIds,setupRevision}` 的完整名额操作。`diyCandidates` 声明简报候选编辑，`diyBatchApply` 声明可选人数与批量提交；旧候选服务器只接受完整名额和原单阶指令，客户端按能力隐藏清空入口。准备期可选 `layerForecast` 只发本人，不进入公共广播/回放/快照。`b.snap.overdrive` 增加可选真实阶段行，原单位九字段元组不变。详见 [实施说明](../STARDUST-UI-MIGRATION.md)。
+
+
+### 房间立绘取景同步（2026-11-08）
+
+welcome.uiMigration.cardArt 标识能力。room.cardArt 消息包含 key、frame:{zoom,ox,oy} 和可选 code；key 为当前干员外观或 custom，zoom 0.5–3，ox/oy -100–100，仅接受有限数值。
+服务器只修改发送会话自己的席位；code 不属于当前房间或没有席位时拒绝。会话和 room.state.seats[].cardArt 保存经归一化的来源与取景，向成员和观战者广播，重连/换房保留。
+客户端按外观在本机保存，500 ms 合并并沿用 RATE/TIMEOUT/OFFLINE 重试，welcome 后重发。接收者只应用来源匹配的拥有者取景；缺失或不匹配时使用默认值，绝不使用接收者本机取景。纯外观，不写入 BattleSpec。

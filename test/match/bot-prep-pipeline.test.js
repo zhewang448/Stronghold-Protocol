@@ -13,14 +13,13 @@ function fixture() {
       assert.equal(match, m); assert.equal(player, ps); calls.push([name, options]);
     };
   }
-  for (const name of ['buyLoopSteps', 'advisorSpendSteps', 'arrangeSteps', 'applyPlanSteps']) {
+  for (const name of ['buyLoopSteps', 'planSpendSteps', 'arrangeSteps', 'applyPlanSteps']) {
     actions[name] = function* (match, player, ...args) {
       assert.equal(match, m); assert.equal(player, ps); calls.push([name, ...args]);
       yield name;
       if (name === 'arrangeSteps' && args[0]?.final) return job;
     };
   }
-  actions.economyPlan = (match, player) => { assert.equal(match, m); assert.equal(player, ps); return player.advisor; };
   actions.hasHandRoom = player => { assert.equal(player, ps); return player.room; };
   actions.rememberOwned = player => { assert.equal(player, ps); calls.push(['remember']); };
   actions.ready = player => { assert.equal(player, ps); player.ready = true; calls.push(['ready']); };
@@ -39,12 +38,12 @@ test('prep keeps legacy action order, yield boundaries and delegated job identit
   const run = finish(f.hooks.prepBegin(f.m, f.ps, { delegate: true }));
   assert.equal(run.result, f.job);
   assert.deepEqual(run.yielded, [undefined, undefined, 'buyLoopSteps', undefined, 'buyLoopSteps',
-    'advisorSpendSteps', undefined, 'arrangeSteps', undefined, 'arrangeSteps']);
+    'planSpendSteps', undefined, 'arrangeSteps', undefined, 'arrangeSteps']);
   assert.deepEqual(f.calls, [
     ['personal', 'bot'], ['takeOffers', undefined], ['sellJunk', undefined],
     ['buyLoopSteps', { fillOnly: true, maxRefreshes: 0 }], ['takeOffers', undefined], ['levelUp', undefined],
     ['buyLoopSteps', { fillOnly: false, maxRefreshes: 16 }], ['takeOffers', undefined], ['levelUp', { spare: true }],
-    ['advisorSpendSteps'], ['spendDown', undefined], ['maybeFreeze', undefined], ['arrangeSteps'], ['equipItems', undefined],
+    ['planSpendSteps'], ['spendDown', undefined], ['maybeFreeze', undefined], ['arrangeSteps'], ['equipItems', undefined],
     ['arrangeSteps', { final: true, defer: true, delegate: true, pooled: false }],
   ]);
 });
@@ -78,15 +77,14 @@ test('null, pending and unchanged plans clean up without applying a layout', () 
   }
 });
 
-test('advisor plans recheck expiring funds before Ready and re-place only after a purchase', () => {
+test('a rehearsed layout is final: plan spending cannot buy or arrange again before Ready', () => {
   const f = fixture(); f.ps.room = true; f.ps.advisor = true;
-  finish(f.hooks.prepEnd(f.m, f.ps));
-  assert.deepEqual(f.calls.map(x => x[0]), ['resolveTemp', 'advisorSpendSteps', 'maybeFreeze', 'remember', 'personal', 'ready']);
-  const g = fixture(); g.ps.room = true; g.ps.advisor = true;
-  g.actions.advisorSpendSteps = function* () { g.calls.push(['advisorSpendSteps']); g.ps.chess = [{ uid: 1 }]; yield; };
-  finish(createPrepSteps(g.actions, { maxRefreshes: 16 }).prepEnd(g.m, g.ps));
-  assert.deepEqual(g.calls.map(x => x[0]), ['resolveTemp', 'advisorSpendSteps', 'takeOffers', 'arrangeSteps', 'equipItems',
-    'resolveTemp', 'maybeFreeze', 'remember', 'personal', 'ready']);
+  const original = new Map(), best = new Map([['chosen', true]]), chosen = [{ uid: 1 }];
+  f.actions.planSpendSteps = function* () { yield; throw new Error('post-rehearsal spending would invalidate the chosen layout'); };
+  const hooks = createPrepSteps(f.actions, { maxRefreshes: 16 });
+  finish(hooks.prepEnd(f.m, f.ps, { done: true, best, plans: [original], chosen }));
+  assert.deepEqual(f.calls.map(x => x[0]), ['applyPlanSteps', 'resolveTemp', 'remember', 'personal', 'ready']);
+  assert.equal(f.ps.ready, true);
 });
 
 test('dead and ready seats cause no prep actions', () => {

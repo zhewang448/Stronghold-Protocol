@@ -70,7 +70,7 @@ import { RecoveryHost, bootDomainGate } from './ui/domainRecovery.js';
 import { markGameEntry } from './ui/domainRecoveryModel.js';
 import { installRehearsal } from './battle/rehearsal.js';
 import { recordResult, installStatsRecorder } from './ui/stats.js';
-import { installSettingsViews, loadoutStore, installLoadoutSync, installOwnershipSync, installDiySync, installSkinsSync, installCardSync, installAvatarSync } from './ui/loadoutSync.js';
+import { installSettingsViews, loadoutStore, installLoadoutSync, installOwnershipSync, installDiySync, installSkinsSync, installCardSync, installCardArtSync, installAvatarSync } from './ui/loadoutSync.js';
 import { installNamecardSync } from './ui/namecards.js';
 import { installBondPlanSync } from './ui/bondPlan.js';
 import { installIllustSync } from './ui/customIllust.js';
@@ -518,6 +518,7 @@ installNamecardSync({ net });
   installOwnershipSync({ net });
   installDiySync({ net });
   installCardSync({ net });
+  installCardArtSync({ net });
   installAvatarSync({ net });
   installIllustSync({ net });
   // 干员皮肤 (docs/SKINS.md): keeps the server's copy of this browser's chosen appearances current (room.skins), from

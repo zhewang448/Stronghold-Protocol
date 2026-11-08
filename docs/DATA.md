@@ -22,13 +22,13 @@ node --test test/data.test.js          # integrity tests (+ raw-data cross-check
 ```
 Unknown options or a missing option value are errors (exit code 2); `--refresh` and `--offline` are exclusive.
 
-- **Cache.** Official files live under `.cache/gamedata/<repo path>` (`excel/activity_table.json`,
-  `levels/enemydata/enemy_database.json`, `levels/activities/act1autochess/level_*.json`, …) and are fetched from
-  `https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/<path>` when missing.
-  Downloads are validated (must parse as JSON) and written atomically. With `--refresh`, a download that still fails
-  after four attempts aborts the build (exit code 1), even if an older cached file exists. Generated files and the
-  previous report remain untouched, including with `--force`; successfully downloaded cache entries are not rolled
-  back. Retry `--refresh` to complete the refresh; cached files are not verified to share an upstream revision.
+- **Cache.** The default profile pins season/activity/enemy/level data to 17759cc8cdf37388414145d16262a3a06f3ab25e
+  and character/skill/module data to 08ba2aea0e8dba88eff0ec0d2c87e24b4db626f8. These files live in
+  .cache/gamedata@<sha>/<repo path> and download from that exact Git revision. Other versions use their own profile pins.
+  The operator-table increment provides four modules and the default-version Clemnt S3 3.5 s tile lock; historical
+  builds retain their original tables. Translation and emote builds read the default profile too.
+  Downloads must parse as JSON and are written atomically. A failed refresh leaves generated outputs intact;
+  completed cache downloads are retained. See [the integration record](UPSTREAM-DEV-20261108.md).
 - **Report.** A run that reaches integrity validation writes `.cache/build-data-report.json` (counts, byte sizes, warnings (each once), errors, `written`).
   Integrity errors (see §17) make the exit code 1 **and leave the previous output untouched** (unless `--force`);
   warnings never do. Each output file is written atomically (temp file + rename).

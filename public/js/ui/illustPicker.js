@@ -3,7 +3,7 @@ import { html, Button, Icon, Modal } from './components.js';
 import { toast } from './toasts.js';
 import { t } from '../../../shared/i18n.js';
 import { ILLUST_SOURCE_MAX_BYTES, encodeIllust, uploadOwnIllust, removeOwnIllust, useOwnIllust, ownIllustSnapshot } from './customIllust.js';
-import { ensureCardArtCss, cardArtOf, setCardArt, useArtGestures, useCardArt, CardArtImage, CARD_ART_MIN_ZOOM, CARD_ART_MAX_ZOOM } from './cardArt.js';
+import { ensureCardArtCss, cardArtOf, setCardArt, useArtGestures, useCardArt, CardArtImage, CardArtSyncStatus, CARD_ART_MIN_ZOOM, CARD_ART_MAX_ZOOM } from './cardArt.js';
 import { illustrationCropRect } from '../../../shared/illustration.js';
 import { PicturePresets } from './picturePresets.js';
 import { currentAccount } from './accounts.js';
@@ -87,8 +87,9 @@ export function IllustDialog({ onClose }) {
       </div>
       <div class="illust-picker__controls">
         <h3><${Icon} name=${picture ? 'expand' : own ? 'edit' : 'image'} />${picture ? t('上传裁切') : own ? t('立绘调整') : t('替换立绘')}</h3>
-        <p class="illust-picker__hint">${own && !picture ? t('拖动调整位置，滑块、滚轮或双指缩放；取景仅保存在本机。')
+        <p class="illust-picker__hint">${own && !picture ? t('拖动调整位置，滑块、滚轮或双指缩放；位置和大小会同步给同房间成员。')
           : t('导入时可拖动取景，使用滑块、滚轮或双指缩放；确认后按 1:2 裁切并分享给同房间成员。')}</p>
+        ${own && !picture ? html`<p class="illust-picker__hint"><${CardArtSyncStatus} /></p>` : null}
         ${picture || own ? html`<div class="illust-picker__adjust">
           <label class="illust-picker__zoom" for="illust-zoom"><span>${t('缩放')}</span><output for="illust-zoom">${Math.round(activeFrame.zoom * 100)}%</output>
             <input id="illust-zoom" type="range" min=${picture ? 1 : CARD_ART_MIN_ZOOM} max=${picture ? 3 : CARD_ART_MAX_ZOOM} step="0.01" value=${activeFrame.zoom}

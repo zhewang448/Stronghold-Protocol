@@ -1,9 +1,10 @@
 // Normative message catalogue (DESIGN §8). Used by server (validation) and client (building requests).
 // Every client→server message is `{ t, rid?, ...fields }`. Unknown `t` or invalid fields ⇒ ERR.BAD_MSG.
 
-import { DIFFICULTIES, NAME_MAX_LEN, ROOM_CODE_LEN, MAX_SEATS, ROOM_CAPACITIES, EMOTE_IDS, EMOTE_BARRAGE_COUNT_MAX, PING_KINDS, GEO } from './constants.js';
+import { DIFFICULTIES, NAME_MAX_LEN, ROOM_CODE_LEN, MAX_SEATS, ROOM_CAPACITIES, EMOTE_IDS, EMOTE_BARRAGE_COUNT_MAX, PING_KINDS, GEO, REHEARSAL_MAX_CANDIDATES } from './constants.js';
 import { isDroppableChess } from './standIn.js';
 import { validNamecard } from './namecards.js';
+import { isCardArtFrame, isCardArtKey } from './cardArt.js';
 import { diySlotIds, diyBenchIds, validateDiyPicks } from './diy.js';
 import { cultivatedStats, isPotential, isCultivate, POTENTIAL_DEFAULT, CULTIVATE_DEFAULT, hasPotentialData } from './potential.js';
 import { isContentHash } from './plugins/identity.js';
@@ -566,6 +567,8 @@ export const C2S = {
   'room.skins': { skins: isSkinSelection },
   'room.card': { charId: v => v === '' || isId(v), skinId: v => typeof v === 'string' && v.length <= 120 && /^[A-Za-z0-9_@#+.-]*$/.test(v), $optional: ['skinId'] },
   'room.namecard': { selection: validNamecard },
+  'room.cardArt': { key: isCardArtKey, frame: isCardArtFrame,
+    code: v => isStr(v, ROOM_CODE_LEN + 2) && /^[A-Za-z0-9]+$/.test(v), $optional: ['code'] },
   'room.bondPlan': { bondId: (v) => v === null || isId(v) },
 
   // operator ownership (干员持有, 0.2.0 补位): stored per session / seat; a match takes the list its seat had when it
@@ -686,9 +689,9 @@ export const C2S = {
   // match state of its own; `error: true` says this client cannot run the task at all (no module Worker, or the
   // simulation data did not load), so the server takes the rehearsal over at once instead of waiting for its timeout.
   // An unknown task, another sender or a task the server already took over is ignored; an invalid `choice` makes the
-  // server run the candidates itself. `choice` stops at 7 because a match rehearses at most 8 candidates.
+  // server run the candidates itself. `choice` stays below the shared limit of candidates per prep.
   'b.rehearsalResult': {
-    taskId: isId, choice: (v) => v === undefined || isInt(v, 0, 7), error: (v) => v === undefined || v === true,
+    taskId: isId, choice: (v) => v === undefined || isInt(v, 0, REHEARSAL_MAX_CANDIDATES - 1), error: (v) => v === undefined || v === true,
     $optional: ['choice', 'error'],
   },
 };

@@ -1,4 +1,9 @@
 {
+  "拖动调整位置，滑块、滚轮或双指缩放；位置和大小会同步给同房间成员。": "Drag to reposition; use the slider, wheel or pinch to zoom. Position and size are shared with everyone in the room.",
+  "取景已同步": "Framing synced",
+  "正在同步取景…": "Syncing framing…",
+  "取景同步失败": "Could not sync framing",
+  "取景已保存在本机": "Framing saved on this device",
   "鼠标大小": "Cursor size",
   "调节后立即生效并保存在本机，默认 96 px。": "Applies immediately and is saved in this browser. Default: 96 px.",
   "实际大小预览": "Actual size preview",

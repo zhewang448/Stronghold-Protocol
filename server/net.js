@@ -137,6 +137,8 @@ export class Session {
     /** @type {string | null} 名片干员 (lobby-owned, PR #643 split 6): the charId whose portrait fills this player's seat card in
      * the waiting room; PUBLIC (room.state seats[].card), cosmetic */
     this.card = null;
+    /** @type {{ key: string, frame: { zoom: number, ox: number, oy: number } } | null} public room illustration framing */
+    this.cardArt = null;
     this.avatar = null;
     /** @type {string} client address of the latest connection (logging) */
     this.addr = '?';

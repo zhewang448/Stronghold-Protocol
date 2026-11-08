@@ -293,7 +293,8 @@ test('own battle statistics stay available when viewing a teammate; owner filter
 });
 
 test('evicted observed battles keep match totals; replaying one replaces its snapshot without double counting', async () => {
-  const start = realStart(7310);
+  // Use the attacking fixture shared by the pacing tests; 7310 now picks a funds-deferred opening.
+  const start = realStart();
   const r = rig();
   const recorded = new Map();
   for (let i = 0; i < 5; i++) {

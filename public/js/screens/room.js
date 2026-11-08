@@ -4,7 +4,8 @@ import { DEFAULT_VERSION, roomVersion, serverDefaultVersion, versionLabel, needs
 import { useAccount, AccountTag } from '../ui/accounts.js';
 import { useCustomIllust, useOwnIllust, ownIllustSnapshot, removeOwnIllust } from '../ui/customIllust.js';
 import { IllustDialog } from '../ui/illustPicker.js';
-import { CardArtImage, CardArtDialog, cardArtKey } from '../ui/cardArt.js';
+import { CardArtImage, CardArtDialog, cardArtKey, setCardArtScope } from '../ui/cardArt.js';
+import { sharedCardArt } from '../../../shared/cardArt.js';
 import { TrophyBadge } from '../ui/trophies.js';
 import { isOwnerName, decorateOwnerName } from '../ui/ownerName.js';
 import { enabled as federationEnabled, currentNode } from '../federation.js';
@@ -274,6 +275,7 @@ function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvi
   const custom = customIllust && customIllust !== badCustom ? customIllust : null;
   const frameKey = custom ? (isMe ? 'custom' : 'custom:' + seat.playerId)
     : cardArtKey(portraitOperator?.chess?.charId, isMe ? portraits.mySkin : seat.cardSkin);
+  const sharedFrame = isMe ? undefined : sharedCardArt(seat.cardArt, custom ? 'custom' : frameKey);
   const owner = isOwnerName(seat.name);
   const canPick = isMe && !seat.isBot && !!onPickCard;
   return html`<article class=${`rseat${ready ? ' is-ready' : ''}${flash ? ' is-flash' : ''}${isMe ? ' is-me' : ''}${isHostSeat ? ' is-host' : ''}${offline ? ' is-offline' : ''}${seat.isBot ? ' is-bot' : ''}`}
@@ -283,8 +285,8 @@ function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvi
     <span class="rseat__clip" aria-hidden="true"></span>
     <header class="rseat__strip"><i></i><span class="num">P${index + 1}</span></header>
     <div class=${`rseat__art${canPick ? ' is-pickable' : ''}`} onClick=${canPick ? onPickCard : undefined} title=${canPick ? t('点击更换名片干员') : undefined}>
-      ${custom ? html`<${CardArtImage} frameKey=${frameKey} src=${custom} custom=${true} interactive=${canPick} onError=${() => setBadCustom(custom)} />`
-        : src ? html`<${CardArtImage} frameKey=${frameKey} src=${src} m=${portraits.m} charId=${portraitOperator?.chess?.charId} interactive=${canPick}
+      ${custom ? html`<${CardArtImage} frameKey=${frameKey} frame=${sharedFrame} src=${custom} custom=${true} interactive=${canPick} onError=${() => setBadCustom(custom)} />`
+        : src ? html`<${CardArtImage} frameKey=${frameKey} frame=${sharedFrame} src=${src} m=${portraits.m} charId=${portraitOperator?.chess?.charId} interactive=${canPick}
           skin=${isMe ? portraits.mySkin : seat.cardSkin} onError=${() => setBad(src)} />`
         : html`<span class="rseat__glyph">${seat.isBot ? html`<${Icon} name="robot" />` : [...(seat.name || '?')][0]}</span>`}
       ${canPick ? html`<button type="button" class="rseat__pick" onClick=${(e) => { e.stopPropagation(); onPickCard(); }} aria-label=${t('更换名片干员')}><${Icon} name="edit" /><span>${t('更换立绘')}</span></button>` : null}
@@ -516,6 +518,10 @@ export function RoomScreen() {
   const currentArt = { frameKey: myCustomIllust ? 'custom' : cardArtKey(mineChar, mySkin),
     src: myCustomIllust || (facts?.mine ? seatPortrait({ ...facts.mine, card: myCard, cardSkin: mySkin }, portraits) : null), custom: !!myCustomIllust,
     m, charId: mineChar, skin: mySkin, name: mineOperator?.chess?.name };
+  useEffect(() => {
+    setCardArtScope(facts?.mine ? { roomCode: room.code, playerId: me.playerId,
+      key: currentArt.custom ? 'custom' : currentArt.frameKey, frameKey: currentArt.frameKey } : null);
+  }, [room?.code, me.playerId, facts?.mine?.playerId, currentArt.frameKey, currentArt.custom]);
   const vote = room?.versionVote;
   const versionWhy = isModdedRoom(room) ? t('请先关闭改变玩法的插件') : null;
   const searchable = CAN_QUEUE && !!room && coop && facts.isHost && room.private !== true && !room.test && !isModdedRoom(room) && !room.versionVote && room.aiPicksLast === true && !room.aiTakeoverEnabled && !room.uniteLayerGains && !room.independentPools && !room.allowDuplicateBands && !room.rescueEnabled && (room.enemyHpMultiplier ?? 1) === 1 && Object.entries(CONVENIENCE_DEFAULTS).every(([key, value]) => room.convenience?.[key] === value) && facts.seats.length === DEFAULT_SEATS && facts.humans.every(s => s.connected) && !room.inMatch;

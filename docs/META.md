@@ -103,7 +103,7 @@ Co-op: random order (all seats, bots included), one pick per turn, ONE countdown
 published as `m.public.deadline` (= `draft.turnDeadline`; `draft.turnSeconds` its length) — no step cap; AI seats pick
 at once. A turn that runs out takes the strategy the player highlights in the draft screen (`g.bandFocus {bandId?}`,
 `Match.timeoutBand`) while it is allowed and no teammate holds it, else `bandDraft.timeoutBandId` 华法琳, else the first
-free strategy by sortId (`defaultBand`; a departing seat gets `defaultBand` too). One skip per player (`g.bandSkip`: the
+free strategy by sortId (`defaultBand`; a departed seat instead keeps its turn for the team AI pick, with 0 LP). One skip per player (`g.bandSkip`: the
 player moves to the end of the order; refused when nobody is left to pass to). The draft screen disables skip when
 no other unpicked player remains; finished players stay in the published order but are not skip targets. A strategy a teammate already took is
 refused (队友已选); band must list the mode type in `modeTypeList`. A single human (co-op with AI teammates only):
@@ -113,7 +113,7 @@ untimed. Solo: free pick, no timer, no skip. Starting LP = `bands[id].totalHp`.
 
 房主可在开局前启用「允许重复选择策略」（`room.setAllowDuplicateBands { on }`，默认关闭）。
 `room.state` / `m.public` / `m.result` 仅在开启时携带 `allowDuplicateBands: true`；旧记录缺字段按关闭。
-开启后 `Match.bandTaken` 对同组策略返回未占用，手选、AI 预设、随机、超时和离开座位的默认分配统一适用；
+开启后 `Match.bandTaken` 对同组策略返回未占用，手选、AI 预设、随机、超时和离席座位的团队代选统一适用；
 仍校验版本/模式资格、当前轮次和每人一次选择。恢复、版本子进程及本机记录保留该规则；此类对局不计官方统计。
 房主修改后其他玩家需要重新准备，开局后不可修改。此规则为维护者于 2026-11-05 明确要求的 `[ASSUMED]` 扩展。
 
@@ -1275,3 +1275,11 @@ AI 策略保存在 AI 席位，开局时按本房数据再次检查；被占用�
 `layerForecast` 在存活本人 PREP 私有视图给出确定性 `onPrepEnd` 层数和来源，按真实派发顺序记账，前序预计层数供后续读取。隔离 RNG 和状态、不触发层奖励级联、不执行插件；随机、队友贡献和插件分别提示，异常隐藏结果并记录诊断。输入未变复用缓存，状态改变后重新预测。
 
 每阶最多四候选；真人可明确选择 0–2 名，缺少该阶选择时仍按原默认优先顺序取最多两名。客户端草稿仅在“应用名单”后通过 `g.diyApply` 一次提交全部修改阶，服务端在副本校验合法名单并准备好所有个人库存后才整体替换映射；空数组是明确不带该阶自选，不会回退到默认。`INFO_CHECK` 成功应用清除本人就绪；重刷期间拒绝。候选只在简报弹窗显示，底栏摘要显示服务器已确认结果，放弃或尚未应用的草稿不改变商店库存。`welcome.uiMigration.diyBatchApply` 缺失的旧候选服务器继续要求每阶选满，并由客户端使用旧单阶命令，不出现清空功能。简报后锁定；完整候选、明确的空/非空选择及最终映射分别恢复，旧记录不重选。完整兼容细节见 [指定 UI 迁移](STARDUST-UI-MIGRATION.md)。
+
+
+## 2026-11-08 内置 AI 适配补充
+
+默认内置策略沿原上游 dev 升级，来源及完整范围见 [适配记录](UPSTREAM-DEV-20261108.md)。每回合固定主盟约；采购和出阵保留其激活层级。职业队、层数交易、寻呼补员、首领阵容和装备使用当前玩家的数据与卡池。
+协作避让仅针对同卡池的存活队友；团队医疗仍按对局团队判断。离席者策略轮到时由 LEGACY_BOT 按团队规则选择，保留 0 LP，适配每组并行轮选。
+最终攻势预演优先比较扣除漏怪代价的首领伤害，普通场优先少漏，平局比较首领伤害、战斗叠层及击杀。候选包含首领身体/路线、分散布阵、重选输出和吞噬方案，上限 16；完成预演后不再执行会覆盖所选阵容的经济流程。
+策略 ID 与现有可选策略接口保留；启发式权重均为 ASSUMED，实际改动会更新四个版本的黄金结果。

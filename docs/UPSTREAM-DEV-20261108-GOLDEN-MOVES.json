@@ -1,0 +1,4402 @@
+{
+  "baseline": "073081bf8c109e1845a02b64690a0bd61fb13421",
+  "upstream": "eff7d93abbd1bd6986e2e9c2d7a1e066b1975bbc",
+  "total_scenarios": 1010,
+  "changed_scenarios": 150,
+  "counts": {
+    "test/golden/act1autochess/bonds.json": 2,
+    "test/golden/act1autochess/diy.json": 1,
+    "test/golden/act1autochess/fields.json": 7,
+    "test/golden/act1autochess/matches.json": 16,
+    "test/golden/act1autochess/roster.json": 6,
+    "test/golden/act1autochess/standins.json": 2,
+    "test/golden/act1autochess-v1_1/bonds.json": 2,
+    "test/golden/act1autochess-v1_1/diy.json": 2,
+    "test/golden/act1autochess-v1_1/fields.json": 7,
+    "test/golden/act1autochess-v1_1/matches.json": 16,
+    "test/golden/act1autochess-v1_1/roster.json": 6,
+    "test/golden/act1autochess-v1_1/standins.json": 2,
+    "test/golden/act2autochess-v2_1/bonds.json": 2,
+    "test/golden/act2autochess-v2_1/diy.json": 4,
+    "test/golden/act2autochess-v2_1/fields.json": 6,
+    "test/golden/act2autochess-v2_1/matches.json": 16,
+    "test/golden/act2autochess-v2_1/roster.json": 9,
+    "test/golden/bonds.json": 2,
+    "test/golden/diy.json": 2,
+    "test/golden/fields.json": 6,
+    "test/golden/matches.json": 21,
+    "test/golden/roster.json": 12,
+    "test/golden/standins.json": 1
+  },
+  "note": "原因按适配类别列示；changed_fields 和前后结果为实际逐场比较，不声称单一修复的独立因果效应。",
+  "scenarios": [
+    {
+      "file": "test/golden/act1autochess/bonds.json",
+      "scenario": "bond-kjeragShip-high",
+      "about": "谢拉格 high: tier 2 layers 999; chess_char_2_03_b chess_char_1_02_b chess_char_5_05_b chess_char_3_02_b chess_char_2_05_b chess_char_3_11_b chess_char_3_14_b chess_char_5_06_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 18,
+        "total": 18,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 18,
+        "total": 18,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/bonds.json",
+      "scenario": "bond-skillfulShip-high",
+      "about": "灵巧 high: tier 1 layers 999; chess_char_5_05_b chess_char_5_04_b chess_char_5_07_b chess_char_1_14_b chess_char_2_10_b chess_char_5_02_b chess_char_5_03_b chess_char_5_06_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 34,
+        "total": 34,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 34,
+        "total": 34,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/diy.json",
+      "scenario": "diy-036",
+      "about": "5_diy1_a=judge/S1 5_diy2_a=judge/S2 5_diy1_a=judge/S3 5_diy2_b=judge/S1 5_diy1_b=judge/S2 5_diy2_b=judge/S3 5_diy1_b=judge/S1/002_judge 5_diy2_b=judge/S2/002_judge 5_diy1_b=judge/S3/002_judge 5_diy2_b=judge/S1/003_judge 5_diy1_b=judge/S2/003_judge 5_diy2_b=judge/S3/003_judge",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "killed",
+        "players",
+        "snaps",
+        "ticks",
+        "time",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 86,
+        "total": 96,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 78,
+        "total": 96,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/fields.json",
+      "scenario": "boss-boss_1-solo",
+      "about": "假想敌：胄 solo pool 1800000: chess_char_5_08_b chess_char_5_11_b chess_char_5_05_b chess_char_5_13_b chess_char_5_14_b chess_char_5_07_b chess_char_5_06_b chess_char_5_09_b chess_char_5_10_b chess_char_5_12_b token_10032_jesca2_jckshd",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 17,
+        "total": 13,
+        "bossHpLeft": 1547571
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 17,
+        "total": 13,
+        "bossHpLeft": 1547571
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/fields.json",
+      "scenario": "boss-boss_2-pair",
+      "about": "假想敌：铳 pair pool 1740000: chess_char_4_01_b chess_char_4_04_b chess_char_4_05_b chess_char_5_15_b chess_char_5_16_b chess_char_5_17_b chess_char_5_18_b chess_char_4_02_b chess_char_4_03_b chess_char_4_06_b | chess_char_4_10_b chess_char_4_07_b chess_char_4_08_b chess_char_4_16_b chess_char_4_09_b chess_char_4_11_b chess_char_4_12_b chess_char_4_13_b chess_char_4_14_b chess_char_4_15_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "bossHpLeft",
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "rngDraws",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 8,
+        "total": 8,
+        "bossHpLeft": 1423070
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 8,
+        "total": 8,
+        "bossHpLeft": 1440667
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/fields.json",
+      "scenario": "boss-boss_2-solo",
+      "about": "假想敌：铳 solo pool 870000: chess_char_4_17_b chess_char_6_03_b chess_char_6_02_b chess_char_6_06_b chess_char_6_07_b chess_char_4_18_b chess_char_6_01_b chess_char_6_04_b chess_char_6_05_b chess_char_6_08_b token_10017_skadi2_dedant",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "rngDraws",
+        "snaps",
+        "ticks",
+        "time",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 7,
+        "total": 7,
+        "bossHpLeft": 0
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 7,
+        "total": 7,
+        "bossHpLeft": 0
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/fields.json",
+      "scenario": "boss-boss_6-pair",
+      "about": "阿利斯泰尔，帝国余晖 pair pool 3980000: chess_char_5_08_b chess_char_5_01_b chess_char_5_05_b chess_char_5_04_b chess_char_5_07_b chess_char_5_02_b chess_char_5_03_b chess_char_5_06_b chess_char_5_09_b chess_char_5_10_b token_10032_jesca2_jckshd | chess_char_5_11_b chess_char_4_01_b chess_char_5_13_b chess_char_5_14_b chess_char_5_12_b chess_char_5_15_b chess_char_5_16_b chess_char_5_17_b chess_char_5_18_b chess_char_4_02_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "units"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 6,
+        "total": 6,
+        "bossHpLeft": 2813945
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 6,
+        "total": 6,
+        "bossHpLeft": 2813945
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/fields.json",
+      "scenario": "boss-boss_7-solo",
+      "about": "“萨米的意志” solo pool 1800000: chess_char_6_16_b chess_char_5_08_b chess_char_5_01_b chess_char_5_05_b chess_char_5_04_b chess_char_5_07_b chess_char_6_15_b chess_char_5_02_b chess_char_5_03_b chess_char_5_06_b token_10032_jesca2_jckshd",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "bossHpLeft",
+        "enemies",
+        "events",
+        "hooks",
+        "players",
+        "rngDraws",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 11,
+        "total": 11,
+        "bossHpLeft": 1279238
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 11,
+        "total": 11,
+        "bossHpLeft": 1279591
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/fields.json",
+      "scenario": "hidden-boss_9-pair",
+      "about": "假想敌：铳 pair pool 5600000: chess_char_6_03_b chess_char_6_06_b chess_char_6_07_b chess_char_6_04_b chess_char_6_05_b chess_char_6_08_b chess_char_6_09_b chess_char_6_10_b chess_char_6_11_b chess_char_6_12_b token_10017_skadi2_dedant token_10030_mlyss_wtrman | chess_char_6_16_b chess_char_5_01_b chess_char_5_05_b chess_char_5_04_b chess_char_6_13_b chess_char_6_14_b chess_char_6_15_b chess_char_5_02_b chess_char_5_03_b chess_char_5_06_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "hooks",
+        "players",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 6,
+        "total": 6,
+        "bossHpLeft": 4713411
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 6,
+        "total": 6,
+        "bossHpLeft": 4713411
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/fields.json",
+      "scenario": "unite-2",
+      "about": "联防 2 helper(s), 11 leaked: chess_char_5_08_b chess_char_5_05_b chess_char_5_04_b chess_char_5_07_b chess_char_5_03_b chess_char_5_06_b chess_char_5_09_b chess_char_5_10_b token_10032_jesca2_jckshd | chess_char_5_11_b chess_char_5_13_b chess_char_5_14_b chess_char_5_12_b chess_char_5_15_b chess_char_5_16_b chess_char_5_17_b chess_char_5_18_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "units"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 10,
+        "total": 10,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 10,
+        "total": 10,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/matches.json",
+      "scenario": "solo-FUNNY-1",
+      "about": "solo FUNNY, 1 bot seat(s), seed 1",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 27,
+        "bossPoolLeft": 0,
+        "virtualMs": 106000
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 27,
+        "bossPoolLeft": 0,
+        "virtualMs": 106000
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/matches.json",
+      "scenario": "solo-FUNNY-2",
+      "about": "solo FUNNY, 1 bot seat(s), seed 2",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 26,
+        "bossPoolLeft": 0,
+        "virtualMs": 106000
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 26,
+        "bossPoolLeft": 0,
+        "virtualMs": 106000
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/matches.json",
+      "scenario": "solo-NORMAL-1",
+      "about": "solo NORMAL, 1 bot seat(s), seed 1",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 27,
+        "bossPoolLeft": 0,
+        "virtualMs": 106900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 27,
+        "bossPoolLeft": 0,
+        "virtualMs": 106900
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/matches.json",
+      "scenario": "solo-NORMAL-2",
+      "about": "solo NORMAL, 1 bot seat(s), seed 2",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 30,
+        "bossPoolLeft": 0,
+        "virtualMs": 106900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 30,
+        "bossPoolLeft": 0,
+        "virtualMs": 106900
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/matches.json",
+      "scenario": "solo-HARD-1",
+      "about": "solo HARD, 1 bot seat(s), seed 1",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 24,
+        "bossPoolLeft": 0,
+        "virtualMs": 107800
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 27,
+        "bossPoolLeft": 0,
+        "virtualMs": 107800
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/matches.json",
+      "scenario": "solo-HARD-2",
+      "about": "solo HARD, 1 bot seat(s), seed 2",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": false,
+        "roundsPassed": 13,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "defeat",
+        "teamLp": 0,
+        "bossPoolLeft": 815157,
+        "virtualMs": 107800
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 30,
+        "bossPoolLeft": 0,
+        "virtualMs": 107800
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/matches.json",
+      "scenario": "coop2-NORMAL-3",
+      "about": "coop NORMAL, 2 bot seat(s), seed 3",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 71,
+        "bossPoolLeft": 0,
+        "virtualMs": 115400
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 71,
+        "bossPoolLeft": 0,
+        "virtualMs": 115400
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/matches.json",
+      "scenario": "coop2-HARD-4",
+      "about": "coop HARD, 2 bot seat(s), seed 4",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 61,
+        "bossPoolLeft": 0,
+        "virtualMs": 122900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 68,
+        "bossPoolLeft": 0,
+        "virtualMs": 116900
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/matches.json",
+      "scenario": "coop4-FUNNY-6",
+      "about": "coop FUNNY, 4 bot seat(s), seed 6",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 137,
+        "bossPoolLeft": 0,
+        "virtualMs": 128500
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 132,
+        "bossPoolLeft": 0,
+        "virtualMs": 130000
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/matches.json",
+      "scenario": "coop2-NORMAL-8-serverrun",
+      "about": "coop NORMAL, 2 bot seat(s), seed 8, server-run combat",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 61,
+        "bossPoolLeft": 0,
+        "virtualMs": 115400
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 64,
+        "bossPoolLeft": 0,
+        "virtualMs": 115400
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/matches.json",
+      "scenario": "solo-HARD-9-boosted",
+      "about": "solo HARD, 1 bot seat(s), seed 9, LP 400 and 300 layers per bond from the first prep",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 15,
+        "hiddenReached": true,
+        "hiddenCleared": true,
+        "reason": "victory",
+        "teamLp": 399,
+        "bossPoolLeft": 0,
+        "virtualMs": 113700
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 15,
+        "hiddenReached": true,
+        "hiddenCleared": true,
+        "reason": "victory",
+        "teamLp": 400,
+        "bossPoolLeft": 0,
+        "virtualMs": 113700
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/matches.json",
+      "scenario": "coop2-NORMAL-14-standins",
+      "about": "coop NORMAL, 1 bot seat(s) + 1 human seat (AI 托管) without 9 operators (补位 stand-ins), seed 14",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds",
+        "standIns"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 56,
+        "bossPoolLeft": 0,
+        "virtualMs": 116900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 55,
+        "bossPoolLeft": 0,
+        "virtualMs": 118400
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/matches.json",
+      "scenario": "coop2-NORMAL-70-diy",
+      "about": "coop NORMAL, 1 bot seat(s) + 1 human seat (AI 托管) with 4 自选 picks and its 调度中心 at level 5 from the first prep, seed 70",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "diy",
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 62,
+        "bossPoolLeft": 0,
+        "virtualMs": 115400
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 67,
+        "bossPoolLeft": 0,
+        "virtualMs": 115400
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/matches.json",
+      "scenario": "coop2-NORMAL-1-coverage-standins",
+      "about": "coop NORMAL, 1 bot seat(s) + 1 human seat (AI 托管) without 9 operators (补位 stand-ins), seed 1",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 72,
+        "bossPoolLeft": 0,
+        "virtualMs": 118400
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 72,
+        "bossPoolLeft": 0,
+        "virtualMs": 115400
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/matches.json",
+      "scenario": "coop2-NORMAL-5-coverage-diy",
+      "about": "coop NORMAL, 1 bot seat(s) + 1 human seat (AI 托管) with 4 自选 picks and its 调度中心 at level 5 from the first prep, seed 5",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "diy",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 72,
+        "bossPoolLeft": 0,
+        "virtualMs": 118400
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 72,
+        "bossPoolLeft": 0,
+        "virtualMs": 118400
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/matches.json",
+      "scenario": "coop2-NORMAL-1-unowned-roster",
+      "about": "coop NORMAL, 1 bot seat(s) + 1 human seat (AI 托管) without 66 operators (补位 stand-ins), seed 1",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds",
+        "standIns"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 72,
+        "bossPoolLeft": 0,
+        "virtualMs": 119900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 72,
+        "bossPoolLeft": 0,
+        "virtualMs": 115400
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/roster.json",
+      "scenario": "roster-007",
+      "about": "pass 0 band 4: chess_char_3_06_b chess_char_3_02_b chess_char_3_03_b chess_char_3_04_b chess_char_3_05_b chess_char_3_12_b chess_char_3_01_b chess_char_3_07_b chess_char_3_08_b chess_char_3_09_b chess_char_3_10_b chess_char_3_11_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "rngDraws",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 26,
+        "total": 38,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 26,
+        "total": 38,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/roster.json",
+      "scenario": "roster-008",
+      "about": "pass 0 band 4: chess_char_4_01_a chess_char_4_10_a chess_char_4_04_a chess_char_4_05_a chess_char_4_07_a chess_char_4_08_a chess_char_4_09_a chess_char_3_13_b chess_char_3_14_b chess_char_4_02_a chess_char_4_03_a chess_char_4_06_a",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "killed",
+        "players",
+        "rngDraws",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 82,
+        "total": 89,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 85,
+        "total": 89,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/roster.json",
+      "scenario": "roster-011",
+      "about": "pass 0 band 5: chess_char_4_17_b chess_char_5_08_a chess_char_5_01_a chess_char_5_05_a chess_char_5_04_a chess_char_5_07_a chess_char_4_18_b chess_char_5_02_a chess_char_5_03_a chess_char_5_06_a chess_char_5_09_a chess_char_5_10_a token_10032_jesca2_jckshd",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 75,
+        "total": 77,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 75,
+        "total": 77,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/roster.json",
+      "scenario": "roster-013",
+      "about": "pass 0 band 6: chess_char_5_08_b chess_char_5_11_b chess_char_5_05_b chess_char_5_13_b chess_char_5_14_b chess_char_5_07_b chess_char_5_06_b chess_char_5_09_b chess_char_5_10_b chess_char_5_12_b chess_char_5_15_b chess_char_5_16_b token_10032_jesca2_jckshd",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 332,
+        "total": 107,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 332,
+        "total": 107,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/roster.json",
+      "scenario": "roster-016",
+      "about": "pass 0 band 7: chess_char_6_16_b chess_char_5_01_b chess_char_6_07_b chess_char_6_08_b chess_char_6_09_b chess_char_6_10_b chess_char_6_11_b chess_char_6_12_b chess_char_6_13_b chess_char_6_14_b chess_char_6_15_b chess_char_5_02_b token_10030_mlyss_wtrman",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "killed",
+        "players",
+        "rngDraws",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 155,
+        "total": 95,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 157,
+        "total": 95,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/roster.json",
+      "scenario": "roster-018",
+      "about": "pass 1 band 2: chess_char_1_04_b chess_char_1_10_b chess_char_1_13_a chess_char_1_02_b chess_char_1_07_b chess_char_1_08_b chess_char_1_05_b chess_char_1_14_a chess_char_1_01_b chess_char_1_03_b chess_char_1_06_b chess_char_1_09_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "killed",
+        "players",
+        "rngDraws",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 27,
+        "total": 55,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 29,
+        "total": 55,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/standins.json",
+      "scenario": "standin-01",
+      "about": "normal band 2 as stand-ins: chess_char_1_10_a→char_602_cdfend chess_char_2_03_a→char_602_cdfend chess_char_1_05_a→char_600_cpione chess_char_2_09_a→char_600_cpione chess_char_1_04_a→char_601_cguard chess_char_1_12_a→char_607_cspec chess_char_1_03_a→char_604_ccast chess_char_1_06_a→char_606_csuppo chess_char_1_07_a→char_603_csnipe chess_char_1_11_a→char_605_cmedic chess_char_2_01_a→char_603_csnipe chess_char_2_02_a→char_605_cmedic",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 22,
+        "total": 44,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 22,
+        "total": 44,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess/standins.json",
+      "scenario": "standin-12",
+      "about": "elite band 7 as stand-ins: chess_char_6_16_b→char_610_acfend chess_char_6_10_b→char_617_sharp2 chess_char_6_11_b→char_608_acpion chess_char_6_13_b→char_615_acspec chess_char_6_08_b→char_612_accast chess_char_6_09_b→char_613_acmedc chess_char_6_12_b→char_612_accast",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "hooks",
+        "players",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 23,
+        "total": 104,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 23,
+        "total": 104,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/bonds.json",
+      "scenario": "bond-kjeragShip-high",
+      "about": "谢拉格 high: tier 2 layers 999; chess_char_2_03_b chess_char_1_02_b chess_char_5_05_b chess_char_3_02_b chess_char_2_05_b chess_char_3_11_b chess_char_3_14_b chess_char_5_06_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 18,
+        "total": 18,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 18,
+        "total": 18,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/bonds.json",
+      "scenario": "bond-skillfulShip-high",
+      "about": "灵巧 high: tier 1 layers 999; chess_char_5_05_b chess_char_5_04_b chess_char_5_07_b chess_char_1_14_b chess_char_2_10_b chess_char_5_02_b chess_char_5_03_b chess_char_5_06_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 34,
+        "total": 34,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 34,
+        "total": 34,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/diy.json",
+      "scenario": "diy-036",
+      "about": "5_diy1_a=judge/S1 5_diy2_a=judge/S2 5_diy1_a=judge/S3 5_diy2_b=judge/S1 5_diy1_b=judge/S2 5_diy2_b=judge/S3 5_diy1_b=judge/S1/002_judge 5_diy2_b=judge/S2/002_judge 5_diy1_b=judge/S3/002_judge 5_diy2_b=judge/S1/003_judge 5_diy1_b=judge/S2/003_judge 5_diy2_b=judge/S3/003_judge",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "killed",
+        "players",
+        "snaps",
+        "ticks",
+        "time",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 86,
+        "total": 96,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 78,
+        "total": 96,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/diy.json",
+      "scenario": "diy-074",
+      "about": "5_diy1_b=doroth/S1/002_doroth 5_diy2_b=doroth/S2/002_doroth 5_diy1_b=doroth/S3/002_doroth 5_diy2_b=doroth/S1/003_doroth 5_diy1_b=doroth/S2/003_doroth 5_diy2_b=doroth/S3/003_doroth 6_diy1_a=doroth/S1 6_diy2_a=doroth/S2 6_diy1_a=doroth/S3 6_diy2_b=doroth/S1 6_diy1_b=doroth/S2 6_diy2_b=doroth/S3",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "killed",
+        "players",
+        "snaps",
+        "ticks",
+        "time",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 26,
+        "total": 105,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 21,
+        "total": 105,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/fields.json",
+      "scenario": "boss-boss_1-solo",
+      "about": "假想敌：胄 solo pool 1800000: chess_char_5_08_b chess_char_5_11_b chess_char_5_05_b chess_char_5_13_b chess_char_5_14_b chess_char_5_07_b chess_char_5_06_b chess_char_5_09_b chess_char_5_10_b chess_char_5_12_b token_10032_jesca2_jckshd",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 17,
+        "total": 13,
+        "bossHpLeft": 1547571
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 17,
+        "total": 13,
+        "bossHpLeft": 1547571
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/fields.json",
+      "scenario": "boss-boss_2-pair",
+      "about": "假想敌：铳 pair pool 1740000: chess_char_4_01_b chess_char_4_04_b chess_char_4_05_b chess_char_5_15_b chess_char_5_16_b chess_char_5_17_b chess_char_5_18_b chess_char_4_02_b chess_char_4_03_b chess_char_4_06_b | chess_char_4_10_b chess_char_4_07_b chess_char_4_08_b chess_char_4_16_b chess_char_4_09_b chess_char_4_11_b chess_char_4_12_b chess_char_4_13_b chess_char_4_14_b chess_char_4_15_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "bossHpLeft",
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "rngDraws",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 8,
+        "total": 8,
+        "bossHpLeft": 1423070
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 8,
+        "total": 8,
+        "bossHpLeft": 1440667
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/fields.json",
+      "scenario": "boss-boss_2-solo",
+      "about": "假想敌：铳 solo pool 870000: chess_char_4_17_b chess_char_6_03_b chess_char_6_02_b chess_char_6_06_b chess_char_6_07_b chess_char_4_18_b chess_char_6_01_b chess_char_6_04_b chess_char_6_05_b chess_char_6_08_b token_10017_skadi2_dedant",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "rngDraws",
+        "snaps",
+        "ticks",
+        "time",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 7,
+        "total": 7,
+        "bossHpLeft": 0
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 7,
+        "total": 7,
+        "bossHpLeft": 0
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/fields.json",
+      "scenario": "boss-boss_6-pair",
+      "about": "阿利斯泰尔，帝国余晖 pair pool 3980000: chess_char_5_08_b chess_char_5_01_b chess_char_5_05_b chess_char_5_04_b chess_char_5_07_b chess_char_5_02_b chess_char_5_03_b chess_char_5_06_b chess_char_5_09_b chess_char_5_10_b token_10032_jesca2_jckshd | chess_char_5_11_b chess_char_4_01_b chess_char_5_13_b chess_char_5_14_b chess_char_5_12_b chess_char_5_15_b chess_char_5_16_b chess_char_5_17_b chess_char_5_18_b chess_char_4_02_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "units"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 6,
+        "total": 6,
+        "bossHpLeft": 2721020
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 6,
+        "total": 6,
+        "bossHpLeft": 2721020
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/fields.json",
+      "scenario": "boss-boss_7-solo",
+      "about": "“萨米的意志” solo pool 1800000: chess_char_6_16_b chess_char_5_08_b chess_char_5_01_b chess_char_5_05_b chess_char_5_04_b chess_char_5_07_b chess_char_6_15_b chess_char_5_02_b chess_char_5_03_b chess_char_5_06_b token_10032_jesca2_jckshd",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "bossHpLeft",
+        "enemies",
+        "events",
+        "hooks",
+        "players",
+        "rngDraws",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 11,
+        "total": 11,
+        "bossHpLeft": 1279238
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 11,
+        "total": 11,
+        "bossHpLeft": 1279591
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/fields.json",
+      "scenario": "hidden-boss_9-pair",
+      "about": "假想敌：铳 pair pool 5600000: chess_char_6_03_b chess_char_6_06_b chess_char_6_07_b chess_char_6_04_b chess_char_6_05_b chess_char_6_08_b chess_char_6_09_b chess_char_6_10_b chess_char_6_11_b chess_char_6_12_b token_10017_skadi2_dedant token_10030_mlyss_wtrman | chess_char_6_16_b chess_char_5_01_b chess_char_5_05_b chess_char_5_04_b chess_char_6_13_b chess_char_6_14_b chess_char_6_15_b chess_char_5_02_b chess_char_5_03_b chess_char_5_06_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "hooks",
+        "players",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 6,
+        "total": 6,
+        "bossHpLeft": 4713411
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 6,
+        "total": 6,
+        "bossHpLeft": 4713411
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/fields.json",
+      "scenario": "unite-2",
+      "about": "联防 2 helper(s), 11 leaked: chess_char_5_08_b chess_char_5_05_b chess_char_5_04_b chess_char_5_07_b chess_char_5_03_b chess_char_5_06_b chess_char_5_09_b chess_char_5_10_b token_10032_jesca2_jckshd | chess_char_5_11_b chess_char_5_13_b chess_char_5_14_b chess_char_5_12_b chess_char_5_15_b chess_char_5_16_b chess_char_5_17_b chess_char_5_18_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "units"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 10,
+        "total": 10,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 10,
+        "total": 10,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/matches.json",
+      "scenario": "solo-FUNNY-1",
+      "about": "solo FUNNY, 1 bot seat(s), seed 1",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 45,
+        "bossPoolLeft": 0,
+        "virtualMs": 106000
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 45,
+        "bossPoolLeft": 0,
+        "virtualMs": 106000
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/matches.json",
+      "scenario": "solo-FUNNY-2",
+      "about": "solo FUNNY, 1 bot seat(s), seed 2",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 30,
+        "bossPoolLeft": 0,
+        "virtualMs": 106000
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 30,
+        "bossPoolLeft": 0,
+        "virtualMs": 106000
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/matches.json",
+      "scenario": "solo-NORMAL-1",
+      "about": "solo NORMAL, 1 bot seat(s), seed 1",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 45,
+        "bossPoolLeft": 0,
+        "virtualMs": 106900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 45,
+        "bossPoolLeft": 0,
+        "virtualMs": 106900
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/matches.json",
+      "scenario": "solo-NORMAL-2",
+      "about": "solo NORMAL, 1 bot seat(s), seed 2",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": false,
+        "roundsPassed": 13,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "defeat",
+        "teamLp": 0,
+        "bossPoolLeft": 115462,
+        "virtualMs": 106900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 31,
+        "bossPoolLeft": 0,
+        "virtualMs": 106900
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/matches.json",
+      "scenario": "solo-HARD-1",
+      "about": "solo HARD, 1 bot seat(s), seed 1",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 42,
+        "bossPoolLeft": 0,
+        "virtualMs": 107800
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 45,
+        "bossPoolLeft": 0,
+        "virtualMs": 107800
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/matches.json",
+      "scenario": "solo-HARD-2",
+      "about": "solo HARD, 1 bot seat(s), seed 2",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": false,
+        "roundsPassed": 13,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "defeat",
+        "teamLp": 0,
+        "bossPoolLeft": 704547,
+        "virtualMs": 107800
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 31,
+        "bossPoolLeft": 0,
+        "virtualMs": 107800
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/matches.json",
+      "scenario": "coop2-NORMAL-3",
+      "about": "coop NORMAL, 2 bot seat(s), seed 3",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 75,
+        "bossPoolLeft": 0,
+        "virtualMs": 116900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 75,
+        "bossPoolLeft": 0,
+        "virtualMs": 115400
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/matches.json",
+      "scenario": "coop2-HARD-4",
+      "about": "coop HARD, 2 bot seat(s), seed 4",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 53,
+        "bossPoolLeft": 0,
+        "virtualMs": 118400
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 53,
+        "bossPoolLeft": 0,
+        "virtualMs": 116900
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/matches.json",
+      "scenario": "coop4-FUNNY-6",
+      "about": "coop FUNNY, 4 bot seat(s), seed 6",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 129,
+        "bossPoolLeft": 0,
+        "virtualMs": 130000
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 130,
+        "bossPoolLeft": 0,
+        "virtualMs": 127000
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/matches.json",
+      "scenario": "coop2-NORMAL-8-serverrun",
+      "about": "coop NORMAL, 2 bot seat(s), seed 8, server-run combat",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 51,
+        "bossPoolLeft": 0,
+        "virtualMs": 118400
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 51,
+        "bossPoolLeft": 0,
+        "virtualMs": 118400
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/matches.json",
+      "scenario": "solo-HARD-9-boosted",
+      "about": "solo HARD, 1 bot seat(s), seed 9, LP 400 and 300 layers per bond from the first prep",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 15,
+        "hiddenReached": true,
+        "hiddenCleared": true,
+        "reason": "victory",
+        "teamLp": 400,
+        "bossPoolLeft": 0,
+        "virtualMs": 113700
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 15,
+        "hiddenReached": true,
+        "hiddenCleared": true,
+        "reason": "victory",
+        "teamLp": 394,
+        "bossPoolLeft": 0,
+        "virtualMs": 113700
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/matches.json",
+      "scenario": "coop2-NORMAL-14-standins",
+      "about": "coop NORMAL, 1 bot seat(s) + 1 human seat (AI 托管) without 9 operators (补位 stand-ins), seed 14",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds",
+        "standIns"
+      ],
+      "before_end": {
+        "victory": false,
+        "roundsPassed": 13,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "defeat",
+        "teamLp": 0,
+        "bossPoolLeft": 188240,
+        "virtualMs": 119900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 77,
+        "bossPoolLeft": 0,
+        "virtualMs": 115400
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/matches.json",
+      "scenario": "coop2-NORMAL-70-diy",
+      "about": "coop NORMAL, 1 bot seat(s) + 1 human seat (AI 托管) with 4 自选 picks and its 调度中心 at level 5 from the first prep, seed 70",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "diy",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 57,
+        "bossPoolLeft": 0,
+        "virtualMs": 118400
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 57,
+        "bossPoolLeft": 0,
+        "virtualMs": 118400
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/matches.json",
+      "scenario": "coop2-NORMAL-1-coverage-standins",
+      "about": "coop NORMAL, 1 bot seat(s) + 1 human seat (AI 托管) without 9 operators (补位 stand-ins), seed 1",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 75,
+        "bossPoolLeft": 0,
+        "virtualMs": 115400
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 75,
+        "bossPoolLeft": 0,
+        "virtualMs": 115400
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/matches.json",
+      "scenario": "coop2-NORMAL-5-coverage-diy",
+      "about": "coop NORMAL, 1 bot seat(s) + 1 human seat (AI 托管) with 4 自选 picks and its 调度中心 at level 5 from the first prep, seed 5",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "diy",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 77,
+        "bossPoolLeft": 0,
+        "virtualMs": 115400
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 77,
+        "bossPoolLeft": 0,
+        "virtualMs": 115400
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/matches.json",
+      "scenario": "coop2-NORMAL-1-unowned-roster",
+      "about": "coop NORMAL, 1 bot seat(s) + 1 human seat (AI 托管) without 66 operators (补位 stand-ins), seed 1",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds",
+        "standIns"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 75,
+        "bossPoolLeft": 0,
+        "virtualMs": 116900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 75,
+        "bossPoolLeft": 0,
+        "virtualMs": 115400
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/roster.json",
+      "scenario": "roster-007",
+      "about": "pass 0 band 4: chess_char_3_06_b chess_char_3_02_b chess_char_3_03_b chess_char_3_04_b chess_char_3_05_b chess_char_3_12_b chess_char_3_01_b chess_char_3_07_b chess_char_3_08_b chess_char_3_09_b chess_char_3_10_b chess_char_3_11_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "rngDraws",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 26,
+        "total": 38,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 26,
+        "total": 38,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/roster.json",
+      "scenario": "roster-008",
+      "about": "pass 0 band 4: chess_char_4_01_a chess_char_4_10_a chess_char_4_04_a chess_char_4_05_a chess_char_4_07_a chess_char_4_08_a chess_char_4_09_a chess_char_3_13_b chess_char_3_14_b chess_char_4_02_a chess_char_4_03_a chess_char_4_06_a",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "killed",
+        "players",
+        "rngDraws",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 84,
+        "total": 89,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 82,
+        "total": 89,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/roster.json",
+      "scenario": "roster-011",
+      "about": "pass 0 band 5: chess_char_4_17_b chess_char_5_08_a chess_char_5_01_a chess_char_5_05_a chess_char_5_04_a chess_char_5_07_a chess_char_4_18_b chess_char_5_02_a chess_char_5_03_a chess_char_5_06_a chess_char_5_09_a chess_char_5_10_a token_10032_jesca2_jckshd",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 74,
+        "total": 77,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 74,
+        "total": 77,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/roster.json",
+      "scenario": "roster-013",
+      "about": "pass 0 band 6: chess_char_5_08_b chess_char_5_11_b chess_char_5_05_b chess_char_5_13_b chess_char_5_14_b chess_char_5_07_b chess_char_5_06_b chess_char_5_09_b chess_char_5_10_b chess_char_5_12_b chess_char_5_15_b chess_char_5_16_b token_10032_jesca2_jckshd",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 332,
+        "total": 107,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 332,
+        "total": 107,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/roster.json",
+      "scenario": "roster-016",
+      "about": "pass 0 band 7: chess_char_6_16_b chess_char_5_01_b chess_char_6_07_b chess_char_6_08_b chess_char_6_09_b chess_char_6_10_b chess_char_6_11_b chess_char_6_12_b chess_char_6_13_b chess_char_6_14_b chess_char_6_15_b chess_char_5_02_b token_10030_mlyss_wtrman",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "killed",
+        "players",
+        "rngDraws",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 163,
+        "total": 95,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 167,
+        "total": 95,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/roster.json",
+      "scenario": "roster-018",
+      "about": "pass 1 band 2: chess_char_1_04_b chess_char_1_10_b chess_char_1_13_a chess_char_1_02_b chess_char_1_07_b chess_char_1_08_b chess_char_1_05_b chess_char_1_14_a chess_char_1_01_b chess_char_1_03_b chess_char_1_06_b chess_char_1_09_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "killed",
+        "players",
+        "rngDraws",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 27,
+        "total": 55,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 29,
+        "total": 55,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/standins.json",
+      "scenario": "standin-01",
+      "about": "normal band 2 as stand-ins: chess_char_1_10_a→char_602_cdfend chess_char_2_03_a→char_602_cdfend chess_char_1_05_a→char_600_cpione chess_char_2_09_a→char_600_cpione chess_char_1_04_a→char_601_cguard chess_char_1_12_a→char_607_cspec chess_char_1_03_a→char_604_ccast chess_char_1_06_a→char_606_csuppo chess_char_1_07_a→char_603_csnipe chess_char_1_11_a→char_605_cmedic chess_char_2_01_a→char_603_csnipe chess_char_2_02_a→char_605_cmedic",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 22,
+        "total": 44,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 22,
+        "total": 44,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/standins.json",
+      "scenario": "standin-12",
+      "about": "elite band 7 as stand-ins: chess_char_6_16_b→char_610_acfend chess_char_6_10_b→char_617_sharp2 chess_char_6_11_b→char_608_acpion chess_char_6_13_b→char_615_acspec chess_char_6_08_b→char_612_accast chess_char_6_09_b→char_613_acmedc chess_char_6_12_b→char_612_accast",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "hooks",
+        "players",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 23,
+        "total": 104,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 23,
+        "total": 104,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/bonds.json",
+      "scenario": "bond-investShip-high",
+      "about": "投资人 high: tier 1 layers 999; chess_char_5_08_b chess_char_5_14_b chess_char_5_05_b chess_char_5_06_b chess_char_3_04_b chess_char_5_07_b chess_char_1_16_b chess_char_5_09_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "snaps",
+        "ticks",
+        "time",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 20,
+        "total": 20,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 20,
+        "total": 20,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/bonds.json",
+      "scenario": "bond-skillfulShip-high",
+      "about": "灵巧 high: tier 1 layers 999; chess_char_5_08_b chess_char_5_05_b chess_char_5_07_b chess_char_1_14_b chess_char_2_04_b chess_char_5_03_b chess_char_5_04_b chess_char_5_09_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 18,
+        "total": 18,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 18,
+        "total": 18,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/diy.json",
+      "scenario": "diy-038",
+      "about": "6_diy1_a=shwaz/S1 6_diy2_a=shwaz/S2 6_diy1_a=shwaz/S3 6_diy2_b=shwaz/S1 6_diy1_b=shwaz/S2 6_diy2_b=shwaz/S3 6_diy1_b=shwaz/S1/002_shwaz 6_diy2_b=shwaz/S2/002_shwaz 6_diy1_b=shwaz/S3/002_shwaz 6_diy2_b=shwaz/S1/003_shwaz 6_diy1_b=shwaz/S2/003_shwaz 6_diy2_b=shwaz/S3/003_shwaz",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "rngDraws",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 8,
+        "total": 105,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 8,
+        "total": 105,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/diy.json",
+      "scenario": "diy-058",
+      "about": "6_diy1_b=lessng/S1/002_lessng 6_diy2_b=lessng/S2/002_lessng 6_diy1_b=lessng/S3/002_lessng 6_diy2_b=lessng/S1/003_lessng 6_diy1_b=lessng/S2/003_lessng 6_diy2_b=lessng/S3/003_lessng 5_diy1_a=demetr/S1 5_diy2_a=demetr/S2 5_diy1_a=demetr/S3 5_diy2_b=demetr/S1 5_diy1_b=demetr/S2 5_diy2_b=demetr/S3",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "killed",
+        "players",
+        "rngDraws",
+        "snaps",
+        "ticks",
+        "time",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 19,
+        "total": 105,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 18,
+        "total": 105,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/diy.json",
+      "scenario": "diy-059",
+      "about": "5_diy1_b=demetr/S1/002_demetr 5_diy2_b=demetr/S2/002_demetr 5_diy1_b=demetr/S3/002_demetr 6_diy1_a=demetr/S1 6_diy2_a=demetr/S2 6_diy1_a=demetr/S3 6_diy2_b=demetr/S1 6_diy1_b=demetr/S2 6_diy2_b=demetr/S3 6_diy1_b=demetr/S1/002_demetr 6_diy2_b=demetr/S2/002_demetr 6_diy1_b=demetr/S3/002_demetr",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "snaps"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 96,
+        "total": 96,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 96,
+        "total": 96,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/diy.json",
+      "scenario": "diy-074",
+      "about": "6_diy1_b=hodrer/S1/002_hodrer 6_diy2_b=hodrer/S2/002_hodrer 6_diy1_b=hodrer/S3/002_hodrer 6_diy2_b=hodrer/S1/003_hodrer 6_diy1_b=hodrer/S2/003_hodrer 6_diy2_b=hodrer/S3/003_hodrer 5_diy1_a=chen2/S1 5_diy2_a=chen2/S2 5_diy1_a=chen2/S3 5_diy2_b=chen2/S1 5_diy1_b=chen2/S2 5_diy2_b=chen2/S3",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "killed",
+        "players",
+        "rngDraws",
+        "snaps",
+        "ticks",
+        "time",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 29,
+        "total": 105,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 24,
+        "total": 105,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/fields.json",
+      "scenario": "boss-boss_1-solo",
+      "about": "假想敌：胄 solo pool 1800000: chess_char_5_08_b chess_char_5_01_b chess_char_5_05_b chess_char_5_06_b chess_char_5_07_b chess_char_5_02_b chess_char_5_03_b chess_char_5_04_b chess_char_5_09_b chess_char_5_10_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 17,
+        "total": 13,
+        "bossHpLeft": 1460674
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 17,
+        "total": 13,
+        "bossHpLeft": 1460674
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/fields.json",
+      "scenario": "boss-boss_2-pair",
+      "about": "假想敌：铳 pair pool 1600000: chess_char_5_11_b chess_char_5_18_b chess_char_5_19_b chess_char_5_13_b chess_char_5_14_b chess_char_5_17_b chess_char_5_12_b chess_char_5_15_b chess_char_5_16_b chess_char_5_20_b | chess_char_4_01_b chess_char_4_04_b chess_char_4_07_b chess_char_4_09_b chess_char_5_21_b chess_char_4_02_b chess_char_4_03_b chess_char_4_05_b chess_char_4_06_b chess_char_4_08_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "bossHpLeft",
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "rngDraws",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 8,
+        "total": 8,
+        "bossHpLeft": 1078559
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 8,
+        "total": 8,
+        "bossHpLeft": 1111348
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/fields.json",
+      "scenario": "boss-boss_2-solo",
+      "about": "假想敌：铳 solo pool 800000: chess_char_4_17_b chess_char_4_18_b chess_char_4_11_b chess_char_4_19_b chess_char_4_16_b chess_char_4_10_b chess_char_4_12_b chess_char_4_13_b chess_char_4_14_b chess_char_4_15_b token_10041_cathy_catsld token_10041_cathy_catsld",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "bossHpLeft",
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "rngDraws",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 7,
+        "total": 7,
+        "bossHpLeft": 479224
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 7,
+        "total": 7,
+        "bossHpLeft": 486256
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/fields.json",
+      "scenario": "boss-boss_3-solo",
+      "about": "假想敌：管 solo pool 2000000: chess_char_5_08_b chess_char_5_01_b chess_char_5_05_b chess_char_5_06_b chess_char_5_07_b chess_char_6_20_b chess_char_5_02_b chess_char_5_03_b chess_char_5_04_b chess_char_5_09_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 15,
+        "total": 9,
+        "bossHpLeft": 1428039
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 15,
+        "total": 9,
+        "bossHpLeft": 1428039
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/fields.json",
+      "scenario": "boss-boss_5-solo",
+      "about": "卢西恩，“猩红血钻” solo pool 780000: chess_char_5_08_b chess_char_6_19_b chess_char_5_01_b chess_char_5_05_b chess_char_5_06_b chess_char_5_07_b chess_char_6_20_b chess_char_5_02_b chess_char_5_03_b chess_char_5_04_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 11,
+        "total": 5,
+        "bossHpLeft": 450309
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 11,
+        "total": 5,
+        "bossHpLeft": 450309
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/fields.json",
+      "scenario": "hidden-boss_9-solo",
+      "about": "假想敌：铳 solo pool 2800000: chess_char_6_19_b chess_char_5_01_b chess_char_5_05_b chess_char_5_06_b chess_char_6_17_b chess_char_6_18_b chess_char_6_20_b chess_char_5_02_b chess_char_5_03_b chess_char_5_04_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 3,
+        "total": 3,
+        "bossHpLeft": 2213114
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 3,
+        "total": 3,
+        "bossHpLeft": 2213114
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/matches.json",
+      "scenario": "solo-FUNNY-1",
+      "about": "solo FUNNY, 1 bot seat(s), seed 1",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": false,
+        "roundsPassed": 8,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "defeat",
+        "teamLp": 0,
+        "bossPoolLeft": 96315,
+        "virtualMs": 68100
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 9,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 23,
+        "bossPoolLeft": 0,
+        "virtualMs": 68100
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/matches.json",
+      "scenario": "solo-FUNNY-2",
+      "about": "solo FUNNY, 1 bot seat(s), seed 2",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": false,
+        "roundsPassed": 8,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "defeat",
+        "teamLp": 0,
+        "bossPoolLeft": 136680,
+        "virtualMs": 68100
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 9,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 26,
+        "bossPoolLeft": 0,
+        "virtualMs": 68100
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/matches.json",
+      "scenario": "solo-NORMAL-1",
+      "about": "solo NORMAL, 1 bot seat(s), seed 1",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 26,
+        "bossPoolLeft": 0,
+        "virtualMs": 106900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 27,
+        "bossPoolLeft": 0,
+        "virtualMs": 106900
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/matches.json",
+      "scenario": "solo-NORMAL-2",
+      "about": "solo NORMAL, 1 bot seat(s), seed 2",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 27,
+        "bossPoolLeft": 0,
+        "virtualMs": 106900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 22,
+        "bossPoolLeft": 0,
+        "virtualMs": 106900
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/matches.json",
+      "scenario": "solo-HARD-1",
+      "about": "solo HARD, 1 bot seat(s), seed 1",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": false,
+        "roundsPassed": 13,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "defeat",
+        "teamLp": 0,
+        "bossPoolLeft": 36843,
+        "virtualMs": 107800
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 27,
+        "bossPoolLeft": 0,
+        "virtualMs": 107800
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/matches.json",
+      "scenario": "solo-HARD-2",
+      "about": "solo HARD, 1 bot seat(s), seed 2",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 15,
+        "bossPoolLeft": 0,
+        "virtualMs": 107800
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 27,
+        "bossPoolLeft": 0,
+        "virtualMs": 107800
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/matches.json",
+      "scenario": "coop2-NORMAL-3",
+      "about": "coop NORMAL, 2 bot seat(s), seed 3",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 61,
+        "bossPoolLeft": 0,
+        "virtualMs": 116900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 74,
+        "bossPoolLeft": 0,
+        "virtualMs": 116900
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/matches.json",
+      "scenario": "coop2-HARD-4",
+      "about": "coop HARD, 2 bot seat(s), seed 4",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": false,
+        "roundsPassed": 12,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "eliminated",
+        "teamLp": null,
+        "bossPoolLeft": null,
+        "virtualMs": 113650
+      },
+      "after_end": {
+        "victory": false,
+        "roundsPassed": 13,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "defeat",
+        "teamLp": 0,
+        "bossPoolLeft": 526709,
+        "virtualMs": 121050
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/matches.json",
+      "scenario": "coop4-FUNNY-6",
+      "about": "coop FUNNY, 4 bot seat(s), seed 6",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 132,
+        "bossPoolLeft": 0,
+        "virtualMs": 131500
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 132,
+        "bossPoolLeft": 0,
+        "virtualMs": 130000
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/matches.json",
+      "scenario": "coop2-NORMAL-8-serverrun",
+      "about": "coop NORMAL, 2 bot seat(s), seed 8, server-run combat",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 45,
+        "bossPoolLeft": 0,
+        "virtualMs": 116900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 61,
+        "bossPoolLeft": 0,
+        "virtualMs": 122900
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/matches.json",
+      "scenario": "solo-HARD-9-boosted",
+      "about": "solo HARD, 1 bot seat(s), seed 9, LP 400 and 300 layers per bond from the first prep",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 15,
+        "hiddenReached": true,
+        "hiddenCleared": true,
+        "reason": "victory",
+        "teamLp": 400,
+        "bossPoolLeft": 0,
+        "virtualMs": 113700
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 15,
+        "hiddenReached": true,
+        "hiddenCleared": true,
+        "reason": "victory",
+        "teamLp": 400,
+        "bossPoolLeft": 0,
+        "virtualMs": 113700
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/matches.json",
+      "scenario": "coop2-NORMAL-14-standins",
+      "about": "coop NORMAL, 1 bot seat(s) + 1 human seat (AI 托管) without 9 operators (补位 stand-ins), seed 14",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds",
+        "standIns"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 30,
+        "bossPoolLeft": 0,
+        "virtualMs": 118400
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 54,
+        "bossPoolLeft": 0,
+        "virtualMs": 121400
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/matches.json",
+      "scenario": "coop2-NORMAL-70-diy",
+      "about": "coop NORMAL, 1 bot seat(s) + 1 human seat (AI 托管) with 4 自选 picks and its 调度中心 at level 5 from the first prep, seed 70",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "diy",
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 57,
+        "bossPoolLeft": 0,
+        "virtualMs": 116900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 60,
+        "bossPoolLeft": 0,
+        "virtualMs": 118400
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/matches.json",
+      "scenario": "coop2-NORMAL-1-coverage-standins",
+      "about": "coop NORMAL, 1 bot seat(s) + 1 human seat (AI 托管) without 9 operators (补位 stand-ins), seed 1",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds",
+        "standIns"
+      ],
+      "before_end": {
+        "victory": false,
+        "roundsPassed": 13,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "defeat",
+        "teamLp": 0,
+        "bossPoolLeft": 133944,
+        "virtualMs": 115400
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 56,
+        "bossPoolLeft": 0,
+        "virtualMs": 118400
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/matches.json",
+      "scenario": "coop2-NORMAL-5-coverage-diy",
+      "about": "coop NORMAL, 1 bot seat(s) + 1 human seat (AI 托管) with 4 自选 picks and its 调度中心 at level 5 from the first prep, seed 5",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "diy",
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 53,
+        "bossPoolLeft": 0,
+        "virtualMs": 121400
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 72,
+        "bossPoolLeft": 0,
+        "virtualMs": 122900
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/matches.json",
+      "scenario": "coop2-NORMAL-1-unowned-roster",
+      "about": "coop NORMAL, 1 bot seat(s) + 1 human seat (AI 托管) without 50 operators (补位 stand-ins), seed 1",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds",
+        "standIns"
+      ],
+      "before_end": {
+        "victory": false,
+        "roundsPassed": 13,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "defeat",
+        "teamLp": 0,
+        "bossPoolLeft": 133944,
+        "virtualMs": 115400
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 53,
+        "bossPoolLeft": 0,
+        "virtualMs": 119900
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/roster.json",
+      "scenario": "roster-005",
+      "about": "pass 0 band 3: chess_char_2_17_a chess_char_2_18_a chess_char_2_13_a chess_char_2_16_a chess_char_2_14_a chess_char_2_15_a chess_char_2_01_b chess_char_2_02_b chess_char_2_03_b chess_char_2_04_b chess_char_2_05_b chess_char_2_06_b token_10000_silent_healrb",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "killed",
+        "players",
+        "rngDraws",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 73,
+        "total": 84,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 59,
+        "total": 84,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/roster.json",
+      "scenario": "roster-010",
+      "about": "pass 0 band 4: chess_char_4_01_a chess_char_4_11_a chess_char_4_04_a chess_char_4_07_a chess_char_4_09_a chess_char_4_02_a chess_char_4_03_a chess_char_4_05_a chess_char_4_06_a chess_char_4_08_a chess_char_4_10_a chess_char_4_12_a token_10041_cathy_catsld token_10041_cathy_catsld",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "rngDraws",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 62,
+        "total": 69,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 62,
+        "total": 69,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/roster.json",
+      "scenario": "roster-013",
+      "about": "pass 0 band 5: chess_char_4_17_b chess_char_4_18_b chess_char_5_08_a chess_char_4_19_b chess_char_5_01_a chess_char_5_05_a chess_char_5_06_a chess_char_5_07_a chess_char_4_20_b chess_char_5_02_a chess_char_5_03_a chess_char_5_04_a",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "hooks",
+        "players",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 103,
+        "total": 101,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 103,
+        "total": 101,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/roster.json",
+      "scenario": "roster-015",
+      "about": "pass 0 band 6: chess_char_5_08_b chess_char_5_11_b chess_char_5_01_b chess_char_5_05_b chess_char_5_06_b chess_char_5_07_b chess_char_5_21_a chess_char_5_02_b chess_char_5_03_b chess_char_5_04_b chess_char_5_09_b chess_char_5_10_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 104,
+        "total": 104,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 104,
+        "total": 104,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/roster.json",
+      "scenario": "roster-020",
+      "about": "pass 0 band 7: chess_char_5_08_b chess_char_6_19_b chess_char_5_01_b chess_char_5_05_b chess_char_5_06_b chess_char_5_07_b chess_char_6_20_b chess_char_5_02_b chess_char_5_03_b chess_char_5_04_b chess_char_5_09_b chess_char_5_10_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "fx"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 100,
+        "total": 161,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 100,
+        "total": 161,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/roster.json",
+      "scenario": "roster-033",
+      "about": "pass 1 band 5: chess_char_4_17_b chess_char_4_18_b chess_char_5_08_a chess_char_4_19_b chess_char_5_01_a chess_char_5_05_a chess_char_5_06_a chess_char_5_07_a chess_char_4_20_b chess_char_5_02_a chess_char_5_03_a chess_char_5_04_a",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "killed",
+        "players",
+        "rngDraws",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 69,
+        "total": 70,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 70,
+        "total": 70,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/roster.json",
+      "scenario": "roster-039",
+      "about": "pass 1 band 7: chess_char_5_08_b chess_char_6_19_b chess_char_5_01_b chess_char_5_05_b chess_char_5_06_b chess_char_6_17_b chess_char_5_07_b chess_char_6_18_b chess_char_6_20_b chess_char_5_02_b chess_char_5_03_b chess_char_5_09_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "rngDraws",
+        "snaps",
+        "ticks",
+        "time",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 137,
+        "total": 137,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 137,
+        "total": 137,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/roster.json",
+      "scenario": "roster-046",
+      "about": "pass 2 band 7: chess_char_6_15_a chess_char_6_19_a chess_char_6_17_a chess_char_6_11_a chess_char_6_12_a chess_char_6_13_a chess_char_6_14_a chess_char_6_16_a chess_char_6_18_a chess_char_6_20_a chess_char_6_01_b chess_char_6_02_b token_10030_mlyss_wtrman",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "fx"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 38,
+        "total": 134,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 38,
+        "total": 134,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/roster.json",
+      "scenario": "roster-049",
+      "about": "pass 3 band 5: chess_char_3_04_b chess_char_4_09_b chess_char_4_13_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "hooks",
+        "snaps"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 17,
+        "total": 62,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 17,
+        "total": 62,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/bonds.json",
+      "scenario": "bond-investShip-high",
+      "about": "投资人 high: tier 1 layers 999; chess_char_5_14_b chess_char_5_05_b chess_char_5_06_b chess_char_3_04_b chess_char_5_07_b chess_char_2_19_b chess_char_5_02_b chess_char_5_03_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "snaps",
+        "ticks",
+        "time",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 20,
+        "total": 20,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 20,
+        "total": 20,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/bonds.json",
+      "scenario": "bond-skillfulShip-high",
+      "about": "灵巧 high: tier 1 layers 999; chess_char_5_08_b chess_char_5_05_b chess_char_5_07_b chess_char_1_14_b chess_char_2_04_b chess_char_5_02_b chess_char_5_03_b chess_char_5_10_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 18,
+        "total": 18,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 18,
+        "total": 18,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/diy.json",
+      "scenario": "diy-038",
+      "about": "5_diy1_b=huang/S1/002_huang 5_diy2_b=huang/S2/002_huang 5_diy1_b=huang/S3/002_huang 5_diy2_b=huang/S1/003_huang 5_diy1_b=huang/S2/003_huang 5_diy2_b=huang/S3/003_huang 6_diy1_a=huang/S1 6_diy2_a=huang/S2 6_diy1_a=huang/S3 6_diy2_b=huang/S1 6_diy1_b=huang/S2 6_diy2_b=huang/S3",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "killed",
+        "players",
+        "reason",
+        "snaps",
+        "ticks",
+        "time",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 16,
+        "total": 105,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 13,
+        "total": 105,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/diy.json",
+      "scenario": "diy-058",
+      "about": "6_diy1_b=judge/S1/002_judge 6_diy2_b=judge/S2/002_judge 6_diy1_b=judge/S3/002_judge 6_diy2_b=judge/S1/003_judge 6_diy1_b=judge/S2/003_judge 6_diy2_b=judge/S3/003_judge 5_diy1_a=shu/S1 5_diy2_a=shu/S2 5_diy1_a=shu/S3 5_diy2_b=shu/S1 5_diy1_b=shu/S2 5_diy2_b=shu/S3",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "killed",
+        "players",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 3,
+        "total": 105,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 4,
+        "total": 105,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/fields.json",
+      "scenario": "boss-boss_1-solo",
+      "about": "假想敌：胄 solo pool 1800000: chess_char_5_08_b chess_char_5_11_b chess_char_5_05_b chess_char_5_06_b chess_char_5_13_b chess_char_5_07_b chess_char_5_02_b chess_char_5_03_b chess_char_5_10_b chess_char_5_12_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 17,
+        "total": 13,
+        "bossHpLeft": 922115
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 17,
+        "total": 13,
+        "bossHpLeft": 922115
+      }
+    },
+    {
+      "file": "test/golden/fields.json",
+      "scenario": "boss-boss_2-pair",
+      "about": "假想敌：铳 pair pool 6000000: chess_char_5_19_b chess_char_4_01_b chess_char_5_14_b chess_char_5_17_b chess_char_5_15_b chess_char_5_20_b chess_char_5_21_b chess_char_5_22_b chess_char_5_23_b chess_char_4_02_b | chess_char_4_11_b chess_char_4_04_b chess_char_4_07_b chess_char_4_16_b chess_char_4_09_b chess_char_4_06_b chess_char_4_10_b chess_char_4_12_b chess_char_4_13_b chess_char_4_14_b token_10041_cathy_catsld token_10041_cathy_catsld",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "bossHpLeft",
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "rngDraws",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 8,
+        "total": 8,
+        "bossHpLeft": 5098171
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 8,
+        "total": 8,
+        "bossHpLeft": 5198194
+      }
+    },
+    {
+      "file": "test/golden/fields.json",
+      "scenario": "boss-boss_2-solo",
+      "about": "假想敌：铳 solo pool 3000000: chess_char_4_17_b chess_char_4_18_b chess_char_4_23_b chess_char_4_19_b chess_char_4_22_b chess_char_4_20_b chess_char_4_21_b chess_char_4_24_b chess_char_4_25_b chess_char_4_26_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "bossHpLeft",
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "rngDraws",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 5,
+        "total": 7,
+        "bossHpLeft": 2697786
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 5,
+        "total": 7,
+        "bossHpLeft": 2777480
+      }
+    },
+    {
+      "file": "test/golden/fields.json",
+      "scenario": "boss-boss_3-solo",
+      "about": "假想敌：管 solo pool 2000000: chess_char_5_08_b chess_char_5_11_b chess_char_5_05_b chess_char_5_06_b chess_char_5_13_b chess_char_5_07_b chess_char_5_02_b chess_char_5_03_b chess_char_5_10_b chess_char_5_12_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 15,
+        "total": 9,
+        "bossHpLeft": 1213083
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 15,
+        "total": 9,
+        "bossHpLeft": 1213083
+      }
+    },
+    {
+      "file": "test/golden/fields.json",
+      "scenario": "boss-boss_5-solo",
+      "about": "卢西恩，“猩红血钻” solo pool 780000: chess_char_5_08_b chess_char_5_11_b chess_char_5_05_b chess_char_5_06_b chess_char_5_13_b chess_char_5_07_b chess_char_5_02_b chess_char_5_03_b chess_char_5_10_b chess_char_5_12_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "snaps"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 10,
+        "total": 5,
+        "bossHpLeft": 261291
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 10,
+        "total": 5,
+        "bossHpLeft": 261291
+      }
+    },
+    {
+      "file": "test/golden/fields.json",
+      "scenario": "hidden-boss_9-solo",
+      "about": "假想敌：铳 solo pool 2800000: chess_char_5_08_b chess_char_5_11_b chess_char_5_05_b chess_char_5_06_b chess_char_5_13_b chess_char_5_07_b chess_char_5_02_b chess_char_5_03_b chess_char_5_10_b chess_char_5_12_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "bossHpLeft",
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "rngDraws",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "forced",
+        "killed": 3,
+        "total": 3,
+        "bossHpLeft": 2190366
+      },
+      "after_result": {
+        "reason": "forced",
+        "killed": 3,
+        "total": 3,
+        "bossHpLeft": 2159519
+      }
+    },
+    {
+      "file": "test/golden/matches.json",
+      "scenario": "solo-FUNNY-1",
+      "about": "solo FUNNY, 1 bot seat(s), seed 1",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 9,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 27,
+        "bossPoolLeft": 0,
+        "virtualMs": 68100
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 9,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 27,
+        "bossPoolLeft": 0,
+        "virtualMs": 68100
+      }
+    },
+    {
+      "file": "test/golden/matches.json",
+      "scenario": "solo-FUNNY-2",
+      "about": "solo FUNNY, 1 bot seat(s), seed 2",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 9,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 29,
+        "bossPoolLeft": 0,
+        "virtualMs": 68100
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 9,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 29,
+        "bossPoolLeft": 0,
+        "virtualMs": 68100
+      }
+    },
+    {
+      "file": "test/golden/matches.json",
+      "scenario": "solo-NORMAL-1",
+      "about": "solo NORMAL, 1 bot seat(s), seed 1",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 11,
+        "bossPoolLeft": 0,
+        "virtualMs": 106900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 9,
+        "bossPoolLeft": 0,
+        "virtualMs": 106900
+      }
+    },
+    {
+      "file": "test/golden/matches.json",
+      "scenario": "solo-NORMAL-2",
+      "about": "solo NORMAL, 1 bot seat(s), seed 2",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 19,
+        "bossPoolLeft": 0,
+        "virtualMs": 106900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 29,
+        "bossPoolLeft": 0,
+        "virtualMs": 106900
+      }
+    },
+    {
+      "file": "test/golden/matches.json",
+      "scenario": "solo-HARD-1",
+      "about": "solo HARD, 1 bot seat(s), seed 1",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 27,
+        "bossPoolLeft": 0,
+        "virtualMs": 107800
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 27,
+        "bossPoolLeft": 0,
+        "virtualMs": 107800
+      }
+    },
+    {
+      "file": "test/golden/matches.json",
+      "scenario": "solo-HARD-2",
+      "about": "solo HARD, 1 bot seat(s), seed 2",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 29,
+        "bossPoolLeft": 0,
+        "virtualMs": 107800
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 29,
+        "bossPoolLeft": 0,
+        "virtualMs": 107800
+      }
+    },
+    {
+      "file": "test/golden/matches.json",
+      "scenario": "solo-ABYSS-1",
+      "about": "solo ABYSS, 1 bot seat(s), seed 1",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": false,
+        "roundsPassed": 13,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "defeat",
+        "teamLp": 0,
+        "bossPoolLeft": 897686,
+        "virtualMs": 107800
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": true,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 0,
+        "bossPoolLeft": 5909397,
+        "virtualMs": 113700
+      }
+    },
+    {
+      "file": "test/golden/matches.json",
+      "scenario": "solo-ABYSS-2",
+      "about": "solo ABYSS, 1 bot seat(s), seed 2",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": false,
+        "roundsPassed": 12,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "eliminated",
+        "teamLp": null,
+        "bossPoolLeft": null,
+        "virtualMs": 101900
+      },
+      "after_end": {
+        "victory": false,
+        "roundsPassed": 13,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "defeat",
+        "teamLp": 0,
+        "bossPoolLeft": 735137,
+        "virtualMs": 107800
+      }
+    },
+    {
+      "file": "test/golden/matches.json",
+      "scenario": "coop2-NORMAL-3",
+      "about": "coop NORMAL, 2 bot seat(s), seed 3",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 53,
+        "bossPoolLeft": 0,
+        "virtualMs": 118400
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 74,
+        "bossPoolLeft": 0,
+        "virtualMs": 118400
+      }
+    },
+    {
+      "file": "test/golden/matches.json",
+      "scenario": "coop2-HARD-4",
+      "about": "coop HARD, 2 bot seat(s), seed 4",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": false,
+        "roundsPassed": 12,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "eliminated",
+        "teamLp": null,
+        "bossPoolLeft": null,
+        "virtualMs": 115150
+      },
+      "after_end": {
+        "victory": false,
+        "roundsPassed": 13,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "defeat",
+        "teamLp": 0,
+        "bossPoolLeft": 826876,
+        "virtualMs": 119900
+      }
+    },
+    {
+      "file": "test/golden/matches.json",
+      "scenario": "coop3-ABYSS-5",
+      "about": "coop ABYSS, 3 bot seat(s), seed 5",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": false,
+        "roundsPassed": 11,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "eliminated",
+        "teamLp": null,
+        "bossPoolLeft": null,
+        "virtualMs": 113950
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 5,
+        "bossPoolLeft": 0,
+        "virtualMs": 124500
+      }
+    },
+    {
+      "file": "test/golden/matches.json",
+      "scenario": "coop4-FUNNY-6",
+      "about": "coop FUNNY, 4 bot seat(s), seed 6",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 130,
+        "bossPoolLeft": 0,
+        "virtualMs": 128500
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 127,
+        "bossPoolLeft": 0,
+        "virtualMs": 131500
+      }
+    },
+    {
+      "file": "test/golden/matches.json",
+      "scenario": "coop4-ABYSS-7",
+      "about": "coop ABYSS, 4 bot seat(s), seed 7",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": true,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 0,
+        "bossPoolLeft": 13069618,
+        "virtualMs": 148050
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 9,
+        "bossPoolLeft": 0,
+        "virtualMs": 141100
+      }
+    },
+    {
+      "file": "test/golden/matches.json",
+      "scenario": "coop2-NORMAL-8-serverrun",
+      "about": "coop NORMAL, 2 bot seat(s), seed 8, server-run combat",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 44,
+        "bossPoolLeft": 0,
+        "virtualMs": 122900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 50,
+        "bossPoolLeft": 0,
+        "virtualMs": 119900
+      }
+    },
+    {
+      "file": "test/golden/matches.json",
+      "scenario": "solo-HARD-9-boosted",
+      "about": "solo HARD, 1 bot seat(s), seed 9, LP 400 and 300 layers per bond from the first prep",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 15,
+        "hiddenReached": true,
+        "hiddenCleared": true,
+        "reason": "victory",
+        "teamLp": 205,
+        "bossPoolLeft": 0,
+        "virtualMs": 113700
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 15,
+        "hiddenReached": true,
+        "hiddenCleared": true,
+        "reason": "victory",
+        "teamLp": 400,
+        "bossPoolLeft": 0,
+        "virtualMs": 113700
+      }
+    },
+    {
+      "file": "test/golden/matches.json",
+      "scenario": "coop2-ABYSS-10-boosted",
+      "about": "coop ABYSS, 2 bot seat(s), seed 10, LP 400 and 300 layers per bond from the first prep",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 15,
+        "hiddenReached": true,
+        "hiddenCleared": true,
+        "reason": "victory",
+        "teamLp": 800,
+        "bossPoolLeft": 0,
+        "virtualMs": 123150
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 15,
+        "hiddenReached": true,
+        "hiddenCleared": true,
+        "reason": "victory",
+        "teamLp": 800,
+        "bossPoolLeft": 0,
+        "virtualMs": 121650
+      }
+    },
+    {
+      "file": "test/golden/matches.json",
+      "scenario": "coop2-NORMAL-14-standins",
+      "about": "coop NORMAL, 1 bot seat(s) + 1 human seat (AI 托管) without 9 operators (补位 stand-ins), seed 14",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "players",
+        "rng",
+        "rounds",
+        "standIns"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 51,
+        "bossPoolLeft": 0,
+        "virtualMs": 116900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 51,
+        "bossPoolLeft": 0,
+        "virtualMs": 116900
+      }
+    },
+    {
+      "file": "test/golden/matches.json",
+      "scenario": "coop2-NORMAL-70-diy",
+      "about": "coop NORMAL, 1 bot seat(s) + 1 human seat (AI 托管) with 4 自选 picks and its 调度中心 at level 5 from the first prep, seed 70",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "diy",
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 53,
+        "bossPoolLeft": 0,
+        "virtualMs": 118400
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 59,
+        "bossPoolLeft": 0,
+        "virtualMs": 116900
+      }
+    },
+    {
+      "file": "test/golden/matches.json",
+      "scenario": "coop2-NORMAL-1-coverage-standins",
+      "about": "coop NORMAL, 1 bot seat(s) + 1 human seat (AI 托管) without 9 operators (补位 stand-ins), seed 1",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds",
+        "standIns"
+      ],
+      "before_end": {
+        "victory": false,
+        "roundsPassed": 13,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "defeat",
+        "teamLp": 0,
+        "bossPoolLeft": 298434,
+        "virtualMs": 119900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 69,
+        "bossPoolLeft": 0,
+        "virtualMs": 119900
+      }
+    },
+    {
+      "file": "test/golden/matches.json",
+      "scenario": "coop2-NORMAL-5-coverage-diy",
+      "about": "coop NORMAL, 1 bot seat(s) + 1 human seat (AI 托管) with 4 自选 picks and its 调度中心 at level 5 from the first prep, seed 5",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "diy",
+        "end",
+        "players",
+        "rng",
+        "rounds"
+      ],
+      "before_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 72,
+        "bossPoolLeft": 0,
+        "virtualMs": 119900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 72,
+        "bossPoolLeft": 0,
+        "virtualMs": 118400
+      }
+    },
+    {
+      "file": "test/golden/matches.json",
+      "scenario": "coop2-NORMAL-1-unowned-roster",
+      "about": "coop NORMAL, 1 bot seat(s) + 1 human seat (AI 托管) without 55 operators (补位 stand-ins), seed 1",
+      "reason": "内置 AI 的主盟约、采购、布阵、预演和装备决策升级，并使用修复后的战斗规则。",
+      "changed_fields": [
+        "end",
+        "players",
+        "rng",
+        "rounds",
+        "standIns"
+      ],
+      "before_end": {
+        "victory": false,
+        "roundsPassed": 13,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "defeat",
+        "teamLp": 0,
+        "bossPoolLeft": 536501,
+        "virtualMs": 119900
+      },
+      "after_end": {
+        "victory": true,
+        "roundsPassed": 14,
+        "hiddenReached": false,
+        "hiddenCleared": false,
+        "reason": "victory",
+        "teamLp": 55,
+        "bossPoolLeft": 0,
+        "virtualMs": 118400
+      }
+    },
+    {
+      "file": "test/golden/roster.json",
+      "scenario": "roster-011",
+      "about": "pass 0 band 5: chess_char_4_23_a chess_char_4_01_b chess_char_4_22_a chess_char_4_04_b chess_char_4_07_b chess_char_4_09_b chess_char_4_21_a chess_char_4_24_a chess_char_4_25_a chess_char_4_26_a chess_char_4_02_b chess_char_4_06_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "fx"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 79,
+        "total": 78,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 79,
+        "total": 78,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/roster.json",
+      "scenario": "roster-013",
+      "about": "pass 0 band 5: chess_char_4_23_b chess_char_5_08_a chess_char_5_01_a chess_char_5_05_a chess_char_5_06_a chess_char_5_07_a chess_char_4_24_b chess_char_4_25_b chess_char_4_26_b chess_char_5_02_a chess_char_5_03_a chess_char_5_10_a",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "killed",
+        "players",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 101,
+        "total": 102,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 100,
+        "total": 102,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/roster.json",
+      "scenario": "roster-014",
+      "about": "pass 0 band 6: chess_char_5_11_a chess_char_5_19_a chess_char_5_13_a chess_char_5_14_a chess_char_5_01_b chess_char_5_17_a chess_char_5_12_a chess_char_5_15_a chess_char_5_20_a chess_char_5_21_a chess_char_5_22_a chess_char_5_23_a",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "killed",
+        "players",
+        "rngDraws",
+        "snaps",
+        "ticks",
+        "time",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 71,
+        "total": 183,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 106,
+        "total": 183,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/roster.json",
+      "scenario": "roster-015",
+      "about": "pass 0 band 6: chess_char_5_08_b chess_char_5_11_b chess_char_5_05_b chess_char_5_06_b chess_char_5_13_b chess_char_5_14_b chess_char_5_07_b chess_char_5_02_b chess_char_5_03_b chess_char_5_10_b chess_char_5_12_b chess_char_5_15_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "events",
+        "hooks",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 107,
+        "total": 105,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 107,
+        "total": 105,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/roster.json",
+      "scenario": "roster-018",
+      "about": "pass 0 band 7: chess_char_6_03_b chess_char_6_06_b chess_char_6_07_b chess_char_6_20_a chess_char_6_01_b chess_char_6_02_b chess_char_6_04_b chess_char_6_05_b chess_char_6_08_b chess_char_6_09_b chess_char_6_11_b chess_char_6_12_b token_10017_skadi2_dedant token_10030_mlyss_wtrman",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "snaps"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 120,
+        "total": 117,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 120,
+        "total": 117,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/roster.json",
+      "scenario": "roster-023",
+      "about": "pass 1 band 2: chess_char_2_08_a chess_char_2_17_a chess_char_2_18_a chess_char_2_07_a chess_char_2_09_a chess_char_2_11_a chess_char_2_13_a chess_char_2_16_a chess_char_2_12_a chess_char_2_06_a chess_char_2_10_a chess_char_2_14_a",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "killed",
+        "players",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 31,
+        "total": 35,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 33,
+        "total": 35,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/roster.json",
+      "scenario": "roster-034",
+      "about": "pass 1 band 6: chess_char_5_08_b chess_char_5_11_b chess_char_5_19_b chess_char_5_13_b chess_char_5_14_b chess_char_5_07_b chess_char_5_17_b chess_char_5_10_b chess_char_5_12_b chess_char_5_15_b chess_char_5_20_b chess_char_5_21_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "hooks",
+        "players",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 71,
+        "total": 104,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 71,
+        "total": 104,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/roster.json",
+      "scenario": "roster-037",
+      "about": "pass 1 band 7: chess_char_6_06_b chess_char_6_15_b chess_char_6_07_b chess_char_6_04_b chess_char_6_05_b chess_char_6_08_b chess_char_6_09_b chess_char_6_11_b chess_char_6_12_b chess_char_6_13_b chess_char_6_14_b chess_char_6_16_b token_10017_skadi2_dedant token_10030_mlyss_wtrman",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "killed",
+        "players",
+        "rngDraws",
+        "snaps",
+        "ticks",
+        "time",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 59,
+        "total": 86,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 61,
+        "total": 86,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/roster.json",
+      "scenario": "roster-038",
+      "about": "pass 1 band 7: chess_char_5_08_b chess_char_6_19_b chess_char_5_01_b chess_char_5_05_b chess_char_5_06_b chess_char_6_17_b chess_char_5_07_b chess_char_6_18_b chess_char_6_20_b chess_char_5_02_b chess_char_5_03_b chess_char_5_10_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "rngDraws",
+        "snaps",
+        "ticks",
+        "time",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 157,
+        "total": 157,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 157,
+        "total": 157,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/roster.json",
+      "scenario": "roster-047",
+      "about": "pass 2 band 7: chess_char_6_06_b chess_char_6_15_b chess_char_6_07_b chess_char_6_17_b chess_char_6_08_b chess_char_6_09_b chess_char_6_11_b chess_char_6_12_b chess_char_6_13_b chess_char_6_14_b chess_char_6_16_b chess_char_6_18_b token_10030_mlyss_wtrman",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "players",
+        "rngDraws",
+        "snaps",
+        "ticks",
+        "time",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 141,
+        "total": 139,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 141,
+        "total": 139,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/roster.json",
+      "scenario": "roster-048",
+      "about": "pass 2 band 7: chess_char_5_08_b chess_char_6_19_b chess_char_5_13_b chess_char_6_20_b chess_char_5_12_b chess_char_5_20_b chess_char_6_05_b chess_char_6_11_b token_10030_mlyss_wtrman",
+      "reason": "新模组增加默认版本覆盖组合，重新分配该编号的干员/技能/模组组合。",
+      "changed_fields": [
+        "about",
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "killed",
+        "players",
+        "rngDraws",
+        "snaps",
+        "ticks",
+        "time",
+        "units"
+      ],
+      "before_result": {
+        "reason": "cleared",
+        "killed": 57,
+        "total": 86,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "cleared",
+        "killed": 68,
+        "total": 86,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/roster.json",
+      "scenario": "roster-049",
+      "about": "pass 3 band 5: chess_char_4_23_b chess_char_3_04_b chess_char_4_09_b chess_char_3_21_b chess_char_4_13_b",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "enemies",
+        "events",
+        "fx",
+        "hooks",
+        "killed",
+        "players",
+        "snaps",
+        "units"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 32,
+        "total": 62,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 38,
+        "total": 62,
+        "bossHpLeft": null
+      }
+    },
+    {
+      "file": "test/golden/standins.json",
+      "scenario": "standin-01",
+      "about": "normal band 4 as stand-ins: chess_char_3_12_a→char_608_acpion chess_char_4_09_a→char_617_sharp2 chess_char_3_05_a→char_601_cguard chess_char_3_18_a→char_609_acguad chess_char_4_04_a→char_607_cspec chess_char_4_07_a→char_601_cguard chess_char_4_16_a→char_615_acspec chess_char_3_01_a→char_603_csnipe chess_char_3_04_a→char_605_cmedic chess_char_3_21_a→char_611_acnipe chess_char_4_02_a→char_611_acnipe chess_char_4_13_a→char_614_acsupo",
+      "reason": "同款装备、圣杯分伤、移动与元素清理、持续施法、鸭爵、缇缇和国度显示修复；默认版本另含官方模组与克莱门莎数据修正。",
+      "changed_fields": [
+        "snaps"
+      ],
+      "before_result": {
+        "reason": "timeout",
+        "killed": 22,
+        "total": 50,
+        "bossHpLeft": null
+      },
+      "after_result": {
+        "reason": "timeout",
+        "killed": 22,
+        "total": 50,
+        "bossHpLeft": null
+      }
+    }
+  ]
+}

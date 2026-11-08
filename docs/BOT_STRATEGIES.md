@@ -257,3 +257,10 @@ configuration, seeds, version and commands to reproduce them, are in the
 
 Legacy and adaptive prep retain §35.63 `spendDown` between advisor spending and freezing, without another yield.
 [ASSUMED] Ioleta procurement owns its refresh budget and omits that legacy sweep. Framework by @HankDUMPLINGZhong; strategies by @Lidong1793.
+
+
+## 2026-11-08 的默认内置策略
+
+legacy 名称保留，内部升级为原上游 dev eff7d93a 的主盟约自计划、职业队采购、首领阵容/装备与吞噬决策。既有 ioleta/adaptive/ioleta-adaptive 仍使用同一可信动作接口。
+扩展适配使用玩家自己的固定或独立卡池，避免干员竞争时只看同一卡池队友；离席者的策略轮选独立采用团队规则，不占歌利亚且保持 0 LP。
+预演后不再重排未经预演的阵容；分步、房主浏览器委托和回退继续保留，协议候选上限统一为 16。代码中的 §37 编号为上游历史编号，来源和 ASSUMED 见 [适配记录](UPSTREAM-DEV-20261108.md)。

@@ -933,3 +933,9 @@ CN/JP/本土配音、攻击与技能声音同原有语种回退。完整包和�
 控制台持久化 `logs/release-download-options.json` 的 `includeDynamic`；新装默认关闭，旧实例检测到已装动画首次默认开启。关掉时只走 lite＋缺失基础分包，保留已有动态文件；开关变化使已准备的不同范围暂存失效。之后勾选并修复当前版补装。原 v9/v10 更新器经全素材增量首次升级，之后才获得下载选择；旧版无独立分包时需完整素材。启动器 1.4.0 新装同样默认不下动画，已有实例用控制台补装。未安装动画的服务端清单视图省略不完整动态记录，静态皮肤图保留，生成源数据不变。
 
 详细步骤与图示见 [特色图鉴](FORK-FEATURES.md)。
+
+
+## 2026-11-08 新模组图标
+
+默认版本增加号角 ISW-A、凛御银灰 CSR-X、缪尔赛思 TAC-D、溯光星源 DEC-X。ISW-A 与 DEC-X 沿用已有图标；CSR-X/TAC-D 从既有素材规划器的 ArknightsAssets2 图标源补装，登记为 assets.modules 的 csr-x/tac-d。
+素材清单由 tools/fetch-assets.mjs 重新生成，保留已安装动态立绘；图片仍位于忽略的 public/assets/module 中，不进入源码 Git。

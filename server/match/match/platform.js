@@ -231,16 +231,6 @@ export class MatchPlatform {
     this.maybeEndInfo();
     if (!ps.alive) return;
     const phase = this.phase;
-    const d = this.draft;
-    if (phase === PHASE.BAND_DRAFT && d && !d.picks[ps.playerId]) {
-      // the departed seat passes its turn with the default band (never one a teammate holds — defaultBand)
-      const group = this.draftGroup(ps.playerId);
-      const turn = this.draftTurn(ps.playerId) === ps.playerId;
-      d.picks[ps.playerId] = this.defaultBand(ps.playerId);
-      if (group) group.picks[ps.playerId] = d.picks[ps.playerId];
-      ps.bandId = d.picks[ps.playerId];
-      if (turn) this.startDraftTurn(group);
-    }
     const passedRound = phase === PHASE.SETTLE ? this.round + 1 : Math.max(1, this.round);
     const expanded = this.order.length > BASE_SEATS;
     const leavingBossLayers = expanded && phase === PHASE.FINAL_ASSAULT ? ps.activatedLayers() : 0;
@@ -257,6 +247,16 @@ export class MatchPlatform {
     }
     ps.lp = 0;
     ps.eliminate(passedRound);
+    if (phase === PHASE.BAND_DRAFT) {
+      const group = this.draftGroup(ps.playerId);
+      if (group && group.playerIds.every(pid => this.players.get(pid)?.left || !this.players.get(pid)?.alive)) {
+        this.clearDraftGroupTimer(group);
+        group.idx = group.order.length;
+        group.done = true;
+        group.token++;
+        this.syncDraftDeadline(this.draft);
+      }
+    }
     if (expanded && phase === PHASE.FINAL_ASSAULT) this.hiddenLayerSum = Math.max(0, this.hiddenLayerSum - leavingBossLayers);
     if (expanded && this.bossPool && (phase === PHASE.FINAL_ASSAULT || phase === PHASE.HIDDEN_CORE) && this.alivePlayers().length) {
       const bossId = phase === PHASE.HIDDEN_CORE ? this.hiddenBossId : this.bossId;
@@ -281,6 +281,7 @@ export class MatchPlatform {
       return;
     }
     if (phase === PHASE.SP_DRAFT && this.sp && this.spTurn(ps.playerId) === ps.playerId) this.startSpTurn(this.spGroup(ps.playerId));
+    else if (phase === PHASE.BAND_DRAFT && this.draft && this.draftTurn(ps.playerId) === ps.playerId) this.startDraftTurn(this.draftGroup(ps.playerId));
     else if (phase === PHASE.PREP) this.maybeEndPrep();
   }
 

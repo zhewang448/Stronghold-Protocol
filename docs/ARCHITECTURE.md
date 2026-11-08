@@ -302,3 +302,9 @@ snapshot), it belongs in a task; if it touches sockets, timers or the lobby, it 
 `server/matchmaking.js` 为 Lobby 的内存队列服务，复用 `Lobby.create` / `join` 及原准备/开始。
 前端继续用 `screens/lobby.js` / `screens/room.js` 的搜寻组件，`main.js` 把三种 match.* 服务端帧写入 store。
 协议、队列生命周期与限制见 [真人匹配](MATCHMAKING.md)。
+
+
+## 2026-11-08 房间取景链路
+
+shared/cardArt.js 定义外观来源键、取景归一化与校验；public/js/ui/cardArtModel.js 保存本机取景和当前房间来源。loadoutSync.js 的 installCardArtSync 复用设置同步器，将当前来源发送到 server/lobby.js 的 cardArt。
+会话和席位保存同一经验证的值，room.state 广播给其他成员与观战者；room.js 明确传入拥有者的 frame，CardArtImage 和 LiveArt 共用它。缺失数据使用默认取景，接收者的本机偏好不进入其他人的显示。

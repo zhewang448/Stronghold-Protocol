@@ -1,0 +1,27 @@
+{
+  "source": "Node 24 JUnit new-tests.xml; existing CI weights retained; only newly added test files measured",
+  "weights": {
+    "test/card-art.test.js": 441,
+    "test/content/new-modules-2791.test.js": 74,
+    "test/match/band-strength.test.js": 123,
+    "test/match/bot-expanded-pools.test.js": 1618,
+    "test/match/bot-self-plan.test.js": 40,
+    "test/match/coop-play.test.js": 84,
+    "test/match/coop-team.test.js": 743,
+    "test/match/devour-feed.test.js": 2549,
+    "test/match/devour-layout.test.js": 1184,
+    "test/match/fa-body.test.js": 51,
+    "test/match/fa-damage.test.js": 223,
+    "test/match/fa-hold.test.js": 94,
+    "test/match/fa-items.test.js": 6169,
+    "test/match/fa-leader-chain.test.js": 45,
+    "test/match/fa-strike.test.js": 190,
+    "test/match/jesica.test.js": 126,
+    "test/match/muelsyse.test.js": 99,
+    "test/match/position-traits.test.js": 41,
+    "test/match/pro-team.test.js": 59,
+    "test/match/shop-items.test.js": 153,
+    "test/ui/card-art-sharing.e2e.test.js": 1,
+    "test/ui/card-art-sync.test.js": 4
+  }
+}

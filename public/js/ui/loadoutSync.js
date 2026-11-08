@@ -50,6 +50,8 @@ import { OWNERSHIP_PREF, parseStoredOwnership, parseStoredOwnershipChars, toStor
 import { parseStoredDiy, toStoredDiy, cleanPicks, sanitizeDiyPicks, diyPrefKey } from './diyModel.js';
 import { skinsStore, SKINS_KEY, SKINS_SYNC_KEY, parseStoredSkins } from './skins.js';
 import { cardStore, CARD_KEY, CARD_SKIN_KEY, CARD_SYNC_KEY, cardOperators } from './seatArt.js';
+import { cardArtStore } from './cardArtModel.js';
+import { isCardArtKey, normalizeCardArt } from '../../../shared/cardArt.js';
 import { needsContent, serverDefaultVersion } from '../versions.js';
 import { DEFAULT_VERSION } from '../../../shared/versions.js';
 import { toast } from './toasts.js';
@@ -761,6 +763,26 @@ export function installCardSync({ net, timers, target = cardStore, getChessReady
       return { charId: record ? want : '', ...(skin ? { skinId: record?.choices?.some(s => s.id === skin) ? skin : '' } : {}) };
     },
   });
+}
+
+/** Share only the current appearance's framing; reuse ordered updates and transient-error retries. */
+export function installCardArtSync({ net, timers, target = cardArtStore, app = store } = {}) {
+  const offFeatures = net.on('welcome', message => target.set({ supported: message?.uiMigration?.cardArt === true }));
+  const sync = installPrefSync({
+    net, timers, target, app, content: null, seatBound: false,
+    key: ['values', 'scope', 'supported', 'retry'], stateKey: 'sync',
+    msgType: 'room.cardArt', field: null, lockedText: null, tag: 'cardArt',
+    gate() {
+      const state = target.get(), scope = state.scope, current = app.get();
+      return !!state.supported && !!scope && scope.roomCode === current.room?.code
+        && scope.playerId === current.me?.playerId && isCardArtKey(scope.key);
+    },
+    prepare() {
+      const state = target.get(), scope = state.scope;
+      return scope ? { key: scope.key, frame: normalizeCardArt(state.values[scope.frameKey]), code: scope.roomCode } : null;
+    },
+  });
+  return { flush: sync.flush, dispose() { offFeatures?.(); sync.dispose(); } };
 }
 
 /**
