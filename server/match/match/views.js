@@ -44,6 +44,16 @@ function cultivationInfo(lo) {
 }
 
 export class MatchViews {
+  /** Upstream #922: public field operators only; DIY and stand-ins use their actual character. */
+  _boardOps(ps) {
+    if (!ps || ps.alive === false) return [];
+    const gd = ps.gd || this.gd;
+    return boardOrder(ps.board).filter(({ piece }) => piece.kind === 'chess').map(({ piece }) => {
+      const rec = ps.fieldRecord(gd.chess(piece.id));
+      return { id: rec?.charId || piece.id, ...(rec?.isGolden ? { golden: 1 } : {}) };
+    });
+  }
+
   statusOf(ps) {
     if (ps.left) return 'left';
     if (!ps.alive) return 'dead';
@@ -106,6 +116,8 @@ export class MatchViews {
       disabledBonds: [...new Set([...this.disabledBonds, ...this.staticInactiveBonds])].sort(),
       drawnDisabledBonds: this.disabledBonds.slice(),
       bannedChess: this.bannedChess.slice(),
+      ...(this.gd.regulationBondDraw ? { bondDraw: 'regulation' } : {}),
+      ...(this.bondChoice ? { bondChoice: { groups: this.bondChoice.groups.map(g => g.slice()), picked: this.bondChoice.picked } } : {}),
       bossId: this.bossId,
       hiddenBossId: this.hiddenBossId,
       bossRound: this.gd.bossRound,
@@ -141,6 +153,7 @@ export class MatchViews {
         // m.result's own bonds, so their layers would only cost every m.public bytes for the rest of the match
         // (the mode-off bonds with members included, `off: true`, as in m.private — bondsMeta.offBondCounts)
         bonds: ps.alive ? bondList(this.gd, ps.bondsView(), { off: offBondCounts(ps.gd || this.gd, ps) }) : [],
+        boardOps: this._boardOps(ps),
         fieldId: this.fieldOf(ps),
         status: this.statusOf(ps),
         autoplay: ps.autoplay,

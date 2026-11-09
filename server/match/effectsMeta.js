@@ -53,6 +53,7 @@ import { onGiftTicker } from './botEmotes.js';
 import { previewContext } from './preview.js';
 import { LayerLedger } from './layerForecast.js';
 import { deriveSeed } from '../sim/rng.js';
+import { commandMetaHandler, openSkillChangeDraft } from './bandCommands.js';
 
 export const HOOKS = Object.freeze([
   'onRoundStart', 'onIncome', 'onPrepStart', 'onPrepEnd', 'onGain', 'onSold', 'onRefresh', 'onPrice', 'onBuy',
@@ -70,6 +71,7 @@ export const GARRISON_HOOK = Object.freeze({
   SERVER_CHESS_SOLD: 'onSold',
   SERVER_PRICE: 'onPrice',
   SERVER_REFRESH_SHOP: 'onRefresh',
+  SERVER_BATTLE_FIN: 'onBattleResult',
 });
 
 const KEY_RE = /^(garrison|band|bond|item|choice|effect|global):[A-Za-z0-9_\-.:#]+$/;
@@ -277,7 +279,7 @@ export class EffectDispatcher {
       // 2. band
       if (ps.bandId) {
         const key = `band:${ps.bandId}`;
-        const h = reg.get(key) ?? reg.get(`band:${this.m.gd.band(ps.bandId)?.effectRef}`);
+        const h = commandMetaHandler(ps) ?? reg.get(key) ?? reg.get(`band:${this.m.gd.band(ps.bandId)?.effectRef}`);
         if (h) this._call(ps, key, h, hook, { kind: 'band', key, bandId: ps.bandId, band: this.m.gd.band(ps.bandId) }, ev);
       }
       // 3. bonds
@@ -382,7 +384,7 @@ export class EffectDispatcher {
       if (ev && ev.slot && ev.slot.kind === 'chess') run({ uid: 0, kind: 'chess', id: ev.slot.id, items: [] }, 'shop');
       return;
     }
-    if (hook !== 'onPrepStart' && hook !== 'onRoundStart' && hook !== 'onPrepEnd' && hook !== 'onRefresh') return;
+    if (hook !== 'onPrepStart' && hook !== 'onRoundStart' && hook !== 'onPrepEnd' && hook !== 'onRefresh' && hook !== 'onBattleResult') return;
     if (refreshed) {
       for (const { piece, area } of refreshed) {
         const loc = ps.find(piece.uid);
@@ -565,6 +567,7 @@ export function makeCtx(m, ps, source, hook, ev = null, preview = null) {
     lp: () => ps.lp,
     alive: () => ps.alive,
     bandId: () => ps.bandId,
+    commandEffectId: ps.command?.currentEffectId ?? null,
     teamMedicGranted: () => m.teamMedicGranted(),
     shopLevel: () => ps.shop.level,
     bond: (id) => (ps.bonds[id] ? { ...ps.bonds[id] } : null),
@@ -621,6 +624,38 @@ export function makeCtx(m, ps, source, hook, ev = null, preview = null) {
     addPendingFunds: (n) => { const v = finiteInt(n); if (v > 0) { ps.pendingFunds += v; ps.dirty(); } return v > 0 ? v : 0; },
     spendFunds: (n) => { const v = finiteInt(n); if (!ps.spend(v)) return false; ps._afterSpend(v, 'effect'); return true; },
     grantFreeRefresh: (n = 1) => { const v = finiteInt(n); if (v > 0) { ps.shop.freeRefreshes += v; ps.dirty(); } return ps.shop.freeRefreshes; },
+    /** One special-refresh charge: the next rollShop shows `count` chess of `bond`. Absent until a garrison grants it. */
+    grantBondRefresh: (bond, count) => {
+      const n = finiteInt(count);
+      if (!(n > 0) || typeof bond !== 'string' || !gd.bond(bond)) return 0;
+      if (!Array.isArray(ps.shop.bondRefresh)) ps.shop.bondRefresh = [];
+      ps.shop.bondRefresh.push({ bond, count: n });
+      return n;
+    },
+    /** Resolved sell price of an owned piece (an effect override, else the table). */
+    sellPrice: (uid) => {
+      const loc = ps.find(uid);
+      if (loc && loc.piece) return ps.sellPriceOf(loc.piece);
+      if (source?.piece && source.piece.uid === uid) return ps.sellPriceOf(source.piece);
+      return 0;
+    },
+    /** Temporary bond layers copied onto the player for this settle only (规程). 0 when absent. */
+    tempLayers: (bondId) => {
+      const n = ps.tempLayers && ps.tempLayers[bondId];
+      return typeof n === 'number' && n > 0 ? Math.floor(n) : 0;
+    },
+    /** Take up to `n` temporary layers of `bondId`. Returns how many were taken. */
+    convertTempLayers: (bondId, n) => {
+      if (!ps.tempLayers || typeof bondId !== 'string' || !bondId) return 0;
+      const have = ps.tempLayers[bondId];
+      if (!(typeof have === 'number' && have > 0) || !(n > 0) || !Number.isFinite(n)) return 0;
+      const take = Math.min(Math.floor(have), Math.floor(n));
+      if (!(take > 0)) return 0;
+      const left = have - take;
+      if (left > 0) ps.tempLayers[bondId] = left;
+      else delete ps.tempLayers[bondId];
+      return take;
+    },
 
     // ---- prices (onPrice only; the same as writing ev.price)
     modifyPrice: (delta) => { if (hook === 'onPrice' && ev && Number.isFinite(delta)) ev.price = Math.max(0, (Number(ev.price) || 0) + delta); return ev ? ev.price : null; },
@@ -740,14 +775,14 @@ export function makeCtx(m, ps, source, hook, ev = null, preview = null) {
       return true;
     },
     /** Queue a free pick-one offer of chess (shop.rewardOffer; `label` defaults to offerLabel(source), the bar's header). */
-    offerChess: (ids, opts = {}) => !!ps.pushRewardOffer(opts.source || source.key || 'effect', { ids, tier: opts.tier ?? null, label: opts.label ?? offerLabel(gd, source) }),
-    /** Queue a free pick-one offer of items (shop.rewardOffer with slots of kind 'item'). */
-    offerItems: (ids, opts = {}) => !!ps.pushItemOffer(ids, { source: opts.source || source.key || 'effect', tier: opts.tier ?? null, label: opts.label ?? offerLabel(gd, source) }),
+    offerChess: (ids, opts = {}) => !!ps.pushRewardOffer(opts.source || source.key || 'effect', { ids, tier: opts.tier ?? null, label: opts.label ?? offerLabel(gd, source), picks: opts.picks }),
+    /** Queue a free offer of items (shop.rewardOffer with slots of kind 'item'). `picks` > 1 keeps the offer open. */
+    offerItems: (ids, opts = {}) => !!ps.pushItemOffer(ids, { source: opts.source || source.key || 'effect', tier: opts.tier ?? null, label: opts.label ?? offerLabel(gd, source), picks: opts.picks }),
     setShopSlot: (i, slot) => {
       if (!Number.isInteger(i) || i < 0 || i >= ps.shop.slots.length) return false;
       if (slot == null) { ps.shop.slots[i] = null; ps.dirty(); return true; }
       const kind = slot.kind === 'item' ? 'item' : 'chess';
-      if (kind === 'chess' ? !gd.chess(slot.id) : !gd.item(slot.id)) return false;
+      if (kind === 'chess' ? !gd.chess(slot.id) || m.chessExcluded(gd.chess(slot.id)) : !gd.item(slot.id)) return false;
       const basePrice = Number.isFinite(slot.price) ? Math.max(0, Math.trunc(slot.price)) : kind === 'chess' ? gd.chessPrice(slot.id) : gd.itemPrice(slot.id);
       ps.shop.slots[i] = { kind, id: slot.id, basePrice, frozen: !!slot.frozen, sold: false };
       ps.dirty();
@@ -776,6 +811,7 @@ export function makeCtx(m, ps, source, hook, ev = null, preview = null) {
     // ---- bounties / choices
     addBounty: (card) => m.addBounty(ps, card),
     offerBountyChoice: (cards, sourceItemId) => m.offerBountyChoice(ps, cards, sourceItemId),
+    openSkillChangeDraft: choiceId => openSkillChangeDraft(ps, choiceId, ctx),
 
     // ---- messaging
     // a string or a shared/i18n.js msg(msgid, params)

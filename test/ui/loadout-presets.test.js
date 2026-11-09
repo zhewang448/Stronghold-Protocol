@@ -277,7 +277,7 @@ test("version scope uses official configurable rosters and exclusive means absen
   assert.ok(all.charIds.includes("char_199_yak"));
   assert.equal(all.charIds.length, new Set([...rosters.act2autochess, ...rosters.act1autochess]).size);
   const exclusive = operatorScope("exclusive", ["act2autochess"], rosters);
-  assert.equal(exclusive.charIds.length, 4);
+  assert.equal(exclusive.charIds.length, 1, 'regulation adds three operators previously exclusive to 第二期下半');
   for (const id of exclusive.charIds) for (const v of VERSIONS.filter(v => v.id !== "act2autochess")) assert.ok(!rosters[v.id].includes(id));
   assert.deepEqual(operatorScope("exclusive", ["act1autochess"], rosters).charIds, []);
   assert.equal(operatorScope("all", [], rosters), null);
@@ -332,8 +332,8 @@ test("version roster loading does not change shown content and fails without cac
   globalThis.fetch = async _url => { requests++; return { ok: false }; };
   try { await assert.rejects(S.loadPresetRosters(), { code: "data" }); } finally { globalThis.fetch = old; }
   globalThis.fetch = async url => ({ ok: true, json: async () => read(String(url).replace("/data/", "")) });
-  try { const rosters = await S.loadPresetRosters(); assert.equal(rosters.act2autochess.length, 112); assert.equal(Object.keys(rosters).length, 4); } finally { globalThis.fetch = old; }
-  assert.ok(requests >= 4); assert.equal(data.contentId(), content);
+  try { const rosters = await S.loadPresetRosters(); assert.equal(rosters.act2autochess.length, 112); assert.equal(Object.keys(rosters).length, VERSIONS.length); } finally { globalThis.fetch = old; }
+  assert.ok(requests >= VERSIONS.length); assert.equal(data.contentId(), content);
 });
 test("version filters compose with existing search/class/tier and do not expand the displayed roster", () => {
   const rows = rosterOf(Object.values(DEF));

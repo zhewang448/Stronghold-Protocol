@@ -19,6 +19,7 @@ import { sanitizeName, TokenBucket, SessionRegistry, clientAddress, normalizeIp,
 import { StubMatch as Match } from '../server/match/StubMatch.js';
 import { Match as RealMatch } from '../server/match/Match.js';
 import { TestClient } from './helpers/wsClient.js';
+import { VERSIONS } from '../shared/versions.js';
 import { ERR, DEFAULT_SEATS, MAX_SEATS, MAX_SPECTATORS, PHASE, EMOTES } from '../shared/constants.js';
 
 const CODE_RE = new RegExp(`^[${CODE_ALPHABET}]{4}$`);
@@ -1286,8 +1287,8 @@ describe('websocket lobby', () => {
     assert.ok(h.rooms >= 1);
     assert.ok(h.sockets >= 1);
     assert.ok(h.sessions >= 1);
-    assert.deepEqual(h.versions.enabled, ['act2autochess', 'act2autochess@V2_1', 'act1autochess', 'act1autochess@V1_1']);
-    assert.equal(h.versions.default, 'act2autochess');
+    assert.deepEqual(h.versions.enabled, VERSIONS.map(version => version.id));
+    assert.equal(h.versions.default, 'act3autochess@V3_1');
   });
 });
 

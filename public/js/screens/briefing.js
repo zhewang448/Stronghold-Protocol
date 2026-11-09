@@ -55,10 +55,17 @@ export function BriefingScreen() {
   const m = gd.m;
 
   const ready = async () => {
-    if (busy || editingDiy || me?.ready) return;
+    if (busy || editingDiy || me?.ready || info.choice?.picked === null) return;
     setBusy(true);
     await actions.infoReady(pub.setupRevision ?? 0);
     setBusy(false);
+  };
+
+  const pickGroup = async (idx) => {
+    if (busy || !me || pub.rerollVote) return;
+    setBusy(true);
+    try { await actions.bondGroup(idx, pub.setupRevision ?? 0); }
+    finally { setBusy(false); }
   };
 
   return html`<div class="screen brief">
@@ -96,7 +103,7 @@ export function BriefingScreen() {
         </div>
       </section>
       <section class="brief__right">
-        <${MatchInfo} model=${info} />
+        <${MatchInfo} model=${info} onPick=${pickGroup} disabled=${!me || !!me.ready || !!pub.rerollVote} busy=${busy} />
       </section>
     </main>
     <${SetupReroll} pub=${pub} />
@@ -114,7 +121,7 @@ export function BriefingScreen() {
         <span class=${cx('brief-ready__pips', players.length > 8 && 'is-many')}>${players.map((p) => html`<i key=${p.playerId} class=${cx(p.ready && 'on', p.playerId === myId && 'me')} title=${p.name}><${Icon} name="user" /></i>`)}</span>
       </div>
       <${Button} variant="primary" size="xl" icon=${me?.ready ? 'check' : me ? 'play' : 'eye'} active=${!!me?.ready} loading=${busy}
-        disabled=${!!me?.ready || !me || !!pub.rerollVote || editingDiy} data-testid="brief-ready" onClick=${ready}>${me?.ready ? t('已就绪') : me ? t('准备就绪') : t('观战中')}<//>
+        disabled=${!!me?.ready || !me || !!pub.rerollVote || editingDiy || info.choice?.picked === null} data-testid="brief-ready" onClick=${ready}>${me?.ready ? t('已就绪') : me ? t('准备就绪') : t('观战中')}<//>
     </footer>
     <${ExitModal} open=${exit} onClose=${() => setExit(false)} solo=${solo} />
   </div>`;

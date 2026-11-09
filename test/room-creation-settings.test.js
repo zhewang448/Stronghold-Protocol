@@ -49,7 +49,7 @@ test('explicit empty optional plugin defaults retain mandatory plugins and AI de
   room.content = lobby.baseContent(room.version);
   room.aiTakeoverEnabled = true;
   lobby.applyVersion(room, 'act1autochess', 'test');
-  assert.equal(room.aiTakeoverEnabled, false, 'switching to a historical version cannot retain unsupported AI handover');
+  assert.equal(room.aiTakeoverEnabled, true, 'official historical versions retain the enabled spectator handover option');
 });
 
 test('all room defaults apply on create, per-option permissions reject alternate wire routes, and saves are atomic', async t => {
@@ -108,7 +108,8 @@ test('all room defaults apply on create, per-option permissions reject alternate
 
 async function resetFixture(testContext) {
   resetHostSettings();
-  const server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, recovery: false, assetIndex: false, heavyBurst: 100, rateBurst: 200 });
+  const server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, recovery: false, assetIndex: false, heavyBurst: 100, rateBurst: 200,
+    versions: { default: 'act2autochess' } });
   server.lobby.opts.versionProposeGapMs = 0; server.lobby.opts.versionRetryMs = 0;
   const peers = [];
   testContext.after(async () => { for (const peer of peers) await peer.terminate(); await server.close(); resetHostSettings(); });

@@ -40,7 +40,7 @@ The optional PR #25 barrage extension accepts `g.emote { id, watch, count? }` an
 `welcome` and live `site.settings` carry the host's `emoteBarrage`, `signalBar` and `emoteBarrageRate` choices.
 The allow switch and rate also reach isolated match hosts through `extensionSettings`. [ASSUMED] Entertainment only.
 
-C→S (all carry `rid`): `g.infoReady {setupRevision?}` · `g.band {bandId}` · `g.bandSkip` · `g.bandFocus {bandId?}` (the strategy highlighted in the draft screen — what a timed-out turn takes; absent / null clears it; `WRONG_PHASE` outside BAND_DRAFT, `ALREADY` after the pick, `BAD_TARGET` for a band not allowed; §18.2) · `g.buy {slot}` · `g.refresh` · `g.freeze` · `g.levelUp` · `g.sell {uid}` · `g.move {uid, to:{area:'board', row, col}|{area:'hand', idx}, dir?}` · `g.equip {itemUid, targetUid, replaceUid?}` (`replaceUid`: which equipped item a third one replaces, §6.2) · `g.art {itemUid, row, col, dir?}` (`dir` ∈ UP|RIGHT|DOWN|LEFT from the deploy wheel, §3; absent ⇒ `to.dir`, then RIGHT; `g.move` onto the piece's own tile re-orients it; board pieces in `m.private` / `m.field {prep:true}` carry `dir`) · `g.destroy {uid}` (hand / temp items only; equipped items are locked, §6.2) · `g.reward {idx}` · `g.choice {idx, choiceId?}` (with an ID: the recipient's PREP personal choice; without one: the public SP_DRAFT; stale or wrong IDs never fall through to the public draft) · `g.ready {ready}` · `g.emote {id}` · `g.watch {fieldId, playerId?}` (`playerId`: the player tapped — a shared 联防 / boss pair field shows two; what an eliminated viewer follows, §25) · `g.autoplay {on}` · `g.pause {on}` (solo battles only, §14 Solo pause) · `g.unitStats {seq?}` (ROUND_START / SP_DRAFT / PREP, else `WRONG_PHASE`; eliminated: `ELIMINATED`) → push `m.unitStats` (§18.5) · `g.leave` · `g.test {cmd, args?}` (the current host of a test match only, DESIGN §34.8; a normal match answers `TEST_FORBIDDEN`, a guest `NOT_HOST`, a spectator `SPECTATOR`; `args` omitted is `{}`)
+C→S (all carry `rid`): `g.infoReady {setupRevision?}` · `g.bondGroup {idx:0|1, setupRevision}` (regulation SINGLE, INFO_CHECK only, one choice per setup revision; the other core group is greyed) · `g.band {bandId}` · `g.bandSkip` · `g.bandFocus {bandId?}` (the strategy highlighted in the draft screen — what a timed-out turn takes; absent / null clears it; `WRONG_PHASE` outside BAND_DRAFT, `ALREADY` after the pick, `BAD_TARGET` for a band not allowed; §18.2) · `g.buy {slot}` · `g.refresh` · `g.freeze` · `g.levelUp` · `g.sell {uid}` · `g.move {uid, to:{area:'board', row, col}|{area:'hand', idx}, dir?}` · `g.equip {itemUid, targetUid, replaceUid?}` (`replaceUid`: which equipped item a third one replaces, §6.2) · `g.art {itemUid, row, col, dir?}` (`dir` ∈ UP|RIGHT|DOWN|LEFT from the deploy wheel, §3; absent ⇒ `to.dir`, then RIGHT; `g.move` onto the piece's own tile re-orients it; board pieces in `m.private` / `m.field {prep:true}` carry `dir`) · `g.destroy {uid}` (hand / temp items only; equipped items are locked, §6.2) · `g.reward {idx}` · `g.choice {idx, choiceId?}` (with an ID: the recipient's PREP personal choice; without one: the public SP_DRAFT; stale or wrong IDs never fall through to the public draft) · `g.ready {ready}` · `g.emote {id}` · `g.watch {fieldId, playerId?}` (`playerId`: the player tapped — a shared 联防 / boss pair field shows two; what an eliminated viewer follows, §25) · `g.autoplay {on}` · `g.pause {on}` (solo battles only, §14 Solo pause) · `g.unitStats {seq?}` (ROUND_START / SP_DRAFT / PREP, else `WRONG_PHASE`; eliminated: `ELIMINATED`) → push `m.unitStats` (§18.5) · `g.leave` · `g.test {cmd, args?}` (the current host of a test match only, DESIGN §34.8; a normal match answers `TEST_FORBIDDEN`, a guest `NOT_HOST`, a spectator `SPECTATOR`; `args` omitted is `{}`)
 S→C:
 - `m.public` — full public state on every change (throttled ≤ 10/s): `{ phase, round, lastRound, deadline, serverNow, modeId, difficulty, stageId, factions, disabledBonds, bannedChess, bossId, hiddenBossId?, teamLp?, bossHp?:{hp,max}, overtimeAt? /* FA / HC: ms epoch the overtime drain starts, §4 */, paused /* solo pause, §14 */, draft?:{order,turn,picks,skipsLeft,turnDeadline,turnSeconds /* one turn's length, 0 untimed; deadline = turnDeadline (§18.2) */,untimed}, sp?:{family,cards /* bounty cards carry descRaw?, §20.6 */,turn,picks}, players:[{playerId, seat, name, isBot, connected, alive, lp, bandId, shopLevel, boardCount, ready, bonds:[{bondId,count,active,tier,layers,harmony? /* 调和's +1 is in count, §21.26 */}], fieldId, status, pendingLp? /* COMBAT / 联防 of a normal round: the LP the player's own battle will cost at settlement so far, min(lpCapPerRound, counted leaks) — in 联防 min(lpCapPerRound, uniteLeft) — omitted when 0 and in every other phase (§17.5 live LP) */, uniteLeft? /* 联防: the leaker's enemies still standing — not spawned yet + alive + counted leaks, uncapped, live (§20.6) */}] , fields:[{fieldId, kind, players:[playerId...], progress?:{killed, resolved, total, done} /* §14 顶栏胶囊: resolved = the field's own scheduled enemies knocked down or leaked, null while unknown */}] }` · `m.public.uniteResult` — SETTLE after a 联防 only, its outcome as data: `{ through /* the leakers' enemies that still got through, uncapped */, helpers:[playerId...], leakers:[playerId...], losses:{playerId: the LP settlement charged this round — every alive player} }`; absent when no 联防 resolved (the client's result box then reads the round's own battle; GitHub #235, PR #112)
 - `m.private` — the recipient's full PlayerState view (§6.2 minus server-only data) on every change; in a boss round's prep also `bossMate { playerId, side, units }` — the pair partner's board on its half of the boss field (UnitInfo, mirrored on the right half), re-sent when the partner moves (0.2.0, community report item 51).
@@ -211,12 +211,15 @@ for byte what they were; everything below appears only in a room whose host swit
   data: { <name>: sha256 }, plugins, settings, i18n: { <lang>: sha256 } })) — the page checks every body's bytes against
   its entry before decoding and the composition against the room's `cs`, and follows no URL but `/data/` and
   `/cs/<cs16>/`;
-- errors (`shared/constants.js` ERR, text in ERR_TEXT): `PLUGIN_INCOMPATIBLE`, `PLUGIN_BUSY`, `CONTENT_NOT_READY`.
+- A non-default gameplay set adds `version` to the manifest and hash input. Its unchanged files use that official
+  version's `/data/versions/<slug>/` base. It uses the plugin host pool and remains unofficial (PLUGINS §11).
+- errors (`shared/constants.js` ERR, text in ERR_TEXT): `PLUGIN_INCOMPATIBLE`, `PLUGIN_BUSY`, `CONTENT_NOT_READY`,
+  `VERSION_UNSUPPORTED` (an unsupported official version in a gameplay plugin or its requirements).
 
 ### 8.5 Official version messages (M1, §35.23)
 
 A server offers the official versions its owner enables (docs/DATA.md "Serving the versions (M1)"). This extension enables
-all four registered versions by default and lists them in `welcome.versions`; 第二期下半 / `act2autochess` stays the default selection. `SP_VERSIONS=act2autochess` narrows a deployment to the default version alone (§36.4).
+all five registered versions by default and lists them in `welcome.versions`; 第二期下半 / `act2autochess` stays the default selection. `SP_VERSIONS=act2autochess` narrows a deployment to the default version alone (§36.4).
 `welcome.versions` is omitted only when the live list is exactly that one version (`SP_VERSIONS=act2autochess`). A room
 plays one version; `act2autochess` is a code constant: a message or a record without a version means it, whatever the
 server's default.
@@ -236,11 +239,10 @@ server's default.
 - `room.setDifficulty` / `room.setMode`: a difficulty or official mode the room's version lacks → `BAD_TARGET` 'not a mode
   of this version'; `room.setMode` during an open vote → `VERSION_VOTE` (`room.setDifficulty` is allowed);
 - C→S `room.proposeVersion { version }` (the host, before the match). Refused, in this order: `NOT_IN_ROOM`, `SPECTATOR`,
-  `NOT_HOST`, `ROOM_STARTED`, `VERSION_UNKNOWN`, `VERSION_UNSUPPORTED` (the room mode; gameplay plugins on and the target
-  not `act2autochess`), `ALREADY` (the room's own version), `VERSION_VOTE` (a vote is open), `RATE` (300 ms since the last
+  `NOT_HOST`, `ROOM_STARTED`, `VERSION_UNKNOWN`, `VERSION_UNSUPPORTED` (the room mode), `ALREADY` (the room's own version), `VERSION_VOTE` (a vote is open), `RATE` (300 ms since the last
   proposal, or 5 s after a declined or expired vote [ASSUMED]), `NOT_READY` (a seated human offline), `VERSION_UNSUPPORTED`
-  when the target's data failed to load, and `VERSION_UNSUPPORTED` again when the room's cosmetic plugins do not resolve
-  on the target. With exactly one active human
+  when the target's data failed to load, and `VERSION_UNSUPPORTED` again when the room's plugins do not resolve
+  on the target (each gameplay plugin must list it in `versions`, absent = act2autochess). With exactly one active human
   the room switches at once; otherwise a vote opens — voters: the seated, non-departed humans then, in seat order (AI seats
   and spectators never vote); the host counts as agreed; 60 s to answer [ASSUMED];
 - C→S `room.versionVote { voteId, agree }` (a voter): `NOT_IN_ROOM`, `SPECTATOR`, `WRONG_PHASE` (no vote), `BAD_TARGET`
@@ -258,12 +260,13 @@ server's default.
   (only while a timed solo's 「不限时」 is on); `versionVote?: { id,
   proposerId, version, voters, agreed, remainingMs }` while a vote is open (`id` 1, 2, … per room; `remainingMs` a duration
   at send time by the lobby's clock, never a wall clock); a version room's `content` = `{ cs: <the version's cs>, vanilla:
-  true, version, plugins: [...cosmetic], vs?, warnings?, bytes? }` — never `vanilla: false`, so never unofficial;
+  true, version, plugins: [...cosmetic], vs?, warnings?, bytes? }` without gameplay plugins; with supported gameplay plugins,
+  it is the composed §8.4 shape (`vanilla: false`, unofficial), also carrying `version`;
   `seats[].content` / `spectators[].content` ('loading' | 'ready' | 'failed') appear whenever the room needs its pages to
   load content (gameplay plugins, or a version other than `act2autochess`);
 - existing messages in a version room: `room.ready { true }` and `room.start` wait for every player's `content: 'ready'`
   (`CONTENT_NOT_READY`); `room.contentReady { cs, ok? }` names the version's cs; `room.setPlugins` with a content / script /
-  trusted plugin → `VERSION_UNSUPPORTED` (cosmetic plugins work); `room.loadout` / `room.ownership` / `room.diy` /
+  trusted plugin that does not list the room's version → `VERSION_UNSUPPORTED` (cosmetic plugins work); `room.loadout` / `room.ownership` / `room.diy` /
   `room.card` / `room.skins` are checked against the version's data — a setting a page sends before it reported the
   room's content ready is kept unverified (chess ids name other operators across versions): a version room's match drops
   that loadout's skill / module choices and that 干员持有 list whole, while its 潜能 / 练度 (`ops`) and 自选 picks, keyed
@@ -466,14 +469,14 @@ and keep full replay records. Version negotiation/votes and hello identity owner
 ### Spectator AI handover (PR #691, §35.100, [ASSUMED])
 
 The host may opt in before the match with `room.setAiTakeover {on}` (default off, co-op only); changing it clears human ready flags. Off, both option/vote keys are omitted from room.state, the client hides the panel, and requests/votes/transfers are refused.
-In an enabled original-content default-version co-op room during PREP, a spectator may send `room.aiRequest {botId}`.
+In an enabled original-content co-op room during PREP, a spectator may send `room.aiRequest {botId}`. A non-default official version uses the same vote; its match host answers the eligibility read and the seat mutation.
 `room.aiVote {voteId, approve}` records one replaceable vote per online, non-autoplay human teammate.
 Strict majority accepts/rejects; an online host decides if there are no eligible human teammates.
 Requests expire after 30 seconds and cannot transfer a seat during combat or after match disposal.
 `room.state.aiTakeoverVotes` exposes the applicant, AI seat, eligible IDs, yes/no votes and expiry.
 Successful transfer retains the AI player ID, funds and inventory, rebinds the applicant's existing session token,
 and sends `welcome.takeoverFrom` followed by ordinary room/match resynchronization. Test-room admission still
-requires the existing acknowledgement before spectating. Isolated gameplay-plugin and historical-version matches are unsupported.
+requires the existing acknowledgement before spectating. Isolated gameplay-plugin matches are unsupported.
 These remake-only cooperation rules were accepted by the maintainer on 2026-10-24 with the default-off host toggle; ordinary battle goldens are unaffected.
 
 The [0.3.2 AI handover revision](../history/0.3.2/ai-handover.md) binds requests to a match, round and
@@ -631,3 +634,8 @@ The WebSocket handshake records only a bounded, valid HTTP(S) Origin host (inclu
 welcome.uiMigration.cardArt 标识能力。room.cardArt 消息包含 key、frame:{zoom,ox,oy} 和可选 code；key 为当前干员外观或 custom，zoom 0.5–3，ox/oy -100–100，仅接受有限数值。
 服务器只修改发送会话自己的席位；code 不属于当前房间或没有席位时拒绝。会话和 room.state.seats[].cardArt 保存经归一化的来源与取景，向成员和观战者广播，重连/换房保留。
 客户端按外观在本机保存，500 ms 合并并沿用 RATE/TIMEOUT/OFFLINE 重试，welcome 后重发。接收者只应用来源匹配的拥有者取景；缺失或不匹配时使用默认值，绝不使用接收者本机取景。纯外观，不写入 BattleSpec。
+
+
+### 规程迁移补充（2026-11-09）
+
+规程的 room.diy.picks 结构上限为 16（每阶六个官方位置及两个候补）；g.diyApply/g.diyChoose 每阶结构上限为六名，语义校验继续按房间版本实际名额检查，原四版本最多两名。

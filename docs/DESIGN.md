@@ -151,6 +151,17 @@ Offline checks and game runtime never fetch them; derived records and the plugin
 | §35 | [history/0.3.2.md](history/0.3.2.md) | 0.3.2 — released 2026-10-24, fixes after 0.3.1; AI strategy framework (§35.7), external AI (§35.8; [API](EXTERNAL_AI.md), development-only and omitted from release packages, §35.66); opt-in advisor plans, knowledge and benchmarks (§35.9); committed example LLM plans and private diagnostics (§35.11); regenerable [strategy playbook](AI-STRATEGY.md) and staged candidates (§35.12); advisor level floors, reasoned holds and expiring-fund spending (§35.13); advisor execution fidelity, exact IDs and hand-room protection (§35.14); advisor input for skilled play (§35.15); the event UI splits of #643 by @isomerpoi — loadout card view, lobby hub, seat cards with synced outfits, own lobby backdrop and music, match top bar, pre-game flow (§35.18); the official versions groundwork M0 (§35.22); the version switch M1 (§35.23); strategy grants at the prep start (§35.24); 终极 bot cycles and the Final Assault rehearsal (§35.62–§35.64); one 鸭爵 draw per round (§35.26); the Hidden Core's pairs drawn anew (§35.27); 火力电台 by the PRTS notes (§35.28); the other leaders' attack-class skills in the attack's turn (§35.29); enemy skill clips by the official ability (§35.48); the §35.18 UI leftovers (§35.51); the bounty leaders' and normal enemies' attack-class skills in the attack's turn (§35.52); the operators' 「进入休整期时」 traits at the prep start (§35.53); long skill clips and 自在's attack target (§35.54); 昆图斯's remaining skill turns (§35.55); pre-game text fit (§35.56); attack-turn cast clips (§35.57); the PR batch — settlement (§35.30–§35.35), open rosters (§35.36), the art-index lock (§35.37), skill-mode sounds (§35.38), 蕾缪安's crosshair (§35.39), zip errors (§35.40), 重刷本局 (§35.41), literal msgids in PR #850 (§35.42), 界面大小 (§35.43) and the batch reviews (§35.44–§35.47) |
 | §36 | [history/0.3.3.md](history/0.3.3.md) | 0.3.3 — released 2026-10-25，0.3.2 的热修复；第一期商店装备核查与空栏显示（§36.1）、满休整区互换（§36.2）、跨版本装备图标缓存（§36.3） |
 
+| §37 | [history/0.3.4.md](history/0.3.4.md) | 上游开发线历史；本库本轮适配 §37.100–§37.104 规程内容，范围与验证见迁移记录 |
+
 Default-off spectator AI handover (maintainer decision 2026-10-24, §35.100): [AI handover rules](history/0.3.2/ai-handover.md).
 
 指定 Stardust UI 迁移的当前范围、默认开关、预计叠层和四候选可选上场扩展见 [实施说明](STARDUST-UI-MIGRATION.md)，来源与五批计划见 [计划](STARDUST-UI-PLAN.md)。当前规则同步到 design/client、match、network。
+
+
+## 2026-11-09 — 规程开发线迁移（未发布）
+
+新增第五个官方版本「规程·序列Ⅰ」，大厅默认选中；无版本的数据、回放和旧对局仍表示第二期下半。单人可选极速模拟及规程等级 1–20，同盟沿用四档难度。接入本赛季干员、盟约、指令、装备、驻守和敌人；核心盟约选组与五格装备区仅对规程生效。
+
+保留本库 4–20 席分组、独立卡池、批量自选、动态外观、取景同步、主机配置、恢复和启动器。规程房间支持观战接替 AI；玩法插件须显式声明支持的版本。新增队友速查，并修复魔王 S3 背景遮挡。来源、推定边界和实际验证见 [迁移记录](UPSTREAM-REGULATION-20261109.md)。
+
+上游开发线编号 §37 见 [history/0.3.4.md](history/0.3.4.md)，本库适配范围见迁移记录。

@@ -65,7 +65,7 @@ import { Downloader } from './assets/downloader.mjs';
 import { restartForEnvProxy } from './assets/env-proxy.mjs';
 import { MirrorPolicy, selectDownloadSource, validateSource } from './assets/network.mjs';
 import { normalizeProxyPrefix } from './assets/sources.mjs';
-import { loadIndexes } from './assets/cache.mjs';
+import { loadIndexes, localFxIndexPath } from './assets/cache.mjs';
 import { indexAudio, VOICE_DIRS } from './assets/audio.mjs';
 import { buildPlan, charModesFromIndex, VOICE_OPTIONAL_TREES } from './assets/plan.mjs';
 import { operatorAudioIndexes } from './assets/operator-audio.mjs';
@@ -79,7 +79,7 @@ import { statsTemplateJobs } from './assets/stats-template.mjs';
 import { skelParserAvailable } from './assets/skel.mjs';
 import { SourceVerifier } from './assets/source-verifier.mjs';
 import { buildSkinPlan, completeSkins } from './assets/skins.mjs';
-import { versionAssetData, presentationUnion, addManifestEntries } from './assets/versions.mjs';
+import { versionAssetData, presentationUnion, addManifestEntries, versionAudioData } from './assets/versions.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = join(ROOT, 'public', 'assets');
@@ -427,10 +427,11 @@ async function main() {
   const scopedAudio = await readJson('docs/research/new-operator-audio-20261101.json');
   const { audioData, charword } = operatorAudioIndexes(indexes.audioData, indexes.charword, scopedAudio);
   const { modelsData } = indexes;
-  const audio = indexAudio(audioData);
+  // Verified runs plan only from their verified index; the optional pinned local cache has no verifier ledger.
+  const audio = indexAudio(opts.sourceSnapshot ? audioData : versionAudioData(ROOT, audioData));
   // Skill attack slots follow each operator's mode list when the local fx index is on disk (#679). It is a client
   // extract (public/assets is not in git); without it the plan keeps the filename-letter fallback.
-  const fxIndexPath = join(ROOT, 'public', 'assets', 'local', 'fx', 'index.json');
+  const fxIndexPath = localFxIndexPath(ROOT);
   let charModes = null;
   if (existsSync(fxIndexPath)) {
     const fxIndex = JSON.parse(await readFile(fxIndexPath, 'utf8'));

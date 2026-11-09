@@ -22,7 +22,8 @@ import { UnitThumb, BondGlyph } from './gameComponents.js';
 import { bannedPerBond, disabledBondSets, briefingBondTip, diyBannedPieces } from './gameLogic.js';
 import { bondIconUrl } from './assetUrls.js';
 import { data } from '../data.js';
-import { t, dn } from '../../../shared/i18n.js';
+import { BOND_GROUP_HINT, REGULATION_BOND_LEGEND } from './gameLogic/bonds.js';
+import { t, dn, N_ } from '../../../shared/i18n.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
@@ -30,6 +31,7 @@ const cx = (...p) => p.flat().filter(Boolean).join(' ');
  * @typedef {{ sets: { drawn: Set<string>, off: Set<string> }, stateOf: (bondId: string) => 'off'|'drawn'|null,
  *   bonds: any[], core: any[], addon: any[], banned: string[], perBond: Map<string, number>,
  *   bannedGroups: Array<{ bond: any|null, ids: string[] }>,
+ *   regulation: boolean, choice: { groups: string[][], picked: number|null }|null,
  *   diyBanned: Array<{ slotId: string, charId: string, name: string }> }} MatchInfoModel
  */
 
@@ -63,6 +65,7 @@ export function matchInfoModel(pub, { bonds = [], chess = () => null, mode = nul
   const ungrouped = banned.filter((id) => !grouped.has(id));
   if (ungrouped.length) bannedGroups.push({ bond: null, ids: ungrouped });
   return {
+    regulation: pub?.bondDraw === 'regulation', choice: pub?.bondChoice ?? null,
     sets, stateOf, bonds: list, core: list.filter((b) => b.isCore), addon: list.filter((b) => !b.isCore),
     banned, bannedGroups, perBond: bannedPerBond(list, banned),
     diyBanned: priv && diyData ? diyBannedPieces(priv, chess, diyData) : [],
@@ -77,7 +80,7 @@ export function DiyBannedLine({ model, class: cls = 'brief-banned__diy' }) {
   const list = model?.diyBanned || [];
   if (!list.length) return null;
   return html`<p class=${cls} data-testid="diy-banned"><span class="diybanned__tag">${t('自选')}</span>
-    ${t('{names}的盟约本局全部禁用，不会出现在你的商店', { names: list.map((x) => dn(x.name)) })}</p>`;
+    ${t(model.regulation ? N_('{names}因本局盟约随机结果无法出现在你的商店') : N_('{names}的盟约本局全部禁用，不会出现在你的商店'), { names: list.map((x) => dn(x.name)) })}</p>`;
 }
 
 /**
@@ -119,7 +122,7 @@ export function MatchBondRow({ title, micro, bonds, model }) {
         const state = model.stateOf(b.bondId);
         const off = !!state;
         const bannedN = model.perBond.get(b.bondId) || 0;
-        return html`<${Tooltip} key=${b.bondId} text=${briefingBondTip(b.name, state, bannedN)}
+        return html`<${Tooltip} key=${b.bondId} text=${briefingBondTip(b.name, state, bannedN, model.regulation && b.isCore)}
           aside=${bannedN > 0 ? BondBannedAside(b, model, banned) : null}>
           <div class=${cx('brief-bond', off && 'is-off', state === 'drawn' && 'is-incomplete', !off && bannedN > 0 && 'is-partial')} data-bond=${b.bondId}>
             <${BondDisc} name=${b.name} icon=${bondIconUrl(m, b.bondId)} active=${!off} disabled=${off} tier=${off ? 0 : (b.thresholds?.length || 1)}
@@ -132,12 +135,31 @@ export function MatchBondRow({ title, micro, bonds, model }) {
   </div>`;
 }
 
+/** Solo regulation's two groups; after the pick the ordinary row displays the settled result. */
+export function MatchBondGroups({ model, onPick, disabled = false, busy = false }) {
+  if (!model.choice || model.choice.picked !== null) {
+    return html`<${MatchBondRow} title=${t('核心盟约')} micro="CORE BONDS" bonds=${model.core} model=${model} />`;
+  }
+  const grouped = new Set(model.choice.groups.flat());
+  const rest = model.core.filter(b => !grouped.has(b.bondId));
+  return html`<div class="brief-bond-groups" data-testid="bond-groups">
+    <p class="brief-bond-groups__hint">${t(BOND_GROUP_HINT)}</p>
+    ${model.choice.groups.map((ids, idx) => html`<div class="brief-bond-group" key=${idx}>
+      <${MatchBondRow} title=${t(N_('第 {n} 组'), { n: idx + 1 })} micro="CORE BONDS"
+        bonds=${ids.map(id => model.core.find(b => b.bondId === id)).filter(Boolean)} model=${model} />
+      <${Button} variant="primary" disabled=${disabled || busy} loading=${busy} data-testid=${`bond-group-${idx}`}
+        onClick=${() => onPick(idx)}>${t(N_('激活第 {n} 组'), { n: idx + 1 })}<//>
+    </div>`)}
+    ${rest.length ? html`<${MatchBondRow} title=${t('核心盟约')} micro="CORE BONDS" bonds=${rest} model=${model} />` : null}
+  </div>`;
+}
+
 /**
  * The legend under the bond rows ("或本模式禁用" only when the mode switches bonds off).
  * @param {{ model: MatchInfoModel }} props
  */
 export function MatchLegend({ model }) {
-  return html`<p class="brief-legend"><span class="brief-legend__off"></span>${t('灰色：部分盟约所含干员阵容不完整（仍可通过其他盟约的干员或装备激活）')}${model.sets.off.size ? t('，或本模式禁用') : ''} · <span class="brief-legend__ban"><${Icon} name="user" /></span>${t('该盟约中无法出现的干员数')}</p>`;
+  return html`<p class="brief-legend"><span class="brief-legend__off"></span>${t(model.regulation ? REGULATION_BOND_LEGEND : N_('灰色：部分盟约所含干员阵容不完整（仍可通过其他盟约的干员或装备激活）'))}${model.sets.off.size ? t('，或本模式禁用') : ''} · <span class="brief-legend__ban"><${Icon} name="user" /></span>${t('该盟约中无法出现的干员数')}</p>`;
 }
 
 /**
@@ -178,8 +200,8 @@ export function BannedOperators({ model }) {
  * The briefing's bonds and banned operators: 核心盟约, 附加盟约, the legend, 本局禁用干员.
  * @param {{ model: MatchInfoModel }} props
  */
-export function MatchInfo({ model }) {
-  return html`<${MatchBondRow} title=${t('核心盟约')} micro="CORE BONDS" bonds=${model.core} model=${model} />
+export function MatchInfo({ model, onPick = null, disabled = false, busy = false }) {
+  return html`${onPick ? html`<${MatchBondGroups} model=${model} onPick=${onPick} disabled=${disabled} busy=${busy} />` : html`<${MatchBondRow} title=${t('核心盟约')} micro="CORE BONDS" bonds=${model.core} model=${model} />`}
     <${MatchBondRow} title=${t('附加盟约')} micro="ADD-ON BONDS" bonds=${model.addon} model=${model} />
     <${MatchLegend} model=${model} />
     <${BannedOperators} model=${model} />`;

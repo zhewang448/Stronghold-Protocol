@@ -1,5 +1,10 @@
 # Golden results
 
+The 2026-11-09 migration adds `act3autochess-v3_1/`: 257 regulation scenarios; the existing four versions retain
+all 1,010 results. The regulation mode resolution moves only `solo-FUNNY-1` and `solo-FUNNY-2` from the 9-round fast
+mode to the 14-round level-1 mode when no modeId is given. Sources and every difference from the pinned upstream
+corpus are recorded in [the migration](../../docs/UPSTREAM-REGULATION-20261109.md).
+
 The simulation is deterministic: the same seed and inputs give the same battle and the same match, bit for bit. These
 files record the exact outcome of a fixed corpus of seeded scenarios, so a change that alters gameplay — even one meant
 to be a pure refactor that only reorders random draws, hook order or iteration order — fails loudly instead of slipping

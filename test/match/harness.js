@@ -147,7 +147,7 @@ export function makeMatch(o = {}) {
         if (ps.isBot || ps.left) continue;
         if (m.phase === 'INFO_CHECK' && !ps.infoReady) m.handle(ps.playerId, { t: 'g.infoReady' });
         if (m.phase === 'BAND_DRAFT' && m.draftTurn(ps.playerId) === ps.playerId) {
-          const bandId = m.bandTaken(band, ps.playerId) ? m.defaultBand(ps.playerId) : band;
+          const bandId = !m.gd.band(band) || !m.gd.bandAllowed(band) || m.bandTaken(band, ps.playerId) ? m.defaultBand(ps.playerId) : band;
           m.handle(ps.playerId, { t: 'g.band', bandId });
         }
         if (m.phase === 'SP_DRAFT' && m.spTurn(ps.playerId) === ps.playerId) {

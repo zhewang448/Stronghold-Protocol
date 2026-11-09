@@ -2,10 +2,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { bankPool, indexAudio } from '../tools/assets/audio.mjs';
 import { buildPlan } from '../tools/assets/plan.mjs';
 import { resolveTemplate, collectLeaves } from '../tools/assets/manifest.mjs';
 import { operatorAudioIndexes } from '../tools/assets/operator-audio.mjs';
+import { versionAudioData } from '../tools/assets/versions.mjs';
 
 const manifest = JSON.parse(readFileSync(new URL('../data/assets.json', import.meta.url), 'utf8'));
 const official = new URL('../.cache/gamedata/excel/audio_data.json', import.meta.url);
@@ -58,8 +60,9 @@ test('every generated attack/hit reference resolves to a valid pool and its sele
   // The four-version art union adds nine references to installed sounds and 46 official pool records.
   // The extension keeps seven collaboration operators and their installed sound references.
   // Three pinned new operators add 14 attack/hit references and 14 bank records.
-  assert.equal(refs, 1057);
-  assert.equal(Object.keys(pools).length, 1053);
+  // Five-version union plus the fork's collaboration and CN 2.7.91 operators.
+  assert.equal(refs, 1294);
+  assert.equal(Object.keys(pools).length, 1280);
   const p = pools[units.char_4064_mlynar.attackPools[2]];
   assert.equal(p.sounds['player/p_imp/p_imp_loyalsword_h.mp3'].delay, 0.1);
 });
@@ -67,7 +70,7 @@ test('every generated attack/hit reference resolves to a valid pool and its sele
 test('all exported pools match the cached official bank limits, pitches and delays', { skip: !existsSync(official) }, () => {
   const historical = JSON.parse(readFileSync(official, 'utf8'));
   const scoped = JSON.parse(readFileSync(new URL('../docs/research/new-operator-audio-20261101.json', import.meta.url), 'utf8'));
-  const raw = operatorAudioIndexes(historical, {}, scoped).audioData;
+  const raw = versionAudioData(fileURLToPath(new URL('..', import.meta.url)), operatorAudioIndexes(historical, {}, scoped).audioData);
   const banks = new Map(raw.soundFXBanks.map(b => [b.name, b]));
   for (const [id, pool] of Object.entries(manifest.audio.sfx.pools)) {
     const bank = banks.get(id);

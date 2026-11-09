@@ -895,7 +895,8 @@ test('干员战斗语音 (DESIGN §21.30): the manifest data, the official prior
     else if (x && typeof x === 'object') Object.values(x).forEach(walk);
   };
   for (const id of charIds) {
-    for (const s of slots.filter(slot => !(id === 'char_348_ceylon' && slot === 'skill4'))) assert.ok(voice[id][s], `${id}.${s}`);
+    // Neither 锡兰 nor 拜松 has a CN_028 / 作战中4 line in the pinned official charword table.
+    for (const s of slots.filter(slot => !(['char_348_ceylon', 'char_325_bison'].includes(id) && slot === 'skill4'))) assert.ok(voice[id][s], `${id}.${s}`);
     for (const s of prepOnly) assert.equal(voice[id][s], undefined, `${id}.${s} is not planned by default`);
     walk(voice[id]);
   }

@@ -1752,3 +1752,40 @@
 .gm-rescue { position: absolute; z-index: 90; right: 1rem; top: 22%; max-width: min(320px, 42vw); padding: 12px; color: #fff; background: #172724; border: 1px solid #6dc6aa; }
 .gm-rescue p { margin: 6px 0; }
 .gm-rescue button { display: block; margin-top: 4px; min-height: 32px; color: #101d1a; background: #8fe2c7; border: 0; padding: 4px 10px; }
+
+/* Teammate lookup follows the measured roster rows, including pool-group gaps and vertical scrolling. */
+.team__fly { position: absolute; inset: 0 auto 0 100%; width: 0; z-index: 6; pointer-events: none; --fly-toggle: max(.24rem, 24px); }
+.team__bonds-toggle { position: absolute; left: 0; top: 0; bottom: 0; width: var(--fly-toggle); padding: 0; display: grid; place-items: center; border: 0; color: var(--text-md); background: rgba(8, 13, 11, .75); cursor: pointer; pointer-events: auto; }
+.team__bonds-toggle:hover, .team__bonds-toggle.is-open { color: var(--mint-400); background: var(--bg-panel); }
+.team__bonds-toggle:focus-visible { outline: 2px solid var(--mint-400); outline-offset: -2px; }
+.team__bonds-toggle .icon { width: .15rem; height: .15rem; }
+.team__fly-window { position: absolute; left: var(--fly-toggle); display: flex; width: max-content; min-width: 0; gap: 5px; padding: 0 5px; pointer-events: auto; overflow: hidden; }
+.team__fly-scroll { display: grid; grid-template-columns: max-content max-content; align-content: start; column-gap: 5px; min-width: 0; min-height: 0; height: 100%; flex: 0 1 auto; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: var(--mint-700) var(--bg); }
+.team__fly-scroll:focus-visible { outline: 2px solid var(--mint-400); outline-offset: -2px; }
+.team__fly-row { display: contents; }
+.team__fly-bands { display: flex; flex-direction: column; flex: none; min-height: 0; height: 100%; overflow: hidden; }
+.team__fly-bonds, .team__fly-ops, .team__fly-band { display: flex; align-items: center; flex: none; padding: 0 5px; box-sizing: border-box; background: rgba(6, 10, 9, .94); }
+.team__fly-bonds .bstrip { flex-wrap: nowrap; gap: .08rem; }
+.team__fly-bonds .bond { --disc: .35rem; }
+.team__fly-bonds .bslot { width: auto; }
+.team__fly-bonds .bslot__count { top: -.03rem; font-size: max(.1rem, 10px); }
+.team__fly-bonds .bslot__count small { font-size: max(.08rem, 9px); }
+.team__fly-ops { gap: 7px; min-width: .4rem; }
+.team__fly-ops .uthumb { --ut: max(.35rem, 24px); flex: none; }
+.team__fly-band .bandicon { --bi: max(.35rem, 24px); }
+.team__fly-empty { color: var(--text-md); min-width: .25rem; text-align: center; }
+.team__fly-spacer { display: block; flex: none; }
+@media (pointer: coarse) { .team__fly { --fly-toggle: 36px; } }
+
+/* 规程 command: the strategy badge remains the anchor for click and drag interactions. */
+.effects__row { display: flex; align-items: center; gap: .12rem; }
+.band-command { display: flex; align-items: center; gap: .08rem; padding: .06rem .1rem; max-width: 2.4rem; min-height: .5rem;
+  color: var(--mint-400); background: #122722ed; border: 1px solid #7fffc988; border-radius: .04rem; text-align: left; touch-action: none; cursor: grab; }
+.band-command > .bandicon { width: .34rem; height: .34rem; }
+.band-command b, .band-command small { display: block; font-size: calc(.11 * var(--t)); line-height: 1.35; }
+.band-command small { color: var(--text-lo); font-size: calc(.1 * var(--t)); }
+.band-command.is-unavailable { opacity: .65; cursor: default; }
+.band-command.is-dragging { box-shadow: 0 0 .12rem #7fffc9; }
+[data-shop-slot].is-command-target { outline: 2px solid #7fffc9; outline-offset: -2px; }
+.command-draft { display: flex; gap: .16rem; flex-wrap: wrap; }
+.command-draft__card { flex: 1 1 1.8rem; padding: .16rem; border: 1px solid #7fffc966; }

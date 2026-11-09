@@ -8,7 +8,8 @@ import { setRoomCreation, resetHostSettings } from '../server/match/hostSettings
 
 test('illustrations use authenticated own writes, same-room reads, live metadata, permissions and fallback', async testContext => {
   resetHostSettings();
-  const server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, recovery: false, assetIndex: false, illustDir: null, heavyBurst: 100 });
+  const server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, recovery: false, assetIndex: false, illustDir: null, heavyBurst: 100,
+    versions: { default: 'act2autochess' } });
   const peers = [];
   testContext.after(async () => { for (const peer of peers) await peer.terminate(); await server.close(); resetHostSettings(); });
   const player = async name => {

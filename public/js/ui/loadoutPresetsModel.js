@@ -2,7 +2,7 @@
 // [ASSUMED] Browser convenience; no simulation or protocol changes.
 import { exportPayload, parseImport, LOADOUT_EXPORT_PARTS } from './loadoutModel.js';
 import { cleanPicks, diyPrefKey, toStoredDiy } from './diyModel.js';
-import { versionById } from '../../../shared/versions.js';
+import { VERSIONS, versionById } from '../../../shared/versions.js';
 import { cleanIds } from './ownershipModel.js';
 
 export const PRESETS_KEY = 'sp.pref.loadoutPresets';
@@ -24,7 +24,7 @@ export function presetName(raw) {
 export function operatorScope(mode, versions, rosters) {
   if (mode === 'all') return null;
   if (!['roster', 'exclusive'].includes(mode) || !versions.length || versions.some(id => !versionById(id))) throw presetError('scope');
-  if (mode === 'exclusive' && Object.keys(rosters).length !== 4) throw presetError('loading');
+  if (mode === 'exclusive' && VERSIONS.some(version => !Array.isArray(rosters[version.id]))) throw presetError('loading');
   const selected = new Set();
   for (const id of versions) {
     const own = rosters[id];

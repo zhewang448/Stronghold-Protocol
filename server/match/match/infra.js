@@ -125,6 +125,11 @@ export class MatchInfra {
     return this.playerPools.get(typeof player === 'string' ? player : player?.playerId) || this.pool;
   }
 
+  /** All acquisition paths share the regulation ban, including named rewards and grants outside the pool. */
+  chessExcluded(rec) {
+    return this.gd.regulationBondDraw && this.gd.bondsExclude(rec, new Set([...this.disabledBonds, ...this.staticInactiveBonds]));
+  }
+
   /** Whether any chess of a bond is in this match's pool (a 驰援 card of a fully banned bond is never offered). */
   bondInPool(bondId, player = null) {
     for (const id of this.poolFor(player).entries.keys()) {

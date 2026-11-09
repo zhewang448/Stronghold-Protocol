@@ -10,7 +10,8 @@ test('room artwork framing follows its owner across browsers, dynamic/static loo
 }, async t => {
   const out = path.resolve('.cache/transactions/upstream-battle-ai-room-art/ui');
   fs.mkdirSync(out, { recursive: true });
-  const server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, recovery: false, assetIndex: false });
+  const server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, recovery: false, assetIndex: false,
+    versions: { default: 'act2autochess' } });
   const browser = await (await import('puppeteer-core')).default.launch({ executablePath: CHROME, headless: true,
     args: ['--no-sandbox', '--edge-skip-compat-layer-relaunch', '--disable-background-timer-throttling', '--disable-renderer-backgrounding'] });
   t.after(async () => { await browser.close(); await server.close(); });

@@ -24,7 +24,7 @@ globalThis.fetch = async (url) => {
   }
 };
 
-const { matchInfoModel, MatchBondRow, MatchLegend, BannedOperators, BannedOperatorGroups, MatchInfo, MatchInfoDialog } = await import('../../public/js/ui/matchInfo.js');
+const { matchInfoModel, MatchBondGroups, MatchBondRow, MatchLegend, BannedOperators, BannedOperatorGroups, MatchInfo, MatchInfoDialog } = await import('../../public/js/ui/matchInfo.js');
 const { MatchEnemies, factionDescId, leaderBlockOf } = await import('../../public/js/ui/matchEnemies.js');
 const { briefingBondTip } = await import('../../public/js/ui/gameLogic.js');
 const { BondDisc, Tooltip, Modal, Button, placeTooltip } = await import('../../public/js/ui/components.js');
@@ -358,4 +358,22 @@ test('briefing, draft and info drawer reuse one match model and the draft keeps 
  assert.match(brief,/MatchInfo, matchInfoModel/);assert.match(brief,/MatchInfo.*model=/);assert.match(brief,/brief__left/);assert.match(brief,/brief__right/);assert.match(draft,/MatchEnemies/);
  assert.match(draft,/MatchInfoDialog, matchInfoModel/);assert.match(draft,/data-testid="match-info-open"/);assert.match(draft,/setInfoOpen\(true\)/);assert.match(draft,/infoStatus/);
  assert.match(game,/EnemyDrawer/);assert.match(read('public/js/ui/enemyDrawer.js'),/matchInfoModel/);assert.doesNotMatch(brief,/function BondRow|bannedPerBond/);
+});
+
+test('regulation groups render two choices, disable waiting controls and settle to the normal bond row', () => {
+  const pub = { ...PUB, bondDraw: 'regulation', bondChoice: { groups: [['yanShip'], ['sargonShip']], picked: null } };
+  const m = matchInfoModel(pub, SRC('mode_single_normal'));
+  let picked = null;
+  const v = MatchBondGroups({ model: m, onPick: idx => { picked = idx; } });
+  assert.match(textOf(v), /可选择一组激活/);
+  const buttons = [...walk(v)].filter(v => v.type === Button);
+  assert.equal(buttons.length, 2);
+  buttons[1].props.onClick();
+  assert.equal(picked, 1);
+  const blocked = MatchBondGroups({ model: m, onPick() {}, disabled: true });
+  assert.ok([...walk(blocked)].filter(v => v.type === Button).every(v => v.props.disabled));
+  const settled = MatchBondGroups({ model: { ...m, choice: { ...m.choice, picked: 1 } }, onPick() {} });
+  assert.equal(settled.type, MatchBondRow);
+  assert.match(textOf(MatchLegend({ model: m })), /灰色核心盟约的所有干员无法出现/);
+  assert.equal(briefingBondTip('炎', 'drawn', 10, true), '炎：该核心盟约的所有干员无法出现');
 });

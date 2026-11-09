@@ -17,6 +17,60 @@ const GAME_TYPES = new Set(Object.keys(C2S).filter((t) => Object.hasOwn(C2S, t) 
 const EMERGENCY_SAFE_TYPES = new Set(['g.watch', 'g.leave']);
 
 export class MatchPlatform {
+  aiHandoverView() {
+    const players = [];
+    for (const p of this.order) {
+      const pieceUids = [];
+      const pushUid = (piece) => {
+        if (!piece || piece.uid == null || piece.uid === '') return;
+        pieceUids.push(String(piece.uid));
+      };
+      if (Array.isArray(p.hand)) for (const piece of p.hand) pushUid(piece);
+      if (p.board && typeof p.board.values === 'function') for (const piece of p.board.values()) pushUid(piece);
+      pieceUids.sort();
+      players.push({
+        playerId: p.playerId,
+        isBot: p.isBot === true,
+        left: p.left === true,
+        alive: p.alive === true,
+        autoplay: p.autoplay === true,
+        funds: typeof p.funds === 'number' && Number.isFinite(p.funds) ? p.funds : 0,
+        pieceUids,
+      });
+    }
+    return {
+      ok: true,
+      phase: this.phase,
+      round: this.round,
+      ended: !!this.ended,
+      disposed: !!this.disposed,
+      emergencyFrozen: !!this.emergencyFrozen,
+      players,
+    };
+  }
+
+  /**
+   * The match half of a spectator inheriting a bot seat (DESIGN §35.100). The lobby still rebinds the session,
+   * the seat and the reconnect token. Same answer shape as handle.
+   * @param {string} botId @param {string} name the inheriting spectator's name
+   * @returns {{ ok: true } | { error: string, detail?: string }}
+   */
+  acceptAiHandover(botId, name) {
+    const ps = this.players.get(botId);
+    if (typeof name !== 'string' || !ps?.isBot || ps.left || !ps.alive || this.phase !== PHASE.PREP || this.ended || this.disposed || this.emergencyFrozen) {
+      return fail(ERR.BAD_TARGET, 'AI handover unavailable');
+    }
+    ps._botPrepToken = (ps._botPrepToken || 0) + 1;
+    this.cancelSeatRehearsal(botId);
+    Object.assign(ps, { isBot: false, autoplay: false, connected: true, ready: false, name });
+    this.loneHuman = this.order.filter((p) => !p.isBot && !p.left).length === 1;
+    ps.aiTakeoverRound = this.round;
+    this.markPublic();
+    ps.dirty();
+    return OK;
+  }
+
+
   setBondPlan(playerId, bondId) {
     if (bondId !== null && (typeof bondId !== 'string' || !Object.hasOwn(this.gd.raw.bonds, bondId) || !this.gd.raw.bonds[bondId]?.isCore)) return fail(ERR.BAD_MSG);
     const ps = this.players.get(playerId);

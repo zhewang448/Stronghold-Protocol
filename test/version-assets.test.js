@@ -4,7 +4,11 @@ import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { assetCoverage } from '../tools/assets/coverage.mjs';
-import { addManifestEntries, presentationUnion, versionAssetData } from '../tools/assets/versions.mjs';
+import { addManifestEntries, presentationUnion, versionAssetData, versionAssetJobs, versionAudioData } from '../tools/assets/versions.mjs';
+import { localFxIndexPath } from '../tools/assets/cache.mjs';
+import { VERSIONS } from '../shared/versions.js';
+import { loadProfile, pinnedShaOf } from '../tools/versions/profiles.mjs';
+import { sourceOfProfile } from '../tools/versions/sources.mjs';
 import { fxFixture } from './helpers/fxFixtures.js';
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -14,8 +18,13 @@ const pillowAvailable = spawnSync(python, ['-B', '-c', 'import PIL'], { stdio: '
 
 test('every official version declares comparable pictures, models, clips, icons and scenes without installed art', () => {
   const result = assetCoverage({ root, local: { groups: {} } });
-  assert.equal(result.versions.length, 4);
-  assert.deepEqual(result.missing.map((r) => `${r.version} ${r.id}: ${r.missing}`), []);
+  assert.equal(result.versions.length, VERSIONS.length);
+  assert.deepEqual(result.missing.filter((r) => r.version !== 'act3autochess@V3_1'), []);
+  // The updated client has an effect-only cocoon without an icon and dynamic boards without baked scene art.
+  assert.deepEqual(result.missing.filter((r) => r.version === 'act3autochess@V3_1').map((r) => [r.id, r.missing]), [
+    ['enemy_9036_acweb', ['icon']],
+    ...['01', '02', '03', '04', '05', '06', '09', '10', '11', '12'].map((n) => [`act3autochess_m${n}`, ['scene']]),
+  ]);
 });
 
 test('coverage fails for missing earlier-version pictures, model, skill icon, enemy and strategy art', () => {
@@ -35,11 +44,11 @@ test('coverage fails for missing earlier-version pictures, model, skill icon, en
 
 test('presentation union retains the operators behind reused chess ids and their skills', () => {
   const sets = versionAssetData(root), all = presentationUnion(sets);
-  assert.equal(Object.keys(all.operators).length, 239);
+  assert.equal(Object.keys(all.operators).length, 276);
   assert.ok(all.operators.char_198_blackd.skills.some((s) => s.skillId === 'skchr_blackd_2'));
   assert.ok(all.enemies.enemy_1254_lypa);
   assert.ok(all.bands.band_zumama);
-  assert.equal(Object.keys(all.tokens).length, 61, 'including enemy/char-backed summons');
+  assert.equal(Object.keys(all.tokens).length, 63, 'including enemy/char-backed summons and regulation');
 });
 
 test('add-only keeps existing nested values, arrays and null while admitting new identities', () => {

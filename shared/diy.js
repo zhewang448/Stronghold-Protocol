@@ -53,7 +53,7 @@ export function isDiyModule(mod) {
  * @typedef {{ charId: string, skillIndex?: number|null, uniEquipId?: string|null }} DiyPick a 自选 pick: the operator,
  *   its skill index (0-based; a prototype's is its locked one) and module (uniEquipId; null / absent / 'none' = none)
  * @typedef {{ charId: string, skillIndex: number, uniEquipId: string|null }} DiyLoadout a checked, complete pick
- * @typedef {{ chess?: Record<string, any>|null, backups?: any, rawChess?: (id: string) => any, rawBackups?: () => any }} DiyData
+ * @typedef {{ chess?: Record<string, any>|null, backups?: any, config?: any, bonds?: Record<string, any>, rawChess?: (id: string) => any, rawBackups?: () => any }} DiyData
  *   the game data — `{ chess, backups }` (data/chess.json, data/backups.json) or a sim DataSource (`rawChess(id)`,
  *   `rawBackups()`)
  * @typedef {Iterable<string>|((charId: string) => boolean)|null|undefined} Kitted the charIds with a kit, or a predicate
@@ -192,6 +192,11 @@ export function diyPickOffBonds(data, charId, off) {
  */
 export function diyPickOff(data, charId, off) {
   const bonds = diyOf(data)?.operators?.[charId]?.bonds;
+  if (data?.config?.version?.rules?.bondDraw === 'regulation' && off && Array.isArray(bonds)) {
+    const isCore = (id) => data.bonds?.[id]?.isCore === true;
+    const addons = bonds.filter((id) => !isCore(id));
+    return bonds.some((id) => isCore(id) && off.has(id)) || (addons.length > 0 && addons.every((id) => off.has(id)));
+  }
   return !!off && Array.isArray(bonds) && bonds.length > 0 && bonds.every((b) => off.has(b));
 }
 

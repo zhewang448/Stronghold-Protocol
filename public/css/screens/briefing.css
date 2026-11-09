@@ -208,3 +208,9 @@
 @media (pointer: coarse) {
   .diy-summary__open, .diy-choice-modal .btn, .diychoice__c { min-height: 44px; }
 }
+
+/* The regulation solo choice shares the briefing's scroll area and touch targets. */
+.brief-bond-groups { display: grid; gap: 16px; }
+.brief-bond-groups__hint { margin: 0; color: var(--text-dim); }
+.brief-bond-group { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.brief-bond-group > .brief-bonds { flex: 1 1 240px; }

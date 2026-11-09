@@ -13,7 +13,7 @@ import { exportDiy, parseDiyImport, pickOptions } from '../../public/js/ui/diyMo
 function candidates(data) {
   const out = {};
   for (const tier of [5, 6]) {
-    const ids = diyPool(tier, { data, kitted: KITTED_CHARS }).slice(0, 4);
+    const ids = diyPool(tier, { data, kitted: KITTED_CHARS }).slice(0, diyTierSlotIds(tier, data).length + 2);
     const keys = [...diyTierSlotIds(tier, data), `diyBench_${tier}_1`, `diyBench_${tier}_2`];
     ids.forEach((charId, i) => { out[keys[i]] = { charId }; });
   }
@@ -24,7 +24,7 @@ const seat = picks => ({ seat: 0, playerId: 'p_0', name: 'Player', isBot: false,
 const choose = (m, ids, extra = {}) => m.handle('p_0', { t: 'g.diyChoose', tier: 5, charIds: ids, setupRevision: m.setupRevision, ...extra });
 
 for (const version of VERSIONS) {
-  test(`${version.id}: four candidates, atomic selection, reroll identity and PREP lock`, t => {
+  test(`${version.id}: version-sized candidates, atomic selection, reroll identity and PREP lock`, t => {
     const data = version.id === DEFAULT_VERSION ? DATA : getVersionData(version.id);
     const picks = candidates(data);
     const h = makeMatch({ data, mode: 'solo', seats: [seat(picks)], fake: true }).start();
@@ -33,9 +33,10 @@ for (const version of VERSIONS) {
     assert.equal(m.phase, 'INFO_CHECK');
     assert.deepEqual(ps.diyPreset, picks);
     const tier = ps.privateView().diyChoice.tiers.find(x => x.tier === 5);
-    assert.equal(tier.candidates.length, 4);
-    assert.equal(tier.chosen.length, 2);
-    const next = tier.candidates.slice(2).map(x => x.charId);
+    const slots = diyTierSlotIds(5, data).length;
+    assert.equal(tier.candidates.length, slots + 2);
+    assert.equal(tier.chosen.length, slots);
+    const next = tier.candidates.slice(2, 2 + slots).map(x => x.charId);
     const before = ps.diy, stock = ps.diyStock;
     assert.ok(choose(m, [next[0], next[0]]).error);
     assert.ok(choose(m, ['char_missing', next[1]]).error);
@@ -45,7 +46,7 @@ for (const version of VERSIONS) {
     ps.infoReady = true;
     assert.deepEqual(choose(m, next), { ok: true });
     assert.equal(ps.infoReady, false);
-    assert.deepEqual(diyTierSlotIds(5, data).map(id => ps.diy[id].charId), next);
+    assert.deepEqual(diyTierSlotIds(5, data).map(id => ps.diy[id].charId).sort(), [...next].sort());
     assert.ok(diyTierSlotIds(5, data).every(id => ps.gd.chess(id).charId === ps.diy[id].charId));
     assert.deepEqual(ps.privateView().diyChoice.tiers[0].chosen, next);
     const selected = ps.diy;

@@ -30,6 +30,7 @@ import { MissTag, uniteRemaining } from './hud.js';
 import { data, localAsset } from '../data.js';
 import { t } from '../../../shared/i18n.js';
 import { BondPlanBadge } from './bondPlan.js';
+import { TeamFlyout } from './teamFlyout.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
@@ -121,8 +122,9 @@ export function rowLpTip(lp, cap = 10) {
  *   uniteLocal: the local 联防 replica's per-leaker counts while it is on screen (battle runner state().uniteLeft), else null
  */
 export function TeamPanel({ pub, myId, watching, bubbles, emotes = [], emoteNow = Date.now(), emoteTtl = 3000,
-  onWatch, compact = false, observe = null, self: selfLive = null, cap = 10, uniteLocal = null, spMarks = null }) {
+  onWatch, compact = false, observe = null, self: selfLive = null, cap = 10, uniteLocal = null, spMarks = null, onBond = null }) {
   const [openPid, setOpenPid] = useState(null);
+  const panelRef = useRef(null);
   const feedRef = useRef(null);
   // the playerId whose avatar just called onWatch, so the other click of a double-click does not open the view again
   const askedAt = useRef(/** @type {{ id: string|null, at: number }} */ ({ id: null, at: 0 }));
@@ -171,7 +173,7 @@ export function TeamPanel({ pub, myId, watching, bubbles, emotes = [], emoteNow 
     noteAsked(p);
     onWatch(p);
   };
-  return html`<aside class=${cx('team', compact && 'team--compact', many && 'team--many', grouped && 'team--grouped')} aria-label=${t('同盟成员')}>
+  return html`<aside ref=${panelRef} class=${cx('team', compact && 'team--compact', many && 'team--many', grouped && 'team--grouped')} aria-label=${t('同盟成员')}>
     <div class="team__list">
     ${sections.map(({ group, players: members }) => html`<div key=${members[0].playerId}
       class=${cx('team__section', group && 'team__pool-group')} style=${group ? `--pool-group-color:${group.color}` : undefined}
@@ -241,5 +243,6 @@ export function TeamPanel({ pub, myId, watching, bubbles, emotes = [], emoteNow 
         </div>`;
       })}
     </div>` : null}
+    <${TeamFlyout} panelRef=${panelRef} players=${players} onBond=${onBond} />
   </aside>`;
 }

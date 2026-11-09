@@ -24,7 +24,9 @@
 //
 // Official files are cached under <repo>/.cache/gamedata/<repo path> (e.g. excel/activity_table.json)
 // and downloaded from https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/
-// when missing; a version pinned to a commit uses .cache/gamedata@<sha>/ and …/ArknightsGameData/<sha>/zh_CN/gamedata/. Research files are optional inputs: when absent, research-only fields fall back to
+// when missing; a version pinned to a commit uses .cache/gamedata@<sha>/ and …/ArknightsGameData/<sha>/zh_CN/gamedata/, or
+// the mirror its profile names (`source`, tools/versions/sources.mjs: .cache/gamedata@aa-<sha>/, normalised on load into
+// Kengxxiao's shape). Research files are optional inputs: when absent, research-only fields fall back to
 // documented defaults and a warning is printed.
 //
 // Determinism: the output depends only on the input files (object keys are emitted in a stable
@@ -52,13 +54,14 @@ import { createOfficialUnitBuilders } from '../server/plugins/officialUnitBuilde
 import { DEFAULT_VERSION, VERSIONS } from '../shared/versions.js';
 import { loadProfile, pinnedShaOf } from './versions/profiles.mjs';
 import { applyAdapters } from './versions/adapters.mjs';
+import { normalizeMirror, sourceOfProfile } from './versions/sources.mjs';
+import { composeRegulationStage, placeRegulationTemplate } from './versions/layouts.mjs';
 
 // ===== CLI & IO ==================================================================================
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const RESEARCH_DIR = join(ROOT, 'docs', 'research');
 const GAMEDATA_URL = 'https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/';
-const pinnedUrl = (sha) => `https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/${sha}/zh_CN/gamedata/`;
 const USAGE = 'usage: node tools/build-data.mjs [--version <id>] [--refresh | --offline] [--out <dir>] [--cache <dir>] [--report <file>] [--quiet] [--no-research] [--force] [--skins-only]';
 
 /**
@@ -109,6 +112,8 @@ const CACHE_DIR = OPTS.cache;
 // the version this run builds: its registry entry and its build profile (tools/versions/<slug>.mjs)
 const { entry: VERSION, profile: PROFILE, slug: VERSION_SLUG } = await loadProfile(OPTS.version ?? DEFAULT_VERSION);
 const IS_DEFAULT = VERSION.id === DEFAULT_VERSION;
+// the default version's profile: a mirror file's empty {} are checked against its Kengxxiao copies (referenceFiles)
+const DEFAULT_PROFILE = IS_DEFAULT ? PROFILE : (await loadProfile(DEFAULT_VERSION)).profile;
 OPTS.out ??= join(ROOT, 'data', VERSION.dir);
 OPTS.report ??= join(ROOT, '.cache', IS_DEFAULT ? 'build-data-report.json' : `build-data-report.${VERSION_SLUG}.json`);
 const TABLE_NAMES = ['stock', 'shopDraft', 'tacticDraft', 'bountyDrafts'];
@@ -166,25 +171,52 @@ async function ensureGamedata(rel, { cacheDir = CACHE_DIR, baseUrl = GAMEDATA_UR
   throw new Error(`cannot obtain ${rel}: ${lastErr && lastErr.message}`);
 }
 
-/** Load (and cache in memory) an official gamedata JSON file. */
+/** Load (and cache in memory) an official gamedata JSON file, as the profile's source gives it; a mirror file is
+ * normalised into Kengxxiao's shape first (tools/versions/sources.mjs normalizeMirror). */
 const jsonCache = new Map();
-async function loadGamedata(rel) {
-  if (jsonCache.has(rel)) return jsonCache.get(rel);
-  const abs = await ensureGamedata(rel, sourceOf(rel));
-  const obj = JSON.parse(await readFile(abs, 'utf8'));
-  jsonCache.set(rel, obj);
+async function loadGamedata(rel, profile = PROFILE) {
+  const src = sourceOf(rel, profile);
+  const key = `${src.cacheDir}/${rel}`;
+  if (jsonCache.has(key)) return jsonCache.get(key);
+  const abs = await ensureGamedata(rel, src);
+  let obj = JSON.parse(await readFile(abs, 'utf8'));
+  if (src.mirror) {
+    const refs = [];
+    for (const r of referenceFiles(rel)) refs.push(await loadGamedata(r, DEFAULT_PROFILE));
+    const n = normalizeMirror(rel, obj, refs);
+    obj = n.obj;
+    if (n.unresolved.length) warn(`${rel}: ${n.unresolved.length} empty {} of the mirror stay objects, no rule decides them (${n.unresolved.slice(0, 4).join(', ')}${n.unresolved.length > 4 ? ', …' : ''})`);
+  }
+  jsonCache.set(key, obj);
   return obj;
 }
 
 /**
- * Where the profile reads an official file: master (.cache/gamedata/) or the commit it pins the file's group to
- * (.cache/gamedata@<sha>/, tools/versions/profiles.mjs pinnedShaOf).
+ * Where a profile reads an official file: master (.cache/gamedata/) or the commit it pins the file's group to
+ * (tools/versions/profiles.mjs pinnedShaOf) in its source (tools/versions/sources.mjs: .cache/gamedata@<sha>/ for
+ * Kengxxiao, .cache/gamedata@aa-<sha>/ for the ArknightsAssets mirror).
  * @param {string} rel
- * @returns {{ cacheDir: string, baseUrl: string }}
+ * @param {object} [profile]
+ * @returns {{ cacheDir: string, baseUrl: string, mirror: boolean }}
  */
-function sourceOf(rel) {
-  const sha = pinnedShaOf(PROFILE, rel);
-  return sha ? { cacheDir: `${CACHE_DIR}@${sha}`, baseUrl: pinnedUrl(sha) } : { cacheDir: CACHE_DIR, baseUrl: GAMEDATA_URL };
+function sourceOf(rel, profile = PROFILE) {
+  const sha = pinnedShaOf(profile, rel);
+  if (!sha) return { cacheDir: CACHE_DIR, baseUrl: GAMEDATA_URL, mirror: false };
+  const src = sourceOfProfile(profile);
+  return { cacheDir: `${CACHE_DIR}@${src.cacheTag(sha)}`, baseUrl: src.url(sha), mirror: src.mirror };
+}
+
+/**
+ * The Kengxxiao files (at the default version's pins) a mirror file's empty {} are checked against: the same table, or
+ * for a level file two levels of the default season (a stage map and a battle template), which carry every level key.
+ * @param {string} rel
+ * @returns {string[]}
+ */
+function referenceFiles(rel) {
+  if (rel.startsWith('levels/activities/')) {
+    return ['levels/activities/act2autochess/level_act2autochess_m01.json', 'levels/activities/act1autochess/level_act1autochess_01.json'];
+  }
+  return [rel];
 }
 
 /**
@@ -241,11 +273,30 @@ async function loadContext() {
     loadGamedata('excel/enemy_handbook_table.json'),
     loadGamedata('levels/enemydata/enemy_database.json'),
   ]);
-  const act = activity?.activity?.AUTOCHESS_SEASON?.[PROFILE.season];
+  // the season's tables: activity.AUTOCHESS_SEASON[season] (盟约), or the path a profile names in `section` (规程:
+  // activity.AUTOCHESS.act3autochess.V3_1, one entry per sub-version)
+  const act = PROFILE.section ? PROFILE.section.reduce((o, k) => o?.[k], activity?.activity) : activity?.activity?.AUTOCHESS_SEASON?.[PROFILE.season];
   const ac = activity?.autoChessData;
-  if (!act || !ac) throw new Error(`activity_table has no ${PROFILE.season} / autoChessData section`);
+  if (!act || !ac) throw new Error(`activity_table has no ${PROFILE.section ? PROFILE.section.join('.') : PROFILE.season} / autoChessData section`);
   // an older table into the shape this build reads (tools/versions/adapters.mjs); never for the default version
   if (!IS_DEFAULT) applyAdapters(act, PROFILE.adapters);
+
+  // A templated operator (规程's chess_char_5_26: charId char_002_amiya + tmplId char_1037_amiya3, 阿米娅's 医疗 form) is
+  // built as its template: char_patch_table's patchChars holds the template as a character record of its own (skills,
+  // phases, the uniequip_00x_amiya3 modules). Loaded only when a shop row names a template (盟约 has none).
+  const templated = Object.values(act.charShopChessDatas || {}).filter((r) => r.tmplId || r.backupTmplId);
+  if (templated.length) {
+    const patch = await loadGamedata('excel/char_patch_table.json');
+    for (const [id, rec] of Object.entries(patch.patchChars || {})) if (!charTable[id]) charTable[id] = rec;
+    for (const r of templated) {
+      for (const [idKey, tmplKey] of [['charId', 'tmplId'], ['backupCharId', 'backupTmplId']]) {
+        if (!r[tmplKey]) continue;
+        if (!charTable[r[tmplKey]]) throw new Error(`shop row ${r.chessId}: template ${r[tmplKey]} is in neither character_table nor char_patch_table`);
+        r[idKey] = r[tmplKey];
+        r[tmplKey] = null;
+      }
+    }
+  }
 
   // Note: summons/traps live in character_table (token_table.json only lists 4 unrelated traps).
 
@@ -269,6 +320,17 @@ async function loadContext() {
   const levels = {};
   // Sequential download to stay polite to GitHub; cached files load instantly.
   for (const id of [...levelSrc.keys()].sort(naturalCmp)) levels[id] = await loadGamedata(levelPath(levelSrc.get(id)));
+  // 规程 builds every player's field in one scene: its stages are an atlas of three pieces and its round templates the
+  // road only — both become the 盟约 19×21 level here (tools/versions/layouts.mjs), so nothing after this line differs
+  if (PROFILE.layout === 'regulation') {
+    for (const id of Object.keys(levels)) {
+      if (stageIds.includes(id)) {
+        const pieces = [];
+        for (const n of [1, 2, 3]) pieces.push(await loadGamedata(levelPath(id).replace(/\.json$/, `/level_${id}_sub_0${n}.json`)));
+        levels[id] = composeRegulationStage(levels[id], pieces);
+      } else levels[id] = placeRegulationTemplate(levels[id]);
+    }
+  } else if (PROFILE.layout !== undefined) throw new Error(`unknown layout ${PROFILE.layout}`);
 
   const research = {
     core: await loadResearch('01-core-data.json'),
@@ -689,7 +751,9 @@ function buildBackups(ctx, chess) {
   for (const id of need.keys()) if (!units[id]) warn(`unit ${id}: needed but neither a stand-in nor an owned pick`);
   const tokens = buildDiyTokens(ctx, units, ownedPool);
 
-  const coreBonds = Object.values(ac.bondInfoDict || {}).filter((b) => b.isPower && (b.powerIdList || []).length);
+  // the season's own core bonds: autoChessData lists every season's (规程's still has 拉特兰 lateranoShip, which
+  // act3autochess does not load), and a pick whose faction has none here falls back to 协防干员
+  const coreBonds = Object.values(ac.bondInfoDict || {}).filter((b) => b.isPower && (b.powerIdList || []).length && act.bondInfoDict?.[b.bondId]);
   const fallback = act.constData.fallbackBondId;
   const operators = {};
   for (const id of [...new Set([...ownedPool, ...Object.values(prototypes).flat()])].sort(naturalCmp)) {
@@ -1346,6 +1410,14 @@ function buildItems(ctx, effects) {
     const normalEffect = act.trapChessDataDict[baseId]?.effectId ?? null;
     const excluded = normalEffect && Object.hasOwn(SHOP_EXCLUDED_ITEMS, normalEffect) ? SHOP_EXCLUDED_ITEMS[normalEffect] : null;
     const rule = normalEffect && Object.hasOwn(ITEM_RULES, normalEffect) ? ITEM_RULES[normalEffect] : null;
+    // A duration-0 equipment the research notes never classified is still consumed on equip (规程 存折/促销券/骰子/记录/储蓄罐).
+    // Seasons whose research already set `kind` keep that string, so their JSON does not change.
+    let kind = ri?.kind || null;
+    if (!kind && t.itemType === 'EQUIP' && t.trapDuration === 0) kind = 'consume_on_equip';
+    // Fusion is official trap data (canFuse / fuseWith / fuseResult). Emit it only when the trap can fuse, so a season
+    // whose traps never set canFuse stays byte-identical.
+    const fuse = t.canFuse === true && t.fuseWith && t.fuseResult
+      ? { canFuse: true, fuseWith: t.fuseWith, fuseResult: t.fuseResult } : null;
     out[chessId] = {
       id: chessId, baseId, goldenId: shop?.goldenItemId || null, isGolden,
       trapId: t.charId, iconId: t.charId, identifier: t.identifier,
@@ -1357,12 +1429,13 @@ function buildItems(ctx, effects) {
       upgradeNum, upgradeChessId: t.upgradeChessId || null,
       duration: t.trapDuration,
       giveBondId: t.giveBondId || null, givePowerId: t.givePowerId || null, canGiveBond: !!t.canGiveBond,
+      ...fuse,
       requiresBondId: ri?.requiresBond || null,
       effectId: t.effectId, effectName: eff?.name || null,
       desc: eff?.desc || null, descRaw: eff?.descRaw || null,
       buffs: (eff?.buffs || []).map((b) => ({ key: b.key, countType: b.countType, bb: b.bb, bbStr: b.bbStr })),
       params: eff?.params || {},
-      category: ri?.category || null, kind: ri?.kind || null, family: ri?.family || null,
+      category: ri?.category || null, kind, family: ri?.family || null,
       implFormula: rule?.implFormula || ri?.implFormula || null,
       note: rule?.note || null,
       rangeGrid: Array.isArray(ri?.rangeGrids) ? ri.rangeGrids.map((g) => [g.row, g.col]) : null,
@@ -1392,15 +1465,41 @@ function buildBands(ctx, effects) {
     const dp = textPair(b.bandDesc);
     out[bandId] = {
       bandId, sortId: b.sortId, name: meta.bandName || eff?.name || bandId, iconId: meta.bandIconId || `icon_${bandId.replace(/^band_/, '')}`,
-      modeTypeList: b.modeTypeList || [], totalHp: b.totalHp,
+      // 规程 lists the modes a band is off in (inactiveModeIdList: 30 strategies are not offered in 极速模拟) instead of the
+      // mode types it is offered in: no type list there (null = every type)
+      modeTypeList: b.modeTypeList || (Array.isArray(b.inactiveModeIdList) ? null : []), totalHp: b.totalHp,
+      ...Array.isArray(b.inactiveModeIdList) && { inactiveModeIds: [...b.inactiveModeIdList].sort(naturalCmp) },
       effectId: b.effectId, effectName: eff?.name || null, desc: dp.desc, descRaw: dp.descRaw,
       buffs: (eff?.buffs || []).map((x) => ({ key: x.key, bb: x.bb, bbStr: x.bbStr })),
       params: eff?.params || {},
       victorCount: b.victorCount, rewardModulus: b.bandRewardModulus ?? 1,
       unlockDesc: meta.unlockDesc || null,
+      ...(act.skillInfoDataDict ? { skills: buildBandSkills(ctx, b.effectId, effects) } : {}),
     };
   }
   return out;
+}
+
+/** 规程 command chain. Older seasons have no skillInfoDataDict and keep their exact output shape. */
+function buildBandSkills(ctx, first, effects) {
+  const skills = [], seen = new Set();
+  for (let id = first; id;) {
+    if (seen.has(id)) throw new Error(`cyclic band skill chain: ${id}`);
+    seen.add(id);
+    const s = ctx.act.skillInfoDataDict[id];
+    if (!s) throw new Error(`missing band skill: ${id}`);
+    skills.push({
+      effectId: id, type: s.skillType, cost: s.skillCost,
+      availType: s.skillAvailType, availCount: s.skillAvailCount,
+      unlockType: s.unlockType, unlockParam: Array.isArray(s.unlockParam) ? s.unlockParam : [],
+      minorUnlock: s.minorUnlock, next: s.unlockEffectId,
+      targetType: s.targetType, targetFilterType: s.targetFilterType, targetTip: s.targetTip,
+      unusableAtSpecialRecruit: s.isUnusableAtSpecialRecruit,
+      ...textPair(s.skillDesc), buffs: effects[id]?.buffs || [],
+    });
+    id = s.unlockEffectId;
+  }
+  return skills;
 }
 
 // ===== enemies ==================================================================================
@@ -1535,6 +1634,11 @@ function collectEnemyKeys(ctx) {
   // actions, research 08 §5).
   const direct = new Set(keys);
   refs0.forEach(add);
+  // 规程 leaders name a paired unit only in the handbook (矩兽 → 后兽). Walking every enemy's linkEnemies would pull
+  // covenant companions that this season never spawns; only a boss enemyId is followed, and only for this layout.
+  const bossEnemyIds = PROFILE.layout === 'regulation'
+    ? new Set(Object.values(ctx.ac.bossInfoDict || {}).map((b) => b && b.enemyId).filter((id) => typeof id === 'string'))
+    : null;
   // Transitive closure: summons & blackboard references of included enemies.
   const queue = [...keys];
   while (queue.length) {
@@ -1547,6 +1651,10 @@ function collectEnemyKeys(ctx) {
       for (const e of [...(d.talentBlackboard || []), ...(d.skills || []).flatMap((s) => s.blackboard || [])]) {
         if (typeof e.valueStr === 'string') for (const m of e.valueStr.matchAll(/enemy_[A-Za-z0-9_]+/g)) refs.push(m[0]);
       }
+    }
+    if (bossEnemyIds && bossEnemyIds.has(k)) {
+      const links = ctx.handbook?.enemyData?.[k]?.linkEnemies;
+      if (Array.isArray(links)) for (const r of links) refs.push(r);
     }
     for (const r of refs) if (!keys.has(r) && ctx.enemyDb.has(r)) { keys.add(r); queue.push(r); }
   }
@@ -1697,7 +1805,10 @@ const MIRRORED_PREFABS = new Set(['enemy_1196_msfyin']);
  * never reads client files; an enemy whose model the manifest lacks gets none (the sim falls back to ATTACK_PAUSE).
  */
 function enemyAttackAnim(manifest, spineId) {
-  const sp = manifest?.enemies?.[spineId]?.spine;
+  const model = manifest?.enemies?.[spineId];
+  // 规程's new models come from the local client. Their committed clip metadata is available without art installed.
+  // Keep the four 盟约 builds' existing timing contract; only regulation admits the local-only model fallback.
+  const sp = model?.spine || (VERSION.family === 'regulation' ? model?.spineLocal : null);
   const a = sp?.anims?.attack;
   if (!a || typeof a.loop !== 'string' || a.via === 'idle') return null;
   const dur = sp.animations?.[a.loop];
@@ -2016,6 +2127,8 @@ const TILE_LEGEND = {
   g: { tileKey: 'tile_smog', special: 'smog', desc: '排气格栅：其上干员不会成为敌方远程攻击目标' },
   d: { tileKey: 'tile_deepsea', special: 'deepsea', desc: '深水区：不可部署（拒绝部署），敌人持续受伤、减速、减攻速' },
   i: { tileKey: 'tile_infection', special: 'infection', desc: '活性源石：单位受持续真实伤害，攻击力与攻速提升' },
+  z: { tileKey: 'tile_speedup', special: 'speedup', desc: '加速地块（规程）：站上的地面单位攻速 +attack_speed、移速 ×move_speed（官方 25 / 1.5）；飞行单位不吃地面地形' },
+  w: { tileKey: 'tile_duel_grassland', special: 'duelGrass', desc: '草地（规程 tile_duel_grassland，无 blackboard）[ASSUMED] 普通可部署地面，没有额外机制' },
 };
 
 /** Map an official tile object to a legend glyph. */
@@ -2028,6 +2141,7 @@ function tileGlyph(t) {
     case 'tile_wall': return 'h';
     case 'tile_fence_bound': case 'tile_fence': return 'b';
     case 'tile_achand': return bbKeys.has('isValidHand') ? 'a' : 'A';
+    case 'tile_acbag': return 'A'; // 规程's 5-slot equipment row where 盟约 has its temp row (tools/versions/layouts.mjs)
     case 'tile_start': return 'S';
     case 'tile_end': return 'E';
     case 'tile_telin': return 'I';
@@ -2036,6 +2150,8 @@ function tileGlyph(t) {
     case 'tile_smog': return 'g';
     case 'tile_deepsea': return 'd';
     case 'tile_infection': return 'i';
+    case 'tile_speedup': return 'z';
+    case 'tile_duel_grassland': return 'w';
     default: return '?';
   }
 }
@@ -2117,6 +2233,11 @@ function deviceRecord(ctx, t) {
  * @returns {string}
  */
 function stageDisplayName(stageId, raw) {
+  // 规程's battlefields have no name in the tables or on PRTS yet: 战场#NN(规程) by the map number [ASSUMED]
+  if ((typeof raw !== 'string' || !raw.trim()) && PROFILE.season === 'act3autochess') {
+    const m = /_m(\d+)$/.exec(stageId);
+    if (m) return `战场#${m[1]}(规程)`;
+  }
   if (typeof raw !== 'string' || !raw.trim()) return stageId;
   const name = raw.replace(/\s*[(（][^()（）]*[A-Za-z][^()（）]*[)）]/g, '').replace(/\s+/g, ' ').trim();
   if (!name) { warn(`stage ${stageId}: research name "${raw}" is only an annotation; using the stage id`); return stageId; }
@@ -2198,6 +2319,14 @@ function buildStages(ctx, modesById) {
     }
     if (rows.some((l) => l.includes('i'))) special.infection = { bb: glyphTiles.i?.bb || {} };
     if (rows.some((l) => l.includes('g'))) special.smog = { rule: 'operatorsNotTargetableByEnemyRanged' };
+    // 规程 m12 tile_speedup. Other seasons have no 'z', so their stages.json stay byte-identical.
+    if (rows.some((l) => l.includes('z'))) {
+      const bb = glyphTiles.z?.bb || {};
+      special.speedup = {
+        attack_speed: typeof bb.attack_speed === 'number' ? bb.attack_speed : 25,
+        move_speed: typeof bb.move_speed === 'number' ? bb.move_speed : 1.5,
+      };
+    }
     const blower = byKey('trap_013_blower');
     if (blower) special.blower = { rangeGrid: blower.rangeGrid, bb: blower.skill?.bb || {}, desc: blower.skill?.desc || null };
     const runes = (lv.runes || []).map((r) => ({ key: r.key, ...flattenBB(r.blackboard) }));
@@ -2320,7 +2449,11 @@ function buildFactions(ctx, enemies) {
     const r = act.specialEnemyRandomTypeDict?.[type] || {};
     types[type] = {
       type, name: t.name, desc: t.description, icon: t.icon, sortId: t.sortId, typeIdentifier: t.typeIdentifier,
-      involveRandom: !!t.involveRandom, count: r.count ?? null, weight: r.weight ?? null,
+      involveRandom: !!t.involveRandom, count: r.count ?? null,
+      // 规程 specialEnemyRandomTypeDict. Absent on 盟约, so those factions.json objects keep their key order.
+      ...(Object.prototype.hasOwnProperty.call(r, 'countSingle') ? { countSingle: r.countSingle } : {}),
+      weight: r.weight ?? null,
+      ...(typeof r.showEnemyId === 'string' && r.showEnemyId ? { showEnemyId: r.showEnemyId } : {}),
       pool: [...(act.enemyInfoDict?.[type] || [])],
       entries: Object.keys(entries).filter((k) => entries[k].type === type),
     };
@@ -2340,6 +2473,7 @@ function buildFactions(ctx, enemies) {
     generation: {
       source: 'official client RandomEnemyGenerater (research 08 §2, decoded from the client; normative)',
       specialEnemyNum: c.specialEnemyNum ?? 3,
+      ...(c.specialEnemyNumSingle != null ? { specialEnemyNumSingle: c.specialEnemyNumSingle } : {}),
       maxLevelCnt,
       fillType,
       alwaysIncludedType: fillType,
@@ -2359,6 +2493,7 @@ function buildFactions(ctx, enemies) {
         'Per SPAWN action whose key is a placeholder: skipped when isFly(new key) != placeholder fly flag (not spawned, not previewed); else the count follows countFormula and the units keep the action window (timingFormula). Literal keys and T/TF tokens are kept.',
         'Leader / hidden rounds use slot 14 / 15 (solo 标准: 9) with the same rule, so only the E or the EF escorts spawn.',
         'enemy_9012_acloon (炎佑) is never an enemy.',
+        ...(c.specialEnemyNumSingle != null ? ['Solo (GameData.isSolo) with a positive specialEnemyNumSingle keeps that many types, and a positive types[t].countSingle is that type\'s slot count. Multi, and any version without those fields, keeps specialEnemyNum and count.'] : []),
       ],
     },
   };
@@ -2398,10 +2533,16 @@ function buildBosses(ctx, enemies, waves) {
         return { key, slot, count };
       });
     }
+    // 规程 gives the pool per mode (bloodDataDict: the four co-op modes, 极速 and every 规程等级); bloodPoint then reads the
+    // co-op mode of each difficulty, and the match takes bloodByMode[its mode] first (server/match/gamedata.js bossPoolHp)
+    const byMode = b.bloodDataDict && typeof b.bloodDataDict === 'object' ? b.bloodDataDict : null;
     out[bossId] = {
       bossId, enemyKey, handbookId: g.handbookEnemyId || enemyKey, name: e?.name || enemyKey, sortId: b.sortId,
       weight: b.weight, hidden: !!b.isHidingBoss,
-      bloodPoint: { FUNNY: b.bloodPoint, NORMAL: b.bloodPointNormal, HARD: b.bloodPointHard, ABYSS: b.bloodPointAbyss },
+      bloodPoint: byMode
+        ? { FUNNY: byMode.mode_multi_funny, NORMAL: byMode.mode_multi_normal, HARD: byMode.mode_multi_hard, ABYSS: byMode.mode_multi_abyss }
+        : { FUNNY: b.bloodPoint, NORMAL: b.bloodPointNormal, HARD: b.bloodPointHard, ABYSS: b.bloodPointAbyss },
+      ...byMode && { bloodByMode: Object.fromEntries(Object.keys(byMode).sort(naturalCmp).map((k) => [k, byMode[k]])) },
       lpr: e?.stats?.lpr ?? null, templates, escortsByTemplate, parts: [...parts].sort(naturalCmp),
       abilities: e?.abilities?.map((a) => a.text) || [],
     };
@@ -2909,6 +3050,9 @@ function dailyMission(c) {
  */
 function buildConfig(ctx, waves, stages, bands, chess, items) {
   const { act, ac } = ctx;
+  // a mode's active bonds, the ones the season loads: 规程's 入门协议 (mode_training_2) lists 拉特兰 lateranoShip, which
+  // its tutorial overrides (trainingData) bring and act3autochess does not load [ASSUMED: left out]
+  const seasonBonds = (modeId, ids) => ids.filter((id) => act.bondInfoDict?.[id] || (warn(`mode ${modeId}: active bond ${id} is not a bond of the season, left out`), false));
   // Original experiment: 路标档案馆, BV1eLXXBqEgF (2026-03-29), 0:30 / 1:30 / 2:00.
   // These are concurrent stock counts, not limits on appearances or total purchases during a match.
   const stockByName = (records, counts) => Object.fromEntries(Object.entries(counts).map(([name, count]) => {
@@ -2970,7 +3114,7 @@ function buildConfig(ctx, waves, stages, bands, chess, items) {
       color: `#${String(m.modeColor || '').replace(/^#/, '')}`, iconId: m.modeIconId, backgroundId: m.backgroundId || null,
       desc: m.desc, effectDescList: m.effectDescList || [], unlockText: m.unlockText || null,
       specialPhaseTime: m.specialPhaseTime,
-      activeBondIds: m.activeBondIdList || [], inactiveBondIds: m.inactiveBondIdList || [], inactiveEnemyKeys: m.inactiveEnemyKey || [],
+      activeBondIds: seasonBonds(m.modeId, m.activeBondIdList || []), inactiveBondIds: m.inactiveBondIdList || [], inactiveEnemyKeys: m.inactiveEnemyKey || [],
       lastRound, bossRound, hiddenRound,
       rounds, spRounds: roundNums.filter((r) => rounds[r].isSpPrepare),
       combatTimeLimit, enemyScale,
@@ -3067,8 +3211,14 @@ function buildConfig(ctx, waves, stages, bands, chess, items) {
       chatCd: ac.constData?.chatCD ?? 1, chatBubble: ac.constData?.chatTime ?? 3, broadcastDelay: ac.constData?.broadcastBeginDelay ?? 1,
       enterSteps: (Array.isArray(ac.enterStepList) ? ac.enterStepList : Object.values(ac.enterStepList || {})).map((s) => ({ step: s.stepType, time: s.time, hint: s.hintTime, title: s.title })),
     },
-    bans: { FUNNY: { core: 0, addon: 1 }, NORMAL: { core: 3, addon: 4 }, HARD: { core: 3, addon: 4 }, ABYSS: { core: 3, addon: 4 }, TRAINING: { core: 0, addon: 0 },
-      rule: 'banned iff every bond of a visible non-DIY chess is in (drawn set D ∪ mode.inactiveBondIds); core = isCore bonds, addon = other bonds with weight > 0; uniform draw' },
+    bans: { ...PROFILE.config.bans
+      ? PROFILE.config.bans.core !== undefined
+        ? Object.fromEntries(['FUNNY', 'NORMAL', 'HARD', 'ABYSS', 'TRAINING'].map((d) => [d, { core: PROFILE.config.bans.core, addon: PROFILE.config.bans.addon }]))
+        : PROFILE.config.bans
+      : { FUNNY: { core: 0, addon: 1 }, NORMAL: { core: 3, addon: 4 }, HARD: { core: 3, addon: 4 }, ABYSS: { core: 3, addon: 4 }, TRAINING: { core: 0, addon: 0 } },
+      rule: PROFILE.config.rules?.bondDraw === 'regulation'
+        ? 'solo chooses one of two shuffled core groups; multi greys floor(n/2) cores; banned iff any core is off OR all add-ons are off; add-on counts [ASSUMED]'
+        : 'banned iff every bond of a visible non-DIY chess is in (drawn set D ∪ mode.inactiveBondIds); core = isCore bonds, addon = other bonds with weight > 0; uniform draw' },
     bandDraft: { skipsPerPlayer: 1, order: 'random', duplicatesAllowed: true, timeoutBandId: 'band_bldsk' },
     titles: Object.values(act.playerTitleDataDict || {}).map((t) => ({ id: t.id, picId: t.picId, name: t.txt, ...(titleRules[t.id] || {}) })),
     titleRule: 'each player gets at most one title; each title is used at most once per match; assign by the category where the player ranks best relative to teammates [ASSUMED]',
@@ -3408,7 +3558,8 @@ async function main() {
     sizes[name] = Buffer.byteLength(texts[name]);
     total += sizes[name];
   }
-  if (total > 6 * 1024 * 1024) errors.push(`total data size ${total} exceeds 6 MB`); // per version
+  const maxMB = PROFILE.expect.maxMB ?? 6; // per version; 规程's larger season is allowed 7 (its profile)
+  if (total > maxMB * 1024 * 1024) errors.push(`total data size ${total} exceeds ${maxMB} MB`);
   // another version carries a byte copy of the hand-maintained data/tuning.json: a gameplay file that loadData and the
   // content hash read with the rest of a data directory [ASSUMED] the same tuning for every version
   const extra = IS_DEFAULT ? {} : { tuning: await readFile(join(ROOT, 'data', 'tuning.json')) };

@@ -132,6 +132,17 @@ Ready requires no pending offer as well as an empty temp area. The co-op prep de
 before resolving temp and setting Ready; untimed solo / single-human prep does not schedule a separate choice timer.
 The offer is recipient-private, including after reconnect, and never enters `m.public.sp` or a teammate's scout view.
 
+**规程 equipment row.** With `config.version.rules.equipHand === true`, the 10-slot hand accepts only operators
+and summons. The former five visible temp cells are a permanent equipment row (all item cards, including Arts),
+with no expiry and no Ready block. The season specifies 10 character slots and 5 equipment slots, with distinct
+`CHAR_HAND` / `EQUIP_HAND` client map areas and `tile_acbag` cells.
+[ASSUMED] Owner decision 2026-11-09: the equipment row fills right-to-left; normal actions require space in their
+card's row; forced overflow enters a hidden stash, automatically refills each row in arrival order, blocks Ready,
+and expires at the existing temp deadline. Entry notifies only the owner. Private views reveal the stash count,
+not its contents. Voluntary unequip (`unequip=allow`) requires equipment-row space. Equipment may move within
+that row or be equipped on a unit; operators/summons cannot occupy it. Covenant rules above stay unchanged.
+Implementation and protocol details: [META.md](../META.md#regulation-equipment-row-and-overflow).
+
 ### 6.3 Bonds & layers (bondsMeta.js)
 
 - `count` = number of **distinct base chess** on the board carrying the bond (`BOARD`); `BOARD_AND_DECK` bonds also count the hand; 绝技 counts elites on board; 调和 adds +1 to each core bond count that has a real member on the board (the views mark such an entry `harmony: 1`, §21.26), etc. (research 02).
@@ -169,6 +180,18 @@ only lose their cell, as described above.
 ### 6.5 Waves (waves.js)
 
 Per match: pick stage (weighted among the mode's `config.modes[m].stages`, weight 50 each: 标准 FUNNY = 战场#01 `act1autochess_m01` only, 险境 NORMAL = 8 stages, 绝境 / 终极 = 7 without 战场#01 — `waves.js setupMatchWaves`, `test/match/stagepick.test.js`), 3 of 6 typed enemy factions, disabled bond set (3 core + 4 add-on for NORMAL+, per research), boss (weighted), hidden boss. Per round: wave template (by mode & round) → replace placeholders per research 05 §3.2 algorithm → apply stat multipliers (research 00-INDEX §5 `atk ×base×1.1^k`, `hp ×base×1.2^k`, ABYSS speed ×1.15 from R3) → `SpawnSpec[]` + routes resolved on the stage. *(Superseded by the official generator — §14 "Corrections from research 08/09" and the waves.js header.)* A player's normal battle (and the bot rehearsal) runs `withBounties(gd, round, wave, bounties, playerId)`: the bounty units inserted among their host action's own units, which are re-timed around them (client order); `previewOf` keeps one entry per action (`wave.spawns` + `bountySpawns`).
+
+规程 uses `config.version.rules.bondDraw = 'regulation'` (owner's official play, 2026-11-09;
+the regulation `mode_training_2` stage-info tutorial). Available cores have positive weight and are not in the mode's
+fixed inactive list. MULTI greys `floor(n/2)` cores; SINGLE shuffles two disjoint groups of `floor(n/2)` and chooses one
+in INFO_CHECK (`g.bondGroup { idx: 0|1, setupRevision }`), greying the other. Level 1 has 4 + 4. [ASSUMED] Levels 5–20
+use 5 + 5, 标准 co-op greys 4 of 8, and an odd leftover stays active. A bot prefers its plan/strategy core, otherwise
+the seeded first group; [ASSUMED] a human leaving the briefing without a choice keeps that first group.
+Add-on counts stay editable in `config.bans`: [ASSUMED] FUNNY/FAST 1, NORMAL/HARD/ABYSS 4, TRAINING 0.
+An operator is excluded if any core bond is grey/inactive, or if it has add-ons and all are grey/inactive. The same
+rule governs the shared pool, 自选 stock, shop, rewards and grants. INFO_CHECK rolls no shop; a pick rebuilds the
+provisional pool and 自选 stock before the draft, without drawing RNG. Reroll resets the groups/pick and stocks;
+public snapshots, reconnects and input replay retain the choice. Covenant draws and exclusion are unchanged.
 
 ### 6.6 AI players (bot.js)
 
@@ -411,3 +434,8 @@ The view uses the same clamped pool balance as purchases, merges and sales; pers
 离席座位保留策略顺位，由团队规则代选 Touch（尚无人持有时），避免占用歌利亚；LP 保持 0，不获得随机策略奖励。该规则应用到每个固定分组。预演后不再购买或恢复默认布阵；服务器和浏览器共用候选评分，上限 16。
 鸭爵只从下路抽取，数量/被替换位置使用每回合公共流，替换种类使用玩家独立流，同一玩家本回合一种。普通场和首领双人场均保留敌人归属。
 来源及启发式 ASSUMED 见 [适配记录](../UPSTREAM-DEV-20261108.md)。
+
+
+### 规程迁移补充（2026-11-09）
+
+规程按官方表提供每阶六个自选位置，另保留本库两名候补；批量应用允许每阶零至六名，原四版本仍为零至两名。规程候选禁用提示和默认推荐遵循核心置灰或附加盟约全灰的排除规则。

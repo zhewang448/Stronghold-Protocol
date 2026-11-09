@@ -174,7 +174,7 @@ test('an incomplete offline install leaves the working manifest byte-identical',
 });
 
 test('real WebSocket lifecycle: preferences survive room start, reconnect and reach spectators', async () => {
-  const srv = await startServer({ port: 0, host: '127.0.0.1', quiet: true });
+  const srv = await startServer({ port: 0, host: '127.0.0.1', quiet: true, versions: { default: 'act2autochess' } });
   const clients = [];
   const connect = async () => { const c = await TestClient.connect(`ws://127.0.0.1:${srv.port}/ws`); clients.push(c); return c; };
   const ok = async (c, msg) => assert.equal((await c.request(msg)).t, 'ok');

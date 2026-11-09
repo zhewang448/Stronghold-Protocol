@@ -165,7 +165,7 @@ import { namecardSource, validNamecard, normalizeNamecard, resolveNamecard } fro
 import { isCardArtFrame, isCardArtKey, normalizeCardArt } from '../shared/cardArt.js';
 import { randomBytes, randomInt } from 'node:crypto';
 import { DEFAULT_VERSION } from '../shared/versions.js';
-import { aiTakeover, resetAiTakeover, reconcileAiTakeover } from './aiTakeover.js';
+import { aiTakeover, resetAiTakeover, reconcileAiTakeover, afterReconcile } from './aiTakeover.js';
 import { DIFFICULTIES, ERR, DEFAULT_SEATS, MAX_SEATS, ROOM_CAPACITIES, MAX_SPECTATORS, SPECTATOR_LIMIT_MAX, ROOM_CODE_LEN, modeIdFor, EMOTE_BARRAGE_RATE_DEFAULT } from '../shared/constants.js';
 import { checkLoadout, checkLoadoutOps, cultivationCharIds, checkNotOwned, checkDiyPicks, charPotentialChanges, checkSkinSelection, operatorCharIds } from '../shared/protocol.js';
 import { encode, isDroppable, isErrCode, sendRaw, sendSession, sendSessionFrame } from './net.js';
@@ -316,11 +316,12 @@ export class Room {
     this.customIllust = defaults.customIllust;
     this.avatarFrameKey = null;
     this.sharedAvatarsSeen = false;
-    this.aiTakeoverEnabled = getAllowAiTakeover() && mode !== 'solo' && version === DEFAULT_VERSION && defaults.aiTakeoverEnabled;
+    this.aiTakeoverEnabled = getAllowAiTakeover() && mode !== 'solo' && defaults.aiTakeoverEnabled;
     // [ASSUMED] Owner-requested public directory (#12), adapted from NeoPecos 2cadc618.
     // Private rooms remain reachable through existing invitation/key routes.
     this.private = mode !== 'solo' && defaults.private;
     this.version = version;
+    this.modeId = null;
     this.versionVote = null; this.versionVoteSeq = 0; this.versionProposeAt = -Infinity; this.versionRetryAt = -Infinity; this.soloUnlimited = false;
     this.convenience = roomConvenience(Object.fromEntries(CONVENIENCE_KEYS.map(key => [key, defaults['convenience.' + key]])));
     this.enemyHpMultiplier = defaults.enemyHpMultiplier;
@@ -399,10 +400,11 @@ export class Room {
     return {
       t: 'room.state',
       aiTakeoverAllowed: getAllowAiTakeover(),
-      canSetAiTakeover: getAllowAiTakeover() && roomHostCanChange('aiTakeoverEnabled') && this.mode === 'coop' && this.version === DEFAULT_VERSION && !this.modded && !this.match,
+      canSetAiTakeover: getAllowAiTakeover() && roomHostCanChange('aiTakeoverEnabled') && this.mode === 'coop' && !this.modded && !this.match,
       ...(Object.keys(locked).length ? { hostControls: locked } : {}),
       ...(this.aiTakeoverEnabled && getAllowAiTakeover() ? { aiTakeoverEnabled: true, aiTakeoverVotes: this.aiTakeoverVotes || [] } : {}),
       ...(this.version !== DEFAULT_VERSION ? { version: this.version } : {}),
+      ...(this.modeId ? { modeId: this.modeId } : {}),
       ...(this.versionVote ? { versionVote: { id: this.versionVote.id, proposerId: this.versionVote.proposerId, version: this.versionVote.version, voters: [...this.versionVote.voters], agreed: this.versionVote.voters.filter(id => this.versionVote.agreed.has(id)), remainingMs: Math.max(0, this.versionVote.expiresAt - now), ...(this.versionVote.resetSettings ? { resetSettings: true } : {}) } } : {}),
       ...(this.soloUnlimited ? { soloUnlimited: true } : {}),
       code: this.code,
@@ -456,10 +458,10 @@ export class Lobby {
    *   now?: () => number,
    *   seedFn?: () => number,
    *   content?: { cs: string } | null,
-   *   plugins?: { resolve: (ids: string[], opts?: { scope?: 'room' | 'personal', settings?: object, replacing?: object | null }) => any,
+   *   plugins?: { resolve: (ids: string[], opts?: { scope?: 'room' | 'personal', settings?: object, replacing?: object | null, version?: string }) => any,
    *     hold?: (vs: string) => void, release?: (vs: string) => void, holdContent?: (cs: string) => void,
    *     releaseContent?: (cs: string) => void, onContentStale?: (fn: (cs: string, ids: string[]) => void) => () => void, onStale?: (fn: (vs: string, ids: string[]) => void) => () => void,
-   *     unofficial?: () => number, hasNotices?: () => boolean, defaults?: () => string[], dataOf?: (cs: string) => any, kittedOf?: (cs: string) => any,
+   *     unofficial?: () => number, hasNotices?: () => boolean, defaults?: () => string[], defaultsFor?: (version: string) => { ids: string[], skipped: string[] }, dataOf?: (cs: string) => any, kittedOf?: (cs: string) => any,
    *     contentInUse?: () => number } | null,
    *   hosts?: { create: (cs: string, opts: object) => any, stats?: () => object } | null,
    *   options?: Partial<typeof LOBBY_DEFAULTS>,
@@ -469,6 +471,15 @@ export class Lobby {
    *   plugins", "Gameplay plugins"); hosts: the match hosts a room with gameplay plugins runs its match in
    *   (server/match/host/index.js; none: such a match runs here, unit tests)
    */
+  versionModes(v, mode) { return this.versions?.modesOf?.(v, /** @type {'solo' | 'coop'} */ (mode)) ?? []; }
+
+  laddered(v, mode) { return v !== DEFAULT_VERSION && !!this.versions?.laddered?.(v, /** @type {'solo' | 'coop'} */ (mode)); }
+
+  ladderMode(v, mode, difficulty, asked) {
+    const list = this.versionModes(v, mode);
+    return list.find((m) => m.id === asked)?.id ?? list.find((m) => m.difficulty === difficulty)?.id ?? list[0]?.id ?? null;
+  }
+
   constructor({ registry, log = noopLog, MatchClass = DefaultMatch, getData = defaultGetData, now = Date.now, seedFn, content = null, plugins = null, hosts = null, versions = null, versionHosts = null, simPool = null, options = {} }) {
     this.registry = registry;
     /** the vanilla content set every room plays (header "Content identity"), or null */
@@ -935,7 +946,7 @@ export class Lobby {
     return OK;
   }
 
-  create(session, { mode, difficulty, code: requestedCode, capacity, test, version: askedVersion, soloUnlimited, private: isPrivate } = {}) {
+  create(session, { mode, difficulty, code: requestedCode, capacity, test, version: askedVersion, soloUnlimited, modeId: askedMode, private: isPrivate } = {}) {
     const creation = getRoomCreation().defaults;
     difficulty = roomHostCanChange('difficulty') && difficulty != null ? difficulty : creation.difficulty;
     capacity = roomHostCanChange('capacity') && capacity != null ? capacity : creation.capacity;
@@ -971,6 +982,11 @@ export class Lobby {
     if (!code && this.opts.roomCode) return fail(ERR.ROOM_CODE_TAKEN);
     if (!code) return fail(ERR.INTERNAL, 'no room code available');
     const room = new Room(code, mode, difficulty, this.now(), capacity, version);
+    if (this.laddered(version, mode)) {
+      room.modeId = this.ladderMode(version, mode, difficulty, roomHostCanChange('difficulty') ? askedMode ?? null : null);
+      const selected = this.versionModes(version, mode).find((entry) => entry.id === room.modeId);
+      if (selected) room.difficulty = DIFFICULTIES.includes(selected.difficulty) ? selected.difficulty : 'FUNNY';
+    }
     room.spectatorLimit = creation.spectatorLimit ?? this.opts.maxSpectators;
     room.test = test === true;
     room.private = mode === 'coop' && isPrivate === true;
@@ -978,7 +994,9 @@ export class Lobby {
     room.convenience.soloUnlimited = typeof soloUnlimited === 'boolean' ? soloUnlimited : true;
     room.soloUnlimited = mode === 'solo' && room.convenience.soloUnlimited && this.versionSoloTimed(version);
     // the server owner's default plugins (plugins/config.json `default`; header "Gameplay plugins"): none — the original game
-    const defaults = [...new Set([...(creation.plugins ?? this.plugins?.defaults?.() ?? []), ...(this.plugins?.fixed?.() || [])])];
+    const selectedDefaults = creation.plugins == null ? this.plugins?.defaultsFor?.(version) : null;
+    if (selectedDefaults?.skipped.length) this.warnOnce(`[lobby] default plugins not supported on ${version}: ${selectedDefaults.skipped.join(', ')}`);
+    const defaults = [...new Set([...(creation.plugins ?? selectedDefaults?.ids ?? this.plugins?.defaults?.() ?? []), ...(this.plugins?.fixed?.() || [])])];
     if (defaults.length) {
       const r = this.resolveContent(room, defaults, {}, version, releasable?.content ?? null);
       if ('error' in r) {
@@ -1167,7 +1185,7 @@ export class Lobby {
     values.spectatorLimit ??= this.opts.maxSpectators;
     if (room.seats.slice(values.capacity).some(Boolean) || room.spectators.length > values.spectatorLimit) return fail(ERR.ROOM_RESET_BLOCKED);
     if (room.mode === 'solo') for (const key of ['private', 'aiPicksLast', 'aiTakeoverEnabled', 'independentPools', 'allowDuplicateBands', 'rescueEnabled']) values[key] = false;
-    if (!getAllowAiTakeover() || version !== DEFAULT_VERSION || content?.vanilla === false) values.aiTakeoverEnabled = false;
+    if (!getAllowAiTakeover() || content?.vanilla === false) values.aiTakeoverEnabled = false;
     values.convenience = Object.fromEntries(CONVENIENCE_KEYS.map(key => [key,
       content?.rules && Object.hasOwn(content.rules, key) ? room.convenience[key] : choose('convenience.' + key, room.convenience[key])]));
     values.soloUnlimited = room.mode === 'solo' && this.versionSoloTimed(version) && values.convenience.soloUnlimited;
@@ -1233,9 +1251,12 @@ export class Lobby {
     // the room's version offers it (header "Official versions": 第二期上半 / 第一期 have no 终极)
     if (!this.offered(room.version, room.mode).includes(difficulty)) return fail(ERR.BAD_TARGET, 'not a mode of this version');
     this.dropReplay(room, session.playerId);
+    // a laddered room (规程's solo) moves to the first official mode of that difficulty
+    const modeId = this.laddered(room.version, room.mode) ? this.ladderMode(room.version, room.mode, difficulty, null) : null;
     // a plugin mode chosen (header "Gameplay plugins") carries its own difficulty: picking one leaves it
-    if (room.difficulty !== difficulty || room.content?.modeId) {
+    if (room.difficulty !== difficulty || room.content?.modeId || room.modeId !== modeId) {
       room.difficulty = difficulty;
+      room.modeId = modeId;
       if (room.content?.modeId) { const rest = { ...room.content }; delete rest.modeId; room.content = Object.freeze(rest); }
       for (const s of room.seats) if (s && !s.isBot && s.playerId !== room.hostId) s.ready = false;
       this.broadcastState(room);
@@ -1267,7 +1288,7 @@ export class Lobby {
     if (!room) return fail(ERR.NOT_IN_ROOM);
     if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
     if (room.match) return fail(ERR.ROOM_STARTED);
-    if (room.mode === 'solo' || (on && (room.modded || room.version !== DEFAULT_VERSION))) return fail(ERR.BAD_TARGET);
+    if (room.mode === 'solo' || (on && room.modded)) return fail(ERR.BAD_TARGET);
     if (room.aiTakeoverEnabled !== on) {
       this.dropReplay(room, session.playerId);
       room.aiTakeoverEnabled = on;
@@ -1365,17 +1386,14 @@ export class Lobby {
       return { content: base };
     }
     if (!this.vanilla || !this.plugins || !base) return fail(ERR.PLUGIN_UNKNOWN, 'this server applies no plugins');
-    const gameplay = version === DEFAULT_VERSION;
     let r;
-    try { r = this.plugins.resolve(ids, { scope: 'room', settings, replacing, gameplay }); } catch (e) {
+    try { r = this.plugins.resolve(ids, { scope: 'room', settings, replacing, version }); } catch (e) {
       this.log.error(`[lobby] ${room?.code ?? '----'} plugin set failed`, e);
       return fail(ERR.INTERNAL);
     }
     if (!r || !r.ok) return fail(r && isErrCode(r.error) ? r.error : ERR.INTERNAL, r && typeof r.detail === 'string' ? r.detail.slice(0, 200) : undefined);
     const { cs, vs, plugins: list, warnings, bytes, dataBytes, modes, kitted, trusted, execution, rules } = r.set;
-    const modded = isContentHash(cs) && cs !== this.vanilla.cs;
-    // (roomSets refuses them itself; a room-sets object that does not know the option must not slip one through)
-    if (modded && !gameplay) return fail(ERR.VERSION_UNSUPPORTED, 'gameplay plugins play the default version (act2autochess) only');
+    const modded = isContentHash(cs) && cs !== base.cs;
     const frozen = (a) => Object.freeze((Array.isArray(a) ? a : []).map((p) => Object.freeze({ ...p })));
     // the operators its plugins add to a 自选 slot's list (welcome.diyKitted holds the server's own): the pages' pickers
     const extra = modded && Array.isArray(kitted) ? kitted.filter((id) => typeof id === 'string' && !VANILLA_KITTED.has(id)).slice(0, 200) : [];
@@ -1419,7 +1437,23 @@ export class Lobby {
     if (room.hostId !== session.playerId) return fail(ERR.NOT_HOST);
     if (room.match) return fail(ERR.ROOM_STARTED);
     if (room.versionVote) return fail(ERR.VERSION_VOTE);
-    const official = DIFFICULTIES.find((d) => modeIdFor(room.mode, d) === modeId);
+    // a laddered room (规程's solo): any official mode of the version's room mode; the room's difficulty follows it
+    // (极速模拟's FAST counts as 标准 FUNNY for the difficulty-keyed parts of the room)
+    const laddered = this.laddered(room.version, room.mode);
+    const ladder = laddered ? this.versionModes(room.version, room.mode).find((m) => m.id === modeId) : null;
+    if (ladder) {
+      const difficulty = DIFFICULTIES.includes(ladder.difficulty) ? ladder.difficulty : 'FUNNY';
+      if (room.modeId === ladder.id && room.difficulty === difficulty && !room.content?.modeId) return OK;
+      room.modeId = ladder.id;
+      room.difficulty = difficulty;
+      if (room.content?.modeId) { const rest = { ...room.content }; delete rest.modeId; room.content = Object.freeze(rest); }
+      this.dropReplay(room, session.playerId);
+      for (const s of room.seats) if (s && !s.isBot && s.playerId !== room.hostId) s.ready = false;
+      this.broadcastState(room);
+      return OK;
+    }
+    // a laddered room's official modes are the ones above: mode_single_<difficulty> is no mode there (规程 has none)
+    const official = laddered ? undefined : DIFFICULTIES.find((d) => modeIdFor(room.mode, d) === modeId);
     let difficulty = room.difficulty;
     let content = room.content;
     if (official) {
@@ -1504,7 +1538,7 @@ export class Lobby {
   }
 
   validBotBand(room, bandId) {
-    const modeId = room.content?.modeId || modeIdFor(room.mode, room.difficulty);
+    const modeId = room.content?.modeId || room.modeId || modeIdFor(room.mode, room.difficulty);
     return new GameData(this.dataFor(room), modeId).bandAllowed(bandId);
   }
 
@@ -1873,14 +1907,15 @@ export class Lobby {
     else try { seed = this.seedFn() >>> 0; } catch { seed = randomInt(2 ** 32); }
     const modded = room.modded;
     const versioned = room.version !== DEFAULT_VERSION;
-    if (versioned && !this.versionHosts && this.MatchClass === DefaultMatch) return fail(ERR.INTERNAL, 'no match host for this version');
+    if (versioned && !(room.modded ? this.hosts : this.versionHosts) && this.MatchClass === DefaultMatch) return fail(ERR.INTERNAL, 'no match host for this version');
     try {
       const opts = {
         roomCode: room.code,
         mode: room.mode,
         difficulty: room.difficulty,
-        // a plugin mode the host chose (header "Gameplay plugins"), else the official mode of the difficulty
-        modeId: room.content?.modeId || modeIdFor(room.mode, room.difficulty),
+        // a plugin mode the host chose (header "Gameplay plugins"), a laddered room's official mode (规程's solo), else the
+        // official mode of the difficulty
+        modeId: room.content?.modeId || room.modeId || modeIdFor(room.mode, room.difficulty),
         // 「AI 队友最后选择」 (GitHub #338): fixed for the match
         aiPicksLast: room.mode !== 'solo' && room.aiPicksLast === true,
         uniteLayerGains: room.uniteLayerGains,
@@ -1990,7 +2025,7 @@ export class Lobby {
 
   /** Match broadcast; the latest m.public and a broadcast m.result are also kept for the replay. */
   matchBroadcast(room, ctx, msg, encoded = null) {
-    if (msg.t === 'm.public' && reconcileAiTakeover(this, room)) this.broadcastState(room);
+    if (msg.t === 'm.public') afterReconcile(this, room, reconcileAiTakeover(this, room));
     const data = this.broadcastRoom(room, msg, encoded);
     if (data == null) return;
     if (msg.t === 'm.public') ctx.lastPublic = data;
@@ -2134,7 +2169,7 @@ export class Lobby {
     let res;
     try {
       res = room.match.handle(session.playerId, msg);
-      if (reconcileAiTakeover(this, room)) this.broadcastState(room);
+      afterReconcile(this, room, reconcileAiTakeover(this, room));
     } catch (e) {
       this.log.error(`[lobby] ${room.code} match.handle(${msg.t}) threw`, e);
       return fail(ERR.INTERNAL);
@@ -2471,7 +2506,7 @@ export class Lobby {
 
   broadcastState(room) {
     if (room.disposed) return;
-    if (room.aiTakeoverEnabled && (!getAllowAiTakeover() || room.mode !== 'coop' || room.version !== DEFAULT_VERSION || room.modded)) {
+    if (room.aiTakeoverEnabled && (!getAllowAiTakeover() || room.mode !== 'coop' || room.modded)) {
       room.aiTakeoverEnabled = false;
       resetAiTakeover(room);
     }
@@ -2479,7 +2514,19 @@ export class Lobby {
       if (seat?.isBot && seat.botBand && !this.validBotBand(room, seat.botBand)) seat.botBand = null;
     }
     this.matchmaking.reconcile(room);
-    reconcileAiTakeover(this, room);
+    const rec = reconcileAiTakeover(this, room);
+    if (rec && typeof rec.then === 'function') {
+      rec.then(() => { if (!room.disposed) this.emitRoomState(room); }, (error) => {
+        this.log.error('[lobby] AI handover reconcile failed', error);
+        if (!room.disposed) this.emitRoomState(room);
+      });
+      return;
+    }
+    this.emitRoomState(room);
+  }
+
+  emitRoomState(room) {
+    if (room.disposed) return;
     if (this.trustedRuntime) {
       const state = room.toState(this.now()), prev = room.trustedPrevious;
       const event = (name,extra={}) => this.trustedRuntime.event(name,{room:state,...extra});
@@ -2675,7 +2722,6 @@ export class Lobby {
     if (room.match) return fail(ERR.ROOM_STARTED);
     if (!this.versionEnabled(version)) return fail(ERR.VERSION_UNKNOWN);
     if (!this.offered(version, room.mode).length) return fail(ERR.VERSION_UNSUPPORTED, `${version} has no ${room.mode} rooms`);
-    if (room.modded && version !== DEFAULT_VERSION && !resetSettings) return fail(ERR.VERSION_UNSUPPORTED, 'gameplay plugins play the default version (act2autochess) only');
     if (version === room.version) return fail(ERR.ALREADY);
     if (room.versionVote) return fail(ERR.VERSION_VOTE);
     const now = this.now();
@@ -2693,7 +2739,7 @@ export class Lobby {
     if (!resetSettings) this.dropReplay(room, session.playerId);
     if (humans.length === 1) {
       if (resetSettings) return this.applySettingsReset(room, resetSettings);
-      this.applyVersion(room, version, 'alone'); return OK;
+      return this.applyVersion(room, version, 'alone');
     }
     room.versionVoteSeq = room.versionVoteSeq >= 2 ** 31 ? 1 : room.versionVoteSeq + 1;
     const id = room.versionVoteSeq;
@@ -2727,7 +2773,7 @@ export class Lobby {
     vote.agreed.add(session.playerId);
     if (vote.voters.every((id) => vote.agreed.has(id))) {
       if (vote.resetSettings) return this.applySettingsReset(room, vote.resetSettings);
-      this.applyVersion(room, vote.version, 'vote');
+      return this.applyVersion(room, vote.version, 'vote');
     }
     else this.broadcastState(room);
     return OK;
@@ -2773,18 +2819,20 @@ export class Lobby {
   applyVersion(room, version, how, preparedContent = undefined) {
     if (room.versionVote) { clearTimeout(room.versionVote.timer); room.versionVote = null; }
     const before = room.content;
+    let next = preparedContent === undefined ? this.baseContent(version) : preparedContent;
+    const ids = (before?.plugins || []).filter((p) => !p.auto).map((p) => p.id);
+    if (ids.length && preparedContent === undefined) {
+      const r = this.resolveContent(room, ids, this.pluginSettings(before), version);
+      if ('content' in r && r.content) next = r.content;
+      else if (room.modded) { this.broadcastState(room); return 'error' in r ? r : fail(ERR.VERSION_UNSUPPORTED); }
+      else this.warnOnce(`[lobby] ${room.code} plugins (${ids.join(', ')}) dropped on the switch to ${version}: ${'error' in r ? r.error : '?'}${'detail' in r && r.detail ? ` (${r.detail})` : ''}`);
+    }
     room.version = version;
     // 「不限时」 belongs to a timed solo only (header): a co-op room, or a version whose solo is not timed, drops it.
     // Switching between the two 第一期 versions keeps it.
     room.soloUnlimited = room.mode === 'solo' && this.versionSoloTimed(version) && room.convenience.soloUnlimited;
     room.difficulty = this.fallbackDifficulty(version, room.mode, room.difficulty);
-    let next = preparedContent === undefined ? this.baseContent(version) : preparedContent;
-    const ids = (before?.plugins || []).filter((p) => !p.auto).map((p) => p.id);
-    if (ids.length && preparedContent === undefined) {
-      const r = this.resolveContent(room, ids, this.pluginSettings(before));
-      if ('content' in r && r.content && r.content.vanilla !== false) next = r.content;
-      else this.warnOnce(`[lobby] ${room.code} plugins (${ids.join(', ')}) dropped on the switch to ${version}: ${'error' in r ? r.error : '?'}${'detail' in r && r.detail ? ` (${r.detail})` : ''}`);
-    }
+    room.modeId = this.laddered(version, room.mode) ? this.ladderMode(version, room.mode, room.difficulty, room.modeId) : null;
     room.content = next;
     this.holdContent(next);
     this.releaseContent(before);
@@ -2808,6 +2856,7 @@ export class Lobby {
     }
     this.log.info(`[lobby] ${room.code} version → ${version} (${how})`);
     this.broadcastState(room);
+    return OK;
   }
 
   settingsCs(room, playerId) {

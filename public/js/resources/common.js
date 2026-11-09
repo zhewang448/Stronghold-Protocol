@@ -239,7 +239,8 @@ export function validateManifest(m) {
   if (!m || typeof m !== 'object' || m.format !== RESOURCES_FORMAT) throw new Error('资源清单格式不受支持');
   if (typeof m.version !== 'string' || !m.version) throw new Error('资源清单缺少版本号');
   if (!Array.isArray(m.files)) throw new Error('资源清单缺少文件列表');
-  if (m.files.length > 50000) throw new Error('资源清单过大');
+  // Five official seasons, local FX and optional outfits exceed the former 50,000-file ceiling.
+  if (m.files.length > 100000) throw new Error('资源清单过大');
   for (const f of m.files) {
     if (!f || typeof f !== 'object' || !isResourceUrl(f.url)) throw new Error(`资源清单条目无效：${String(f && f.url).slice(0, 80)}`);
     if (f.tier !== TIER_ESSENTIAL && f.tier !== TIER_REST) throw new Error(`资源清单条目缺少分层：${f.url.slice(0, 80)}`);

@@ -28,6 +28,7 @@ function randomIntent(rng, m, ps) {
   const to = () => (rng() < 0.6 ? { area: 'board', row: rng() < 0.8 ? 9 + rng.int(4) : rng.int(19), col: rng() < 0.8 ? 2 + rng.int(9) : rng.int(21) } : { area: 'hand', idx: rng.int(10) });
   switch (t) {
     case 'g.test': return { t, cmd: 'funds', args: { amount: rng.int(100000) } };
+    case 'g.bondGroup': return { t, idx: rng.int(2), setupRevision: m.setupRevision ?? 0 };
     case 'g.infoReady': return { t, setupRevision: m.setupRevision ?? 0 };
     case 'g.diyChoose': return { t, tier: rng() < 0.5 ? 5 : 6, charIds: rng() < 0.5 ? ['char_609_acguad'] : ['char_609_acguad', 'char_112_siege'], setupRevision: m.setupRevision ?? 0 };
     case 'g.diyApply': return { t, choices: { 5: rng() < 0.5 ? [] : ['char_609_acguad'], 6: [] }, setupRevision: m.setupRevision ?? 0 };
@@ -53,6 +54,11 @@ function randomIntent(rng, m, ps) {
     // the plugin interaction windows (PLUGIN API v2, docs/PLUGINS.md §10b): random ids and slots — no window of a
     // vanilla match is ever open, so every one of them is a refusal, which is exactly what the fuzz run checks
     case 'g.offer': case 'g.offerRefresh': return { t, pluginId: 'demo', seq: rng.int(1000), offerId: rng.pick(['early-pick', 'x', 'a'.repeat(64)]), idx: rng.int(6) };
+    // 规程's 指令 (server/match/bandCommands.js): every target shape the protocol allows; the default data has no
+    // command, so these are refusals too
+    case 'g.command': return { t, effectId: rng.pick(['aceffect_band_80', 'aceffect_band_1', 'x']),
+      target: rng.pick([{}, { uid: uid() }, { slot: rng.int(16) }, { row: 9 + rng.int(4), col: 2 + rng.int(9) }]) };
+    case 'g.commandChoice': return { t, choiceId: ps?.commandDrafts?.[0]?.id ?? rng.pick(['command.1', 'x']), idx: rng.int(3) };
     default: return { t };
   }
 }

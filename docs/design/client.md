@@ -790,10 +790,12 @@ solo, turning it off restores 300 s prep / 150 s choice timers; the briefing fol
 version pill beside the difficulty and ⚙'s 版本 row open the picker in room mode. The compact pill may abbreviate its
 visible name with an ellipsis (the existing `versions-fit` policy, now covered on default servers too, §35.23.12);
 its accessible name and the picker's version names stay complete, and its control stays inside the footer and reachable.
+Gameplay plugins must declare the target official version in `versions` (absent means act2autochess); the server checks
+the full dependency list before a proposal. Their panel switches follow the same declaration and explain unsupported
+versions. A composed set retains the official version for page data and art lookups and displays the unofficial mark.
 The host's pick
 sends `room.proposeVersion` (a RATE right after a switch — every page resends its settings, which share the server's
-heavy-message budget — is tried once more after 1.2 s [ASSUMED]); off during a vote, with gameplay plugins (「请先关闭改变
-玩法的插件」) and offline; read-only for everybody else. `ui/versionVote.js` (modelled on `ui/setupReroll.js`): the
+heavy-message budget — is tried once more after 1.2 s [ASSUMED]); off during a vote and offline; read-only for everybody else. `ui/versionVote.js` (modelled on `ui/setupReroll.js`): the
 strip between the 观战席 and the footer — title with agreed / voters, a countdown anchored at receipt from
 `remainingMs`, the voters' chips, 同意切换 / 拒绝切换 for a voter who has not agreed, 取消投票 for the host, one request at a
 time; on a short screen it floats over the seats. The settlement screen shows the same strip (`vervote--float`), so a
@@ -1382,3 +1384,17 @@ Hub 卡片和弹窗共用一条目录轮询，平时 10 秒、打开弹窗 4 秒
 控制台持久化 `logs/release-download-options.json` 的 `includeDynamic`；新装默认关闭，旧实例检测到已装动画首次默认开启。关掉时只走 lite＋缺失基础分包，保留已有动态文件；开关变化使已准备的不同范围暂存失效。之后勾选并修复当前版补装。原 v9/v10 更新器经全素材增量首次升级，之后才获得下载选择；旧版无独立分包时需完整素材。启动器 1.4.0 新装同样默认不下动画，已有实例用控制台补装。未安装动画的服务端清单视图省略不完整动态记录，静态皮肤图保留，生成源数据不变。
 
 详细步骤与图示见 [特色图鉴](../FORK-FEATURES.md)。
+
+### Regulation equipment row
+
+The loaded `config.version.rules.equipHand` switch labels row 8 装备区 and accepts item-card moves within its five
+slots. Equipment can be dropped on a unit to equip it; empty character-hand slots refuse equipment, and equipment
+slots refuse characters/summons. The shop checks capacity in the offered card's row. The permanent row has no red
+pending frame. The HUD, Ready reason and row label use private `stashCount`, with the auto-refill/expiry rule;
+the stash itself is not drawn. Boss prep retains the same bench transform (row 8 → boss row 1, mirrored on the right).
+Covenant rendering and controls retain the mixed hand and visible temporary row.
+
+
+### 规程迁移补充（2026-11-09）
+
+队友速查从成员栏右侧展开，按实际席位行定位并跟随名单垂直滚动；在场干员与盟约横向滚动时策略列固定。支持 4–20 席分组、空态、键盘 Escape 和触屏开关。规程自选编辑器按版本显示每阶最多六名，原四版本仍为两名。

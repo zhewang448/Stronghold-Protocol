@@ -1,3 +1,4 @@
+import { keepsFunds } from './bandCommands.js';
 // §35.9: a readable index over human-visible data, not a second intent executor.
 import { FIELD, legalTiles, parseKey } from './board.js';
 import { interestDigest, effectText } from '../ai/knowledge.js';
@@ -62,7 +63,7 @@ export function aiDigest(m, ps, kind, pub, own, pack = null) {
   if (kind === 'prep' && !ps._gate()) {
     const free = own.hand.findIndex(p => !p);
     own.shop.slots.forEach((s, slot) => {
-      if (s && !s.sold && s.price <= own.funds && free >= 0) add({ t: 'g.buy', slot }, `buy shop slot ${slot} (${named(s.id).nameZh}, ${s.price} gold)`);
+      if (s && !s.sold && s.price <= own.funds && ps.handSlot(s.kind) >= 0) add({ t: 'g.buy', slot }, `buy shop slot ${slot} (${named(s.id).nameZh}, ${s.price} gold)`);
     });
     if (own.funds >= own.shop.refreshPrice) add({ t: 'g.refresh' }, `refresh (${own.shop.refreshPrice} gold)`);
     add({ t: 'g.freeze' }, own.shop.frozen ? 'unfreeze shop' : 'freeze shop');
@@ -93,11 +94,11 @@ export function aiDigest(m, ps, kind, pub, own, pack = null) {
           add({ t: 'g.move', uid: p.uid, to: { area: 'board', row, col }, dir }, `place ${p.uid} (${named(p.id).nameZh}) at ${row},${col} ${dir}`);
         }
       }
-      if (ruleOption(m.rules, 'unequip') === 'allow' && free >= 0) for (const it of p.items || [])
+      if (ruleOption(m.rules, 'unequip') === 'allow' && ps.handSlot('item') >= 0) for (const it of p.items || [])
         add({ t: 'g.unequip', itemUid: it.uid }, `unequip ${it.uid} from ${p.uid}`);
     }
     own.shop.rewardOffer?.slots.forEach((s, idx) => {
-      if (s && !s.sold && free >= 0 && (s.price || 0) <= own.funds) add({ t: 'g.reward', idx }, `reward ${idx}: ${named(s.id).nameZh}`);
+      if (s && !s.sold && ps.handSlot(s.kind) >= 0 && (s.price || 0) <= own.funds) add({ t: 'g.reward', idx }, `reward ${idx}: ${named(s.id).nameZh}`);
     });
     own.personalChoice?.cards.forEach((c, idx) => add({ t: 'g.choice', idx, choiceId: own.personalChoice.id }, `personal card ${idx}: ${c.name}`));
     if (own.canReady) add({ t: 'g.ready', ready: true }, 'ready');
@@ -109,14 +110,15 @@ export function aiDigest(m, ps, kind, pub, own, pack = null) {
     ...(m.externalAI?.config.mode === 'plan' ? { feedback: m.externalAI.feedbackFor(ps) } : {}),
     economy: { gold: own.funds, interest: interestDigest(gd, own.bandId, own.funds), level: own.shop.level,
       exp: null, upgradePrice: own.shop.upgradePrice, refreshPrice: own.shop.refreshPrice,
-      expiringFunds: gd.leftoverKeptBands.includes(own.bandId) ? 0 : own.funds,
+      expiringFunds: keepsFunds(ps) ? 0 : own.funds,
       frozenSlots: own.shop.slots.flatMap((s, slot) => s?.frozen && !s.sold ? [slot] : []),
       bankOperators: advisorBanks(m, ps).map(p => ({ uid: p.uid, id: p.id, sellValue: gd.sellPrice(p.id) })) },
     bonds: own.bonds.map(b => ({ ...b, ...named(b.bondId), nextThreshold: b.thresholds?.find(n => n > b.count) ?? null })),
     shop: slots(own.shop.slots), rewards: slots(own.shop.rewardOffer?.slots),
     personalChoice: own.personalChoice ? { ...own.personalChoice, cards: (own.personalChoice.cards || []).map(withBounty) } : own.personalChoice,
     bench: own.hand.map((p, slot) => p && ({ ...piece(p), slot })).filter(Boolean),
-    overflow: own.temp.filter(Boolean).map(piece), board: own.board.map(piece),
+    ...(ps.equipHand ? { equipment: own.temp.filter(Boolean).map(piece), overflow: [], stashCount: own.stashCount }
+      : { overflow: own.temp.filter(Boolean).map(piece) }), board: own.board.map(piece),
     deployCap: own.deployCap, upcoming: own.nextEnemies.map(e => ({ ...e, ...named(e.enemyKey) })), boss: { id: pub.bossId, ...named(pub.bossId), round: pub.bossRound },
     // Existing human scouting builder, board only. Never read opponents' privateView/hand/funds/stock.
     opponents: pub.players.filter(p => p.playerId !== own.playerId && p.alive).map(p => ({ playerId: p.playerId,

@@ -29,8 +29,8 @@ for (const version of VERSIONS) {
     const m = h.m, ps = m.order[0];
     const tiers = ps.privateView().diyChoice.tiers;
     const ids = Object.fromEntries(tiers.map(tier => [tier.tier, tier.candidates.map(c => c.charId)]));
-    assert.deepEqual([count(ps, 5), count(ps, 6)], [2, 2]);
-    for (const n of [0, 1, 2]) {
+    assert.deepEqual([count(ps, 5), count(ps, 6)], [5, 6].map(tier => Math.min(4, diyTierSlotIds(tier, data).length)));
+    for (const n of [...new Set([0, 1, 2, Math.min(ids[5].length, diyTierSlotIds(5, data).length)])]) {
       ps.infoReady = true;
       assert.deepEqual(apply(m, { 5: ids[5].slice(0, n), 6: ids[6].slice(0, n) }), { ok: true });
       assert.deepEqual([count(ps, 5), count(ps, 6)], [n, n]);

@@ -8,7 +8,7 @@ import { deflateRawSync } from 'node:zlib';
 import { buildResourceManifest } from '../../server/http/resourceManifest.js';
 import { ResourceStore } from '../../public/js/resources/store.js';
 import { handleResourceRequest } from '../../public/js/resources/service.js';
-import { resourceGroup, isResourcePath } from '../../public/js/resources/common.js';
+import { resourceGroup, isResourcePath, validateManifest } from '../../public/js/resources/common.js';
 import { preloadPlan } from '../../public/js/ui/preload.js';
 import { exportResourceZip, importResourceZip } from '../../public/js/resources/archive.js';
 import { ZipReader, BlobReader, BlobWriter, ZipWriter } from '../../public/js/resources/zip.js';
@@ -19,6 +19,12 @@ const bytes = Buffer.from('image bytes'), sha = (algorithm, n) => createHash(alg
 const file = { url: '/assets/char/skin_avatar/outfit.png', hash: sha('sha1',12), assetHash: sha('sha256',16), size: bytes.length, tier: 1 };
 const manifest = { format: 1, version: 'fixture', files: [file] };
 const makeStore = (caches, fetcher = async () => new Response(bytes, { headers: { 'Content-Type': 'image/png' } })) => new ResourceStore(manifest, { origin, caches, fetcher });
+
+test('five-version resource inventories can exceed 50,000 files while retaining a bounded manifest', () => {
+  const expanded = { ...manifest, files: Array(50001).fill(file) };
+  assert.equal(validateManifest(expanded), expanded);
+  assert.throws(() => validateManifest({ ...manifest, files: Array(100001).fill(file) }), /资源清单过大/);
+});
 
 test('resource inventory includes all installed visuals, outfits, fonts and community GIFs; audio stays optional', async t => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'sp-resource-')); t.after(() => rm(root, { recursive: true, force: true }));

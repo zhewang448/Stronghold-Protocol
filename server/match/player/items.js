@@ -89,9 +89,49 @@ export class PlayerItems {
     this._attach(target, item, replaceUid);
     this.stats.itemsEquipped++;
     this.m.dispatchItem(this, item, target, 'onEquip', { item, target, golden: !!rec.isGolden, consumed: false });
+    this._tryFuse(target);
     this.checkItemMerges();
     this.recompute();
     return OK;
+  }
+
+  /**
+   * When two equipped partners name each other (canFuse / fuseWith / fuseResult), take both off and equip the result.
+   * [ASSUMED] both must already be equipped on this carrier (not in hand, not across the bench). A result the pool
+   * cannot accept, or that has no record, leaves the two partners where they are. One fuse per call is enough; the
+   * result is checked once more in case it is itself a partner (none of the five 规程 results are).
+   */
+  _tryFuse(carrier) {
+    for (let guard = 0; guard < 4; guard++) if (!this._fuseOnce(carrier)) return;
+  }
+
+  _fuseOnce(carrier) {
+    const list = carrier.items || [];
+    for (let i = 0; i < list.length; i++) {
+      const a = list[i];
+      const ra = this.gd.item(a.id);
+      if (!ra || ra.canFuse !== true || typeof ra.fuseWith !== 'string' || typeof ra.fuseResult !== 'string') continue;
+      const want = itemKey(ra.fuseWith);
+      const j = list.findIndex((b, k) => k !== i && itemKey(b.id) === want);
+      if (j < 0) continue;
+      const result = this.gd.item(ra.fuseResult);
+      if (!result || result.itemType !== 'EQUIP') return false;
+      if (!this.m.itemPoolFor(this).canGain(result.id)) return false;
+      const b = list[j];
+      const hi = Math.max(i, j);
+      const lo = Math.min(i, j);
+      const [second] = list.splice(hi, 1);
+      const [first] = list.splice(lo, 1);
+      const piece = this.newPiece('item', result.id);
+      list.push(piece);
+      this.m.dispatchItem(this, first, carrier, 'onDestroy', { item: first, holder: carrier, reason: 'fuse' });
+      this.m.dispatchItem(this, second, carrier, 'onDestroy', { item: second, holder: carrier, reason: 'fuse' });
+      this.releaseItemStock(first);
+      this.releaseItemStock(second);
+      this.m.dispatchItem(this, piece, carrier, 'onEquip', { item: piece, target: carrier, golden: !!result.isGolden, consumed: false });
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -195,6 +235,13 @@ export class PlayerItems {
     if (ruleOption(this.m?.rules, 'unequip') !== 'allow') return fail(ERR.BAD_TARGET, 'equipped items are locked');
     const loc = this.find(itemUid);
     if (!loc || loc.piece.kind !== 'item' || loc.area !== 'equipped') return fail(ERR.BAD_TARGET);
+    if (this.equipHand) {
+      if (this.handSlot('item') < 0) return fail(ERR.HAND_FULL);
+      this._detach(loc);
+      this.stow(loc.piece, { allowTemp: false });
+      this.recompute();
+      return OK;
+    }
     const handAt = freeSlot(this.hand);
     const tempAt = freeSlot(this.temp.slice(0, GEO.TEMP_SIZE));
     if (handAt < 0 && tempAt < 0) return fail(ERR.HAND_FULL);

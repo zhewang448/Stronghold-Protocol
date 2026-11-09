@@ -1,6 +1,6 @@
 import { VersionPicker } from '../ui/versionPicker.js';
 import { VersionVote } from '../ui/versionVote.js';
-import { DEFAULT_VERSION, roomVersion, serverDefaultVersion, versionLabel, needsContent, offeredDifficulties, soloTimedOf, soloTimeMsgid } from '../versions.js';
+import { DEFAULT_VERSION, roomVersion, serverDefaultVersion, versionLabel, needsContent, offeredDifficulties, soloTimedOf, soloTimeMsgid, ladderModes, ladderPick, seasonOf } from '../versions.js';
 import { useAccount, AccountTag } from '../ui/accounts.js';
 import { useCustomIllust, useOwnIllust, ownIllustSnapshot, removeOwnIllust } from '../ui/customIllust.js';
 import { IllustDialog } from '../ui/illustPicker.js';
@@ -63,7 +63,7 @@ import { data, useData, getConfig } from '../data.js';
 import { chessAvatarUrl } from '../ui/assetUrls.js';
 import { CARD_PREF, CARD_KEY, CARD_SKIN_KEY, cardStore, setCard, cardOperators, seatPortrait, seatOperator, cardAvatarUrl } from '../ui/seatArt.js';
 import { C2S } from '../../../shared/protocol.js';
-import { difficultyInfo, ProtoCard } from './lobby.js';
+import { difficultyInfo, modeInfo, LadderList, ProtoCard } from './lobby.js';
 import { ProtocolScene } from '../ui/protocolScene.js';
 import { SearchPanel, FoundPanel } from '../ui/matchFlow.js';
 import { usePresence, useRise, afterLeave } from '../ui/transitions.js';
@@ -359,23 +359,26 @@ function AiLastToggle({ option, busy, onToggle }) {
 const clock = (s) => `${String(Math.floor(Math.max(0, s) / 60)).padStart(2, '0')}:${String(Math.floor(Math.max(0, s)) % 60).padStart(2, '0')}`;
 
 /** 选择模拟协议 over the room (host): the difficulty cards and 确认. */
-function RoomProtocol({ room, variant, onClose, onPick, busy, leaving = false }) {
-  const [pick, setPick] = useState(room.difficulty);
+function RoomProtocol({ room, variant, onClose, onPick, onMode, busy, leaving = false }) {
+  const ladder = room.random === true ? null : ladderModes(getConfig(), room.mode);
+  const [pick, setPick] = useState(ladder ? ladderPick(ladder, room.modeId, room.difficulty) : room.difficulty);
+  const selected = ladder ? modeInfo(pick) : null;
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } };
     addEventListener('keydown', onKey);
     return () => removeEventListener('keydown', onKey);
   }, []);
-  return html`<div class=${`rs-proto${leaving ? ' is-leaving' : ''}`} style=${`--d-color:${DIFFICULTY_COLORS[pick]}`} role="dialog" aria-label=${t('选择模拟协议')}
+  return html`<div class=${`rs-proto${leaving ? ' is-leaving' : ''}`} style=${`--d-color:${selected?.color || DIFFICULTY_COLORS[pick]}`} data-season=${seasonOf(roomVersion(room))} role="dialog" aria-label=${t('选择模拟协议')}
       onMouseDown=${(e) => { if (e.target === e.currentTarget) onClose(); }}>
     <div class="rs-proto__scene" aria-hidden="true"><${ProtocolScene} key=${pick} difficulty=${pick} /></div>
     <section class="rs-proto__side">
       <h2 class="rs-proto__title">${t('选择模拟协议')}</h2>
       <div class="proto-list rs-proto__list" role="radiogroup" aria-label=${t('模拟难度')}>
-        ${offeredDifficulties(getConfig(), room.mode).map((d) => html`<${ProtoCard} key=${d} roomMode=${room.mode} difficulty=${d} selected=${pick === d} onSelect=${setPick}
+        ${ladder ? html`<${LadderList} ladder=${ladder} modeId=${pick} onMode=${setPick} disabled=${!!busy || room.hostControls?.difficulty === false} />`
+          : offeredDifficulties(getConfig(), room.mode).map((d) => html`<${ProtoCard} key=${d} roomMode=${room.mode} difficulty=${d} selected=${pick === d} onSelect=${setPick}
           random=${room.random === true} variant=${variant} />`)}
       </div>
-      <button type="button" class="proto-start rs-proto__ok" disabled=${!!busy || room.hostControls?.difficulty === false} onClick=${() => (pick === room.difficulty ? onClose() : onPick(pick))}>
+      <button type="button" class="proto-start rs-proto__ok" disabled=${!!busy || room.hostControls?.difficulty === false} onClick=${() => ladder ? (pick === room.modeId ? onClose() : onMode(pick)) : (pick === room.difficulty ? onClose() : onPick(pick))}>
         <span class="proto-start__mark" aria-hidden="true"><span class="proto-start__rook"><i>[</i><${Icon} name="rook" /><i>]</i></span><small>STRONGHOLD<br />PROTOCOL</small></span>
         <span class="proto-start__label">${busy === 'diff' ? html`<${Spinner} size="sm" />` : null}${t('确认')}</span>
         <span class="proto-start__deco" aria-hidden="true"></span>
@@ -430,7 +433,7 @@ function RoomOptions({ room, facts, myId, busy, online, variant, onPrivate, onMa
       disabled=${!host || !!busy || !online || room.inMatch === true || locked('customIllust')} onChange=${event => onCustomIllust(event.currentTarget.checked)} />
       <span>${t('显示玩家自定义立绘')}</span></label>` : null}
     ${coop ? html`<label class="rs-opt"><input name="ai-takeover" type="checkbox" checked=${room.aiTakeoverEnabled === true} disabled=${!host || !!busy || !online || room.inMatch === true || room.canSetAiTakeover !== true} onChange=${(e) => onAiTakeover(e.currentTarget.checked)} />
-      <span>${t('允许观战者接替 AI')}<small>${room.aiTakeoverAllowed !== true ? t('主机尚未允许观战接替 AI') : roomVersion(room) !== DEFAULT_VERSION || room.content?.vanilla === false ? t('仅第二期下半的原版合作房支持观战接替 AI') : room.inMatch === true ? t('开局后不可修改观战接替 AI 设置') : t('默认关闭。开启后，观战者可在休整期经同房间真人投票接替 AI；继承记录不计个人统计或奖励。')}</small></span></label>` : null}
+      <span>${t('允许观战者接替 AI')}<small>${room.aiTakeoverAllowed !== true ? t('主机尚未允许观战接替 AI') : room.content?.vanilla === false ? t('玩法插件房间不支持观战接替 AI') : room.inMatch === true ? t('开局后不可修改观战接替 AI 设置') : t('默认关闭。开启后，观战者可在休整期经同房间真人投票接替 AI；继承记录不计个人统计或奖励。')}</small></span></label>` : null}
     ${typeof room.uniteLayerGains === 'boolean' ? html`<label class="rs-opt"><input name="unite-layer-gains" type="checkbox" checked=${room.uniteLayerGains} disabled=${!host || room.canSetUniteLayerGains !== true || !!busy || !online || room.inMatch === true} onChange=${(e) => onUniteLayerGains(e.currentTarget.checked)} />
       <span>${t('允许联防叠层')}<small>${room.canSetUniteLayerGains === true ? t('仅本房间生效，开局后不可修改；最终攻势和隐秘核心不叠层') : t('主机未允许房主修改联防叠层规则')}</small></span></label>` : null}
     <fieldset class="rs-convenience"><legend>${t('便利设置')}</legend>
@@ -523,7 +526,7 @@ export function RoomScreen() {
       key: currentArt.custom ? 'custom' : currentArt.frameKey, frameKey: currentArt.frameKey } : null);
   }, [room?.code, me.playerId, facts?.mine?.playerId, currentArt.frameKey, currentArt.custom]);
   const vote = room?.versionVote;
-  const versionWhy = isModdedRoom(room) ? t('请先关闭改变玩法的插件') : null;
+  const versionWhy = null;
   const searchable = CAN_QUEUE && !!room && coop && facts.isHost && room.private !== true && !room.test && !isModdedRoom(room) && !room.versionVote && room.aiPicksLast === true && !room.aiTakeoverEnabled && !room.uniteLayerGains && !room.independentPools && !room.allowDuplicateBands && !room.rescueEnabled && (room.enemyHpMultiplier ?? 1) === 1 && Object.entries(CONVENIENCE_DEFAULTS).every(([key, value]) => room.convenience?.[key] === value) && facts.seats.length === DEFAULT_SEATS && facts.humans.every(s => s.connected) && !room.inMatch;
   const firepower = room?.random === true;
   const variant = room?.variant === 'endurance' || room?.variant === 'marathon' ? room.variant : 'blitz';
@@ -538,7 +541,7 @@ export function RoomScreen() {
 
   if (!room) return null;
   const myReady = !!facts.mine?.ready;
-  const info = difficultyInfo(room.mode, room.difficulty, { random: firepower, variant });
+  const info = room.modeId && !firepower ? modeInfo(room.modeId) : difficultyInfo(room.mode, room.difficulty, { random: firepower, variant });
   const variantName = variant === 'endurance' ? t('持久鏖战') : variant === 'marathon' ? t('最长时赛') : t('快速突袭');
   const modeName = firepower ? `${RANDOM_MODE_NAME} · ${variantName}` : coop ? t('同盟模拟') : t('独立模拟');
   const searchElapsed = room.matching?.startedAt ? Math.max(0, (serverNow() - room.matching.startedAt) / 1000) : 0;
@@ -573,6 +576,7 @@ export function RoomScreen() {
   const setMaxSeats = (n) => run('cap', () => net.request('room.setMaxSeats', { n })); // 2026-10-12: 4–10 seats
   const setSpectatorLimit = limit => run('spectators', () => net.request('room.setSpectatorLimit', { limit }));
   const setDifficulty = (difficulty) => run('diff', async () => { const pluginMode = room.content?.modeId ? (room.content.modes || []).find(mode => mode.id === room.content.modeId)?.name || room.content.modeId : null; await net.request('room.setDifficulty', { difficulty }); savePref('lobby.difficulty', difficulty); setPicker(false); if (pluginMode) toast(t('已退出插件模式「{name}」', { name: pluginMode }), 'info'); });
+  const setOfficialMode = modeId => run('diff', async () => { await net.request('room.setMode', { modeId }); setPicker(false); });
   const setAiTakeover = (on) => run('ai-takeover', () => net.request('room.setAiTakeover', { on }));
   const setAiLast = (on) => run('ailast', () => net.request('room.setAiPicksLast', { on }));
   const setSeatAvatars = (on) => run('seat-avatars', () => net.request('room.setSeatAvatars', { on }));
@@ -710,7 +714,7 @@ export function RoomScreen() {
           ${Array.isArray(versions) ? html`<button type="button" class="rs-pill__ver" data-testid="room-version" disabled=${!facts.isHost || !!busy || !!room.versionVote || room.hostControls?.version === false} onClick=${() => setVersionOpen(true)}><${Icon} name="book" /><span>${versionLabel(roomVersion(room))}</span></button>` : null}
           ${coop && CAN_QUEUE ? html`<span class="rs-pill__mode" title=${t('精确搜寻：只与选择相同难度的博士组成同盟')}><${Icon} name="search" />${t('精确搜寻')}</span><i class="rs-pill__sep"></i>` : null}
           <button type="button" class="rs-pill__diff" disabled=${!facts.isHost || !!busy || room.hostControls?.difficulty === false} onClick=${() => setPicker(true)}
-            title=${facts.isHost ? t('更改模拟难度') : t('由创建者选择')}><${DifficultyIcon} difficulty=${room.difficulty} />${t(DIFFICULTY_NAMES[room.difficulty])}</button>
+            title=${facts.isHost ? t('更改模拟难度') : t('由创建者选择')}><${DifficultyIcon} difficulty=${room.difficulty} />${room.modeId ? info.name : t(DIFFICULTY_NAMES[room.difficulty])}</button>
           <button type="button" class=${`rs-pill__gear${opts ? ' is-on' : ''}`} onClick=${() => setOpts((v) => !v)} title=${t('同盟设置')} aria-label=${t('同盟设置')} aria-expanded=${opts ? 'true' : 'false'}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 2h3.4l.5 2.6 1.9.8 2.2-1.5 2.4 2.4-1.5 2.2.8 1.9 2.6.5v3.4l-2.6.5-.8 1.9 1.5 2.2-2.4 2.4-2.2-1.5-1.9.8-.5 2.6h-3.4l-.5-2.6-1.9-.8-2.2 1.5-2.4-2.4 1.5-2.2-.8-1.9L2 13.7v-3.4l2.6-.5.8-1.9-1.5-2.2 2.4-2.4 2.2 1.5 1.9-.8zM12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" fill-rule="evenodd" /></svg>
           </button>
@@ -746,7 +750,7 @@ export function RoomScreen() {
     ${foundShown ? html`<${FoundPanel} class=${foundLeaving ? 'is-leaving' : ''} seats=${facts.seats.length} text=${t('同盟集结完毕')} />` : null}
     ${picking ? html`<${CardPicker} current=${myCard} currentSkin=${mySkin} list=${cardList} m=${m} art=${currentArt} customAllowed=${room.customIllust !== false} onPick=${pickCard} onClose=${() => setPicking(false)} />` : null}
     ${artAdjusting && currentArt.src && !currentArt.custom ? html`<${CardArtDialog} ...${currentArt} onClose=${() => setArtAdjusting(false)} />` : null}
-    ${protoShown ? html`<${RoomProtocol} room=${room} variant=${variant} busy=${busy} onClose=${() => setPicker(false)} onPick=${setDifficulty} leaving=${protoLeaving} />` : null}
+    ${protoShown ? html`<${RoomProtocol} room=${room} variant=${variant} busy=${busy} onClose=${() => setPicker(false)} onPick=${setDifficulty} onMode=${setOfficialMode} leaving=${protoLeaving} />` : null}
   </div>`;
 }
 

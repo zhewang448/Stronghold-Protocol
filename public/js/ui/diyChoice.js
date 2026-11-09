@@ -96,7 +96,7 @@ function Candidate({ tier, c, on, onTap, disabled }) {
 export function DiyChoiceView({ priv, drafts = {}, onTap, onClear, disabled = false }) {
   const allowFewer = priv?.diyChoice?.allowFewer === true;
   return html`<div class="diychoice diychoice--editor" data-testid="diy-choice-editor">
-    <p class="diychoice__lead">${allowFewer ? t('每阶最多选择 2 名，也可以不带。点击应用名单后生效；未修改的阶级保留原名单。')
+    <p class="diychoice__lead">${allowFewer ? t('每阶最多选择 {n} 名，也可以不带。点击应用名单后生效；未修改的阶级保留原名单。', { n: Math.max(...diyChoiceTiers(priv).map(tier => tier.slots)) })
       : t('当前服务器仅支持选满本阶人数；未应用的修改不会生效。')}</p>
     ${diyChoiceTiers(priv).map(tier => {
       const selected = Array.isArray(drafts[tier.tier]) ? drafts[tier.tier] : tier.chosen;
