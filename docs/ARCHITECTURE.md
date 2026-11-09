@@ -308,3 +308,7 @@ snapshot), it belongs in a task; if it touches sockets, timers or the lobby, it 
 
 shared/cardArt.js 定义外观来源键、取景归一化与校验；public/js/ui/cardArtModel.js 保存本机取景和当前房间来源。loadoutSync.js 的 installCardArtSync 复用设置同步器，将当前来源发送到 server/lobby.js 的 cardArt。
 会话和席位保存同一经验证的值，room.state 广播给其他成员与观战者；room.js 明确传入拥有者的 frame，CardArtImage 和 LiveArt 共用它。缺失数据使用默认取景，接收者的本机偏好不进入其他人的显示。
+
+### Optional terminal theme
+
+`shared/terminalTheme.js` validates the optional local theme manifest. `public/js/ui/terminalTheme.js` applies the personal selection, and `terminalThemeSection.js` provides settings and the shared-renderer companion. `tools/local-extract/terminal_theme.py` installs pinned official bundles into ignored art directories. See [TERMINAL-THEMES.md](TERMINAL-THEMES.md).

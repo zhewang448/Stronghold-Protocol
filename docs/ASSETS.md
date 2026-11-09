@@ -974,3 +974,7 @@ CN/JP/本土配音、攻击与技能声音同原有语种回退。完整包和�
 
 默认版本增加号角 ISW-A、凛御银灰 CSR-X、缪尔赛思 TAC-D、溯光星源 DEC-X。ISW-A 与 DEC-X 沿用已有图标；CSR-X/TAC-D 从既有素材规划器的 ArknightsAssets2 图标源补装，登记为 assets.modules 的 csr-x/tac-d。
 素材清单由 tools/fetch-assets.mjs 重新生成，保留已安装动态立绘；图片仍位于忽略的 public/assets/module 中，不进入源码 Git。
+
+## Optional Closure terminal theme
+
+`tools/local-extract/terminal_theme.py` explicitly installs three pinned official bundles, validates MD5, and exports sprites, Spine, Chinese/Japanese audio and original theme configs under ignored `public/assets/terminal-themes/ac_s_closur/`. The runtime validates its local manifest before applying the theme. Preload and resource packs include its manifest, Spine JSON and both native config JSONs. Source identities, installation and browser adaptation limits: [TERMINAL-THEMES.md](TERMINAL-THEMES.md).

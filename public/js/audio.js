@@ -1445,6 +1445,21 @@ export class AudioManager {
     } catch (err) { this._warn('voice-preview', err); return false; }
   }
 
+  /** Optional terminal cue; passive cues yield to operator speech and explicit previews may take the channel. */
+  playTerminalVoice(url, preview = false) {
+    if (!this.ctx || !this.voiceGain || this.volumes.muted || this.volumes.voice <= 0) return false;
+    if (typeof url !== 'string' || !/^\/assets\/terminal-themes\/ac_s_closur\/audio\/(cn|jp)\/CN_\d{3}\.(wav|ogg)\?v=[a-f0-9]{16}$/.test(url)) return false;
+    if (!preview && this.voiceGate.playing) return false;
+    this._stopVoice();
+    this.voiceGate.start('terminal', null, typeof performance !== 'undefined' ? performance.now() : Date.now());
+    this._playVoice(url, ++this.voiceToken, 1);
+    return true;
+  }
+
+  stopTerminalVoice() {
+    if (this.voiceGate.playing?.slot === 'terminal') this._stopVoice();
+  }
+
   /**
    * Fetch/decode and start one voice line through the voice channel. `fallback`: the line to play instead when this one
    * cannot be loaded (a JP file the host lacks → the Chinese file of the same name; voiceLine) — same token, same gate.

@@ -1,0 +1,94 @@
+/* Official Closure art / palette; [ASSUMED] browser layout adaptation, not Unity prefab playback.
+   All game art is installed locally by tools/local-extract/terminal_theme.py. */
+:root[data-terminal-theme="ac_s_closur"] {
+  --bg-0: #090b1a;
+  --bg-1: #12152a;
+  --bg-2: #1b203a;
+  --bg-3: #242a48;
+  --bg-4: #303858;
+  --bg-glass: rgba(14, 16, 35, .94);
+  --line: #343e63;
+  --line-2: #4b5880;
+  --line-3: #7682aa;
+  --mint-500: #00d2ff;
+  --mint-400: #69fdff;
+  --mint-600: #00bce5;
+  --mint-700: #4788ca;
+  --mint-800: #253e79;
+  --mint-900: #151e45;
+  --mint-glow: #69fdff;
+  --mint-a10: rgba(0, 210, 255, .10);
+  --mint-a20: rgba(0, 210, 255, .20);
+  --mint-a35: rgba(0, 210, 255, .35);
+  --red-premium: #ff4f75;
+  --text-on-mint: #06102a;
+  --text-hi: #f4f6ff;
+  --text-md: #d1daf3;
+  --text-lo: #a6b5db;
+  --text-dim: #93a4ce;
+  accent-color: var(--mint-500);
+}
+:root[data-terminal-theme="ac_s_closur"] ::selection { background: #2e38ff; color: #fff; }
+:root[data-terminal-theme="ac_s_closur"] :focus-visible { outline: 2px solid #69fdff; outline-offset: 3px; }
+:root[data-terminal-theme="ac_s_closur"] .lobby-hub { background: #090b1a; }
+/* Regulation defines local red tokens; the selected personal theme takes
+   precedence while keeping its seasonal title, artwork and controls. */
+:root[data-terminal-theme="ac_s_closur"] :is(.lobby-hub, .rs)[data-season="act3autochess"] {
+  --mint-400: inherit;
+  --mint-500: inherit;
+  --mint-600: inherit;
+  --mint-glow: inherit;
+  --mint-a10: inherit;
+  --mint-a20: inherit;
+  --mint-a35: inherit;
+}
+:root[data-terminal-theme="ac_s_closur"] .hub-tile,
+:root[data-terminal-theme="ac_s_closur"] .hub-entry,
+:root[data-terminal-theme="ac_s_closur"] .hub-plate { background-color: #12152a; border-color: #4b5880; }
+:root[data-terminal-theme="ac_s_closur"] .hub-center__mark:has(.terminal-companion) { width: 3.4rem; height: 2.6rem; }
+:root[data-terminal-theme="ac_s_closur"] .shopbar__row { background: #11142a; border-color: #4b5880; border-top-color: #00d2ff; }
+:root[data-terminal-theme="ac_s_closur"] .lvcard { background: #2e38ff var(--terminal-shop-art) center / cover no-repeat; color: #fff; }
+:root[data-terminal-theme="ac_s_closur"] .lvcard__frame { color: #fff; border-color: #69fdff; }
+:root[data-terminal-theme="ac_s_closur"] .lvcard__micro { color: #fff; }
+:root[data-terminal-theme="ac_s_closur"] .scard { border-color: #6374a9; background-color: #171d34; }
+:root[data-terminal-theme="ac_s_closur"] .scard::after { border-color: #69fdff; }
+:root[data-terminal-theme="ac_s_closur"] .capsule { border-color: #00d2ff; background-color: #13182e; }
+:root[data-terminal-theme="ac_s_closur"] .capsule--boss { border-color: #ff4f75; }
+:root[data-terminal-theme="ac_s_closur"] .mpop__panel,
+:root[data-terminal-theme="ac_s_closur"] .rdialog__box {
+  background: #0a0b17 var(--terminal-rest-window) center / 100% 100% no-repeat;
+  border-color: #4e56ff;
+}
+:root[data-terminal-theme="ac_s_closur"] .mpop__art { background: var(--terminal-character) center / contain no-repeat; }
+:root[data-terminal-theme="ac_s_closur"] .mpop__art > * { visibility: hidden; }
+:root[data-terminal-theme="ac_s_closur"] .pbanner__band {
+  background: #0a0b17 var(--terminal-battle-window) center / 100% 100% no-repeat;
+  border-color: #69fdff;
+}
+:root[data-terminal-theme="ac_s_closur"] .pbanner--red .pbanner__band { background-image: var(--terminal-boss-window); }
+
+.terminal-settings { margin-bottom: .18rem; }
+.terminal-settings__row { flex-wrap: wrap; gap: .12rem; }
+.terminal-settings__choices { flex-wrap: wrap; }
+.terminal-settings .terminal-settings__choices button { min-height: var(--tap-min, 44px); font-size: max(calc(.15 * var(--t)), 12px); white-space: normal; overflow-wrap: anywhere; }
+.terminal-settings .set-row__label { font-size: max(calc(.15 * var(--t)), 12px); }
+.terminal-settings > .set-hint { font-size: max(calc(.13 * var(--t)), 11px); line-height: 1.5; color: var(--text-lo); }
+.terminal-settings__preview { display: flex; align-items: center; gap: .2rem; padding: .18rem; background: #11142a; border: 1px solid #4b5880; }
+.terminal-settings__actions { display: flex; flex-direction: column; align-items: flex-start; gap: .12rem; min-width: 0; color: #d1daf3; }
+.terminal-settings__actions label { display: flex; flex-wrap: wrap; align-items: center; gap: .1rem; font-size: max(calc(.15 * var(--t)), 12px); }
+.terminal-settings__actions select { min-height: var(--tap-min, 44px); max-width: 100%; padding: .04rem .12rem; font: inherit; color: #f4f6ff; background: #1b203a; border: 1px solid #7682aa; }
+.terminal-settings__actions button, .terminal-settings__voice { min-height: var(--tap-min, 44px); }
+.terminal-settings .terminal-settings__actions button { font-size: max(calc(.15 * var(--t)), 12px); }
+.terminal-settings__voice { cursor: pointer; }
+.terminal-settings__voice input { width: 18px; height: 18px; }
+.terminal-companion { position: relative; display: block; flex: none; width: 2rem; height: 1.7rem; padding: 0; border: 0; background: transparent; cursor: pointer; pointer-events: auto; }
+.terminal-companion > img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.hub-center__mark > .terminal-companion { width: 100%; height: 100%; }
+@media (max-height: 560px) {
+  :root[data-terminal-theme="ac_s_closur"] .hub-center__mark:has(.terminal-companion) { width: 2.1rem; height: 1.6rem; }
+  .terminal-settings__preview { padding: .12rem; gap: .14rem; }
+  .terminal-settings__preview .terminal-companion { width: max(1.4rem, 90px); height: max(1.3rem, 84px); }
+}
+@media (max-width: 560px) {
+  .terminal-settings__preview { flex-wrap: wrap; }
+}

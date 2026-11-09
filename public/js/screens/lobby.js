@@ -5,6 +5,7 @@ import { AccountMeChip } from '../ui/accounts.js';
 import { OnlinePlayersButton, PresenceSelector } from '../ui/social.js';
 import { MatchmakingCount } from '../ui/matchmaking.js';
 import { Emblem } from './title.js';
+import { TerminalCompanion } from '../ui/terminalThemeSection.js';
 import { useHubBackdrop, HubBackdrop, HubRadar, BackdropSettings, BackdropGlyph, backdropTheme } from '../ui/hubBackdrop.js';
 // Lobby screen — a hub (owner's request, 2026-10-13): an original backdrop (ui/hubBackdrop.js: generated night scenes or
 // the player's own picture) with the game's dot-matrix emblem in the middle, a left column (密钥加入 · tips), a right
@@ -1091,7 +1092,7 @@ export function LobbyScreen() {
 
     <main class="hub-stage">
       <div class="hub-center">
-        <div class="hub-center__mark"><${HubRadar} bg=${bg} /><${Emblem} /></div>
+        <div class="hub-center__mark"><${TerminalCompanion} fallback=${html`<${HubRadar} bg=${bg} /><${Emblem} />`} /></div>
         <div class="hub-center__en">STRONGHOLD PROTOCOL <b>${season === 'act3autochess' ? 'REGULATION' : 'ALLIANCE'}</b></div>
         <h1 class="hub-center__title">${season === 'act3autochess' ? t('卫戍协议·规程') : t('卫戍协议：盟约')}</h1>
         <div class="hub-center__version" data-testid="hub-version">${versionLabel(selectedVersion)}</div>

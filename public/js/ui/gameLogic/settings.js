@@ -8,6 +8,7 @@ import { normalizeFrameRate } from '../../frameRate.js';
 import { normalizePreloadVoiceLang } from '../../resources/common.js';
 import { DEFAULT_HOTKEYS, sanitizeHotkeys } from './shortcuts.js';
 import { normalizeCursorSize, DEFAULT_CURSOR_SIZE } from '../../../../shared/cursor.js';
+import { normalizeTerminalTheme } from '../../../../shared/terminalTheme.js';
 
 
 // ---- settings ------------------------------------------------------------------------------------------------------
@@ -48,7 +49,7 @@ export const TEXT_SIZES = Object.freeze(['sm', 'md', 'lg', 'xl']);
  *  deploySnap: 设置「部署时按格子吸附」, default on here (owner decision, 2026-11-06). Stardust 7f39464's toggle
  *  is default off; this port keeps the current snapped preview by default. Only the dragged model changes, never its drop tile.
  */
-export const DEFAULT_SETTINGS = Object.freeze({ bgm: 0.6, sfx: 0.8, voice: 0.8, voiceLang: 'cn', voiceNative: false, voiceOverrides: Object.freeze({}), muted: false, officialBattleHud: true, shopPortraitFocus: false, damageNumbers: true, officialDamageNumbers: false, ammoEnergyCount: false, fullscreenWakeLock: false, bondTimers: false, combatMetrics: true, chatBubbles: true, deploymentZoom: false, prepDeployFold: false, fpsLimit: 0, showFps: true, preload: false, preloadOptional: false, preloadDynamic: false, preloadVoiceLang: Object.freeze(['cn', 'jp']), quality: 'high', officialFx: 'auto', otherSkins: true, deploySnap: true, dynamicIllustrations: 'auto', upstreamReleaseNotes: true, extensionReleaseNotes: true, textSize: 'sm', cursorTheme: 'arknights', cursorSize: DEFAULT_CURSOR_SIZE, keys: DEFAULT_HOTKEYS });
+export const DEFAULT_SETTINGS = Object.freeze({ bgm: 0.6, sfx: 0.8, voice: 0.8, voiceLang: 'cn', voiceNative: false, voiceOverrides: Object.freeze({}), muted: false, officialBattleHud: true, shopPortraitFocus: false, damageNumbers: true, officialDamageNumbers: false, ammoEnergyCount: false, fullscreenWakeLock: false, bondTimers: false, combatMetrics: true, chatBubbles: true, deploymentZoom: false, prepDeployFold: false, fpsLimit: 0, showFps: true, preload: false, preloadOptional: false, preloadDynamic: false, preloadVoiceLang: Object.freeze(['cn', 'jp']), quality: 'high', officialFx: 'auto', otherSkins: true, deploySnap: true, dynamicIllustrations: 'auto', upstreamReleaseNotes: true, extensionReleaseNotes: true, textSize: 'sm', terminalTheme: 'default', terminalVoice: false, cursorTheme: 'arknights', cursorSize: DEFAULT_CURSOR_SIZE, keys: DEFAULT_HOTKEYS });
 const QUALITIES = ['high', 'medium', 'low'];
 /** The values of 设置「官方特效」 (render/vfx/tier.js OFFICIAL_FX). Display order in the dialog is low / medium / high. */
 export const OFFICIAL_FX_MODES = Object.freeze(['auto', 'off', 'lite', 'full']);
@@ -68,7 +69,7 @@ function ammoEnergyCountOf(r) {
  * Sanitize persisted settings. Retired keys `ammoCount` and `mysticEnergy` are read here and never returned.
  * @param {any} raw
  * @returns {{ bgm: number, sfx: number, voice: number, voiceLang: 'cn'|'jp'|'en'|'kr', voiceNative: boolean, voiceOverrides: Record<string, string>, muted: boolean, damageNumbers: boolean, officialDamageNumbers: boolean, ammoEnergyCount: boolean, fullscreenWakeLock: boolean, bondTimers: boolean, combatMetrics: boolean, prepDeployFold: boolean, quality: 'high'|'medium'|'low', officialFx: 'auto'|'off'|'lite'|'full', otherSkins: boolean, upstreamReleaseNotes: boolean, extensionReleaseNotes: boolean,
- *   textSize: 'sm'|'md'|'lg'|'xl', keys: Record<'buy'|'refresh'|'freeze'|'levelUp'|'retreat'|'sell'|'ready', string> }}
+ *   textSize: 'sm'|'md'|'lg'|'xl', terminalTheme: string, terminalVoice: boolean, keys: Record<'buy'|'refresh'|'freeze'|'levelUp'|'retreat'|'sell'|'ready', string> }}
  */
 export function sanitizeSettings(raw) {
   const r = isObj(raw) ? raw : {};
@@ -107,6 +108,8 @@ export function sanitizeSettings(raw) {
     upstreamReleaseNotes: r.upstreamReleaseNotes !== false,
     extensionReleaseNotes: r.extensionReleaseNotes !== false,
     textSize: TEXT_SIZES.includes(r.textSize) ? r.textSize : DEFAULT_SETTINGS.textSize,
+    terminalTheme: normalizeTerminalTheme(r.terminalTheme),
+    terminalVoice: r.terminalVoice === true,
     cursorTheme: r.cursorTheme === 'system' || r.cursorTheme === 'arknights' ? r.cursorTheme : DEFAULT_SETTINGS.cursorTheme,
     cursorSize: normalizeCursorSize(r.cursorSize),
     keys: sanitizeHotkeys(r.keys),

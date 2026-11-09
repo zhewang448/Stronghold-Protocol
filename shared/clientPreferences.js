@@ -31,6 +31,8 @@ export const CLIENT_PREFERENCE_FIELDS = Object.freeze([
   choice('settings.officialFx', '官方特效', 'auto', ['auto', 'off', 'lite', 'full'], settings),
   choice('settings.dynamicIllustrations', '动态立绘', 'auto', ['auto', 'static'], settings),
   choice('settings.textSize', '文字大小', 'sm', ['sm', 'md', 'lg', 'xl'], settings),
+  choice('settings.terminalTheme', '终端主题', 'default', ['default', 'ac_s_closur'], settings),
+  bool('settings.terminalVoice', '对局主题语音', false, settings),
   choice('settings.cursorTheme', '鼠标指针', 'arknights', ['system', 'arknights'], settings),
   choice('settings.cursorSize', '鼠标大小', DEFAULT_CURSOR_SIZE, CURSOR_SIZES, settings),
   { key: 'settings.preloadVoiceLang', label: '预载语音语言', default: ['cn', 'jp'], type: 'voiceLanguages', group: settings },

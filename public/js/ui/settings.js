@@ -63,6 +63,8 @@ import { FRAME_RATES } from '../frameRate.js';
 import { PreloadSection } from './preloadSection.js';
 import { ResourceRow } from './resourcePanel.js';
 import { unsupportedReason } from '../resources/index.js';
+import { installTerminalTheme } from './terminalTheme.js';
+import { TerminalThemeSection } from './terminalThemeSection.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
@@ -90,6 +92,7 @@ audio.setVoiceNative(settingsStore.get().voiceNative);
 // before the first render (main.js boot renders after its imports ran): the stored step is on screen without a flash
 applyTextSize(settingsStore.get().textSize);
 installCursor({ settings: settingsStore });
+installTerminalTheme();
 
 /** @param {Partial<ReturnType<typeof sanitizeSettings>>} patch */
 export function updateSettings(patch) {
@@ -612,6 +615,7 @@ export function SettingsModal({ open, onClose }) {
       <${ClientPreference} name="settings.keys"><${HotkeySection} keys=${s.keys} touchUi=${touchUi} /><//>
       </section>
       <section class="set-group" aria-labelledby="settings-appearance"><h3 id="settings-appearance">${t('外观')}</h3>
+      <${TerminalThemeSection} />
       <${CosmeticSection} />
       <${ClientPreference} name="uiPlugins.ids"><${UiPluginSection} /><//>
       </section>

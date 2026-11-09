@@ -3912,5 +3912,21 @@
   "展开队友速查": "Show teammate overview",
   "收起队友速查": "Hide teammate overview",
   "玩法插件房间不支持观战接替 AI": "Spectators cannot take over AI seats in gameplay-plugin rooms",
-  "每阶最多选择 {n} 名，也可以不带。点击应用名单后生效；未修改的阶级保留原名单。": "Choose up to {n} per tier, or bring none. Apply the roster to confirm; unedited tiers keep their current roster."
+  "每阶最多选择 {n} 名，也可以不带。点击应用名单后生效；未修改的阶级保留原名单。": "Choose up to {n} per tier, or bring none. Apply the roster to confirm; unedited tiers keep their current roster.",
+  "终端主题": "Terminal theme",
+  "“全能的”可露希尔": "“Almighty” Closure",
+  "主题保存在本机，可随时切回默认。": "Your theme is saved on this device. You can switch back at any time.",
+  "终端主题素材不可用，请重新安装后重试。": "Theme assets are unavailable. Reinstall them and try again.",
+  "正在载入主题…": "Loading theme…",
+  "试听主题语音": "Preview theme voice",
+  "角色动作": "Character action",
+  "对局主题语音": "In-match theme voices",
+  "初始姿态": "Initial pose",
+  "高兴": "Happy",
+  "互动": "Interact",
+  "失落": "Disappointed",
+  "低落": "Sad",
+  "庆祝": "Celebrate",
+  "得意": "Proud",
+  "说话": "Talk"
 }
