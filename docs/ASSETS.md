@@ -38,6 +38,9 @@ sources and manual browser-cache preloading.
 其中 `all` 保持原来的中日范围。`/assets/local/fx/` 官方战斗特效属于可选资源组。部署时可生成经过整包 SHA-1 校验的
 16 MB 资源分包，浏览器优先使用分包并在失败时回退到逐文件下载；分包是传输优化，不改变文件哈希身份。
 可通过 `SP_RESOURCE_PACK_ROUTES` 配置镜像，`SP_ASSETS_CDN` / `SP_DATA_CDN` 配置可选 CDN，均默认关闭。
+共享素材目录的规程增量提取可以让 `data/local-fx.json` 选择不可变的
+`index-regulation-<12位小写十六进制哈希>.json` 和 `textures-regulation-<12位哈希>.json`。
+资源分包器接受这两类索引并保留在可选 FX 组，浏览器可按相同哈希导入；旧的 `index.json` / `textures.json` 继续有效。
 自定义表情由代码生成的地址与预载清单共用 `shared/cdn.js` 的 `assetUrl`，转到 CDN 时去掉内容哈希路径段；
 未配置 CDN 保留本站路径，绝对 URL 不重复改写（2026-10-18 参考站修复适配）。
 
