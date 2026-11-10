@@ -19,12 +19,51 @@ import { hash16 } from '../server/http/assetIndex.js';
 import { rewriteManifest } from '../server/http/assetViews.js';
 import { IMPORTED_ASSET_CACHE } from '../public/js/assetCache.js';
 import { createAssetImport } from '../public/js/assetPack.js';
+import { artPlan } from '../tools/package.mjs';
+import { digestFile } from '../server/update.js';
 
 // a fake home path, built at run time so the repository never contains one (the local push guard scans every patch)
 const FAKE_HOME = ['', 'Users', 'someone'].join('/');
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const TOOL = path.join(ROOT, 'tools', 'package.mjs');
+
+test('full releases include an installed terminal theme inventory, reject corruption and omit unlisted files', t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-package-terminal-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const prefix = 'public/assets/terminal-themes/ac_s_closur/';
+  const files = {};
+  const file = rel => {
+    const target = path.join(root, prefix, rel);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, 'installed theme fixture');
+    const value = digestFile(target);
+    files[rel] = { bytes: value.size, sha256: value.sha256 };
+    return rel;
+  };
+  const sprites = Object.fromEntries(['img_char_spine_outer', 'rest_window_back', 'battle_window_back', 'boss_window_back_begin', 'bg_open', 'img_closure']
+    .map(name => [name, file(`sprites/${name}.png`)]));
+  const voices = Object.fromEntries(['cn', 'jp'].map(lang => [lang, Object.fromEntries(Array.from({ length: 19 }, (_, index) => {
+    const id = 'CN_' + String(index + 1).padStart(3, '0');
+    return [id, file(`audio/${lang}/${id}.wav`)];
+  }))]));
+  file('spine/mascot.png');
+  const theme = { version: 1, id: 'ac_s_closur', files, sprites, voices, animations: ['Idle'],
+    spine: { skel: file('spine/mascot.json'), atlas: file('spine/mascot.atlas'), bounds: { x: 0, y: 0, width: 10, height: 20 } } };
+  const manifest = path.join(root, prefix, 'manifest.json');
+  fs.writeFileSync(manifest, JSON.stringify(theme));
+  fs.writeFileSync(path.join(root, prefix, 'unlisted.txt'), 'not a distributable asset');
+  const planned = artPlan(root);
+  assert.deepEqual(planned.missing, []);
+  assert.equal(planned.files.length, Object.keys(files).length + 1);
+  assert.ok(planned.files.includes(prefix + 'manifest.json'));
+  assert.ok(!planned.files.includes(prefix + 'unlisted.txt'));
+  assert.deepEqual(artPlan(root, { lite: true }).files, []);
+  fs.writeFileSync(path.join(root, prefix, voices.cn.CN_001), 'corrupted');
+  assert.deepEqual(artPlan(root).missing, [prefix + voices.cn.CN_001]);
+  fs.writeFileSync(manifest, JSON.stringify({ ...theme, id: 'unknown' }));
+  assert.deepEqual(artPlan(root).missing, [prefix + 'manifest.json']);
+});
 
 test('all install and favicon assets ship independently of optional game art', () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'public/manifest.json'), 'utf8'));

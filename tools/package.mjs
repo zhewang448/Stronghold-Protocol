@@ -95,6 +95,7 @@ import { mergeLocalManifests, planFromManifests } from '../public/js/assetPack.j
 import { writePackIndex } from './packs.mjs';
 import { RELEASE_TAG } from '../server/release-version.js';
 import { CURSOR_SIZES } from '../shared/cursor.js';
+import { TERMINAL_THEME, validTerminalManifest } from '../shared/terminalTheme.js';
 import { compareReleaseTags } from '../server/release-update.js';
 import { compareVersions, diffBases, manifestText, readBase, updateText } from './package-update.mjs';
 import {
@@ -344,6 +345,21 @@ export function artPlan(root, { lite = false, jpVoice = FULL_ZIP_JP_VOICE, optio
     ...CURSOR_SIZES.flatMap(size => cursorRoles.map(role => `${size}/${role}.png`))]) {
     const file = cursorRoot + rel;
     if (isFile(path.join(root, file))) files.add(file);
+  }
+  // Optional terminal art is installed outside the general asset manifests. Ship its validated inventory only.
+  const themeRoot = `public/assets/terminal-themes/${TERMINAL_THEME}/`;
+  const themeFile = themeRoot + 'manifest.json';
+  if (isFile(path.join(root, themeFile))) {
+    const theme = readJson(path.join(root, themeFile));
+    if (!validTerminalManifest(theme)) missing.push(themeFile);
+    else {
+      files.add(themeFile);
+      for (const [rel, expected] of Object.entries(theme.files)) {
+        const file = themeRoot + rel, actual = digestFile(path.join(root, file));
+        if (actual?.size === expected.bytes && actual.sha256 === expected.sha256) files.add(file);
+        else missing.push(file);
+      }
+    }
   }
   const fxList = isFile(path.join(root, 'data', 'local-fx.json'));
   for (const f of listTree(root, 'public/assets/local')) {
