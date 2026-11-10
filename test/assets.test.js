@@ -135,7 +135,7 @@ describe('animation-role resolver (research 07 §5.4)', () => {
       for (const [id, sp] of models) {
         if (!sp.animations || !Object.keys(sp.animations).some((n) => re.test(n))) continue;
         seen++;
-        if (!ok(sp.anims || {}, id)) bad.push(id);
+        if (!ok(sp.anims || {}, id, sp)) bad.push(id);
       }
       return { bad, seen };
     };
@@ -150,7 +150,13 @@ describe('animation-role resolver (research 07 §5.4)', () => {
       assert.deepEqual(bad, []);
     });
     test('every enemy with numbered skill clips has a clip per slot (盐风主教昆图斯: Skill_01..04)', () => {
-      const { bad, seen } = walk(/^Skill_?0*[1-9](?:$|_)/i, (a, id) => !id.startsWith('enemies.') || !!a.skills);
+      const { bad, seen } = walk(/^Skill_?0*[1-9](?:$|_)/i, (a, id, sp) => {
+        if (!id.startsWith('enemies.') || a.skills) return true;
+        // A single numbered slot may use the primary role; multiple slots still require their explicit map.
+        const slots = new Set(Object.keys(sp.animations).map(name => /^Skill_?0*([1-9]\d*)(?:$|_)/i.exec(name)?.[1]).filter(Boolean));
+        return slots.size === 1 && a.skill?.index === Number([...slots][0]) - 1
+          && Object.hasOwn(sp.animations, a.skill?.loop);
+      });
       assert.ok(seen >= 10, `models with numbered skill clips (${seen})`);
       assert.deepEqual(bad, []);
       // 盐风主教昆图斯: each slot (data/enemies.json skills[]) plays its official ability's clip (PREFAB_SPINE_ROLES, from

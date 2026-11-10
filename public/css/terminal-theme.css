@@ -45,7 +45,7 @@
 :root[data-terminal-theme="ac_s_closur"] .hub-tile,
 :root[data-terminal-theme="ac_s_closur"] .hub-entry,
 :root[data-terminal-theme="ac_s_closur"] .hub-plate { background-color: #12152a; border-color: #4b5880; }
-:root[data-terminal-theme="ac_s_closur"] .hub-center__mark:has(.terminal-companion) { width: 3.4rem; height: 2.6rem; }
+:root[data-terminal-theme="ac_s_closur"] .hub-center__mark { width: 3.4rem; height: 2.6rem; }
 :root[data-terminal-theme="ac_s_closur"] .shopbar__row {
   background: #11142a; border-color: #4b5880; border-top-color: #00d2ff;
 }
@@ -140,7 +140,7 @@
 .terminal-companion > img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .hub-center__mark > .terminal-companion { width: 100%; height: 100%; }
 @media (max-height: 560px) {
-  :root[data-terminal-theme="ac_s_closur"] .hub-center__mark:has(.terminal-companion) { width: 2.1rem; height: 1.6rem; }
+  :root[data-terminal-theme="ac_s_closur"] .hub-center__mark { width: 2.1rem; height: 1.6rem; }
   .terminal-settings__preview { padding: .12rem; gap: .14rem; }
   .terminal-settings__preview .terminal-companion { width: max(1.4rem, 90px); height: max(1.3rem, 84px); }
 }

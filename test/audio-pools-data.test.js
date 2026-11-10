@@ -60,9 +60,9 @@ test('every generated attack/hit reference resolves to a valid pool and its sele
   // The four-version art union adds nine references to installed sounds and 46 official pool records.
   // The extension keeps seven collaboration operators and their installed sound references.
   // Three pinned new operators add 14 attack/hit references and 14 bank records.
-  // Five-version union plus the fork's collaboration and CN 2.7.91 operators.
-  assert.equal(refs, 1294);
-  assert.equal(Object.keys(pools).length, 1280);
+  // Five-version union plus the fork's collaboration and CN 2.7.91 operators; the completed regulation art adds 10 references and 8 pools.
+  assert.equal(refs, 1304);
+  assert.equal(Object.keys(pools).length, 1288);
   const p = pools[units.char_4064_mlynar.attackPools[2]];
   assert.equal(p.sounds['player/p_imp/p_imp_loyalsword_h.mp3'].delay, 0.1);
 });
