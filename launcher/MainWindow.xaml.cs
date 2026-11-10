@@ -79,11 +79,12 @@ public partial class MainWindow : Window
         {
             _selectedId = selected.Id;
             _root = selected.Root;
-            preferences = new LauncherPreferences(_root, selected.Port, selected.Mode);
+            preferences = preferences with { Root = _root, Port = selected.Port, Mode = selected.Mode };
             _mode = ParseMode(selected.Mode);
         }
         else _root = null;
         _text = new TextCatalog(_root);
+        LoadDownloadProxy(preferences);
         ApplyText();
         PortBox.Text = preferences.Port.ToString(CultureInfo.InvariantCulture);
         LocalMode.IsChecked = _mode == HostMode.Local;
@@ -114,6 +115,7 @@ public partial class MainWindow : Window
         ProductSubtitle.Text = "TACTICAL CO-OP NODE // HOST CONTROL";
         BuildVersionText.Text = "LAUNCHER v" + (typeof(App).Assembly.GetName().Version?.ToString(3) ?? "1.0.0");
         SelfUpdateButton.Content = t("启动器更新");
+        ApplyDownloadProxyText();
         SelfUpdateInstall.Content = t("下载并重启启动器");
         SelfUpdateCancel.Content = t("取消 / 收起");
         BrowseTopButton.Content = t("导入已有实例");
@@ -242,7 +244,7 @@ public partial class MainWindow : Window
         InstallTunnelButton.Visibility = _mode == HostMode.Tunnel && !tunnelReady ? Visibility.Visible : Visibility.Collapsed;
         InstallNodeButton.Visibility = _node?.IsSupported == true ? Visibility.Collapsed : Visibility.Visible;
 
-        var canStart = rootValid && _node?.IsSupported == true && _portValid && !_portBusy && !_adminBusy && !_serverOnline && !_starting && !_operating
+        var canStart = _proxyValid && rootValid && _node?.IsSupported == true && _portValid && !_portBusy && !_adminBusy && !_serverOnline && !_starting && !_operating
             && (_mode != HostMode.Tunnel || tunnelReady);
         StartButton.IsEnabled = (canStart || _serverOnline) && !_operating;
         StartButton.Content = _serverOnline ? t("打开游戏") : t("启动服务器");
@@ -251,13 +253,14 @@ public partial class MainWindow : Window
         LocalMode.IsEnabled = !_serverOnline && !_starting && !_operating;
         LanMode.IsEnabled = !_serverOnline && !_starting && !_operating;
         TunnelMode.IsEnabled = !_serverOnline && !_starting && !_operating;
+        DownloadProxyPanel.IsEnabled = !_operating && !_starting && !_checkingSelfUpdate;
         BrowseTopButton.IsEnabled = !_operating;
         InstanceBox.IsEnabled = !_operating;
         NewInstanceButton.IsEnabled = !_operating;
         RemoveInstanceButton.IsEnabled = !_operating && _selectedId is not null;
         DeleteInstanceButton.IsEnabled = !_operating && !_serverOnline && !_starting && _selectedId is not null;
         DiscoverInstancesButton.IsEnabled = !_operating;
-        InstallButton.IsEnabled = !_operating;
+        InstallButton.IsEnabled = !_operating && _proxyValid;
         InstallPathBox.IsEnabled = !_operating;
         InstallDynamicCheck.IsEnabled = !_operating;
         InstallFolderButton.IsEnabled = !_operating;
@@ -516,7 +519,7 @@ public partial class MainWindow : Window
         {
             _logPosition = File.Exists(HostLauncher.LogPath(_root!, port.Value)) ? new FileInfo(HostLauncher.LogPath(_root!, port.Value)).Length : 0;
             _wrapper?.Dispose();
-            _wrapper = HostLauncher.Start(_root!, _node, port.Value, _mode);
+            _wrapper = HostLauncher.Start(_root!, _node, port.Value, _mode, CurrentDownloadProxy());
             if (_wrapper is null) throw new InvalidOperationException("Could not start the launcher process.");
             AppendVisibleLog($"[{DateTime.Now:HH:mm:ss}] {t("正在启动服务器")}");
             _timer.Start();
@@ -784,7 +787,7 @@ public partial class MainWindow : Window
             HostMode.Local => "local",
             HostMode.Tunnel => "tunnel",
             _ => "lan",
-        }));
+        }, CurrentDownloadProxy().Mode, ProxyAddressBox.Text.Trim()));
     }
 
     private void AppendVisibleLog(string line)
@@ -871,7 +874,19 @@ public partial class MainWindow : Window
             SelfUpdateInstall.Visibility=Visibility.Visible;
             await CapturePreviewAsync(directory,"self-update-compact-demo");
             Width=1080;Height=820;await CapturePreviewAsync(directory,"self-update-demo");
-            File.WriteAllText(Path.Combine(directory, "preview-result.txt"), "Rendered ten WPF layouts. Update/online/address/error/instance states are synthetic; no download or server was started.");
+            SelfUpdatePanel.Visibility = Visibility.Collapsed;
+            ProxyManual.IsChecked = true;
+            ProxyAddressBox.Text = "http://127.0.0.1:7890";
+            RefreshDownloadProxy();
+            await CapturePreviewAsync(directory, "proxy-manual");
+            Width = 900; Height = 700;
+            ProxyAddressBox.Text = "invalid proxy";
+            RefreshDownloadProxy();
+            await CapturePreviewAsync(directory, "proxy-invalid-compact");
+            ProxyDirect.IsChecked = true;
+            RefreshDownloadProxy();
+            await CapturePreviewAsync(directory, "proxy-direct-compact");
+            File.WriteAllText(Path.Combine(directory, "preview-result.txt"), "Rendered thirteen WPF layouts. Update/online/address/error/instance states are synthetic; no download or server was started.");
         }
         catch (Exception error)
         {

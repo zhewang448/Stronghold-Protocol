@@ -6,10 +6,22 @@ import os from 'node:os';
 import crypto from 'node:crypto';
 import { createReleaseUpdater, createUpdateRequest, downloadAndStage } from '../server/release-update.js';
 import { RELEASE_PUBLIC_KEYS, parseSignature, verifySums } from '../server/release-signing.js';
-import { keygen, sign, verify } from '../tools/release-sign.mjs';
+import { keygen, sign, verify, assertReleaseRevision } from '../tools/release-sign.mjs';
 import { archive, releaseFor, put, read, sha, signRelease, until, tag } from './helpers/release-fixture.js';
 
 const temp = (t) => { const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-sign-')); t.after(() => fs.rmSync(root, { recursive: true, force: true })); put(root, 'package.json', '{"version":"0.2.5"}'); return root; };
+
+test('independent launcher signing checks launcher version and retains clean-source and immutable-tag guards', t => {
+  const root = temp(t);
+  put(root, 'launcher/StrongholdProtocolLauncher.csproj', '<Project><PropertyGroup><Version>1.4.1</Version></PropertyGroup></Project>');
+  const run = (_file, args) => args[0] === 'status' ? { status: 0, stdout: '' } : { status: 1, stdout: '' };
+  assert.doesNotThrow(() => assertReleaseRevision('launcher-v1.4.1', { root, run }));
+  assert.throws(() => assertReleaseRevision('launcher-v1.4.2', { root, run }), /csproj/);
+  assert.throws(() => assertReleaseRevision('launcher-v1.4.1', { root, run: () => ({ status: 0, stdout: ' M launcher/file.cs' }) }), /干净工作区/);
+  const movedTag = (_file, args) => args[0] === 'status' ? { status: 0, stdout: '' }
+    : { status: 0, stdout: args.includes('HEAD') ? 'head\n' : 'old\n' };
+  assert.throws(() => assertReleaseRevision('launcher-v1.4.1', { root, run: movedTag }), /不能覆盖/);
+});
 // Everything GitHub serves fails; the mirror answers from `bodies` (by file suffix) or with the zip.
 const mirrorOnly = (bodies, zip) => createUpdateRequest({ mirror: 'https://mirror.test/' }, { fetchImpl: async (url) => {
   if (!url.startsWith('https://mirror.test/')) return new Response('<html>blocked</html>', { status: 502 });

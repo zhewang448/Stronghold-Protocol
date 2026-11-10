@@ -1406,3 +1406,9 @@ Covenant rendering and controls retain the mixed hand and visible temporary row.
 五个官方版本共用此呈现开关，规程的标题、模式、自选和装备区继续使用当前逻辑。共享渲染器播放九个角色动作；动态立绘关闭、系统减少动画及后台暂停遵循既有约定。主题缺失或清单损坏时显示说明并保留默认呈现。来源、安装和 [ASSUMED] 的布局、三个阶段语音及原生粒子边界见 [终端主题](../TERMINAL-THEMES.md)。
 
 解包清单保存原生 Sprite 九宫格边框和骨骼动作时长。商店卡框、等级及刷新/冻结状态使用对应官方图片；HUD 的 `board_main` 与提示窗口的 `window_main_frame` 按原 prefab 用途适配。一次性动作完成一遍后回到 Idle，Sad_Begin 完成后进入 Sad_Idle；Default、Idle 与 Sad_Idle 保持。旧清单沿用固定原包的核对值，不要求先重装才能播放完整互动。阶段窗口的浏览器切分为 [ASSUMED]，未实现的 Unity 时间线边界保持。
+
+### Windows 启动器下载代理（2026-11-10）
+
+「下载代理」为启动器全局设置，默认系统代理，另有直连与 HTTP(S) 手动地址。持久化字段 `DownloadProxyMode` / `DownloadProxyAddress`；仅后续下载或下次开服准备采用新选择，下载中禁止改动。原生安装、运行环境、自更新共用选定传输；子进程显式传递代理端点并加载现有 Undici 适配器，兼容 Node 22.14。本机管理请求绕过代理，第三方 URL 镜像仍独立选择。
+
+启动器独立 Release 使用 `launcher-v<启动器版本>`，签名和附件版本绑定该标签，不递增游戏 `RELEASE_TAG`，不改变游戏 Latest。旧启动器 1.4.0 及更早需手动升级一次，1.4.1 起自行发现独立发布。

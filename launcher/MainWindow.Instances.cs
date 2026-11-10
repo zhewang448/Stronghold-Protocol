@@ -250,7 +250,8 @@ public partial class MainWindow
         });
         try
         {
-            using var client = BootstrapInstaller.CreateClient();
+            DownloadProxy.Validate(CurrentDownloadProxy());
+            using var client = BootstrapInstaller.CreateClient(CurrentDownloadProxy());
             var installer = new BootstrapInstaller(client);
             // Prepare the runtime first. A failed game download leaves no half-created instance.
             var node = await Task.Run(NodeRuntime.Find);

@@ -22,13 +22,13 @@ public sealed class LauncherSelfUpdate(HttpClient http)
     public static string WorkDirectory => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "StrongholdProtocol", "launcher-updates");
     private const int MaxZip = 160 * 1024 * 1024;
     public static Version CurrentVersion => typeof(LauncherSelfUpdate).Assembly.GetName().Version ?? new Version(1, 0, 0);
-    public static HttpClient CreateClient()
+    public static HttpClient CreateClient(DownloadProxySettings? proxy = null)
     {
-        var client = new HttpClient { Timeout = TimeSpan.FromMinutes(15) };
+        var client = new HttpClient(DownloadProxy.CreateHandler(proxy ?? new())) { Timeout = TimeSpan.FromMinutes(15) };
         client.DefaultRequestHeaders.UserAgent.ParseAdd("StrongholdProtocolLauncher/" + CurrentVersion.ToString(3));
         return client;
     }
-    private static bool ValidTag(string tag) => Regex.IsMatch(tag, @"^v\d+\.\d+\.\d+(?:-extended\.\d+)?$");
+    private static bool ValidTag(string tag) => Regex.IsMatch(tag, @"^(?:launcher-v\d+\.\d+\.\d+|v\d+\.\d+\.\d+(?:-extended\.\d+)?)$");
     public static string AssetUrl(string tag, string name, string url)
     {
         if (!ValidTag(tag) || name.Contains('/') || name.Contains('\\')) throw new IOException("Invalid release identity.");
@@ -70,6 +70,7 @@ public sealed class LauncherSelfUpdate(HttpClient http)
                 var name = asset.GetProperty("name").GetString() ?? "";
                 var match = Regex.Match(name, @"^StrongholdProtocolLauncher-v(\d+\.\d+\.\d+)-win-x64\.zip$");
                 if (!match.Success || !Version.TryParse(match.Groups[1].Value, out var version) || version <= installed) continue;
+                if (tag.StartsWith("launcher-", StringComparison.Ordinal) && tag != "launcher-v" + version.ToString(3)) continue;
                 releases.Add(new(tag, version.ToString(3), name, AssetUrl(tag, name, asset.GetProperty("browser_download_url").GetString()!),
                     AssetUrl(tag, "SHA256SUMS.txt", sums.GetProperty("browser_download_url").GetString()!), AssetUrl(tag, "SHA256SUMS.txt.sig", sig.GetProperty("browser_download_url").GetString()!)));
             }

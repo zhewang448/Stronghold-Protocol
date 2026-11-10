@@ -3928,5 +3928,16 @@
   "低落": "Sad",
   "庆祝": "Celebrate",
   "得意": "Proud",
-  "说话": "Talk"
+  "说话": "Talk",
+  "【启动器】下载代理": "Download proxy",
+  "【启动器】系统代理": "System proxy",
+  "【启动器】直连": "Direct",
+  "【启动器】手动代理": "Manual proxy",
+  "【启动器】代理地址": "Proxy address",
+  "【启动器】例如 http://127.0.0.1:7890": "For example, http://127.0.0.1:7890",
+  "【启动器】用于安装、更新和补全素材。启动时补素材在下次启动时应用。": "Applies to installs, updates and missing assets. Startup downloads use this setting on the next server start.",
+  "【启动器】请输入有效的 HTTP / HTTPS 代理地址，不含用户名和密码。": "Enter a valid HTTP / HTTPS proxy address without a username or password.",
+  "【启动器】直接连接下载源，忽略系统与环境变量代理。": "Connect directly to download sources, ignoring system and environment proxies.",
+  "【启动器】通过指定代理下载；本机服务连接保持直连。": "Download through the specified proxy. Local service connections stay direct.",
+  "【启动器】使用 Windows 系统代理；未设置代理时直连。": "Use the Windows system proxy, or connect directly when none is configured."
 }

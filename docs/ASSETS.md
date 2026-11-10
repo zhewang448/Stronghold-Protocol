@@ -980,3 +980,11 @@ CN/JP/本土配音、攻击与技能声音同原有语种回退。完整包和�
 `tools/local-extract/terminal_theme.py` explicitly installs three pinned official bundles, validates MD5, and exports sprites, Spine, Chinese/Japanese audio and original theme configs under ignored `public/assets/terminal-themes/ac_s_closur/`. The runtime validates its local manifest before applying the theme. Preload and resource packs include its manifest, Spine JSON and both native config JSONs. Source identities, installation and browser adaptation limits: [TERMINAL-THEMES.md](TERMINAL-THEMES.md).
 
 The manifest also exports native Sprite dimensions/borders (`spriteMeta`, converted to CSS top/right/bottom/left) and final Spine keyframe times (`animationDurations`). These drive window slicing and complete one-shot actions; existing v1 installs retain pinned fallback values. Extracted art/audio bytes are unchanged.
+
+## Windows launcher download proxy
+
+Launcher 1.4.1 adds persistent `DownloadProxyMode` (`system`, default; `direct`; `manual`) and `DownloadProxyAddress` preferences. Native game/runtime/self-update downloads use the selected HTTP handler. The launcher passes resolved system or manual HTTP(S) proxy endpoints into launched setup processes and preloads `tools/assets/launcher-proxy.cjs`, which uses the installed Undici transport even on Node 22.0–22.20. `env-proxy.mjs` recognizes that installed transport and does not restart it for Node's native proxy switch. Localhost and loopback service traffic bypass the proxy. Direct mode clears inherited proxy endpoints. The setting does not enable a third-party GitHub URL mirror.
+
+Windows native downloads evaluate system proxy rules per request. Node resolves the system endpoints for GitHub at process start, so a PAC that assigns different proxies to other hosts is not fully reproduced in the Node child; choose a manual proxy for that case. Active tasks keep their original selection.
+
+Standalone launcher releases use `launcher-v<version>` with only the launcher ZIP and tag-bound signed checksums. Game releases keep their own latest marker and asset inventory. Launcher 1.4.0 and earlier require one manual replacement to recognize this tag family.

@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace StrongholdProtocolLauncher.Services;
 
-public sealed record LauncherPreferences(string? Root, int Port, string Mode)
+public sealed record LauncherPreferences(string? Root, int Port, string Mode, string DownloadProxyMode = "system", string DownloadProxyAddress = "")
 {
     public static LauncherPreferences Default { get; } = new(null, 3000, "lan");
 }
@@ -19,7 +19,7 @@ public static class PreferencesStore
         {
             var saved = JsonSerializer.Deserialize<LauncherPreferences>(File.ReadAllText(FilePath));
             return saved is { Port: >= 1024 and <= 65435, Mode: "local" or "lan" or "tunnel" }
-                ? saved
+                ? saved with { DownloadProxyMode = saved.DownloadProxyMode is "system" or "manual" or "direct" ? saved.DownloadProxyMode : "system" }
                 : LauncherPreferences.Default;
         }
         catch
