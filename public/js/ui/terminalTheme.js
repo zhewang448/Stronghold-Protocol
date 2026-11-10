@@ -1,13 +1,18 @@
 import { createStore, store } from '../store.js';
 import { settingsStore } from './settingsStore.js';
 import { audio } from '../audio.js';
-import { TERMINAL_THEME, TERMINAL_THEME_BASE, normalizeTerminalTheme, terminalAsset, terminalSprite, validTerminalManifest } from '../../../shared/terminalTheme.js';
+import { TERMINAL_THEME, TERMINAL_THEME_BASE, normalizeTerminalTheme, terminalAsset, terminalSprite, terminalAnimation, terminalSpriteSlice, validTerminalManifest } from '../../../shared/terminalTheme.js';
 
 export const terminalThemeState = createStore({ active: 'default', status: 'idle', manifest: null, clip: 'Idle' });
 const images = {
   'rest-window': 'rest_window_back', 'battle-window': 'battle_window_back', 'boss-window': 'boss_window_back_begin',
   character: 'img_char_spine_outer', 'shop-art': 'bg_open', logo: 'img_closure',
-  'shop-board': 'board_main', 'shop-frame': 'frame_outline_triple_closure',
+  'hud-board': 'board_main',
+  'window-frame': 'window_main_frame', 'card-frame': 'chess_frame_normal',
+  'card-frame-five': 'chess_frame_level_five', 'card-frame-six': 'chess_frame_level_six',
+  'refresh-icon': 'refresh_icon', 'freeze-normal': 'frozen_bg_normal', 'freeze-on': 'frozen_bg_unlock',
+  'freeze-disabled': 'frozen_bg_disable', 'refresh-normal': 'refresh_bg_normal', 'refresh-disabled': 'refresh_bg_lock',
+  ...Object.fromEntries(Array.from({ length: 6 }, (_, i) => ['level-' + (i + 1), 'shop_level_' + (i + 1)])),
 };
 let sequence = 0, cached = null, installed = false, animationTimer = null;
 let requestController = null;
@@ -22,6 +27,8 @@ function paint(manifest) {
     if (url) root.style.setProperty('--terminal-' + key, `url("${url}")`);
     else root.style.removeProperty('--terminal-' + key);
   }
+  if (manifest) root.style.setProperty('--terminal-window-slice', terminalSpriteSlice(manifest, 'window_main_frame'));
+  else root.style.removeProperty('--terminal-window-slice');
 }
 
 async function activate(value) {
@@ -72,8 +79,11 @@ export function animateTerminal(clip) {
   if (state.active !== TERMINAL_THEME || !state.manifest?.animations.includes(clip)) return;
   clearTimeout(animationTimer);
   terminalThemeState.set({ clip });
-  // [ASSUMED] A browser preview returns to Idle after four seconds; native Unity timelines are not replayed.
-  if (clip !== 'Idle') animationTimer = setTimeout(() => terminalThemeState.set({ clip: 'Idle' }), 4000);
+  const { milliseconds, next } = terminalAnimation(state.manifest, clip);
+  // [ASSUMED] Browser sequencing: finish one pass; Sad_Begin leads into its companion loop. Static/idle poses hold.
+  if (milliseconds && next && state.manifest.animations.includes(next)) {
+    animationTimer = setTimeout(() => terminalThemeState.set({ clip: next }), milliseconds);
+  }
 }
 
 export function playTerminalVoice(id = 'CN_001', preview = false) {

@@ -1404,3 +1404,5 @@ Covenant rendering and controls retain the mixed hand and visible temporary row.
 设置 → 外观 → 终端主题提供「默认」与「“全能的”可露希尔」，保存为本机 `settings.terminalTheme`。首次默认保持原界面；`settings.terminalVoice` 对局主题语音默认关闭，两项均纳入服主首次默认值和修改锁。主题切换立即生效，刷新保留选择，可随时切回默认。
 
 五个官方版本共用此呈现开关，规程的标题、模式、自选和装备区继续使用当前逻辑。共享渲染器播放九个角色动作；动态立绘关闭、系统减少动画及后台暂停遵循既有约定。主题缺失或清单损坏时显示说明并保留默认呈现。来源、安装和 [ASSUMED] 的布局、三个阶段语音及原生粒子边界见 [终端主题](../TERMINAL-THEMES.md)。
+
+解包清单保存原生 Sprite 九宫格边框和骨骼动作时长。商店卡框、等级及刷新/冻结状态使用对应官方图片；HUD 的 `board_main` 与提示窗口的 `window_main_frame` 按原 prefab 用途适配。一次性动作完成一遍后回到 Idle，Sad_Begin 完成后进入 Sad_Idle；Default、Idle 与 Sad_Idle 保持。旧清单沿用固定原包的核对值，不要求先重装才能播放完整互动。阶段窗口的浏览器切分为 [ASSUMED]，未实现的 Unity 时间线边界保持。

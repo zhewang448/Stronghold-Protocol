@@ -978,3 +978,5 @@ CN/JP/本土配音、攻击与技能声音同原有语种回退。完整包和�
 ## Optional Closure terminal theme
 
 `tools/local-extract/terminal_theme.py` explicitly installs three pinned official bundles, validates MD5, and exports sprites, Spine, Chinese/Japanese audio and original theme configs under ignored `public/assets/terminal-themes/ac_s_closur/`. The runtime validates its local manifest before applying the theme. Preload and resource packs include its manifest, Spine JSON and both native config JSONs. Source identities, installation and browser adaptation limits: [TERMINAL-THEMES.md](TERMINAL-THEMES.md).
+
+The manifest also exports native Sprite dimensions/borders (`spriteMeta`, converted to CSS top/right/bottom/left) and final Spine keyframe times (`animationDurations`). These drive window slicing and complete one-shot actions; existing v1 installs retain pinned fallback values. Extracted art/audio bytes are unchanged.

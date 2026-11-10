@@ -29,7 +29,7 @@ export function TerminalCompanion({ fallback = null, class: cls = '' }) {
     bounds: manifest.spine.bounds, pma: manifest.spine.pma === true, anims: { idle: 'Idle' } };
   return html`<button type="button" class=${`terminal-companion ${cls}`} data-testid="terminal-companion" title=${t('试听主题语音')}
       aria-label=${t('试听主题语音')} onClick=${() => { audio._unlock(); animateTerminal('Interact'); playTerminalVoice('CN_003', true); }}>
-    <img src=${terminalSprite(manifest, 'img_char_spine_outer')} alt=${t('“全能的”可露希尔')} />
+    <img src=${terminalSprite(manifest, 'img_char_spine_outer')} width="113" height="96" alt=${t('“全能的”可露希尔')} />
     ${Cover ? html`<${Cover} entry=${entry} framing=${{ fit: 'contain' }} clip=${state.clip} />` : null}
   </button>`;
 }

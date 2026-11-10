@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeTerminalTheme, terminalAsset, validTerminalManifest } from '../../shared/terminalTheme.js';
+import { normalizeTerminalTheme, terminalAsset, terminalAnimation, terminalSpriteSlice, validTerminalManifest } from '../../shared/terminalTheme.js';
 import { sanitizeSettings } from '../../public/js/ui/gameLogic/settings.js';
 import { AudioManager } from '../../public/js/audio.js';
 
@@ -61,4 +61,58 @@ test('theme voices respect mute and operator speech; an explicit preview can tak
   audio.volumes.muted = false;
   assert.equal(audio.playTerminalVoice('https://example.com/voice.wav', true), false);
   assert.equal(calls.length, 1);
+});
+
+test('native sprite borders retain Unity-to-CSS ordering and support existing installs', () => {
+  assert.equal(terminalSpriteSlice(fixture(), 'window_main_frame'), '38 62 16 124');
+  const manifest = fixture();
+  manifest.spriteMeta = { window_main_frame: { border: [38, 62, 16, 124] } };
+  assert.equal(terminalSpriteSlice(manifest, 'window_main_frame'), '38 62 16 124');
+  manifest.spriteMeta.window_main_frame.border = [NaN, 1, 1, 1];
+  assert.equal(terminalSpriteSlice(manifest, 'window_main_frame'), '38 62 16 124');
+  assert.equal(terminalSpriteSlice(manifest, 'unknown'), null);
+});
+
+test('theme animation timing accepts extracted lengths and rejects invalid manifest durations', () => {
+  const manifest = fixture();
+  assert.deepEqual(terminalAnimation(manifest, 'Interact'), { milliseconds: 5934, next: 'Idle' });
+  assert.deepEqual(terminalAnimation(manifest, 'Sad_Begin'), { milliseconds: 2567, next: 'Sad_Idle' });
+  assert.equal(terminalAnimation(manifest, 'Sad_Idle').next, null);
+  manifest.animationDurations = { Idle: 1.4667 };
+  assert.equal(validTerminalManifest(manifest), true);
+  for (const duration of [NaN, Infinity, -1, 61, '2']) {
+    manifest.animationDurations.Idle = duration;
+    assert.equal(validTerminalManifest(manifest), false);
+  }
+});
+
+test('one-shot actions complete once, long interactions finish, and sadness enters its idle loop', async t => {
+  const { animateTerminal, terminalThemeState } = await import('../../public/js/ui/terminalTheme.js');
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const manifest = fixture();
+  manifest.animations = ['Idle', 'Default', 'Special_A', 'Interact', 'Sad_Begin', 'Sad_Idle'];
+  terminalThemeState.set({ active: 'ac_s_closur', manifest, clip: 'Idle' });
+  try {
+    animateTerminal('Special_A');
+    t.mock.timers.tick(1999);
+    assert.equal(terminalThemeState.get().clip, 'Special_A');
+    t.mock.timers.tick(1);
+    assert.equal(terminalThemeState.get().clip, 'Idle');
+    animateTerminal('Interact');
+    t.mock.timers.tick(4000);
+    assert.equal(terminalThemeState.get().clip, 'Interact');
+    t.mock.timers.tick(1934);
+    assert.equal(terminalThemeState.get().clip, 'Idle');
+    animateTerminal('Sad_Begin');
+    t.mock.timers.tick(2567);
+    assert.equal(terminalThemeState.get().clip, 'Sad_Idle');
+    t.mock.timers.tick(30000);
+    assert.equal(terminalThemeState.get().clip, 'Sad_Idle');
+    animateTerminal('Default');
+    t.mock.timers.tick(30000);
+    assert.equal(terminalThemeState.get().clip, 'Default');
+  } finally {
+    animateTerminal('Idle');
+    terminalThemeState.set({ active: 'default', manifest: null, clip: 'Idle' });
+  }
 });

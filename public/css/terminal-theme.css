@@ -46,26 +46,81 @@
 :root[data-terminal-theme="ac_s_closur"] .hub-entry,
 :root[data-terminal-theme="ac_s_closur"] .hub-plate { background-color: #12152a; border-color: #4b5880; }
 :root[data-terminal-theme="ac_s_closur"] .hub-center__mark:has(.terminal-companion) { width: 3.4rem; height: 2.6rem; }
-:root[data-terminal-theme="ac_s_closur"] .shopbar__row { background: #11142a; border-color: #4b5880; border-top-color: #00d2ff; }
-:root[data-terminal-theme="ac_s_closur"] .lvcard { background: #2e38ff var(--terminal-shop-art) center / cover no-repeat; color: #fff; }
-:root[data-terminal-theme="ac_s_closur"] .lvcard__frame { color: #fff; border-color: #69fdff; }
-:root[data-terminal-theme="ac_s_closur"] .lvcard__micro { color: #fff; }
+:root[data-terminal-theme="ac_s_closur"] .shopbar__row {
+  background: #11142a; border-color: #4b5880; border-top-color: #00d2ff;
+}
+:root[data-terminal-theme="ac_s_closur"] .lvcard {
+  --terminal-level-art: var(--terminal-level-1);
+  background: #171b30; color: #f4f6ff; border: 1px solid #6374a9; clip-path: none;
+}
+:root[data-terminal-theme="ac_s_closur"] .lvcard[data-level="2"] { --terminal-level-art: var(--terminal-level-2); }
+:root[data-terminal-theme="ac_s_closur"] .lvcard[data-level="3"] { --terminal-level-art: var(--terminal-level-3); }
+:root[data-terminal-theme="ac_s_closur"] .lvcard[data-level="4"] { --terminal-level-art: var(--terminal-level-4); }
+:root[data-terminal-theme="ac_s_closur"] .lvcard[data-level="5"] { --terminal-level-art: var(--terminal-level-5); }
+:root[data-terminal-theme="ac_s_closur"] .lvcard[data-level="6"] { --terminal-level-art: var(--terminal-level-6); }
+:root[data-terminal-theme="ac_s_closur"] .lvcard__frame {
+  width: 1.04rem; height: 1.22rem; padding: 0; border: 0; justify-content: flex-end;
+  background: var(--terminal-level-art) center top / 1.04rem 1.04rem no-repeat;
+}
+:root[data-terminal-theme="ac_s_closur"] .lvcard__frame::before,
+:root[data-terminal-theme="ac_s_closur"] .lvcard__frame::after,
+:root[data-terminal-theme="ac_s_closur"] .lvcard__micro { display: none; }
+:root[data-terminal-theme="ac_s_closur"] .lvcard__num { font-size: .3rem; line-height: 1; }
+:root[data-terminal-theme="ac_s_closur"] .lvcard.is-disabled { color: #a6b5db; }
+:root[data-terminal-theme="ac_s_closur"] .lvcard.is-disabled .lvcard__frame { filter: grayscale(1) brightness(.65); }
+:root[data-terminal-theme="ac_s_closur"] .lvcard.is-max { border-color: #ffcc5d; color: #ffdf94; }
+:root[data-terminal-theme="ac_s_closur"] .lvcard.is-max .lvcard__frame { filter: none; }
+:root[data-terminal-theme="ac_s_closur"] .lvcard__key { color: #d1daf3 !important; border-color: #6374a9 !important; }
+:root[data-terminal-theme="ac_s_closur"] .toolbtn {
+  --terminal-control-background: var(--terminal-freeze-normal);
+  --terminal-control-color: #f4f6ff;
+  min-height: var(--tap-min, 44px); min-width: 1.72rem; border: 0; box-shadow: none;
+  background: transparent var(--terminal-control-background) center / 100% 100% no-repeat; color: var(--terminal-control-color);
+}
+:root[data-terminal-theme="ac_s_closur"] .toolbtn:hover:not(:disabled) {
+  background: transparent var(--terminal-control-background) center / 100% 100% no-repeat;
+  color: var(--terminal-control-color); box-shadow: none; filter: brightness(1.15);
+}
+:root[data-terminal-theme="ac_s_closur"] .toolbtn--ice > :is(.toolbtn__img, .icon) { visibility: hidden; }
+:root[data-terminal-theme="ac_s_closur"] .toolbtn--ice.is-on { --terminal-control-background: var(--terminal-freeze-on); }
+:root[data-terminal-theme="ac_s_closur"] .toolbtn--ice:disabled { --terminal-control-background: var(--terminal-freeze-disabled); --terminal-control-color: #d1daf3; }
+:root[data-terminal-theme="ac_s_closur"] .toolbtn--amber { --terminal-control-background: var(--terminal-refresh-normal); --terminal-control-color: #241b05; }
+:root[data-terminal-theme="ac_s_closur"] .toolbtn--amber:disabled { --terminal-control-background: var(--terminal-refresh-disabled); --terminal-control-color: #242738; }
+:root[data-terminal-theme="ac_s_closur"] .toolbtn--amber .toolbtn__img { content: var(--terminal-refresh-icon); }
+:root[data-terminal-theme="ac_s_closur"] .toolbtn--amber kbd { color: #241b05; border-color: #776020; background: transparent; }
 :root[data-terminal-theme="ac_s_closur"] .scard { border-color: #6374a9; background-color: #171d34; }
+:root[data-terminal-theme="ac_s_closur"] .scard__bg { background: var(--terminal-card-frame) center / 100% 100% no-repeat; }
+:root[data-terminal-theme="ac_s_closur"] .scard--t5 .scard__bg { background-image: var(--terminal-card-frame-five); }
+:root[data-terminal-theme="ac_s_closur"] .scard--t6 .scard__bg { background-image: var(--terminal-card-frame-six); }
+:root[data-terminal-theme="ac_s_closur"] .scard__body { background: linear-gradient(0deg, #0b0d1a 65%, transparent); }
 :root[data-terminal-theme="ac_s_closur"] .scard::after { border-color: #69fdff; }
-:root[data-terminal-theme="ac_s_closur"] .capsule { border-color: #00d2ff; background-color: #13182e; }
+:root[data-terminal-theme="ac_s_closur"] .capsule {
+  border-color: #00d2ff; border-radius: 0;
+  background: #13182e var(--terminal-hud-board) center / 100% 100% no-repeat;
+}
 :root[data-terminal-theme="ac_s_closur"] .capsule--boss { border-color: #ff4f75; }
 :root[data-terminal-theme="ac_s_closur"] .mpop__panel,
 :root[data-terminal-theme="ac_s_closur"] .rdialog__box {
-  background: #0a0b17 var(--terminal-rest-window) center / 100% 100% no-repeat;
-  border-color: #4e56ff;
+  background: #0a0b17; padding-top: .48rem;
+  border: 0 solid transparent;
+  border-image-source: var(--terminal-window-frame);
+  border-image-slice: var(--terminal-window-slice);
+  border-image-width: .38rem .62rem .16rem 1.24rem;
 }
+:root[data-terminal-theme="ac_s_closur"] .mpop__lines,
+:root[data-terminal-theme="ac_s_closur"] .rdialog__box::before,
+:root[data-terminal-theme="ac_s_closur"] .rdialog__box::after { display: none; }
 :root[data-terminal-theme="ac_s_closur"] .mpop__art { background: var(--terminal-character) center / contain no-repeat; }
 :root[data-terminal-theme="ac_s_closur"] .mpop__art > * { visibility: hidden; }
+/* [ASSUMED] HUD backgrounds have no Unity border; these measured cuts preserve
+   their 168x60 title bars in the browser's wider phase banners. */
 :root[data-terminal-theme="ac_s_closur"] .pbanner__band {
-  background: #0a0b17 var(--terminal-battle-window) center / 100% 100% no-repeat;
-  border-color: #69fdff;
+  --terminal-phase-window: var(--terminal-rest-window);
+  background: #0a0b17; border: 0 solid transparent;
+  border-image: var(--terminal-phase-window) 9 12 8 18 fill / .13rem .18rem .12rem .25rem stretch;
 }
-:root[data-terminal-theme="ac_s_closur"] .pbanner--red .pbanner__band { background-image: var(--terminal-boss-window); }
+:root[data-terminal-theme="ac_s_closur"] :is(.pbanner--orange, .pbanner--gold) .pbanner__band { --terminal-phase-window: var(--terminal-battle-window); }
+:root[data-terminal-theme="ac_s_closur"] .pbanner--red .pbanner__band { --terminal-phase-window: var(--terminal-boss-window); }
 
 .terminal-settings { margin-bottom: .18rem; }
 .terminal-settings__row { flex-wrap: wrap; gap: .12rem; }

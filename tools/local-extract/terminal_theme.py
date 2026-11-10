@@ -9,6 +9,7 @@ import argparse
 import hashlib
 import io
 import json
+import math
 import re
 import sys
 import urllib.request
@@ -23,6 +24,17 @@ BUNDLES = [
     ('audio/sound_beta_2/voice_cn/ac_s_closur.ab', '4817f7e6004b8bb760e3cef35c5bde7f', 'cn'),
     ('audio/sound_beta_2/voice/ac_s_closur.ab', '33b992fe87ece929f4be1289797bed3c', 'jp'),
 ]
+
+
+def animation_duration(value):
+    """Last Spine keyframe time, including nested deform/draw-order timelines."""
+    if isinstance(value, list):
+        return max((animation_duration(item) for item in value), default=0)
+    if not isinstance(value, dict):
+        return 0
+    time = value.get('time', 0)
+    time = time if isinstance(time, (int, float)) and math.isfinite(time) and time >= 0 else 0
+    return max(time, max((animation_duration(item) for item in value.values()), default=0))
 
 
 def acquire(cache, name, expected, offline=False):
@@ -56,7 +68,7 @@ def install(cache, output, offline=False):
 
     manifest = {'version': 1, 'id': THEME, 'resourceVersion': VERSION,
                 'source': 'https://ak.hypergryph.com/news/0787',
-                'sprites': {}, 'voices': {'cn': {}, 'jp': {}}, 'files': {}, 'bundles': []}
+                'sprites': {}, 'spriteMeta': {}, 'voices': {'cn': {}, 'jp': {}}, 'files': {}, 'bundles': []}
 
     def save(relative, blob):
         path = output / relative
@@ -84,6 +96,12 @@ def install(cache, output, offline=False):
                 data.image.save(stream, format='PNG')
                 save(relative, stream.getvalue())
                 manifest['sprites'].setdefault(asset, relative)
+                # Unity orders borders left/bottom/right/top; CSS uses top/right/bottom/left.
+                border = data.m_Border
+                manifest['spriteMeta'].setdefault(asset, {
+                    'size': [data.m_Rect.width, data.m_Rect.height],
+                    'border': [border.w, border.z, border.y, border.x],
+                })
             elif kind == 'Texture2D' and asset == 'ac_s_closur_spine':
                 stream = io.BytesIO()
                 data.image.save(stream, format='PNG')
@@ -99,6 +117,8 @@ def install(cache, output, offline=False):
                                          'bounds': {key: skeleton['skeleton'][key] for key in ('x', 'y', 'width', 'height')},
                                          'anims': {'idle': 'Idle'}, 'pma': True}
                     manifest['animations'] = list(skeleton['animations'])
+                    manifest['animationDurations'] = {key: animation_duration(value)
+                                                      for key, value in skeleton['animations'].items()}
                 elif asset == 'ac_s_closur_spine.atlas':
                     save('spine/mascot.atlas', blob.replace(b'ac_s_closur_spine.png', b'mascot.png'))
                 elif asset in ('skin_config', 'effect_preview_config'):

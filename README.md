@@ -1,6 +1,6 @@
 # 卫戍协议：盟约 · Stronghold Protocol: Alliance
 
-![扩展版本](https://img.shields.io/badge/version-0.3.3--extended.13-blue)
+![扩展版本](https://img.shields.io/badge/version-0.3.3--extended.14-blue)
 ![上游基础版本](https://img.shields.io/badge/version-0.3.3-2ea44f)
 ![许可](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
 
@@ -12,7 +12,7 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 [下载正式版](https://github.com/zhewang448/Stronghold-Protocol/releases/latest) · [开始运行](#开始运行) · [特色图鉴](docs/FORK-FEATURES.md) · [本库特色详解](#本库特色详解) · [和朋友一起玩](#和朋友一起玩) · [更新记录](docs/LOCAL-CHANGELOG.md) · [反馈问题](https://github.com/zhewang448/Stronghold-Protocol/issues)
 
-> 当前版本为 **`v0.3.3-extended.13`**，基于上游 0.3.3。**2026-11-08 更新**：修复同款装备叠加、圣杯分伤、乌尔比安移动、敌人持续施法、鸭爵与缇缇；补齐四个新模组和官方数据，升级内置 AI，并让房间立绘的位置与大小同步给其他成员和观战者。保留四版本、二十人扩容、动态素材可选下载及全部已有功能；详细变化与升级方式见[发布说明](docs/RELEASE-V0.3.3-EXTENDED.13.md)。
+> 当前版本为 **`v0.3.3-extended.14`**，基础游戏 0.3.3。**2026-11-10 更新**：新增「规程·序列Ⅰ」、单人规程等级 1–20、核心盟约选组、五格装备区、队友速查，以及可选的可露希尔终端主题。五个玩法版本并存，保留二十席分组、独立卡池、动态素材可选下载与主机工具；详细变化与升级方式见[发布说明](docs/RELEASE-V0.3.3-EXTENDED.14.md)。新版本尚不成熟，欢迎反馈问题，也欢迎点 Star ⭐。
 >
 > 非官方、非商业同人项目，与《明日方舟》官方无隶属或授权关系。游戏素材与数据的权利归原权利人；代码、素材及截图的许可边界见 [NOTICE.md](NOTICE.md)。
 
@@ -47,8 +47,8 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 本版已整合上游 **v0.3.3**，包含 Forge 导入与工作台扩展、测试房间、联防及干员规则修复，详见 [更新记录](docs/LOCAL-CHANGELOG.md)。
 
-v0.3.3-extended.13 选择性适配原上游 dev 的战斗修复、四个新模组与内置 AI，并加入房间立绘位置/大小同步。
-完整范围、来源和验证见 [实施记录](docs/UPSTREAM-DEV-20261108.md)。
+v0.3.3-extended.14 接入原上游 dev 的规程·序列Ⅰ和队友速查，并加入可露希尔终端主题。
+来源、兼容边界和验证见 [规程迁移记录](docs/UPSTREAM-REGULATION-20261109.md) 与 [主题说明](docs/TERMINAL-THEMES.md)。
 
 ## 开始运行
 
@@ -60,7 +60,7 @@ Windows 服主从同版本 Release 下载 StrongholdProtocolLauncher-v1.4.0-win-
 
 ### 下载整合包
 
-从[本库 Releases](https://github.com/zhewang448/Stronghold-Protocol/releases)选择附件，解压到新目录。**v0.3.3-extended.13 的基础安装由 lite 程序包＋common/local/fx 三组素材分包组成，动态立绘另为可选的 dynamic-art.zip**。新安装默认不下载动画；头像、竖图和静态立绘保留。推荐启动器自动组装；手动安装将四个基础 ZIP 的同名文件夹合并，需要动画时再合并第五个 dynamic ZIP。本版增量包直接适用于 v0.3.3-extended.12，更早版本可先升级至该版或重新安装。下表的单体 assets.zip 适用于仍提供它的较早版本：
+从[本库 Releases](https://github.com/zhewang448/Stronghold-Protocol/releases)选择附件，解压到新目录。**v0.3.3-extended.14 的基础安装由 lite 程序包＋common/local/fx 三组素材分包组成，动态立绘另为可选的 dynamic-art.zip**。新安装默认不下载动画；头像、竖图和静态立绘保留。推荐启动器自动组装；手动安装将四个基础 ZIP 的同名文件夹合并，需要动画时再合并第五个 dynamic ZIP。本版增量包直接适用于 v0.3.3-extended.13，更早版本可先升级至该版或重新安装。下表的单体 assets.zip 适用于仍提供它的较早版本：
 
 | 附件 | 适合的情况 |
 | --- | --- |
