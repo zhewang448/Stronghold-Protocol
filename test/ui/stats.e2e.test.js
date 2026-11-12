@@ -1,3 +1,7 @@
+const seedReleaseRead = page => page.evaluateOnNewDocument(() => {
+  const pref = JSON.parse(localStorage.getItem('sp.pref.settings') || '{}');
+  localStorage.setItem('sp.pref.settings', JSON.stringify({ ...pref, upstreamReleaseNotes: false, extensionReleaseNotes: false }));
+});
 // Browser E2E of the 统计数据 page (public/js/screens/stats.js, ui/stats.js; PR #323 by @2321Robin, reworked for 0.2.2)
 // against the real server, headless Chrome (puppeteer-core + system Chrome). Opt-in: SP_E2E=1 node --test test/ui/stats.e2e.test.js
 //
@@ -77,6 +81,7 @@ describe('统计数据 page (real server, headless Chrome)', { skip: !ENABLED &&
     await c.page.setViewport({ width: w, height: h, hasTouch: w < 1000, isMobile: w < 1000 });
     c.page.on('console', (m) => { if (m.type() === 'error') c.problems.push(`console: ${m.text()}`); });
     c.page.on('pageerror', (e) => c.problems.push(`pageerror: ${e.message}`));
+    await seedReleaseRead(c.page); // a returning player: no release notes nor entry film over the lobby
     await c.page.evaluateOnNewDocument((stored, entered, lang, nickname) => {
       if (nickname !== null) localStorage.setItem('sp.name', nickname);
       if (entered) sessionStorage.setItem('sp.entered', '1');

@@ -340,6 +340,7 @@ full-rank build from the others; the build fails unless `atRank` rebuilds every 
 | `giveBondId`, `givePowerId`, `canGiveBond` | `"victoriaShip"`, `null`, `false` | 变形同构体 (`canGiveBond`) grants the `giveBondId` of the *other* equipped item |
 | `requiresBondId` | `null` / `"yanShip"` | VI-tier bond signature items (research 04) |
 | `effectId`, `effectName`, `desc`, `descRaw` | `"eff_acarm041"`, …, `"攻击力+15%"` | |
+| `noDiy` | `true` / absent | present only when the official effect text matches 「无法装备给自编干员」 or 「无法装备给自选干员」 (信标, both qualities). The equip path refuses a 自选 carrier. Other items omit the field |
 | `buffs[]`, `params` | `[{"key":"env_gbuff_new_with_verify","countType":"NONE","bb":{"atk":0.15},"bbStr":{"key":"attr_common_global_buff"}}]` | |
 | `category`, `kind`, `family`, `implFormula` | `"STAT"`, `"passive"`, `null`, `"ATK% += atk …"` | research 04 (categories: STAT, ON_HIT, SURVIVAL, SP, ECONOMY, RECRUIT, BOND, BOND_GRANT, SET, BOND_SIGNATURE, MAGIC); `implFormula` is overridden by `tools/build-data.mjs ITEM_RULES` where research 04 was wrong (突变细胞; its research entry carries the correction too) |
 | `note` | `null` / `"生效时原干员销毁，突变细胞与其他装备退回整备区，可再次配发；随后获得一名高一阶的随机初始干员（最高6阶），进入整备区，需要重新部署"` | a rule the official text leaves out (`ITEM_RULES`, sourced; normal and golden), shown under the effect in the item card — 突变细胞 is not consumed (player feedback after 0.1.0: PRTS 下半 记录 备注 "生效时，原干员销毁…", players re-inject it every round) and its new operator joins the 整备区, the carrier's tile left empty (official footage; PR #2) |
@@ -758,6 +759,11 @@ fill one slot with different operators. A variant is the token at the owner's st
 trait and talents (`tools/build-data.mjs buildDiyTokens`); simdata `getToken` merges them with the pick as the owner's
 loadout. No id is also a tokens.json record.
 
+规程·序列Ⅰ (`data/versions/act3autochess-v3_1`) lists six slots at tier 5 and six at tier 6. `config.diyBringLimits`
+is `{"5":2,"6":2}` from `constData.diyCharLimitForLevels`, and `timers.enterSteps` includes `CUSTOM_CHECK` (选择自编, 30s).
+The match stocks only the confirmed slots (0–2 per tier). The default bundle and the 盟约 versions have neither and still
+stock every legal lobby slot.
+
 Not in this data: a player's ownership roster and 自选 picks (browser settings sent with `room.ownership` / `room.diy`),
 the DIY stock (per player in the match, `PlayerState.diyStock`: `config.economy.poolCopies` of the slot's tier, doubled in
 co-op — no excel field), 助战 borrows (`borrowCount` 20), and a player's potential / 练度 per operator (the 干员调配 settings sent with
@@ -845,7 +851,7 @@ every file system and URL).
   |---|---|---|---|
   | `act1autochess` | `21b1f240` (2025-12-05, 上半 final; its autochess sections equal `fdf34ff5` … `3421eaff`, its levels equal the V1_2 update `23c99d5d`, its range table equals `dcc057f6`) | `enemy: ee2cabff` (the last enemy change inside the season, 12-05) | 第一期下半 is V1_2's final state (DESIGN §35.22): V1_2 opened on 11-25 with `23c99d5d`, and the 12-05 commit added 莎草's module `uniequip_002_papyrs` (elite ATK 412 → 450, DEF 150 → 173), 娜斯提 `char_4212_nasti` to the owned 自选 pool (71 → 72, with 3 tokens), the 自选 modules `uniequip_003_ray` and Mon3tr's `uniequip_001_monstr` / `_002_monstr`, and 10 bond texts. The commit also changed three 上半 battle templates, which the build does not read (灵巧's range check `x-1` → `x-4`, 回收利用's 地面 check, 迅捷作战粮's `_forceFlag`). Whether 11-25 → 12-05 is a sub-version of its own is open for the maintainer |
   | `act1autochess@V1_1` | `8303c922` (2025-11-14, launch: range, enemies, levels) | `activity` and `character: ea164ef7` (the 11-18 hotfix); no enemy pin: `enemy_database` changed again at `23c99d5d`, so V1_2's `ee2cabff` would leak V1_2 enemies | the maintainer's decision of 2026-10-22: V1_1 includes the hotfix (see below). V1_1's levels are the launch's; the V1_2 update `23c99d5d` changed only the three solo hidden-core levels `h08_0X_s`, whose routes end at the 传送 entrance (1,3) instead of the protection point (2,2) (`waves.json` `routes[].end`, 22 values) |
-  | `act3autochess@V3_1` | ArknightsAssets/ArknightsGamedata `b1031d10` (2026-11-08, CN data 79.2.0; profile `source: 'arknightsassets'`, cached in `.cache/gamedata@aa-<sha>/`) | none | Kengxxiao had not published the 11-05 data; the mirror's files are normalised into Kengxxiao's shape (`tools/versions/sources.mjs`), the season tables are `activity.AUTOCHESS.act3autochess.V3_1` (`section`), and its level pieces become 盟约's 19×21 levels (`layout: 'regulation'`, `tools/versions/layouts.mjs`; DESIGN §37.100). Repin to Kengxxiao once it publishes the same data version |
+  | `act3autochess@V3_1` | `6f63c14e` (2026-11-09, CN data 79.2.0, change 127796 of 2026-11-05) | none | until Kengxxiao published this data version the profile read the ArknightsAssets/ArknightsGamedata mirror `b1031d10` (the same data version; `source: 'arknightsassets'`, `.cache/gamedata@aa-<sha>/`, normalised into Kengxxiao's shape by `tools/versions/sources.mjs`); the repin rebuilt every file byte-identically. The season tables are `activity.AUTOCHESS.act3autochess.V3_1` (`section`), and its level pieces become 盟约's 19×21 levels (`layout: 'regulation'`, `tools/versions/layouts.mjs`; DESIGN §37.100). |
   | `act2autochess@V2_1` | `1457587e` (2026-03-14, the 下半 launch) | none: no file the build reads changed before V2_2 (`86b6e749`; GitHub history per path), the levels changed next at `a24a8ad1` (04-08) | `987b4cd5` (2026-03-17) changed only the battle templates (`battle/buff_template_data.json`, not a build input; among them 精准's ATK, which the sim already gives as the text says), so the directory is the same with or without it: 第二期上半 stands for V2_1 with the 03-17 fix [ASSUMED], as V1_1 includes its hotfix; whether 03-17 is the maintainer's 「第一次改动」 is open (DESIGN §35.22) |
 
   **The V1_1 hotfix**: `versionInfoDict` counts the 11-18 hotfix (`ea164ef70736ca2d1a356b3bf7b1cd7540960dc1`) as
@@ -901,7 +907,10 @@ every file system and URL).
   `spec` has p = 0.18 + 0.003·L and 20 funds every 100 layers (V2_1: base 0.25, 10 every 50); 投资人's third tier is at
   L ≥ 100 (V2_1: 70); 远见's 150-layer tier "replaces the above" (the 3-27 rule); 阿戈尔's algorithm orders 「更靠左和靠上」
   (V2_1's text: 「靠下和靠左」). M2 adds `docs/research/versions/act2autochess-v2_1/` overrides [ASSUMED].
-- **`tables`**: `'default'` runs the 下半-measured tables of the build; `null` leaves one out [ASSUMED] for M2 —
+- **`tables`**: `'default'` runs the 下半-measured tables of the build. A profile may instead give
+  `{ stock, shopDraft, tacticDraft, bountyDrafts }`, each value `null` (left out), `'default'` (that one 下半 table),
+  a module id (the named export of `tools/versions/tables/<id>.mjs`) or the table object itself. All four `null` is
+  what M2 left out [ASSUMED] —
   `stock` (only the per-identity overrides `economy.poolCopiesOverrides` / `itemPoolCopiesOverrides` become `{}`: the
   tier copies `poolCopies` / `itemPoolCopies` stay the literals cited for 下半 in §1, so every 上半 chess and item uses
   下半's base copies of its tier), `shopDraft`, `tacticDraft` and
@@ -910,6 +919,9 @@ every file system and URL).
   V2_1 runs all four (`'default'`) [ASSUMED]: its 机变 events and shop rows are byte-identical to today's, its bounty
   cards have today's ids and draft data (one text differs, 悬赏·折射II `enemyeffect_15_7`: 卫队 / 卫士, 04-14), and the
   stock (2026-03-29) and the official drafts (the end of March 2026) name only operators and items V2_1 has.
+  规程 (`act3autochess@V3_1`) leaves `stock` null and names the module `act3autochess-v3_1` for the three draft tables
+  (`tools/versions/tables/act3autochess-v3_1.mjs`; the readings are `test/fixtures/official-regulation-drafts.json`,
+  15 co-op 终极 matches in BV13LWM6BEvY). A boss card is offered only when that version's own R9 groups name it.
   The bounty cards' own `draft` / `draftPool` classification still runs for 上半 [ASSUMED]: `HIDDEN_BOUNTY_IDS` and the
   effect-id shapes of `bountyDraftPool` (`enemyeffect_b_*` / `enemyeffect_5_1` → boss, `enemyeffect_1[0-5]_[78]` /
   `16_*` → hunter, every other kill card → `unseen`, never drafted) come from 下半's PRTS table and screenshots, and the
@@ -1100,3 +1112,6 @@ Gameplay plugins that explicitly list a room's official version in `versions` co
 manifest and changed files, and run in the plugin pool under its existing composition/host limits. Missing `versions`
 means act2autochess only, independently of the lobby default. Official generated data and unmodded version identities
 keep their existing format.
+
+
+本轮重建固定第一期六种既有模型的历史模拟攻击时序，只保留其美术显示增补；否则当前清单会把此前没有的 attackAnim 注入旧版，超出本轮保留四版 golden 的范围。此兼容约定为 [ASSUMED]，实现位于构建器 FIRST_PERIOD_PRESENTATION_ONLY。规程逐场差异见 [黄金变化清单](UPSTREAM-DEV-20261112-GOLDEN-MOVES.json)。

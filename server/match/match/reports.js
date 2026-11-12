@@ -36,7 +36,7 @@ export class MatchReports {
     f.lastProgressAt = this.sched.now();
     f.lastReportedAt = f.lastProgressAt;
     if (f.kind === 'boss' || f.kind === 'hidden') {
-      this._creditBoss(f, msg.bossDmg, msg.by);
+      this._creditBoss(f, msg.bossDmg, msg.by, msg.ops);
       this._creditLp(f, msg.leaks, true);
       this._noteLeaksBy(f, msg.leaksBy);
       this._checkFinalEnd();

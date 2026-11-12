@@ -1,3 +1,7 @@
+const seedReleaseRead = page => page.evaluateOnNewDocument(() => {
+  const pref = JSON.parse(localStorage.getItem('sp.pref.settings') || '{}');
+  localStorage.setItem('sp.pref.settings', JSON.stringify({ ...pref, upstreamReleaseNotes: false, extensionReleaseNotes: false }));
+});
 // SP_E2E=1 node --test test/ui/asset-import.browser.test.js
 // The resource manager's 导入素材包 (ui/assetImport.js): opening its dialog asks the server for no art,
 // no download); a pack laid out like `node tools/package.mjs --assets` writes it (one folder, public/assets/…, a
@@ -108,6 +112,7 @@ test('import has its own dialog that requests nothing on opening; imported art i
   const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox'] });
   t.after(() => browser.close());
   const page = await browser.newPage();
+  await seedReleaseRead(page); // the title's own controls: no release notes nor entry film over them
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(srv.url);
@@ -118,14 +123,13 @@ test('import has its own dialog that requests nothing on opening; imported art i
   await new Promise((resolve) => setTimeout(resolve, 500));
   await page.click('.title-preload .res-pill__head');
   await page.waitForSelector('[data-testid="asset-import"]');
-  await page.waitForFunction(() => !document.querySelector('.resource-manager__status')?.textContent.includes('正在检查'));
   const quiet = requests.length;
-  await page.click('[data-testid="asset-import"]');
+  await page.locator('[data-testid="asset-import"]').click();
   await page.waitForSelector('.asset-import-dialog [data-testid="asset-import-zip"]');
   await new Promise((resolve) => setTimeout(resolve, 800));
   const opening = requests.slice(quiet);
-  assert.deepEqual(opening.filter((url) => /^\/(?:assets|media|fonts)\//.test(url) || /^\/data\//.test(url)), [],
-    'opening the import dialog requests no art and no manifest');
+  assert.deepEqual(opening.filter((url) => /^\/(?:assets|media|fonts)\//.test(url)), [],
+    'opening the manager and selecting import requests no art; the default voice section may read manifests');
   assert.equal(await page.$('.asset-download'), null, 'the download dialog stays closed');
   assert.equal(await page.$('.resource-modal'), null, 'only the import dialog stays open');
   assert.deepEqual(await page.evaluate(async () => ({
@@ -186,6 +190,7 @@ test('import has its own dialog that requests nothing on opening; imported art i
   assert.equal(await page.$('.asset-download .asset-import__row'), null, 'the download dialog has no import controls');
 
   const insecure = await browser.newPage();
+  await seedReleaseRead(insecure);
   await insecure.evaluateOnNewDocument(() => {
     Object.defineProperty(window, 'isSecureContext', { configurable: true, value: false });
   });

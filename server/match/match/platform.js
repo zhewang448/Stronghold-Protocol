@@ -336,6 +336,7 @@ export class MatchPlatform {
     }
     if (phase === PHASE.SP_DRAFT && this.sp && this.spTurn(ps.playerId) === ps.playerId) this.startSpTurn(this.spGroup(ps.playerId));
     else if (phase === PHASE.BAND_DRAFT && this.draft && this.draftTurn(ps.playerId) === ps.playerId) this.startDraftTurn(this.draftGroup(ps.playerId));
+    else if (phase === PHASE.CUSTOM_CHECK) this.maybeEndCustom();
     else if (phase === PHASE.PREP) this.maybeEndPrep();
   }
 

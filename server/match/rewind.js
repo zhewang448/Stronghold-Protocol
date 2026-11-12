@@ -21,7 +21,7 @@ import { truncateReplay } from './replay.js';
 
 const PS_SKIP = new Set(['m', 'gd', 'playerId', 'seat', 'name', 'isBot', 'connected', 'left', 'autoplay', 'lastEmoteAt',
   'loadout', 'ops', 'skins', 'bondPlan', '_deployMap', '_deployField', '_legalityStale', '_lastPriv', '_botPrepToken',
-  'diyPreset', 'diyChoice', 'diy', '_diyRecords', 'diyBanned', 'diyStock', 'standIns', '_standInSet']);
+  'diyPreset', 'diyChoice', 'diyBring', 'diy', '_diyRecords', 'diyBanned', 'diyStock', 'standIns', '_standInSet']);
 const MATCH_KEYS = ['round', 'wave', 'bossWaves', 'bossPairs', 'lastResults', 'draft', 'teamLp', 'hiddenLayerSum', 'hiddenReached', 'overtimeApplied', 'history', 'adminPicks',
   '_botEmotesSettledRound', '_botEmotesMerges', 'bossOvertimeStartReal', 'bossRoundOpeningLp', 'prepOverride', 'offerDrawSeq'];
 const RNGS = ['rngSetup', 'rngShop', 'rngWaves', 'rngDraft', 'rngBots', 'rngMeta'];

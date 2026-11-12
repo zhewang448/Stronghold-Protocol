@@ -13,6 +13,8 @@ import { CACHE_PREFIX, MANIFEST_URL, SW_URL, TIER_ESSENTIAL, TIER_REST, checkAbo
 import { ResourceStore } from './store.js';
 import { t } from '../../../shared/i18n.js';
 import { runPreload } from '../ui/preload.js';
+import { preloadVoiceSelector, voiceDownloadStore } from '../voiceDownloads.js';
+import { canChangeClientPreference } from '../clientPreferences.js';
 
 /** @type {any} */
 const state = {
@@ -104,9 +106,27 @@ const counters = (s) => ({
   adopted: s.adopted ?? 0,
   downloaded: s.downloaded ?? 0,
   ...resourceSelection(s, optional, voiceLang, dynamic),
+  ...s.selection,
 });
 
-const selectionComplete = (s) => resourceSelection(s, optional, voiceLang, dynamic).selectionComplete;
+const selectionComplete = (s) => s.selection?.selectionComplete ?? resourceSelection(s, optional, voiceLang, dynamic).selectionComplete;
+
+function configureSelection(store) {
+  const selection = canChangeClientPreference('settings.preloadVoiceLang') ? voiceDownloadStore.get() : { operators: {} };
+  const voice = preloadVoiceSelector(store.files, selection, voiceLang);
+  store.selectFile = file => {
+    const selected = voice(file);
+    return selected == null ? selectedResourceGroup(resourceGroup(file), optional, voiceLang, dynamic) : optional && selected;
+  };
+}
+
+voiceDownloadStore.subscribe(async () => {
+  const resume = state.phase === 'download' || state.phase === 'checking';
+  controller?.abort();
+  if (activeRun) await activeRun;
+  if (current && resume) void startResources();
+  else void inspectResources();
+});
 
 /** Why this browser cannot keep the resources (empty ⇒ it can). */
 export function unsupportedReason() {
@@ -257,6 +277,7 @@ async function startDownload(signal) {
     return;
   }
   const store = ctx.store;
+  configureSelection(store);
   set({ supported: true, version: store.manifest.version });
   // registering an already-registered worker is a cheap no-op, so every start can retry a failed one. A failure here
   // does NOT stop the download (the page fills Cache Storage itself) — it only means nothing can be served offline.
@@ -285,7 +306,7 @@ async function startDownload(signal) {
       await preloadTransportPacks(store, ctx.packs, signal, onProgress);
       await store.download({ tiers: [TIER_ESSENTIAL], signal, onProgress });
       await store.download({ tiers: [TIER_REST], signal, onProgress,
-        includeFile: (file) => selectedResourceGroup(resourceGroup(file), optional, voiceLang, dynamic) });
+        includeFile: (file) => store.selectFile(file) });
       return { busy: false };
     });
     if (outcome.busy) { await watchOtherTab(store); return; }
@@ -324,7 +345,7 @@ async function preloadTransportPacks(store, packs, signal, onProgress) {
     // Never fetch a mixed ZIP containing deselected art, even when most entries are selected.
     if (pack.files.some(row => {
       const file = current.get(resourcePath(row.url));
-      return !file || !selectedResourceGroup(resourceGroup(file), optional, voiceLang, dynamic);
+      return !file || !store.selectFile(file);
     })) continue;
     const candidates = pack.files.map((row) => ({ row, file: current.get(resourcePath(row.url)) }))
       .filter(({ row, file }) => file && row.hash === file.hash && (file.size == null || row.size === file.size)
@@ -423,8 +444,9 @@ function transferArchive(kind, file) {
     });
     if (outcome.busy) throw new Error('另一个标签页正在处理资源，请暂停后重试');
     checkAbort(signal);
+    configureSelection(ctx.store);
     const status = await ctx.store.status();
-    const missing = resourceSelection(status, optional, voiceLang, dynamic).selectedMissing;
+    const missing = status.selection?.selectedMissing ?? resourceSelection(status, optional, voiceLang, dynamic).selectedMissing;
     set({ ...counters(status), failed: 0, phase: selectionComplete(status) ? 'ready' : 'paused',
       message: kind === 'export'
         ? t('已导出 {count} 个资源文件。', { count: outcome.count })
@@ -498,6 +520,7 @@ export async function inspectResources() {
   }
   try {
     if (activeRun || transferPromise) return;
+    configureSelection(ctx.store);
     const status = await ctx.store.status();
     set({ ...counters(status), version: ctx.manifest.version, supported: true,
       ...(!activeRun && !transferPromise ? { phase: selectionComplete(status) ? 'ready' : 'paused', message: '', error: false } : {}) });

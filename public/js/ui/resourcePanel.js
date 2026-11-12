@@ -9,6 +9,9 @@ import { clearResources, exportResources, importResources, inspectResources, pau
 import { t, N_ } from '../../../shared/i18n.js';
 import { openAssetDownload, AssetDownloadHost } from './assetDownload.js';
 import { AssetImportButton, AssetImportHost } from './assetImport.js';
+import { VoiceLibrary } from './voiceLibrary.js';
+import { ResourceCheckPanel } from './resourceCheck.js';
+import { voiceDownloadStore } from '../voiceDownloads.js';
 
 const PRELOAD_VOICE_LABELS = { cn: N_('中文语音'), jp: N_('日语语音'), en: N_('英语语音'), kr: N_('韩语语音') };
 
@@ -141,6 +144,8 @@ export function ResourceHost({ enabled, optional, dynamic = false, onDynamic, vo
   const { open } = useStore((s) => s, Object.is, resourceUi);
   const st = useResources();
   const fileInput = useRef(null);
+  const [section, setSection] = useState('download');
+  useEffect(() => voiceDownloadStore.subscribe(selection => onVoiceLang?.(selection.languages)), [onVoiceLang]);
   const compatibilityReason = unsupportedReason();
   const compatibility = !!compatibilityReason;
   useEffect(() => { if (open && !compatibility) void inspectResources().catch(() => {}); }, [open, compatibility]);
@@ -172,6 +177,14 @@ export function ResourceHost({ enabled, optional, dynamic = false, onDynamic, vo
           onClick=${() => enabled ? startResources() : onChange(true)}>${st.selectionComplete ? t('检查资源') : enabled ? t('继续下载') : t('开始预载')}<//><//>`}
       <${Button} variant="secondary" onClick=${closeResources}>${t('关闭')}<//>`}>
     <div class="resource-manager">
+      <nav class="resource-manager__nav" aria-label=${t('素材与资源')}>
+        <${Button} size="sm" active=${section === 'download'} onClick=${() => setSection('download')}>${t('下载素材')}<//>
+        <${Button} size="sm" active=${section === 'voice'} onClick=${() => setSection('voice')} data-testid="resource-voice">${t('干员语音')}<//>
+        <${Button} size="sm" active=${section === 'check'} onClick=${() => setSection('check')} data-testid="resource-check">${t('检查资源')}<//>
+      </nav>
+      ${open && section === 'voice' ? html`<${ClientPreference} name="settings.preloadVoiceLang"><${VoiceLibrary} /><//>` : null}
+      ${open && section === 'check' ? html`<${ResourceCheckPanel} />` : null}
+      <div hidden=${section !== 'download'}>
       <p class="resource-manager__intro">${compatibility ? t('当前浏览器使用兼容下载：下载所选素材到浏览器缓存，关闭下载窗口会暂停。预载、缓存 ZIP 和本地导入需要 HTTPS 或 localhost 及浏览器缓存支持。') : t('先预载必备资源；可选资源可按需加载。关闭此窗口后，下载会在后台继续。')}</p>
       <${ClientPreference} name="settings.preloadDynamic"><div class="resource-archive">
         <label class="resource-choice"><input type="checkbox" data-testid="preload-dynamic" checked=${dynamic} disabled=${archiveBusy || (compatibility && busy(st))}
@@ -210,6 +223,7 @@ export function ResourceHost({ enabled, optional, dynamic = false, onDynamic, vo
         <button type="button" class="res-link" disabled=${compatibility || archiveBusy} onClick=${() => { void clearResources(); }}>${t('清理缓存')}</button>
         ${enabled && !compatibility ? html`<${ClientPreference} name="settings.preload"><button type="button" class="res-link" onClick=${() => onChange(false)}>${t('关闭预载')}</button><//>` : null}
         <span>${t('关闭预载会保留已缓存资源。')}</span>
+      </div>
       </div>
     </div>
   <//>

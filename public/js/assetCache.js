@@ -265,3 +265,27 @@ export async function askPersistStorage(nav = globalThis.navigator) {
     return null;
   }
 }
+
+export async function openDownloadStore(cachesApi = globalThis.caches, support = importSupport()) {
+  if (!support?.ok || !cachesApi?.open) return null;
+  const cache = await cachesApi.open(IMPORTED_ASSET_CACHE);
+  let pending = new Set();
+  let writing = Promise.resolve();
+  const store = {
+    async put(url, bytes, type) {
+      const path = pathnameOf(url);
+      if (!IMPORTED_ASSET_PATH.test(path)) return false;
+      await putImportedAsset(cache, [path], bytes, () => type || contentTypeFor(path));
+      pending.add(path);
+      if (pending.size >= 200) await store.flush();
+      return true;
+    },
+    flush() {
+      const paths = pending;
+      pending = new Set();
+      if (paths.size) writing = writing.then(() => addImportedPaths(cache, paths)).catch(() => {});
+      return writing;
+    },
+  };
+  return store;
+}

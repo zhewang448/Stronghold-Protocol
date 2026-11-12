@@ -29,7 +29,9 @@ const excluded = (gd, rec, off) => {
   return core.some(id => off.has(id)) || (addon.length > 0 && addon.every(id => off.has(id)));
 };
 
-for (const [mode, nCore, nAddon] of [['funny', 4, 1], ['normal', 5, 4], ['hard', 5, 4], ['abyss', 5, 4]]) {
+// co-op 终极: 5 of 10 core and 5 of 16 add-on bonds greyed in every briefing of the 2026-11-10/11 recording BV13LWM6BEvY;
+// 规程等级1 / 极速模拟 recordings: 2 of 10 add-ons
+for (const [mode, nCore, nAddon] of [['funny', 4, 2], ['normal', 5, 5], ['hard', 5, 5], ['abyss', 5, 5]]) {
   test(`co-op ${mode}: half the available cores + configured add-ons, deterministic`, () => {
     const gd = new GameData(data, `mode_multi_${mode}`);
     const draw = drawDisabledBonds(gd, createRng(37));
@@ -43,7 +45,7 @@ for (const [mode, nCore, nAddon] of [['funny', 4, 1], ['normal', 5, 4], ['hard',
   });
 }
 
-for (const [modeId, size, addons] of [['mode_single_1', 4, 1], ['mode_single_12', 5, 4], ['mode_single_funny', 4, 1]]) {
+for (const [modeId, size, addons] of [['mode_single_1', 4, 2], ['mode_single_12', 5, 5], ['mode_single_funny', 4, 2]]) {
   test(`${modeId}: disjoint groups, pick greys the other; no shop or copies drawn before pick`, t => {
     const h = make(t, { modeId, seed: 29 }), m = h.m, ps = h.ps('p_0');
     const beforeRng = m.rngShop.state();
@@ -160,6 +162,9 @@ test('pick rebuilds 自选 stock, shop, promotion rewards, named pools and direc
   const h = make(t, { data: custom, modeId: 'mode_single_12', seed: 21 }), m = h.m, ps = h.ps('p_0');
   const slot = 'chess_char_5_diy1_a', charId = 'char_017_huang';
   assert.equal(ps.setDiy({ [slot]: { charId, skillIndex: 0 } }, { kitted: [charId] }), true);
+  ps.initDiyStock(new Set());
+  assert.equal(ps.diyStock.has(slot), false, '规程 stocks a slot only after 选择自编 confirms it');
+  ps.diyBring = Object.freeze([slot]);
   ps.initDiyStock(new Set());
   assert.equal(ps.diyStock.has(slot), true);
   h.start();

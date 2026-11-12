@@ -10,6 +10,7 @@ import { boardTileOf, fieldTile } from './camera.js';
 import { deployedRecord, fieldsStandIn, standInOf } from './standIn.js';
 import { t } from '../../../../shared/i18n.js';
 import { morphSlotPolicy } from '../../../../shared/plugins/rules.js';
+import { chessIsDiy, itemForbidsDiy } from '../../../../shared/itemRules.js';
 
 
 // ---- placement (canPlace mirror) ------------------------------------------------------------------------
@@ -213,7 +214,14 @@ export function placementContext({ priv, stage, editable, field = 'normal', getC
   const deploy = field === 'bossL' || field === 'bossR'
     ? deploySets(stage, field, ov)
     : deploySets(effectiveStage(stage, ov));
-  return { priv, pieces, boardAt, handAt, deploy, cap, count, field, editable: !!editable, getChess, getToken, getItem, backups, equipHand: config?.version?.rules?.equipHand === true, morphMode: morphMode === 'plus' ? 'plus' : 'official' };
+  // “模拟宝藏” (enemy_9038_achest) occupies its tile: prepMapChars is the read-only preview, and that tile is not a deploy.
+  const chestTiles = new Set();
+  if (Array.isArray(priv?.prepMapChars)) {
+    for (const u of priv.prepMapChars) {
+      if (u && u.defId === 'enemy_9038_achest' && Number.isInteger(u.y) && Number.isInteger(u.x)) chestTiles.add(tileKey(u.y, u.x));
+    }
+  }
+  return { priv, pieces, boardAt, handAt, deploy, cap, count, field, editable: !!editable, getChess, getToken, getItem, backups, chestTiles, equipHand: config?.version?.rules?.equipHand === true, morphMode: morphMode === 'plus' ? 'plus' : 'official' };
 }
 
 /**
@@ -247,6 +255,7 @@ export function tileAllows(ctx, piece, row, col) {
   const pos = piecePosition(ctx, piece);
   if (!pos) return false;
   const k = tileKey(row, col);
+  if (ctx.chestTiles && ctx.chestTiles.has(k)) return false;
   if (pos === 'HIGH') return ctx.deploy.ranged.has(k) && !ctx.deploy.melee.has(k);
   return pos === 'MELEE' ? ctx.deploy.melee.has(k) : ctx.deploy.ranged.has(k);
 }
@@ -408,6 +417,8 @@ function equipCheck(ctx, itemPiece, targetPiece) {
   const item = ctx.getItem(itemPiece.id);
   if (item?.itemType === 'MAGIC') return { ok: false, code: 'BAD_TARGET', reason: t('该道具需要放置在战场上使用') };
   if (!isObj(targetPiece) || targetPiece.kind !== 'chess') return { ok: false, code: 'BAD_TARGET', reason: t('装备只能配发给干员') };
+  // 信标 (and any item the official text forbids): a 自选 slot is not a legal drop, so the drag highlight omits it.
+  if (itemForbidsDiy(item) && chessIsDiy(ctx.getChess(targetPiece.id))) return { ok: false, code: 'BAD_TARGET', reason: t('无法装备给自选干员') };
   return { ok: true, action: 'equip' };
 }
 

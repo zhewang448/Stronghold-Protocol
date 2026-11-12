@@ -1,0 +1,67 @@
+/* 选择自编 — sits on the briefing chrome (briefing.css). Cards wrap on a phone. */
+
+.diy-check .brief__main {
+  display: flex; flex-direction: column; gap: .24rem;
+  overflow-y: auto; overscroll-behavior: contain; padding: .2rem .5rem;
+  scrollbar-width: thin; scrollbar-color: var(--line-2) transparent;
+}
+.diy-check .diy-check__lead, .diy-check .diy-check__tier { margin: 0; flex: none; }
+.diy-check .stephead { display:flex;justify-content:space-between;height:auto;min-height:64px;padding:8px 16px;gap:12px; }
+.diy-check .stephead__left { flex:1;min-width:0;flex-wrap:wrap;gap:10px; }
+.diy-check .stephead__exit, .diy-check .stephead__mode { display:flex;align-items:center;gap:8px; }
+.diy-check .stephead__title { flex:1 1 160px;white-space:nowrap;letter-spacing:.04em;font-size:clamp(18px,calc(.34 * var(--t)),28px); }
+.diy-check .stephead__title b { font-size:clamp(26px,calc(.5 * var(--t)),38px); }
+.diy-check .stephead__right { flex:none;gap:10px; }
+.diy-check .stephead__micro, .diy-check .stephead__sep { display:none; }
+.diy-check .brief-ready__txt { display:inline-flex;align-items:baseline;gap:4px;white-space:nowrap; }
+.diy-check .brief__foot .btn { min-height:44px; }
+@media (max-width:600px) {
+  .diy-check .stephead { align-items:flex-start; }
+  .diy-check .stephead__right { padding-top:2px; }
+  .diy-check .brief__foot { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:10px 16px; }
+  .diy-check .brief-ready, .diy-check .diy-check__hint { grid-column:1 / -1;justify-content:flex-end; }
+  .diy-check .brief__foot .btn { width:100%;min-width:0; }
+}
+
+.diy-check__lead, .diy-check__empty, .diy-check__hint {
+  margin: 0;
+  color: #c9d4d2;
+  font-size: calc(.28 * var(--t));
+  line-height: 1.45;
+}
+.diy-check__lead { margin: .2rem .4rem .35rem .78rem; }
+.diy-check__empty { margin: .4rem .78rem; color: #8d9996; }
+.diy-check__tier { margin: 0 .4rem .4rem .78rem; }
+.diy-check__tierhead {
+  display: flex; align-items: center; gap: .16rem;
+  margin: 0 0 .18rem; font-size: calc(.26 * var(--t)); color: #e6eaea;
+}
+.diy-check__count { margin-left: auto; color: var(--mint-400, #59f4ca); font-size: calc(.3 * var(--t)); }
+.diy-check__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(max(2.2rem, calc(96px * var(--sp-ui, 1)), 32px), 1fr));
+  gap: 10px;
+}
+.diy-check__card {
+  display: flex; flex-direction: column; align-items: flex-start; gap: .08rem;
+  min-width: 0; padding: .16rem; text-align: left;
+  background: rgba(8, 14, 14, .72);
+  border: 1px solid rgba(255, 255, 255, .14);
+  color: inherit; cursor: pointer;
+}
+.diy-check__card.is-on { outline: 2px solid var(--mint-400, #59f4ca); outline-offset: 1px; }
+.diy-check__card.is-banned {
+  filter: grayscale(1);
+  opacity: .45;
+  pointer-events: none;
+  cursor: default;
+}
+.diy-check__art { width: 100%; aspect-ratio: 1; object-fit: cover; background: rgba(0, 0, 0, .35); }
+.diy-check__name {
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: calc(.26 * var(--t));
+}
+.diy-check__bonds { display: flex; flex-wrap: wrap; gap: .06rem; min-height: .28rem; }
+.diy-check__why { color: #d7c27a; font-size: calc(.2 * var(--t)); line-height: 1.3; }
+.diy-check .brief__foot { flex-wrap: wrap; }
+.diy-check__hint { flex: 1 1 12rem; margin-right: auto; pointer-events: none; }

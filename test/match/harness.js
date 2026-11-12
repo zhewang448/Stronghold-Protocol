@@ -27,6 +27,8 @@ import { getData } from '../../server/data.js';
 import { FIELD, canPlace, placeClass, positionClass, tileKey } from '../../server/match/board.js';
 import { FakeBattle } from './fakeBattle.js';
 import { GEO } from '../../shared/constants.js';
+import { diySlot, diySlotIds } from '../../shared/diy.js';
+import { defaultDiyBring } from '../../shared/diyBring.js';
 import { collectViolations } from '../../server/match/invariants.js';
 import { attachSimClients } from './simClient.js';
 import { morphSlotPolicy, ruleOption } from '../../shared/plugins/rules.js';
@@ -150,6 +152,7 @@ export function makeMatch(o = {}) {
           const bandId = !m.gd.band(band) || !m.gd.bandAllowed(band) || m.bandTaken(band, ps.playerId) ? m.defaultBand(ps.playerId) : band;
           m.handle(ps.playerId, { t: 'g.band', bandId });
         }
+        if (m.phase === 'CUSTOM_CHECK' && ps.diyBring == null) m.handle(ps.playerId, { t: 'g.diyBring', slots: m._diyChoice(ps) });
         if (m.phase === 'SP_DRAFT' && m.spTurn(ps.playerId) === ps.playerId) {
           const group = m.spGroup(ps.playerId);
           const idx = group.cards.find((c) => m.spCardAvailable(c, group))?.idx;

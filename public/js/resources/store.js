@@ -63,6 +63,8 @@ export class ResourceStore {
     /** @type {Promise<any> | null} */
     this.running = null;
     this.statusPromise = null;
+    /** @type {null | ((file: any) => boolean)} */
+    this.selectFile = null;
   }
 
   async importTransportPack(entries, { signal, onProgress } = {}) {
@@ -377,6 +379,7 @@ export class ResourceStore {
     let tier2Present = 0;
     let tier1Wanted = 0;
     let tier2Wanted = 0;
+    let selectedWanted = 0, selectedDone = 0, selectedTotalBytes = 0, selectedBytes = 0, selectedUnknownSize = 0;
     const groups = Object.fromEntries(Object.entries(RESOURCE_GROUPS).map(([id, group]) => [id,
       { id, ...group, total: 0, wanted: 0, present: 0, bytes: 0, totalBytes: 0, unknownSize: 0 }]));
     for (const f of this.files) {
@@ -385,6 +388,12 @@ export class ResourceStore {
       group.total++;
       if (f.tier === TIER_ESSENTIAL) tier1++; else tier2++;
       if (!this.eligible(f)) { skipped++; continue; }
+      if (this.selectFile?.(f)) {
+        selectedWanted++;
+        if (hit) selectedDone++;
+        if (Number.isSafeInteger(f.size)) { selectedTotalBytes += f.size; if (hit) selectedBytes += f.size; }
+        else selectedUnknownSize++;
+      }
       if (hit) { if (f.tier === TIER_ESSENTIAL) tier1Present++; else tier2Present++; }
       group.wanted++;
       if (Number.isSafeInteger(f.size)) group.totalBytes += f.size;
@@ -416,6 +425,8 @@ export class ResourceStore {
       tier2Wanted,
       groups: Object.values(groups).filter((g) => g.total > 0),
       complete: wanted > 0 && count >= wanted,
+      ...(this.selectFile ? { selection: { selectedWanted, selectedDone, selectedTotalBytes, selectedBytes, selectedUnknownSize,
+        selectedMissing: selectedWanted - selectedDone, selectionComplete: selectedDone >= selectedWanted } } : {}),
     };
   }
 
@@ -460,6 +471,10 @@ export class ResourceStore {
       tier1: start.tier1, tier1Present: tier1Done, tier2: start.tier2, tier2Present: tier2Done,
       tier1Wanted: start.tier1Wanted, tier2Wanted: start.tier2Wanted,
       groups: groups.map((group) => ({ ...group })),
+      ...(start.selection ? { selection: { ...start.selection,
+        selectedDone: start.selection.selectedDone + done - start.count,
+        selectedMissing: Math.max(0, start.selection.selectedMissing - (done - start.count)),
+        selectionComplete: done - start.count >= start.selection.selectedMissing } } : {}),
       complete: false, failed, failures: failures.slice(), current, adopted, downloaded,
     });
     const emit = (current = null, force = false) => {

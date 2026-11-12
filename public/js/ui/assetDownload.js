@@ -28,7 +28,7 @@ export function AssetDownloadHost() {
         : state.phase === 'error' ? t('无法读取素材清单，请检查网络后重试。')
           : state.phase === 'partial' ? t('有 {n} 个素材下载失败', { n: state.failures.length })
             : t('正在下载素材…');
-  const ready = state.cached || 0;
+  const ready = state.done || 0;
   const missing = Math.max(0, (state.total || 0) - ready);
   return html`<${Modal} open=${open} onClose=${close} title=${t('下载完整素材')} class="asset-download" actions=${html`
       ${busy ? html`<${Button} onClick=${() => assetDownload.pause()}>${t('暂停下载')}<//>`

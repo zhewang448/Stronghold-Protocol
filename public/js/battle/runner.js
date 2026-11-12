@@ -95,6 +95,7 @@ import { data as gameData } from '../data.js';
 import { InPageSimHost, WorkerSimHost } from './simHost.js';
 import { trackCombat, combineCombat } from './metrics.js';
 import { t } from '../../../shared/i18n.js';
+import { leaderOpsFromBattle } from '../../../shared/leaderOps.js';
 export { loadBrowserSim, SIM_DATA_FILES } from './simLoader.js';
 
 const TICK = 1 / 30;
@@ -548,6 +549,9 @@ export function createBattleRunner(deps) {
         for (const pid of Object.keys(pool.byPlayer).slice(0, MAX_SEATS)) by[pid] = pool.byPlayer[pid];
         msg.by = by;
       }
+      // cumulative per-operator damage (规程). Omitted when empty so an older message shape stays valid.
+      const ops = leaderOpsFromBattle(e.battle);
+      if (ops) msg.ops = ops;
     } else {
       msg.leaks = Math.min(1e6, p.leaks);
       // 联防: the leakers' enemies still standing (shared/protocol.js b.progress `left`, ≤ 4 players)
@@ -1018,7 +1022,7 @@ export function createBattleRunner(deps) {
       const round = Number(pub?.round) || 0;
       // a fresh match (m.public gone), a rewound round or a return to a lobby-like phase resets the combat totals
       const resetMetrics = (!pub && lastPhase != null) || round < lastRound
-        || (pub?.phase !== lastPhase && ['LOBBY', 'INFO_CHECK', 'BAND_DRAFT', 'BATTLE_CHECK'].includes(pub?.phase));
+        || (pub?.phase !== lastPhase && ['LOBBY', 'INFO_CHECK', 'BAND_DRAFT', 'CUSTOM_CHECK', 'BATTLE_CHECK'].includes(pub?.phase));
       if (resetMetrics) forgetCombat();
       lastRound = round;
       // solo pause (DESIGN §14): the local battle clocks follow m.public.paused
@@ -1026,7 +1030,7 @@ export function createBattleRunner(deps) {
       const phase = pub ? pub.phase : null;
       if (phase === lastPhase && !resetMetrics) return;
       lastPhase = phase;
-      if (!phase || ['PREP', 'ROUND_START', 'SP_DRAFT', 'RESULT', 'LOBBY', 'INFO_CHECK', 'BAND_DRAFT', 'BATTLE_CHECK'].includes(phase)) {
+      if (!phase || ['PREP', 'ROUND_START', 'SP_DRAFT', 'RESULT', 'LOBBY', 'INFO_CHECK', 'BAND_DRAFT', 'CUSTOM_CHECK', 'BATTLE_CHECK'].includes(phase)) {
         if (entries.size || pending.size) clear({ keepMetrics: !resetMetrics });
       }
       // Leaving the room drops the parked Worker even when RESULT already cleared the entries.

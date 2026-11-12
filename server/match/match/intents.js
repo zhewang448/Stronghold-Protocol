@@ -27,6 +27,7 @@ export class MatchIntents {
       case 'g.diyApply': return this.applyDiyChoices(ps, msg.choices, msg.setupRevision);
       case 'g.band': return this.pickBand(ps, msg.bandId, msg);
       case 'g.bandSkip': return this.skipBand(ps, msg);
+      case 'g.diyBring': return this.confirmDiyBring(ps, msg.slots);
       // the strategy highlighted in the draft screen (what a timed-out turn takes, timeoutBand)
       case 'g.bandFocus': return this.bandFocus(ps, msg.bandId ?? null, msg);
       case 'g.buy': return ps.buy(msg.slot);
@@ -133,6 +134,7 @@ export class MatchIntents {
     this.offersChanged();
     if (this.phase === PHASE.INFO_CHECK && !ps.infoReady) { this.pickBotBondGroup(ps); ps.infoReady = true; this.markPublic(); this.maybeEndInfo(); }
     else if (this.phase === PHASE.BAND_DRAFT && this.draftTurn(ps.playerId) === ps.playerId) this.scheduleBandBot(this.draftGroup(ps.playerId));
+    else if (this.phase === PHASE.CUSTOM_CHECK && ps.diyBring == null) { this._applyDiyBring(ps, this._diyChoice(ps)); this.markPublic(); this.maybeEndCustom(); }
     else if (this.phase === PHASE.SP_DRAFT && this.spTurn(ps.playerId) === ps.playerId) this.scheduleSpBot(this.spGroup(ps.playerId));
     else if (this.phase === PHASE.PREP && ps.alive && !ps.ready) this.scheduleBotPrep(ps, 0);
   }

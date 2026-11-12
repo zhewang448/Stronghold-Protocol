@@ -152,7 +152,7 @@ export function freePort() {
 export async function startRealServer(opts = {}) {
   const port = Number.isInteger(opts.port) && opts.port > 0 ? opts.port : await freePort();
   const entry = opts.fast ? path.join(ROOT, 'test/e2e/fastServer.mjs') : path.join(ROOT, 'server/index.js');
-  const env = { ...process.env, PORT: String(port), HOST: '127.0.0.1' };
+  const env = { ...process.env, PORT: String(port), HOST: '127.0.0.1', SP_VERSION_DEFAULT: 'act2autochess' };
   // under `node --test` the runner's marker would turn fastServer.mjs into a no-op module (it is not a test file)
   delete env.NODE_TEST_CONTEXT;
   if (opts.fast) {
@@ -219,8 +219,8 @@ export async function startRealServer(opts = {}) {
  * hidden — no animation frames, so the Pixi view and visibility checks stall).
  */
 export class Client {
-  constructor(puppeteer, base, label, { w = 1920, h = 1080, prefix = 'coop' } = {}) {
-    Object.assign(this, { puppeteer, base, label, w, h, prefix, problems: [], log: [], shots: [] });
+  constructor(puppeteer, base, label, { w = 1920, h = 1080, prefix = 'coop', lobbyVersion = 'act2autochess' } = {}) {
+    Object.assign(this, { puppeteer, base, label, w, h, prefix, lobbyVersion, problems: [], log: [], shots: [] });
   }
 
   async open(query = '') {
@@ -243,6 +243,7 @@ export class Client {
     });
     page.on('response', (r) => { if (r.status() >= 400) this.problems.push(`http ${r.status()}: ${r.url()}`); });
     page.on('dialog', (d) => d.dismiss().catch(() => {}));
+    await page.evaluateOnNewDocument(version => { localStorage.setItem('sp.pref.lobby.version', JSON.stringify(version)); }, this.lobbyVersion);
     await page.goto(`${this.base}/${query}`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => !!globalThis.__SP__ && !!document.querySelector('.screen'), { timeout: 30000 });
   }

@@ -29,10 +29,10 @@ import { html, Button, Icon, MicroLabel, useTicker, secondsLeft } from '../ui/co
 import { useGameData, BandIcon, BondGlyph, RichText, PlayerAvatar, LpTower, Sprite } from '../ui/gameComponents.js';
 import { StepHeader, ExitModal } from '../ui/matchChrome.js';
 import { StageMiniMap, stagePreview } from '../ui/stagePreview.js';
-import { MatchInfoDialog, matchInfoModel } from '../ui/matchInfo.js';
+import { MatchInfoDialog, matchInfoModel, MatchBondDialog, regulationCoreAbsent } from '../ui/matchInfo.js';
 // package (对局动画): the 「请选择策略」 band each time a pick becomes the player's (ui/matchIntro.js TurnBanner)
 import { actions, act, draftRequestScope } from '../ui/gameActions.js';
-import { normalizeDraft, sortedPlayers } from '../ui/gameLogic.js';
+import { normalizeDraft, sortedPlayers, pregameStepCount, pregameStepIndex } from '../ui/gameLogic.js';
 import { useStore, shallowEqual } from '../store.js';
 import { BondPlanDialog, BondPlanBadge, bondPlanStore, loadBondPlanData } from '../ui/bondPlan.js';
 import { data } from '../data.js';
@@ -264,6 +264,8 @@ export function BandDraftScreen({ held = null } = {}) {
     return () => clearTimeout(id);
   }, []);
   const orderRef = useRef(null);
+  const [bondId, setBondId] = useState(null);
+  useEffect(() => { setBondId(null); }, [infoOpen]);
 
   const mode = gd.config?.modes?.[pub?.modeId];
   const offBonds = modeOffBonds(mode); // the bonds this mode never activates (标准: 10 of 23)
@@ -362,7 +364,7 @@ export function BandDraftScreen({ held = null } = {}) {
 
   return html`<div class=${cx('screen draft', held && 'is-held')} inert=${held ? true : undefined}>
     <div class="brief__bg" aria-hidden="true"></div>
-    <${StepHeader} step=${2} of=${2} title=${t('选择策略')} micro="STRATEGY // BAND CHECK" pub=${clock ? { ...pub, deadline: clock.deadline } : { ...pub, deadline: 0 }}
+    <${StepHeader} step=${pregameStepIndex(gd.config, 'BAND_CHECK')} of=${pregameStepCount(gd.config)} title=${t('选择策略')} micro="STRATEGY // BAND CHECK" pub=${clock ? { ...pub, deadline: clock.deadline } : { ...pub, deadline: 0 }}
       total=${clock ? clock.total : null} onExit=${() => setExit(true)} />
     <main class="draft__main">
       <aside class="draft-order">
@@ -461,10 +463,12 @@ export function BandDraftScreen({ held = null } = {}) {
     </main>
     <${ExitModal} open=${exit} onClose=${() => setExit(false)} solo=${solo} />
     <${BondPlanDialog} open=${planOpen} onClose=${() => setPlanOpen(false)} current=${myPlan} />
-    <${MatchInfoDialog} open=${infoOpen} onClose=${() => setInfoOpen(false)} model=${info} enemies=${html`<${MatchEnemies} pub=${pub} gd=${gd} />`}
+    <${MatchInfoDialog} open=${infoOpen} onClose=${() => setInfoOpen(false)} model=${info} onBond=${setBondId}
+      enemies=${infoOpen ? html`<${MatchEnemies} pub=${pub} gd=${gd} idScope="minfo" />` : null}
       status=${infoStatus ? html`<span class=${cx('minfo-dlg__turn', `is-${infoStatus.tone}`)}>
         <${Icon} name=${infoStatus.tone === 'mint' ? 'check' : 'hourglass'} />${infoStatus.text}${infoStatus.secs != null ? html`<b class="num">${infoStatus.secs}s</b>` : null}
       </span>` : null} />
+    <${MatchBondDialog} bondId=${infoOpen ? bondId : null} onClose=${() => setBondId(null)} priv=${priv} banned=${info?.banned} off=${!!info?.sets.off.has(bondId)} coreAbsent=${regulationCoreAbsent(info, bondId)} />
     ${turnBanner ? html`<${TurnBanner} key=${turnBanner} onDone=${() => setTurnBanner(0)} />` : null}
   </div>`;
 }

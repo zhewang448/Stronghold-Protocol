@@ -33,7 +33,7 @@ export function recoveryIdentity(root) {
 export function recoveryPayload(m, snap) {
   return {
     seed: m.seed,
-    seats: m.order.map(p => ({ seat: p.seat, playerId: p.playerId, name: p.name, isBot: p.isBot, connected: p.isBot, botBand: p.botBand, loadout: p.loadout, ops: p.ops, skins: p.skins, card: p.card, cardSkin: p.cardSkin, notOwned: p.standIns, diy: p.diy, diyPreset: p.diyPreset, diyChoice: p.diyChoice })),
+    seats: m.order.map(p => ({ seat: p.seat, playerId: p.playerId, name: p.name, isBot: p.isBot, connected: p.isBot, botBand: p.botBand, loadout: p.loadout, ops: p.ops, skins: p.skins, card: p.card, cardSkin: p.cardSkin, notOwned: p.standIns, diy: p.diy, diyPreset: p.diyPreset, diyChoice: p.diyChoice, diyBring: p.diyBring })),
     flags: Object.fromEntries(m.order.map(p => [p.playerId, { autoplay: p.autoplay, left: p.left }])),
     fixed: Object.fromEntries(FIXED.map(k => [k, m[k]])), schedule: m.factions.schedule,
     elapsedMs: Math.max(0, snap.at - m.startedAt), snapshot: snap.data,
@@ -53,10 +53,11 @@ export function restoreMatch(m, record) {
   for (const ps of m.order) {
     const seat = record.seats.find(s => s.playerId === ps.playerId);
     // A PREP checkpoint has a locked mapping. Restore it verbatim, including older two-pick records.
-    if (!ps.isBot && seat) {
-      ps.setDiy(seat.diyPreset ?? seat.diy ?? {}, m.diyKitted ? { kitted: m.diyKitted } : undefined);
+    if (seat) {
+      ps.setDiy(seat.diyPreset ?? seat.diy ?? {}, { ...(m.diyKitted ? { kitted: m.diyKitted } : {}), allowBot: true });
       ps.setDiyChoiceState(seat.diyChoice);
       ps.applyDiySlots(seat.diy || {});
+      ps.diyBring = Array.isArray(seat.diyBring) ? Object.freeze([...seat.diyBring]) : null;
     }
     ps.initDiyStock(off);
   }

@@ -15,6 +15,8 @@ import { OK, fail, DELAYS, BAND_TURN_SECONDS } from './common.js';
 import { createPoolGroups, bannedChessForBonds } from '../pool.js';
 import { botPickBondGroup } from '../botBondGroups.js';
 import { LEGACY_BOT } from '../botStrategyContract.js';
+import { diySlot, diySlotIds } from '../../../shared/diy.js';
+import { botPickDiy, checkDiyBring, defaultDiyBring } from '../../../shared/diyBring.js';
 
 /** Single-pool diagnostics and old fixtures keep their readable/writable first-group fields. */
 export function installDraftFacade(stage, fields) {
@@ -113,7 +115,7 @@ export class MatchPhases {
 
   /** Apply every edited tier together; invalid input or a stock build failure leaves the whole selection intact. */
   applyDiyChoices(ps, choices, revision, allowFewer = true) {
-    if (this.phase !== PHASE.INFO_CHECK || this.setupVote) return fail(ERR.WRONG_PHASE);
+    if (this.phase !== PHASE.INFO_CHECK || this.setupVote || this.gd.diyBringLimits) return fail(ERR.WRONG_PHASE);
     if (!ps || ps.isBot || ps.left || !ps.connected) return fail(ERR.NOT_IN_ROOM);
     if (revision !== this.setupRevision) return fail(ERR.BAD_TARGET);
     if (!choices || typeof choices !== 'object' || Array.isArray(choices)) return fail(ERR.BAD_TARGET);
@@ -454,6 +456,119 @@ export class MatchPhases {
       this.markPrivate(ps);
     }
     void timeout;
+    if (this.gd.diyBringLimits) this.enterCustomCheck();
+    else this.enterBattleCheck();
+  }
+
+  _diyOff() { return new Set([...this.disabledBonds, ...this.staticInactiveBonds]); }
+
+  /** Bond-excluded slot ids of this player's current roster (the cards 选择自编 greys out). */
+  _diyBannedSlots(ps) {
+    const off = this._diyOff();
+    const banned = [];
+    for (const slotId of Object.keys(ps?.diy || {})) {
+      const rec = ps._diyRecords.get(slotId);
+      if (rec && this.gd.bondsExclude(rec, off)) banned.push(slotId);
+    }
+    return banned;
+  }
+
+  /**
+   * The bring a seat gets when it does not choose: a bot's ranked picks, otherwise the first legal slots per tier
+   * [ASSUMED]. An empty bot roster is synthesized first.
+   * @param {any} ps
+   * @returns {string[]}
+   */
+  _diyChoice(ps) {
+    const limits = this.gd.diyBringLimits;
+    const off = this._diyOff();
+    if (ps.isBot && Object.keys(ps.diy || {}).length === 0) ps.synthesizeBotRoster(off, limits);
+    const data = this.gd.raw;
+    const tierOf = (id) => diySlot(id, data)?.tier ?? null;
+    const order = diySlotIds(data);
+    const ctx = { roster: ps.diy || {}, banned: this._diyBannedSlots(ps), limits, tierOf };
+    if (ps.isBot) {
+      return botPickDiy(order, {
+        ...ctx,
+        rank: (id) => {
+          const rec = ps._diyRecords.get(id);
+          const bonds = Array.isArray(rec?.bonds) ? rec.bonds : [];
+          return { count: bonds.filter((b) => !off.has(b)).length, charId: ps.diy[id]?.charId || '' };
+        },
+      });
+    }
+    return defaultDiyBring(order, ctx);
+  }
+
+  _applyDiyBring(ps, slots) {
+    if (!ps || ps.diyBring != null) return;
+    ps.diyBring = Object.freeze([...slots]);
+    const built = ps.buildDiyStock(this._diyOff());
+    ps.diyStock = built.stock;
+    ps.diyBanned = built.banned;
+    this.markPrivate(ps);
+  }
+
+  /**
+   * 选择自编. Bot-controlled seats confirm immediately.
+   * [ASSUMED] Solo and a lone human are untimed, like the other decision steps. Co-op with two or more humans uses
+   * the enter-step seconds (30 on 规程).
+   */
+  enterCustomCheck() {
+    if (!this.gd.diyBringLimits) { this.enterBattleCheck(); return; }
+    this.phase = PHASE.CUSTOM_CHECK;
+    for (const ps of this.order) {
+      if (ps.botControlled) this._applyDiyBring(ps, this._diyChoice(ps));
+    }
+    this.setDeadline(this.soloUntimed ? 0 : this.gd.customCheckSeconds(), () => this.finishCustomCheck(true));
+    this.markPublic();
+    for (const ps of this.order) this.markPrivate(ps);
+    this.flush(true);
+    this.maybeEndCustom();
+  }
+
+  /**
+   * g.diyBring { slots }: confirm the slots this match brings. Any illegal slot refuses the whole list.
+   * An empty list is 禁用自选.
+   * @param {any} ps
+   * @param {string[]} slots
+   */
+  confirmDiyBring(ps, slots) {
+    if (this.phase !== PHASE.CUSTOM_CHECK || !this.gd.diyBringLimits) return fail(ERR.WRONG_PHASE);
+    if (!ps || ps.left || ps.spectator || !this.players.has(ps.playerId)) return fail(ERR.NOT_IN_ROOM);
+    if (ps.diyBring != null) return fail(ERR.ALREADY);
+    const data = this.gd.raw;
+    const res = checkDiyBring(slots, {
+      roster: ps.diy || {},
+      banned: this._diyBannedSlots(ps),
+      limits: this.gd.diyBringLimits,
+      tierOf: (id) => diySlot(id, data)?.tier ?? null,
+    });
+    if (!res.ok) return fail(res.error === 'BAD_MSG' ? ERR.BAD_MSG : ERR.BAD_TARGET, res.detail);
+    this._applyDiyBring(ps, res.slots);
+    this.markPublic();
+    this.maybeEndCustom();
+    return OK;
+  }
+
+  maybeEndCustom() {
+    if (this.phase !== PHASE.CUSTOM_CHECK || this._diyAdvanceTimer) return;
+    if (!this.order.every((p) => p.diyBring != null || p.left)) return;
+    this.setDeadline(0);
+    this._diyAdvanceTimer = this.later(0, () => {
+      this._diyAdvanceTimer = null;
+      if (this.phase === PHASE.CUSTOM_CHECK) this.finishCustomCheck(false);
+    });
+  }
+
+  finishCustomCheck(timeout) {
+    if (this.phase !== PHASE.CUSTOM_CHECK) return;
+    this.cancel(this._diyAdvanceTimer);
+    this._diyAdvanceTimer = null;
+    void timeout;
+    for (const ps of this.order) {
+      if (ps.diyBring == null) this._applyDiyBring(ps, this._diyChoice(ps));
+    }
     this.enterBattleCheck();
   }
 

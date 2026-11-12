@@ -10,7 +10,7 @@ import { audio } from '../audio.js';
 const SUCCESS_SFX = {
   'g.buy': 'buy', 'g.sell': 'sell', 'g.refresh': 'refresh', 'g.freeze': 'freeze', 'g.levelUp': 'levelup',
   'g.move': 'drop', 'g.equip': 'equip', 'g.art': 'artPlace', 'g.reward': 'pick', 'g.choice': 'pick',
-  'g.band': 'confirm', 'g.bandSkip': 'back', 'g.infoReady': 'ready', 'g.emote': 'emote', 'g.destroy': 'back', 'g.unequip': 'back',
+  'g.band': 'confirm', 'g.diyBring': 'confirm', 'g.bandSkip': 'back', 'g.infoReady': 'ready', 'g.emote': 'emote', 'g.destroy': 'back', 'g.unequip': 'back',
 };
 
 let inflight = 0;
@@ -85,6 +85,7 @@ export const actions = {
   cancelReroll: (voteId) => act('room.cancelReroll', { voteId }, { sfx: 'back' }),
   band: (bandId, opts = {}) => act('g.band', { bandId, ...draftRequestScope(opts) }),
   bandSkip: (opts = {}) => act('g.bandSkip', draftRequestScope(opts)),
+  diyBring: (slots) => act('g.diyBring', { slots }),
   command: (effectId, target) => act('g.command', { effectId, target }, { sfx: 'confirm' }),
   commandChoice: (choiceId, idx) => act('g.commandChoice', { choiceId, idx }, { sfx: 'pick' }),
   buy: (slot) => act('g.buy', { slot }),

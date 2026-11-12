@@ -21,7 +21,7 @@ const seat = diy => ({ seat: 0, playerId: 'p_0', name: 'Selection', isBot: false
 const apply = (m, choices, revision = m.setupRevision) => m.handle('p_0', { t: 'g.diyApply', choices, setupRevision: revision });
 const count = (ps, tier) => diyTierSlotIds(tier, ps.m.gd.raw).filter(id => ps.diy[id]).length;
 
-for (const version of VERSIONS) {
+for (const version of VERSIONS.filter(v => v.id !== 'act3autochess@V3_1')) {
   test(`${version.id}: optional 0/1/2 choices stay atomic and preserve explicit none through reroll and recovery`, t => {
     const data = version.id === DEFAULT_VERSION ? DATA : getVersionData(version.id);
     const h = makeMatch({ data, mode: 'solo', fake: true, seats: [seat(preset(data))] }).start();

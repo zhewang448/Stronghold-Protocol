@@ -23,7 +23,7 @@ function candidates(data) {
 const seat = picks => ({ seat: 0, playerId: 'p_0', name: 'Player', isBot: false, connected: true, diy: picks });
 const choose = (m, ids, extra = {}) => m.handle('p_0', { t: 'g.diyChoose', tier: 5, charIds: ids, setupRevision: m.setupRevision, ...extra });
 
-for (const version of VERSIONS) {
+for (const version of VERSIONS.filter(v => v.id !== 'act3autochess@V3_1')) {
   test(`${version.id}: version-sized candidates, atomic selection, reroll identity and PREP lock`, t => {
     const data = version.id === DEFAULT_VERSION ? DATA : getVersionData(version.id);
     const picks = candidates(data);

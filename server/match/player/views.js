@@ -139,6 +139,9 @@ export class PlayerViews {
       ...(this.m.phase === PHASE.INFO_CHECK && this.hasDiyChoice() ? { diyChoice: this.diyChoiceView(new Set([...this.m.disabledBonds, ...this.m.staticInactiveBonds])) } : {}),
       diyBanned: this.diyBanned,
       ...(forecast ? { layerForecast: forecast } : {}),
+      // 选择自编: omitted on a season without the step, so those private views stay byte-identical.
+      // null = not confirmed yet; an array (possibly empty) is the confirmation.
+      ...(this.m.gd.diyBringLimits ? { diyBring: this.diyBring != null ? [...this.diyBring] : null } : {}),
       // 最终攻势 / 隐秘核心 prep (community report of 2026-10-06, item 51): `{ playerId, side, units }` — the pair partner's
       // board pieces as UnitInfo on its half of the boss field (mirrored on the right half, as the battle places them);
       // the own prep view draws them beside the own half, read-only. Absent otherwise.

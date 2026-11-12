@@ -378,3 +378,13 @@
 .rs[data-season="act3autochess"] .proto-start { color: #1a0d0a; background: linear-gradient(180deg, #efe6cc, #cdbf9d); box-shadow: 0 0 0 1px rgba(232, 223, 196, .5), 0 .06rem .2rem rgba(0, 0, 0, .55); }
 .rs[data-season="act3autochess"] .proto-start__deco { background: repeating-linear-gradient(135deg, rgba(226, 65, 44, .75) 0 5px, transparent 5px 11px), linear-gradient(90deg, rgba(143, 33, 23, .15), rgba(143, 33, 23, .45)); }
 .rs[data-season="act3autochess"] .rs-go.is-ready { background: linear-gradient(180deg, #ff8a6d, #e2412c); }
+
+/* The transition shares the existing seat/card layout and preserves 4–20-seat grouping. */
+.rseat__spectate { position:absolute;top:.08rem;right:.08rem;z-index:4;display:none;background:var(--bg-1);color:var(--text-hi);border:1px solid var(--line-2);padding:.08rem;cursor:pointer; }
+.rseat__spectate:disabled { opacity:.5;cursor:default; }
+.cardpick__name.is-long { font-size:calc(.13 * var(--t));overflow-wrap:anywhere; }
+.rs-version { white-space:normal;max-width:18em; }
+@media (max-height:520px) and (orientation:landscape) {
+  .rseat__spectate { display:block; }
+  .specbar--empty { display:none; }
+}

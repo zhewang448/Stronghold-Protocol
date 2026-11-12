@@ -1,8 +1,10 @@
 // Audio manager (Web Audio): BGM per phase, UI SFX, per-unit battle SFX, operator battle voice. Never throws.
 //
 // Sources: data/assets.json → audio (docs/ASSETS.md):
-//   bgm { lobby, prep, combat, combatAlts?: [ {intro?, loop}, … ], boss: { intro?, loop } },
+//   bgm { lobby, prep, combat, combatAlts?: [ {intro?, loop}, … ], unite?: { intro?, loop }, boss: { intro?, loop } },
 //   bossBgm { [bossId]: { intro?, loop } },
+//   seasons?: { [season]: { bgm: { lobby?, combatAlts?, unite? }, bossBgm } } — every season but the default.
+//   A missing slot uses the top-level track. unite: null ⇒ [ASSUMED] 联防 keeps the round's 开战 track.
 //   voice { [charId]: { start, faceEnemy, select, place, skill1…skill4, squad, squadFirst, result*, gacha } },
 //   voiceJp / voiceEn / voiceKr / voiceNative { [charId]: { …the same slots } } (日本語 / English / 한국어 / the
 //   operator's own-language dub; settings 语音语言 and the per-operator override; see voiceLine / VOICE_TREES),
@@ -19,8 +21,8 @@
 //   track the screen wants then starts once the music is audible again (`setVolumes`; host bandwidth, layer 0).
 // - 开战 BGM: `bgm.combatAlts` are the mode's own battle tracks (塞壬唱片 骑士之日 / 无畏者). The track is fixed per
 //   round, not drawn: 无畏者 through rounds 1–7 and 骑士之日 from round 8 on (`combatTrackFor`, the official
-//   schedule), so every client of a match hears the same one, a fight never switches track halfway through and the
-//   联防 that follows a 作战 keeps its round's track.
+//   schedule), so every client of a match hears the same one and a fight never switches track halfway through.
+//   Other seasons keep that index and name their own banks in `audio.seasons` (their levels' bgmEvent).
 // - 干员战斗语音 (`audio.voice`, user request): an operator says the official line of the moment it is in —
 //   行动出发 start, 行动开始 faceEnemy, 部署 place, 作战中1-4 skillN and the settlement's 结算 result* (battle-only),
 //   and 选中干员 select whenever the player taps an operator — in the prep, the shop and the hand too (the owner's
@@ -32,7 +34,7 @@
 //   the gap: VOICE_TAP_SLOTS). Dubs: 中文 `audio.voice` (default), 日本語 `audio.voiceJp`, English `audio.voiceEn`,
 //   한국어 `audio.voiceKr` and the operator's own-language dub `audio.voiceNative` (settings 语音语言, the 本土语言
 //   switch and the per-operator override; not tied to the interface language). A line the chosen tree or the host
-//   lacks falls back to the Chinese file of the same name (voiceLine).
+//   lacks falls back to the Chinese file of the same name only when Chinese is selected for download (voiceLine).
 // - Battle SFX from `b.ev` tuples (`handleBattleEvents`): attack / hit use their official bank's maxSoundAllowed,
 //   popOldest, and the played file's minPitch / maxPitch / delay (audio_data.json, #680). Aliases share a pool; distinct
 //   banks sharing a file do not. [ASSUMED] The remake's MAX_VOICES ceiling, 160 ms per-unit cooldown and 45 ms per-URL
@@ -82,6 +84,7 @@
 
 import { sanitizeVoiceOverrides, voiceLangFor, VOICE_LANGS, VOICE_TREES, VOICE_PICKS } from './voicePrefs.js';
 export { VOICE_TREES } from './voicePrefs.js';
+import { downloadVoiceLanguages, voiceDownloadStore } from './voiceDownloads.js';
 import { PHASE } from '../../shared/constants.js';
 import { mediaUrl } from './media.js';
 import { unhashedUrl } from '../../shared/assetPaths.js';
@@ -167,7 +170,7 @@ export function bgmKeyFor(route, pub, combatTrack = null) {
   const phase = pub?.phase;
   if (!phase) return 'lobby';
   switch (phase) {
-    case PHASE.INFO_CHECK: case PHASE.BAND_DRAFT: case PHASE.BATTLE_CHECK: case PHASE.RESULT: case PHASE.LOBBY:
+    case PHASE.INFO_CHECK: case PHASE.BAND_DRAFT: case PHASE.CUSTOM_CHECK: case PHASE.BATTLE_CHECK: case PHASE.RESULT: case PHASE.LOBBY:
       return 'lobby';
     case PHASE.UNITE:
       // 联防 has its own track: the official `escaped_single` / `escaped_multi` levels declare
@@ -187,23 +190,98 @@ export function bgmKeyFor(route, pub, combatTrack = null) {
 }
 
 /**
- * Resolve a BGM key to { intro?, loop } URLs from the manifest: `boss:<id>` falls back to the generic boss track,
- * `combat:<i>` to the i-th `bgm.combatAlts` entry (and to `bgm.combat` when the manifest has none), and `unite`
- * (联防's own track) to `bgm.combat` when the manifest predates it.
+ * [ASSUMED] A season whose escaped levels name no bgmEvent carries `bgm.unite: null` (第一期). 联防 then keeps the
+ * round's 开战 track instead of falling back to the default season's 联防 bank, and instead of going silent.
  * @param {any} manifest
- * @param {string|null} key
- * @returns {{ intro: string|null, loop: string }|null}
+ * @param {string|null|undefined} season
  */
-export function resolveBgm(manifest, key) {
-  const a = manifest?.audio;
-  if (!a || !key) return null;
-  let t = null;
-  if (key.startsWith('boss:')) t = a.bossBgm?.[key.slice(5)] || a.bgm?.boss;
-  else if (key.startsWith('combat:')) t = a.bgm?.combatAlts?.[Number(key.slice('combat:'.length))] || a.bgm?.combat;
-  else if (key === 'unite') t = a.bgm?.unite || a.bgm?.combat;
-  else t = a.bgm?.[key];
+function uniteKeepsCombat(manifest, season) {
+  if (typeof season !== 'string' || !season) return false;
+  const bgm = manifest?.audio?.seasons?.[season]?.bgm;
+  return !!(bgm && Object.hasOwn(bgm, 'unite') && bgm.unite == null);
+}
+
+/** The key playBgm actually resolves. `unite` remaps only for the [ASSUMED] rule above; the screen key stays `unite`. */
+function playingKey(key, manifest, season, combatTrack) {
+  if (key !== 'unite' || !uniteKeepsCombat(manifest, season)) return key;
+  return combatTrack == null ? 'combat' : `combat:${combatTrack ? 1 : 0}`;
+}
+
+/**
+ * The key the screen asks for (`bgmKeyFor`), remapped when this season's 联防 names no music.
+ * @param {'title'|'lobby'|'room'|'game'|string} route
+ * @param {any} pub
+ * @param {0|1|null} [combatTrack]
+ * @param {any} [manifest]
+ * @param {string|null} [season]
+ */
+export function playbackBgmKey(route, pub, combatTrack = null, manifest = null, season = null) {
+  return playingKey(bgmKeyFor(route, pub, combatTrack), manifest, season, combatTrack);
+}
+
+/** @param {any} t @returns {{ intro: string|null, loop: string }|null} */
+function trackOf(t) {
   if (!t || typeof t.loop !== 'string') return null;
   return { intro: typeof t.intro === 'string' ? t.intro : null, loop: t.loop };
+}
+
+/** Today's chain, unchanged: boss id → generic boss, combat index → combat, unite → combat. */
+function topLevelBgm(audio, key) {
+  let t;
+  if (key.startsWith('boss:')) t = audio.bossBgm?.[key.slice(5)] || audio.bgm?.boss;
+  else if (key.startsWith('combat:')) t = audio.bgm?.combatAlts?.[Number(key.slice('combat:'.length))] || audio.bgm?.combat;
+  else if (key === 'unite') t = audio.bgm?.unite || audio.bgm?.combat;
+  else t = audio.bgm?.[key];
+  return trackOf(t);
+}
+
+/**
+ * The season's own entry, or undefined when the key should use the top-level chain.
+ * An explicit `unite: null` returns null and does not fall through.
+ * @returns {{ intro: string|null, loop: string }|null|undefined}
+ */
+function seasonBgm(audio, key, season) {
+  if (typeof season !== 'string' || !season) return undefined;
+  const slot = audio.seasons?.[season];
+  if (!slot || typeof slot !== 'object') return undefined;
+  if (key.startsWith('boss:')) {
+    const id = key.slice(5);
+    if (slot.bossBgm && Object.hasOwn(slot.bossBgm, id)) return trackOf(slot.bossBgm[id]);
+    return undefined;
+  }
+  if (key.startsWith('combat:')) {
+    const alts = slot.bgm?.combatAlts;
+    if (!Array.isArray(alts)) return undefined;
+    const t = alts[Number(key.slice('combat:'.length))];
+    return t ? trackOf(t) : undefined;
+  }
+  if (key === 'unite') {
+    const bgm = slot.bgm;
+    if (!bgm || !Object.hasOwn(bgm, 'unite')) return undefined;
+    if (bgm.unite == null) return null;
+    return trackOf(bgm.unite);
+  }
+  const own = slot.bgm?.[key];
+  if (own && typeof own.loop === 'string') return trackOf(own);
+  return undefined;
+}
+
+/**
+ * Resolve a BGM key to { intro?, loop } URLs from the manifest. `season` looks in `audio.seasons[season]` first;
+ * a slot that season does not name uses the top-level chain (`boss:<id>` → generic boss, `combat:<i>` → `bgm.combat`,
+ * `unite` → `bgm.combat`). No season, or a season with no table (the default, an old manifest), is that chain alone.
+ * An explicit `unite: null` returns null and does not fall through.
+ * @param {any} manifest
+ * @param {string|null} key
+ * @param {string|null} [season]
+ * @returns {{ intro: string|null, loop: string }|null}
+ */
+export function resolveBgm(manifest, key, season = null) {
+  const audio = manifest?.audio;
+  if (!audio || !key) return null;
+  const own = seasonBgm(audio, key, season);
+  if (own !== undefined) return own;
+  return topLevelBgm(audio, key);
 }
 
 /**
@@ -215,7 +293,8 @@ export const COMBAT_TRACK_SWITCH_ROUND = 7;
 /**
  * The round's own 开战 track index into `bgm.combatAlts` (plan.mjs order: 0 = `m_bat_kazimierz2_1` 骑士之日,
  * 1 = `m_bat_kazimierz2_2` 无畏者). The mode does not draw these: the official schedule plays one per round, 无畏者
- * through the early rounds (1–7) and 骑士之日 from round 8 to the last normal round (8–13). Everything after that is
+ * through the early rounds (1–7) and 骑士之日 from round 8 to the last normal round (8–13). Other seasons keep this
+ * index and name their own banks (`audio.seasons[season].bgm.combatAlts`). Everything after that is
  * the boss rounds (最终攻势 / 隐秘核心), which have their own tracks and never ask for `combat:<i>`.
  * @param {number|null|undefined} round m.public.round
  * @returns {0|1|null} null when the round is unknown ⇒ the manifest's plain `combat` track
@@ -369,9 +448,10 @@ export const VOICE_TAP_SLOTS = Object.freeze(['select']);
  * @param {string} slot
  * @param {'cn'|'jp'|'en'|'kr'|'native'|string} [lang]
  * @param {() => number} [random]
+ * @param {boolean} [allowChinese] Whether automatic Chinese fallback may be requested.
  * @returns {{ url: string, fallback: string|null } | null}
  */
-export function voiceLine(audio, charId, slot, lang = 'cn', random = Math.random) {
+export function voiceLine(audio, charId, slot, lang = 'cn', random = Math.random, allowChinese = true) {
   const lines = (line) => (Array.isArray(line) ? line : [line]).filter((u) => typeof u === 'string' && u);
   const draw = (list) => (list.length ? list[Math.min(list.length - 1, Math.floor(random() * list.length))] : null);
   const cn = lines(audio?.voice?.[charId]?.[slot]);
@@ -379,9 +459,9 @@ export function voiceLine(audio, charId, slot, lang = 'cn', random = Math.random
   const dub = tree ? draw(lines(audio?.[tree]?.[charId]?.[slot])) : null;
   if (dub) {
     const file = (u) => u.slice(u.lastIndexOf('/') + 1);
-    return { url: dub, fallback: cn.find((u) => file(u) === file(dub)) ?? draw(cn) };
+    return { url: dub, fallback: allowChinese ? cn.find((u) => file(u) === file(dub)) ?? draw(cn) : null };
   }
-  const url = draw(cn);
+  const url = allowChinese ? draw(cn) : null;
   return url ? { url, fallback: null } : null;
 }
 
@@ -414,6 +494,7 @@ export function resultVoiceSlot(o = {}) {
  * operator ends up saying it. Ties are drawn like every other unit sound.
  * @param {{ unitsEnd?: Array<{ defId?: string|null, alive?: boolean }> } | null | undefined} pp that battle's perPlayer
  * @param {() => number} [random]
+ * @param {boolean} [allowChinese] Whether automatic Chinese fallback may be requested.
  * @param {((defId: string) => string|null|undefined) | null} [charOf] chess id → charId
  * @returns {string|null} charId, or null when that battle fielded no operator at all
  */
@@ -621,7 +702,9 @@ export class AudioManager {
     this.uiVoices = 0;
     this.lastPingSoundAt = -Infinity;
     this.wantBgm = null;      // desired key (kept while locked)
-    this.lastBgmKey = null;   // the key the screen asked for last (refreshBgm)
+    this.lastBgmKey = null;   // the key the screen asked for last (refreshBgm); 联防 stays 'unite' so a late manifest remaps
+    this.season = null;       // audio.seasons key (installAudio's seasonOf). null ⇒ the top-level tracks
+    this.combatTrack = null;  // the round's combatTrackFor index, remembered so a late manifest can remap 联防
     this.bgm = null;          // { key, loopUrl, nodes: [{src, gain}], gain }
     this.bgmToken = 0;
     this.bgmStarting = null;  // { url, token } of the loop _startBgm is loading (kept by _trimBuffers while the token holds)
@@ -950,24 +1033,40 @@ export class AudioManager {
     try {
       if (this.lobbyMusicOverride?.(key)) { this.wantBgm = null; ++this.bgmToken; this._fadeOutBgm(); return; }
       this.lastBgmKey = key;
+      // [ASSUMED] 联防 with unite: null plays this round's 开战 key. Remember the screen key so refreshBgm remaps again
+      // once the manifest arrives (installAudio runs before data.load('assets')).
+      const playKey = playingKey(key, this.getManifest(), this.season, this.combatTrack);
       if (!this.ctx) { this.wantBgm = key; return; }
       if (this.bgmSilent) {
         this.wantBgm = key;
-        const silentTrack = this._bgmTrack(key);
-        if (this.bgm && silentTrack && this.bgm.loopUrl === silentTrack.loop) { this.bgm.key = key; return; }
+        const silentTrack = this._bgmTrack(playKey);
+        if (this.bgm && silentTrack && this.bgm.loopUrl === silentTrack.loop) { this.bgm.key = playKey; return; }
         ++this.bgmToken; // a start still waiting for its download stays silent too
         this._fadeOutBgm();
         return;
       }
       this.wantBgm = null;
-      const track = this._bgmTrack(key);
-      if (this.bgm && track && this.bgm.loopUrl === track.loop) { this.bgm.key = key; return; }
+      const track = this._bgmTrack(playKey);
+      if (this.bgm && track && this.bgm.loopUrl === track.loop) { this.bgm.key = playKey; return; }
       if (!track && !this.bgm) return;
       const token = ++this.bgmToken;
       this._fadeOutBgm();
       if (!track) return;
-      this._startBgm(key, track, token);
+      this._startBgm(playKey, track, token);
     } catch (err) { this._warn('bgm', err); }
+  }
+
+  /**
+   * The season whose `audio.seasons` table the next track uses. A change with the same screen key switches the file;
+   * the same loop URL keeps playing (playBgm). `replay: false` only stores it (installAudio plays the screen key itself).
+   * @param {unknown} season
+   * @param {{ replay?: boolean }} [opts]
+   */
+  setSeason(season, opts) {
+    const next = typeof season === 'string' && season ? season : null;
+    if (next === this.season) return;
+    this.season = next;
+    if (opts?.replay !== false && this.lastBgmKey != null) this.playBgm(this.lastBgmKey);
   }
 
   /**
@@ -1003,7 +1102,7 @@ export class AudioManager {
   /** The track of a BGM key: the player's own lobby music (setLobbyTrack), else the manifest's (resolveBgm). */
   _bgmTrack(key) {
     if (key === 'lobby' && this.lobbyTrack) return { intro: null, loop: LOCAL_BGM + this.lobbyTrack.id };
-    return resolveBgm(this.getManifest(), key);
+    return resolveBgm(this.getManifest(), key, this.season);
   }
 
   async _startBgm(key, track, token) {
@@ -1403,7 +1502,7 @@ export class AudioManager {
       if (!this.ctx || !this.voiceGain || this.volumes.muted || this.volumes.voice <= 0) return false;
       if (typeof charId !== 'string' || typeof slot !== 'string') return false;
       // the chosen dub's line (settings 语音语言), with the Chinese file of the same name as its fallback (voiceLine)
-      const pick = () => voiceLine(this.getManifest()?.audio, charId, slot, this._voiceLangOf(charId));
+      const pick = () => this._selectedVoiceLine(charId, slot, this._voiceLangOf(charId));
       const line = pick();
       if (!line) return false;
       const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
@@ -1435,7 +1534,7 @@ export class AudioManager {
       const slot = ['select', 'place', 'start'].find((s) => slots[s]) || Object.keys(slots)[0];
       if (!slot) return false;
       const resolved = VOICE_PICKS.includes(lang) ? lang : this._voiceLangOf(charId);
-      const line = voiceLine(this.getManifest()?.audio, charId, slot, resolved);
+      const line = this._selectedVoiceLine(charId, slot, resolved);
       if (!line) return false;
       this._stopVoice();
       this.voiceGate.start(slot, null, typeof performance !== 'undefined' ? performance.now() : Date.now());
@@ -1466,6 +1565,12 @@ export class AudioManager {
    * `again`: the slot's line picked from the manifest again — played instead (once) when this one was a cosmetic plugin's
    * file that would not load (its entry fell back: see the header).
    */
+  _selectedVoiceLine(charId, slot, lang) {
+    const audio = this.getManifest()?.audio;
+    const allowChinese = lang === 'cn' || downloadVoiceLanguages(voiceDownloadStore.get(), charId, audio).includes('cn');
+    return voiceLine(audio, charId, slot, lang, Math.random, allowChinese);
+  }
+
   _playVoice(url, token, volume, fallback = null, again = null) {
     // `token` is the line's own `voiceToken`. Every deferred step below — the decode, a failed fetch, `onended` and the
     // safety timer — can land AFTER this line was taken over or stopped: `voiceToken` has moved on and the channel then
@@ -1788,8 +1893,10 @@ export const audio = new AudioManager({ getManifest: () => manifestGetter() });
 /**
  * Wire the singleton to the app (called once by main.js): manifest source, settings and store-driven BGM.
  * @param {{ getManifest: () => any, subscribe: (fn: (s:any, prev:any) => void) => () => void, getState: () => any,
- *   selectRoute: (s:any) => string, settings?: { bgm:number, sfx:number, voice:number, muted:boolean, voiceLang?:string, voiceOverrides?:Record<string,string>, voiceNative?:boolean },
- *   onFailed?: (url: string) => boolean }} deps  onFailed: a sound did not load (the cosmetic layers: see the header)
+ *   selectRoute: (s:any) => string, seasonOf?: (s:any) => string|null,
+ *   settings?: { bgm:number, sfx:number, voice:number, muted:boolean, voiceLang?:string, voiceOverrides?:Record<string,string>, voiceNative?:boolean },
+ *   onFailed?: (url: string) => boolean }} deps  onFailed: a sound did not load (the cosmetic layers: see the header).
+ *   seasonOf: the season whose `audio.seasons` table plays (public/js/versions.js musicSeason). Absent: the top-level tracks.
  */
 export function installAudio(deps) {
   try {
@@ -1806,16 +1913,21 @@ export function installAudio(deps) {
             // A new prep gain can precede its m.public phase update. Cancel only the previous battle's cue.
             audio.stopBondCue('battle');
           }
-          // 开战 BGM: the round's own track out of bgm.combatAlts (骑士之日 / 无畏者 are fixed per round, not drawn),
-          // so every client of a room hears the same one, a mid-fight re-render (or a teammate view) never switches,
-          // and the next round moves on by the table. 联防 shares its round ⇒ same key ⇒ the loop keeps playing.
-          audio.playBgm(bgmKeyFor(deps.selectRoute(s), pub, combatTrackFor(pub?.round)));
+          // The round's 开战 index (combatTrackFor) and the screen's season. 联防's key stays `unite`; a season whose
+          // table says unite: null is remapped inside playBgm ([ASSUMED]: that round's 开战 track continues). The same
+          // loop URL keeps playing, so a season change switches only when the file differs.
+          const track = combatTrackFor(pub?.round);
+          audio.combatTrack = track;
+          audio.setSeason(typeof deps.seasonOf === 'function' ? deps.seasonOf(s) : null, { replay: false });
+          audio.playBgm(bgmKeyFor(deps.selectRoute(s), pub, track));
         } catch { /* ignore */ }
       };
       sync(deps.getState());
+      const seasonOf = typeof deps.seasonOf === 'function' ? deps.seasonOf : null;
       return deps.subscribe((s, prev) => {
         if (s.match?.public?.phase !== prev?.match?.public?.phase || s.room !== prev?.room || s.session !== prev?.session
-          || s.match?.public?.bossId !== prev?.match?.public?.bossId) sync(s);
+          || s.match?.public?.bossId !== prev?.match?.public?.bossId
+          || (seasonOf && seasonOf(s) !== seasonOf(prev))) sync(s);
       });
     }
   } catch (err) { console.warn('[audio] install failed', err); }

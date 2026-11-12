@@ -20,6 +20,25 @@ const file = { url: '/assets/char/skin_avatar/outfit.png', hash: sha('sha1',12),
 const manifest = { format: 1, version: 'fixture', files: [file] };
 const makeStore = (caches, fetcher = async () => new Response(bytes, { headers: { 'Content-Type': 'image/png' } })) => new ResourceStore(manifest, { origin, caches, fetcher });
 
+test('selection readiness is independent from full-cache completeness and deselected files survive', async () => {
+  const m = { format: 1, version: 'scope', files: [
+    { url: '/assets/required.png', tier: 1 }, { url: '/assets/audio/voice/cn/char_102_texas/select.mp3', tier: 2 },
+    { url: '/assets/audio/voice/jp/char_102_texas/select.mp3', tier: 2 },
+  ] };
+  const calls = [];
+  const store = new ResourceStore(m, { origin, caches: resourceCaches(), fetcher: async url => { calls.push(url); return new Response(bytes); } });
+  store.selectFile = file => !file.url.includes('/jp/');
+  await store.download({ includeFile: file => store.selectFile(file) });
+  const first = await store.status();
+  assert.equal(first.complete, false);
+  assert.equal(first.selection.selectionComplete, true);
+  assert.equal(first.selection.selectedDone, 2);
+  store.selectFile = file => !file.url.includes('/cn/');
+  await store.download({ includeFile: file => store.selectFile(file) });
+  assert.equal(calls.filter(url => url.endsWith('required.png')).length, 1);
+  assert.equal((await store.status()).count, 3);
+});
+
 test('five-version resource inventories can exceed 50,000 files while retaining a bounded manifest', () => {
   const expanded = { ...manifest, files: Array(50001).fill(file) };
   assert.equal(validateManifest(expanded), expanded);

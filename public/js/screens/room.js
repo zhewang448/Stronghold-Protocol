@@ -221,7 +221,7 @@ function CardPicker({ current, currentSkin, list, m, art, onPick, onClose, custo
       </div>
       <${Button} size="sm" variant="secondary" icon="edit" data-testid="operator-art-adjust" disabled=${!art?.src} onClick=${() => setAdjusting(true)}>${t('立绘调整')}<//>
     </div>
-    <div class="cardpick__grid">
+    <div class="cardpick__grid" data-testid="card-picker">
       <button type="button" class="cardpick__op cardpick__op--auto cardpick__op--custom" data-testid="custom-illust-entry" disabled=${!customAllowed}
         title=${customAllowed ? t('替换立绘') : t('自定义立绘已在房间设置中关闭')} onClick=${() => setUploading(true)}>
         <span class="cardpick__img"><${Icon} name="image" /></span>
@@ -230,13 +230,13 @@ function CardPicker({ current, currentSkin, list, m, art, onPick, onClose, custo
         <span class="cardpick__img"><${Icon} name="refresh" /></span><span class="cardpick__name">${t('默认')}</span></button>
       ${shown.map((c) => html`<button key=${c.charId} type="button" class=${`cardpick__op${current === c.charId ? ' is-on' : ''}`} onClick=${() => setSelected(c)} title=${c.name}>
         <span class="cardpick__img"><img src=${chessAvatarUrl(m, c) || c.choices?.[0]?.portrait} alt="" loading="lazy" draggable=${false} /></span>
-        <span class="cardpick__name">${c.name}</span>${c.rarity ? html`<span class=${`cardpick__star r${c.rarity}`}>${c.rarity}★</span>` : null}</button>`)}
+        <span class=${`cardpick__name${String(c.name).split(/\s+/).some(w => w.length >= 12) ? ' is-long' : ''}`}>${c.name}</span>${c.rarity ? html`<span class=${`cardpick__star r${c.rarity}`}>${c.rarity}★</span>` : null}</button>`)}
     </div>
     <p class="cardpick__note"><${Icon} name="info" />${CARD_SYNC ? t('选择后，同盟里的博士都会看到这张立绘') : t('目前只有你自己看得到；服务器下次更新后，同盟里的其他博士也能看到你的选择')}</p>
   <//>`;
 }
 
-function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvite, onAddBot, onRemoveBot, onBotBand, searching, portraits, onPickCard = null }) {
+function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvite, onAddBot, onRemoveBot, onBotBand, searching, portraits, onPickCard = null, onSpectate = null }) {
   const seatAccount = useAccount(seat && !seat.isBot ? seat.playerId : null);
   const customIllust = useCustomIllust(seat && !seat.isBot ? seat.playerId : null);
   const [badCustom, setBadCustom] = useState(null);
@@ -300,6 +300,9 @@ function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvi
       onClick=${() => onRemoveBot(index)} title=${t('移除 AI 队友')} aria-label=${t('移除 AI 队友')}><${Icon} name="robot" /><${Icon} name="close" /></button>` : null}
     ${!seat.isBot && !isMe && facts.isHost ? html`<button type="button" class="rseat__kick" disabled=${busy === `kick${index}`}
       onClick=${() => onKick(index, seat.name, seat.playerId)} title=${t('将该博士移出同盟')} aria-label=${t('移出该博士')}><${Icon} name="user" /><${Icon} name="close" /></button>` : null}
+    ${isMe && room.mode !== 'solo' && onSpectate ? html`<button type="button" class="rseat__spectate" data-testid="seat-spectate"
+      disabled=${!!busy || !!spectateSwitchReason(room, facts, myId)} title=${spectateSwitchReason(room, facts, myId) || t('转为观战')}
+      aria-label=${t('转为观战')} onClick=${onSpectate}><${Icon} name="eye" /></button>` : null}
     <div class=${`rseat__plate${seat.namecard?.resolved ? ' has-room-nc' : ''}`}>
       <${NameCardLayer} waitingRoom=${true} card=${seat.namecard} />
       ${isMe ? html`<span class="rseat__me" title=${t('你')}><${Icon} name="info" /></span>` : null}
@@ -327,10 +330,21 @@ function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvi
 }
 
 /** 观战席: the room's spectators (host: ✕ frees a seat), and 入座 for a spectator while a player seat is free. */
-function SpectatorBar({ room, facts, myId, busy, onRemove, onSit }) {
-  if (!facts.spectators.length) return null;
-  return html`<section class="specbar" aria-label=${t('观战席')}>
+export function spectateSwitchReason(room, facts, myId) {
+  if (room.inMatch) return t('模拟已开始');
+  if (room.mode === 'solo' || !facts.mine) return t('至少保留一名参赛博士');
+  if (!facts.humans.some(s => s.playerId !== myId && s.connected !== false)) return t('至少保留一名参赛博士');
+  if (facts.spectators.length >= (room.spectatorLimit ?? MAX_SPECTATORS)) return t('观战席已满');
+  return '';
+}
+
+function SpectatorBar({ room, facts, myId, busy, onRemove, onSit, onSpectate }) {
+  if (room.mode === 'solo') return null;
+  const reason = spectateSwitchReason(room, facts, myId);
+  return html`<section class=${`specbar${facts.spectators.length ? '' : ' specbar--empty'}`} aria-label=${t('观战席')}>
     <span class="specbar__label"><${Icon} name="eye" />${t('观战席')}<b class="num">${facts.spectators.length}</b><span class="num t-dim">/${room.spectatorLimit ?? MAX_SPECTATORS}</span></span>
+    ${facts.mine ? html`<${Button} size="sm" data-testid="room-spectate" icon="eye" disabled=${!!busy || !!reason} title=${reason}
+      onClick=${onSpectate}>${t('转为观战')}<//>` : null}
     ${facts.spectators.map((s) => html`<span key=${s.playerId} class=${`specbar__who${s.playerId === myId ? ' is-me' : ''}${s.connected === false ? ' is-offline' : ''}`}>
       ${s.connected === false ? html`<${Icon} name="wifiOff" />` : null}${s.name || t('博士')}${s.playerId === myId ? html`<span class="seat__you">${t('你')}</span>` : null}
       ${facts.isHost ? html`<${Button} variant="ghost" size="sm" square=${true} icon="close" loading=${busy === `rs${s.playerId}`}
@@ -598,6 +612,13 @@ export function RoomScreen() {
   // spectator seats: the host frees one; a spectator takes a free player seat with room.join of this room
   const removeSpectator = (playerId) => run(`rs${playerId}`, () => net.request('room.removeSpectator', { playerId }));
   const sit = () => run('sit', () => net.request('room.join', { code: room.code, ...(room.test ? { testAck: true } : {}) }));
+  const spectate = async () => {
+    if (inFlight.current) return;
+    const ok = await confirmDialog({ title: t('转为观战'),
+      text: facts.isHost ? t('转入观战席后，创建者身份将移交给其他博士。有空位时可以重新入座。')
+        : t('转入观战席后仅观看模拟，有空位时可以重新入座。'), okText: t('转为观战') });
+    if (ok) run('spectate', () => net.request('room.spectate', { code: room.code, ...(room.test ? { testAck: true } : {}) }));
+  };
   const copy = async (what) => {
     const modeLabel = firepower ? `${RANDOM_MODE_NAME} · ` : '';
     const invitation = t('{name}邀请你加入卫戍协议：盟约·{version}【{difficulty}】', { name: me.name, version: versionLabel(roomVersion(room)), difficulty: DIFFICULTY_NAMES[room.difficulty] });
@@ -691,7 +712,7 @@ export function RoomScreen() {
     <main class="rs-seats">
       ${facts.seats.map((s, i) => html`<${SeatCard} key=${s ? `p${s.playerId}` : `e${i}`} seat=${s} index=${i} room=${room} facts=${facts}
         myId=${me.playerId} busy=${busy} online=${online} onKick=${kick} onInvite=${() => copy('code')} onAddBot=${addBot} onRemoveBot=${removeBot} onBotBand=${setBotBand} searching=${searching} portraits=${portraits}
-        onPickCard=${CARD_SYNC && cardList.length ? () => setPicking(true) : null} />`)}
+        onSpectate=${spectate} onPickCard=${CARD_SYNC && cardList.length ? () => setPicking(true) : null} />`)}
       ${coop ? null : html`<aside class="solo-brief rs-brief brackets">
         <${MicroLabel} tone="mint">BRIEFING<//>
         <h2>${DIFFICULTY_NAMES[room.difficulty] ? t(DIFFICULTY_NAMES[room.difficulty]) : ''}<span class="num t-dim"> ${info.code}</span></h2>
@@ -703,7 +724,7 @@ export function RoomScreen() {
         </ul>
       </aside>`}
     </main>
-    <${SpectatorBar} room=${room} facts=${facts} myId=${me.playerId} busy=${busy} onRemove=${removeSpectator} onSit=${sit} />
+    <${SpectatorBar} room=${room} facts=${facts} myId=${me.playerId} busy=${busy} onRemove=${removeSpectator} onSit=${sit} onSpectate=${spectate} />
     <${VersionVote} room=${room} />
 
     <footer class=${optsShown ? 'rs-foot rs-foot--options' : 'rs-foot'}>

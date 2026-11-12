@@ -31,6 +31,8 @@ test('regulation HUD: click command, refusal state, and drag onto a highlighted 
     await request(c, 'room.start'); await c.waitFor(s => s.phase === 'INFO_CHECK', 'briefing');
     await request(c, 'g.infoReady'); await c.waitFor(s => s.phase === 'BAND_DRAFT', 'draft');
     await request(c, 'g.test', { cmd: 'strategy', args: { id: 'band_fund' } });
+    await c.waitFor(s => s.phase === 'CUSTOM_CHECK', 'diy');
+    await request(c, 'g.diyBring', { slots: [] });
     await c.waitFor(s => s.phase === 'PREP', 'prep');
     await request(c, 'g.test', { cmd: 'timers', args: { on: false } });
     await c.page.waitForSelector('[data-testid="band-command"]');
@@ -43,7 +45,11 @@ test('regulation HUD: click command, refusal state, and drag onto a highlighted 
     assert.equal((await state(c)).funds, used.funds);
     await request(c, 'g.test', { cmd: 'strategy', args: { id: 'band_survive' } });
     await request(c, 'g.test', { cmd: 'funds', args: { amount: 20 } });
-    const chessId = await c.page.evaluate(() => Object.values(globalThis.__SP__.data.get('chess')).find(c => c.tier === 2 && !c.isGolden && !c.isDiy).chessId);
+    // a tier-2 operator this match has not excluded (the 规程 bond draw takes some out)
+    const chessId = await c.page.evaluate(() => {
+      const banned = new Set(globalThis.__SP__.store.get().match.public?.bannedChess || []);
+      return Object.values(globalThis.__SP__.data.get('chess')).find(c => c.tier === 2 && !c.isGolden && !c.isDiy && !banned.has(c.chessId)).chessId;
+    });
     await request(c, 'g.test', { cmd: 'chess', args: { id: chessId } });
     await cameraSettled(c.page);
     const target = (await state(c)).command.targets[0]; assert.ok(target?.uid);

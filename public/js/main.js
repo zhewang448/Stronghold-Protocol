@@ -85,7 +85,7 @@ import { validPing } from './ui/fieldPings.js';
 import { installContent, installContentSet } from './content.js';
 import { cosmetics } from './cosmetics.js';
 
-import { sanitizeVersions, lobbyVersion, roomVersion, isDefaultVersion, matchFrameVersion } from './versions.js';
+import { sanitizeVersions, lobbyVersion, roomVersion, isDefaultVersion, matchFrameVersion, musicSeason } from './versions.js';
 import { CoveredVersionVote } from './ui/versionVote.js';
 import { isCombatPhase } from './ui/gameLogic/phases.js';
 import { preloadBootArt } from './ui/protocolBoot.js';
@@ -535,7 +535,7 @@ installNamecardSync({ net });
   net.attachBrowserHooks();
   // Audio: unlock on first gesture, BGM follows the route / match phase (js/audio.js).
   // a cosmetic plugin's sound that will not load falls back like its art (content.js, DESIGN §32 P1a)
-  installAudio({ getManifest: () => data.get('assets'), subscribe: store.subscribe, getState: store.get, selectRoute, settings: settingsStore.get(),
+  installAudio({ getManifest: () => data.get('assets'), subscribe: store.subscribe, getState: store.get, selectRoute, seasonOf: musicSeason, settings: settingsStore.get(),
     onFailed: (url) => cosmetics.fail(url) });
   // …and the music follows the art: the screen's track again when the cosmetic layers change its URLs
   cosmetics.subscribe(() => audio.refreshBgm());
