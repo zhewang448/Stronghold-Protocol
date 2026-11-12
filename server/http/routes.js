@@ -28,6 +28,7 @@ import { readPersonalDataConfig } from './personalDataConfig.js';
 import { getShowPwaInstall, getEmoteBarrage, getSignalBar, getEmoteBarrageRate } from '../match/hostSettings.js';
 import { clientPreferenceFrame } from '../clientPreferences.js';
 import { handleIllustRequest } from './illustRoutes.js';
+import { handleTraining } from './training.js';
 
 const MAX_URL_LENGTH = 4096;
 
@@ -108,6 +109,7 @@ export function createRequestHandler({ serveStatic, health, log, trustProxy = 'a
     if (trustedRuntime && parts.rawPath.startsWith('/x/') && await trustedRuntime.route(req,res,parts.rawPath)) return;
     if (health.illusts && await handleIllustRequest(req, res, parts.rawPath, health)) return;
     if (studio && studio.handles(parts.rawPath)) { await studio.handle(req, res, parts.rawPath, parts.query); return; }
+    if (await handleTraining(req, res, parts.rawPath, parts.query, health.versions)) return;
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.setHeader('Allow', 'GET, HEAD');
       sendError(req, res, 405, '不支持的请求方法 · Method not allowed');
