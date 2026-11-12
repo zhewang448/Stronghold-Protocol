@@ -132,6 +132,8 @@ coverage/
 /launcher/bin/
 /launcher/obj/
 /StrongholdProtocolLauncher.exe
+# The launcher writes its installed version/hash receipt beside the local executable.
+/StrongholdProtocolLauncher.exe.release.json
 /SHA256SUMS.txt
 /SHA256SUMS.txt.sig
 *.zip
