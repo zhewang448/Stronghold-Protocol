@@ -1,0 +1,56 @@
+{
+  "feature": "player battle training",
+  "repository": "zhewang448/Stronghold-Protocol",
+  "featureCommit": "112623388c98c1f7814af88013dcc82af5583849",
+  "mergedMainCommit": "b2e36d10c0775dc0e736bea6992f60ee5a3991b3",
+  "documentedOn": "2026-11-13",
+  "captureContext": "Actual isolated developer acceptance browser sessions; fixed operator dummy test, no player rooms or admin keys",
+  "files": [
+    {
+      "file": "training-battlefield.webp",
+      "sourceArtifact": "visual-v2/native-battle.png",
+      "sourceSha256": "7a410766ecc9fbedd679bc05f699bc98263f4e69ebbf5a19986eab54ba771a29",
+      "sha256": "6972d11f3bf757a3e74bd7be41d93bb698709fbecf33c8e4a46b5ecc0cfc995a",
+      "bytes": 124328,
+      "width": 1440,
+      "height": 1051,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "fullPage": true,
+      "capturedOn": "2026-11-12",
+      "processedOn": "2026-11-13",
+      "processing": {
+        "format": "WebP",
+        "quality": 90,
+        "method": 6,
+        "crop": null,
+        "resized": false
+      }
+    },
+    {
+      "file": "training-report.webp",
+      "sourceArtifact": "results-v3/curve.png",
+      "sourceSha256": "8dc5f955994c2324da34cf1948be594f28c7f55fbee0372b228f1c4ff5b66ff3",
+      "sha256": "a60b126d08eba24fb7f7b076c5c687f2f229182bc7263be26ce7b64f08ffad9e",
+      "bytes": 65182,
+      "width": 1440,
+      "height": 1051,
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "fullPage": true,
+      "capturedOn": "2026-11-12",
+      "processedOn": "2026-11-13",
+      "processing": {
+        "format": "WebP",
+        "quality": 90,
+        "method": 6,
+        "crop": null,
+        "resized": false
+      }
+    }
+  ]
+}
