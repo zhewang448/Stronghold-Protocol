@@ -113,7 +113,7 @@ export const ROOT_FILES = ['package.json', 'package-lock.json', 'LICENSE', 'NOTI
 export const PLAYER_DOCS = ['docs/PLAYING.md', 'docs/DEPLOY.md', 'docs/SKINS.md', 'docs/LOCAL-CHANGELOG.md', 'docs/DOMAIN-RECOVERY.md',
   'docs/LOCAL-DEV.md', 'docs/PRIVACY.md', 'docs/COMMUNITY-PLUGINS.md', 'docs/EXPANDED-COOP.md', 'docs/RELEASE-CANDIDATE.md',
   'docs/FORK-FEATURES.md', 'docs/CURSOR.md', 'docs/RELEASE-V0.3.3-EXTENDED.12.md',
-  'docs/RELEASE-V0.3.3-EXTENDED.13.md', 'docs/RELEASE-V0.3.3-EXTENDED.14.md', 'docs/TERMINAL-THEMES.md', 'scripts/README.md'];
+  'docs/RELEASE-V0.3.3-EXTENDED.13.md', 'docs/RELEASE-V0.3.3-EXTENDED.14.md', 'docs/TERMINAL-THEMES.md', 'docs/TRAINING.md', 'scripts/README.md'];
 /** Real interface screenshots referenced by the extension README. */
 export const PLAYER_DOC_DIRS = ['docs/img/features/'];
 const PLUGIN_DOCS = ['docs/PLAYING.md', 'docs/DEPLOY.md', 'docs/PLUGINS.md', 'docs/PLUGIN-GUIDE.md',

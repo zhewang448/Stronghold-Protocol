@@ -1116,6 +1116,7 @@ export function LobbyScreen() {
         <div class="hub-right__plates">
           <${SweepPlate} onClick=${() => setSweepOpen(true)} />
           <${LoadoutButton} from="lobby" size="lg" class="hub-plate hub-plate--loadout" label=${t('干员调配')} />
+          <${HubTile} icon="chart" label=${t('作战试算')} en="BATTLE TRAINING" onClick=${() => { location.href = `/training/?version=${encodeURIComponent(lobbyVersion(store.get()))}`; }} />
         </div>
         <${HubTile} icon="chart" label=${t('统计数据')} en="LOCAL RECORDS" onClick=${openStats} />
         <${HubTile} icon="download" label=${t('导出 / 导入个人数据')} en="PERSONAL DATA" onClick=${openPersonalData} />

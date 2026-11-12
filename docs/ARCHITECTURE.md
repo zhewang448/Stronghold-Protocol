@@ -312,3 +312,9 @@ shared/cardArt.js 定义外观来源键、取景归一化与校验；public/js/u
 ### Optional terminal theme
 
 `shared/terminalTheme.js` validates the optional local theme manifest. `public/js/ui/terminalTheme.js` applies the personal selection, and `terminalThemeSection.js` provides settings and the shared-renderer companion. `tools/local-extract/terminal_theme.py` installs pinned official bundles into ignored art directories. See [TERMINAL-THEMES.md](TERMINAL-THEMES.md).
+
+## Player battle training
+
+The lobby opens `/training/` for independent operator and squad exercises. `server/training.js` composes the existing console builder, match bond counting and version service; `server/http/training.js` exposes public read-only options/build endpoints. `shared/training.js` owns the bounded, versioned A/B document and fingerprints. `public/js/training/` owns the editor, browser Worker, effective combat accounting and optional position/HP playback; no room intents or loadout writes. See [training](TRAINING.md).
+
+Training's `public/js/training/session.js` and `playback.js` own persistent Worker exercises and synchronized A/B ticks; `battlefield.js` adapts the native field renderer, prep state and facing wheel, while `panels.js` reuses game artwork and unit details for the training editor. Simulation time stays at zero during prep.
