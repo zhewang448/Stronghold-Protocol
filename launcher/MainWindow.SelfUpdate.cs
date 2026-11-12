@@ -16,7 +16,7 @@ public partial class MainWindow
         if(show) {SelfUpdatePanel.Visibility=Visibility.Visible;SelfUpdateStatus.Text=t("正在检查启动器更新…");}
         try
         {
-            using var client=LauncherSelfUpdate.CreateClient();using var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            using var client=LauncherSelfUpdate.CreateClient(CurrentDownloadProxy());using var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(20));
             _selfRelease=await new LauncherSelfUpdate(client).CheckAsync(LauncherSelfUpdate.CurrentVersion,timeout.Token);
             if(_selfRelease is null)
             {
@@ -53,7 +53,7 @@ public partial class MainWindow
                 SelfUpdateProgress.IsIndeterminate=p.Total<=0;SelfUpdateProgress.Value=p.Total>0?100.0*p.Received/p.Total:0;
                 SelfUpdateStatus.Text=t("正在下载并校验启动器… {received} MB",("received",(p.Received/1048576.0).ToString("F1")));
             });
-            using var client=LauncherSelfUpdate.CreateClient();
+            using var client=LauncherSelfUpdate.CreateClient(CurrentDownloadProxy());
             var manifest=await new LauncherSelfUpdate(client).PrepareAsync(_selfRelease,target,progress,_selfUpdateCancellation.Token);
             _selfUpdateCancellation.Token.ThrowIfCancellationRequested();
             await LauncherSelfUpdate.LaunchHelperAsync(manifest);

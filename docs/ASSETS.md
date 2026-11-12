@@ -1009,3 +1009,11 @@ The manifest also exports native Sprite dimensions/borders (`spriteMeta`, conver
 沿用本库「素材与资源」入口：干员语音页保存逐干员语言，下载选择独立于播放语言；预载与兼容下载复用这些选择，不重取已完成模型。检查资源页要求全部非语音以及每位有语音干员至少一套完整配音，识别导入缓存、本库预载缓存和浏览器 HTTP 缓存，探测不联网下载素材。所选范围就绪与完整资源检查分别报告。关闭面板继续后台预载，明确暂停才停止；完整性检查在关闭或切页时取消。
 
 audio.seasons 由现有版本音乐计划生成，保留旧清单的每一项并补入第一期及规程；自选大厅音乐、视频和插件的既有优先级保持。新增十个文件来自官方客户端社区转存，仅存忽略目录。验证见 [迁移记录](UPSTREAM-DEV-20261112.md)。
+
+## Windows launcher download proxy
+
+Launcher 1.4.1 adds persistent `DownloadProxyMode` (`system`, default; `direct`; `manual`) and `DownloadProxyAddress` preferences. Native game/runtime/self-update downloads use the selected HTTP handler. The launcher passes resolved system or manual HTTP(S) proxy endpoints into launched setup processes and preloads `tools/assets/launcher-proxy.cjs`, which uses the installed Undici transport even on Node 22.0–22.20. `env-proxy.mjs` recognizes that installed transport and does not restart it for Node's native proxy switch. Localhost and loopback service traffic bypass the proxy. Direct mode clears inherited proxy endpoints. The setting does not enable a third-party GitHub URL mirror.
+
+Windows native downloads evaluate system proxy rules per request. Node resolves the system endpoints for GitHub at process start, so a PAC that assigns different proxies to other hosts is not fully reproduced in the Node child; choose a manual proxy for that case. Active tasks keep their original selection.
+
+Standalone launcher releases use `launcher-v<version>` with only the launcher ZIP and tag-bound signed checksums. Game releases keep their own latest marker and asset inventory. Launcher 1.4.0 and earlier require one manual replacement to recognize this tag family.

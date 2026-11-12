@@ -70,7 +70,11 @@ export async function verify(tag, dir, { keys } = {}) {
 }
 
 export function assertReleaseRevision(tag, { expected = RELEASE_TAG, root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'), run = spawnSync } = {}) {
-  if (tag !== expected) throw new Error('签名标签必须与 server/release-version.js 一致，请先递增扩展版本并同步发布说明。');
+  if (/^launcher-v\d+\.\d+\.\d+$/.test(tag)) {
+    const project = fs.readFileSync(path.join(root, 'launcher', 'StrongholdProtocolLauncher.csproj'), 'utf8');
+    const version = /<Version>(\d+\.\d+\.\d+)<\/Version>/.exec(project)?.[1];
+    if (tag !== `launcher-v${version}`) throw new Error('启动器签名标签必须与 csproj 的 Version 一致。');
+  } else if (tag !== expected) throw new Error('签名标签必须与 server/release-version.js 一致，请先递增扩展版本并同步发布说明。');
   const dirty = run('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8', windowsHide: true });
   if (dirty.status !== 0 || dirty.stdout.trim()) throw new Error('签名只能用于干净工作区中的正式版本；不要为未提交改动生成发布签名。');
   const ref = run('git', ['rev-parse', '--verify', `refs/tags/${tag}^{commit}`], { cwd: root, encoding: 'utf8', windowsHide: true });

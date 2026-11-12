@@ -70,6 +70,7 @@ const STARTED_WITH_ENV_PROXY = startedWithEnvProxy(process.env, process.execArgv
  * @returns {{ action: 'off' | 'already' | 'reexec' | 'unsupported', reason: string }}
  */
 export function envProxyPlan(env = process.env, version = process.versions.node, startedWithFlag = STARTED_WITH_ENV_PROXY) {
+  if (globalThis[Symbol.for('stronghold.launcherDownloadProxy')]) return { action: 'already', reason: '' };
   if (!proxyConfigured(env)) return { action: 'off', reason: '' };
   if (!nodeHonoursEnvProxy(version)) {
     return {

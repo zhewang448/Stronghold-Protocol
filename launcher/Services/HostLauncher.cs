@@ -25,10 +25,11 @@ public static class HostLauncher
         start.Environment["PATH"] = Path.GetDirectoryName(node.Executable) + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH");
         return start;
     }
-    public static Process? Start(string root, NodeRuntime node, int port, HostMode mode)
+    public static Process? Start(string root, NodeRuntime node, int port, HostMode mode, DownloadProxySettings? proxy = null)
     {
         var start = Command(root, node, "--port", port.ToString(), "--host", mode == HostMode.Local ? "127.0.0.1" : "::", "--no-open");
         if (mode == HostMode.Tunnel) start.ArgumentList.Add("--tunnel");
+        DownloadProxy.Apply(start, root, proxy ?? new());
         return Process.Start(start);
     }
     private static async Task<string> RunAsync(ProcessStartInfo start, int timeoutSeconds = 15)

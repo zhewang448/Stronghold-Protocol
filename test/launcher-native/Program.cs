@@ -5,6 +5,21 @@ using System.Text;
 using System.Text.Json;
 using StrongholdProtocolLauncher.Services;
 
+#if DOWNLOAD_PROXY
+if (args.Length == 1 && args[0] == "--system-proxy-live")
+{
+    using var client = BootstrapInstaller.CreateClient(new("system"));
+    var bytes = await client.GetByteArrayAsync("https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/portrait/char_1014_nearl2_2.png");
+    Console.WriteLine("RESULT system_proxy_live=true bytes=" + bytes.Length);
+    return;
+}
+if (args.Length == 1 && args[0] == "--download-proxy")
+{
+    await DownloadProxyChecks.Run();
+    return;
+}
+#endif
+
 #if BOOTSTRAP
 if (args.Length == 1 && args[0] == "--split-install")
 {

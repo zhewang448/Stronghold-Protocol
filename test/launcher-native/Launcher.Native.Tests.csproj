@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType><TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
     <LauncherRoot Condition="'$(LauncherRoot)' == ''">$(MSBuildThisFileDirectory)../../launcher</LauncherRoot>
+    <DefineConstants Condition="Exists('$(LauncherRoot)/Services/DownloadProxy.cs')">$(DefineConstants);DOWNLOAD_PROXY</DefineConstants>
     <DefineConstants Condition="Exists('$(LauncherRoot)/Services/BootstrapInstaller.cs')">$(DefineConstants);BOOTSTRAP</DefineConstants>
     <DefineConstants Condition="Exists('$(LauncherRoot)/Services/InstanceDiscovery.cs')">$(DefineConstants);DISCOVERY</DefineConstants>
     <DefineConstants Condition="Exists('$(LauncherRoot)/Services/InstanceIndex.cs')">$(DefineConstants);INSTANCE_INDEX</DefineConstants>
@@ -12,6 +13,7 @@
     <DefineConstants Condition="Exists('$(LauncherRoot)/Services/LauncherSelfUpdate.cs')">$(DefineConstants);SELF_UPDATE</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(LauncherRoot)/Services/DownloadProxy.cs" Link="DownloadProxy.cs" Condition="Exists('$(LauncherRoot)/Services/DownloadProxy.cs')" />
     <Compile Include="$(LauncherRoot)/Services/InstallationLocator.cs" Link="InstallationLocator.cs" />
     <Compile Include="$(LauncherRoot)/Services/LauncherPreferences.cs" Link="LauncherPreferences.cs" />
     <Compile Include="$(LauncherRoot)/Services/LauncherLocation.cs" Link="LauncherLocation.cs" Condition="Exists('$(LauncherRoot)/Services/LauncherLocation.cs')" />

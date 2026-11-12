@@ -16,9 +16,9 @@ public sealed class BootstrapInstaller(HttpClient http, string[]? releaseKeys = 
     private const long MaxDownload = 4L * 1024 * 1024 * 1024;
     private const long MaxExtracted = 12L * 1024 * 1024 * 1024;
     public static string RuntimeDirectory => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "StrongholdProtocol", "runtime");
-    public static HttpClient CreateClient()
+    public static HttpClient CreateClient(DownloadProxySettings? proxy = null)
     {
-        var client = new HttpClient { Timeout = TimeSpan.FromMinutes(45) };
+        var client = new HttpClient(DownloadProxy.CreateHandler(proxy ?? new())) { Timeout = TimeSpan.FromMinutes(45) };
         client.DefaultRequestHeaders.UserAgent.ParseAdd("StrongholdProtocolLauncher/2.0");
         return client;
     }

@@ -17,12 +17,13 @@
     <DebugSymbols>false</DebugSymbols>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>../public/icons/favicon.ico</ApplicationIcon>
-    <Version>1.4.0</Version>
+    <Version>1.4.1</Version>
     <Product>Stronghold Protocol Launcher</Product>
     <Title>Stronghold Protocol Launcher</Title>
     <Description>Windows host launcher for Stronghold Protocol: Alliance</Description>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="../tools/assets/launcher-proxy.cjs" LogicalName="launcher-proxy.cjs" />
     <Resource Include="../public/icons/favicon.ico" Link="favicon.ico" />
     <EmbeddedResource Include="../public/i18n/*.json" LogicalName="i18n.%(Filename).json" />
   </ItemGroup>
