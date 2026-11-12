@@ -187,7 +187,8 @@ fixed inactive list. MULTI greys `floor(n/2)` cores; SINGLE shuffles two disjoin
 in INFO_CHECK (`g.bondGroup { idx: 0|1, setupRevision }`), greying the other. Level 1 has 4 + 4. [ASSUMED] Levels 5–20
 use 5 + 5, 标准 co-op greys 4 of 8, and an odd leftover stays active. A bot prefers its plan/strategy core, otherwise
 the seeded first group; [ASSUMED] a human leaving the briefing without a choice keeps that first group.
-Add-on counts stay editable in `config.bans`: [ASSUMED] FUNNY/FAST 1, NORMAL/HARD/ABYSS 4, TRAINING 0.
+Add-on counts stay editable in `config.bans`: FUNNY/FAST 2, NORMAL/HARD/ABYSS 5, TRAINING 0
+(§37.119, official recordings; the earlier 1/4 assumption is superseded).
 An operator is excluded if any core bond is grey/inactive, or if it has add-ons and all are grey/inactive. The same
 rule governs the shared pool, 自选 stock, shop, rewards and grants. INFO_CHECK rolls no shop; a pick rebuilds the
 provisional pool and 自选 stock before the draft, without drawing RNG. Reroll resets the groups/pick and stocks;
