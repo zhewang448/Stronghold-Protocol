@@ -19,7 +19,7 @@ This project does not host plugins and does not run a market. A catalogue (`sche
 The 0.3.1 effects surfaces (`record.operator.fx`, `overlay.fx.*`, `dsl.fx.plugin`) are presentation extensions
 compiled by the plugin loader. See [PLUGINS.md §9](PLUGINS.md#operator-effects-031) for their schemas, limits and
 fallbacks. They do not change the sim event protocol or the identity of content which does not use them.
-Since 0.3.1, stable `manifest.field.rules` and `rule.*` rows expose the four closed rule switches in
+Since 0.3.1, stable `manifest.field.rules` and `rule.*` rows expose the original four closed rule switches in
 `RULE_SWITCHES` (shared/plugins/rules.js). Only gameplay classes may declare them. Declared options enter the
 content identity; conflicting options return `PLUGIN_RULE_CONFLICT`. The full semantics, defaults, and assumptions
 are in [PLUGINS.md](PLUGINS.md#rule-switches). `g.unequip { itemUid }` is a server-checked game intent, available only
@@ -115,6 +115,7 @@ replacement. No route or frozen plugin grammar member is added; the stable surfa
 | `rule.prepLoadout` | stable | 0.3.1 | `shared/plugins/rules.js#RULE_SWITCHES` |
 | `rule.morphPairing` | stable | 0.3.1 | `shared/plugins/rules.js#RULE_SWITCHES` |
 | `rule.unequip` | stable | 0.3.1 | `shared/plugins/rules.js#RULE_SWITCHES` |
+| `rule.equipHand` | stable | 0.4.0 | `shared/plugins/rules.js#RULE_SWITCHES` |
 | `permission.assets.override` | stable | 0.3.0 | `shared/plugins/manifest.js#PERMISSIONS` |
 | `permission.assets.add` | stable | 0.3.0 | `shared/plugins/manifest.js#PERMISSIONS` |
 | `permission.theme` | stable | 0.3.0 | `shared/plugins/manifest.js#PERMISSIONS` |
@@ -631,3 +632,6 @@ Studio authoring note (0.3.1, §34.30): `theme`, `notices`, `fx` and `skins` are
 routes and the stable theme/notices/operator.fx/overlay.fx/overlay.chars.skins contracts above. Form draft options
 are studio metadata, excluded from packed plugins. This adds no stable API member or route; surface.stable.json
 therefore remains unchanged. See PLUGIN-GUIDE.md for the fields, bounds, previews and trial workflow.
+
+
+The owner-requested `rule.equipHand` extension is stable since 0.4.0. It exposes the separate equipment row already described under the room rules; earlier stable rule rows retain their original introduction versions.

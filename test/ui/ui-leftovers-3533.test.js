@@ -50,5 +50,5 @@ test('local draft and room portraits retain default fallbacks after failed outfi
  const draft=readFileSync(path.join(ROOT,'public/js/screens/bandDraft.js'),'utf8');
  const room=readFileSync(path.join(ROOT,'public/js/screens/room.js'),'utf8');
  assert.match(draft,/seatArtSrc\(arts, failed\)/);assert.match(draft,/setFailed/);
- assert.match(room,/portraitDefault/);assert.match(room,/bad !== portraitDefault/);
+ assert.match(room,/useSeatArt\(\[portrait, portraitDefault\]/);assert.match(room,/onError=\$\{art\.onError\}/);
 });

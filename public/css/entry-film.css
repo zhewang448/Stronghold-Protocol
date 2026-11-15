@@ -27,7 +27,7 @@
 .entry-film-button .btn__icon { color: var(--mint-400); }
 .entry-film-button.btn:hover:not(:disabled), .entry-film-button.btn:focus-visible { background-color: var(--mint-a10); color: var(--mint-400); }
 .entry-film-button:hover::before, .entry-film-button:hover::after, .entry-film-button:focus-visible::before, .entry-film-button:focus-visible::after { border-color: var(--mint-400); }
-.hub-entry-film { margin-top: max(.1rem, 8px); }
+.hub-entry-film { margin-top: max(.1rem, calc(8px * var(--sp-ui, 1))); }
 /* The centre is decorative except for this action; custom art still keeps the action available. */
 [data-hub-theme="custom"] .hub-center { display: flex; }
 [data-hub-theme="custom"] .hub-center > :not(.hub-entry-film) { display: none; }

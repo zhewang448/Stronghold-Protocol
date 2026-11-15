@@ -121,7 +121,7 @@ export function buildSurface(extra = {}) {
     'manifest.field.rules', 'error.PLUGIN_RULE_CONFLICT', 'error.PLUGIN_RULES', ...RULE_NAMES.map((name) => `rule.${name}`)]);
   const add = (name, group, stability, anchor, since) => rows.push({ name, group, stability, since: since ?? (['manifest.field.versions', 'error.PLUGIN_VERSIONS'].includes(name) ? '0.4.0' : added031.has(name) ? '0.3.1' : SURFACE_SINCE), anchor });
   for (const field of MANIFEST_FIELDS) add(`manifest.field.${field}`, 'manifest', EXPERIMENTAL_FIELDS.has(field) ? 'experimental' : 'stable', 'shared/plugins/manifest.js#MANIFEST_FIELDS');
-  for (const name of RULE_NAMES) add(`rule.${name}`, 'rule', 'stable', 'shared/plugins/rules.js#RULE_SWITCHES');
+  for (const name of RULE_NAMES) add(`rule.${name}`, 'rule', 'stable', 'shared/plugins/rules.js#RULE_SWITCHES', name === 'equipHand' ? '0.4.0' : undefined);
   for (const name of Object.keys(PERMISSIONS)) add(`permission.${name}`, 'permission', EXPERIMENTAL_PERMISSIONS.has(name) ? 'experimental' : 'stable', 'shared/plugins/manifest.js#PERMISSIONS');
   for (const [name, cls] of Object.entries(PLUGIN_CLASSES)) add(`class.${name}`, 'class', cls.status === 'unsupported' || EXPERIMENTAL_CLASSES.has(name) ? 'experimental' : 'stable', 'shared/plugins/manifest.js#PLUGIN_CLASSES');
   for (const op of PATCH_OPS) add(`patch.op.${op}`, 'patch', 'stable', 'shared/plugins/patch.js#PATCH_OPS');

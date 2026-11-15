@@ -22,7 +22,8 @@
       "soloUnlimited": true,
       "prepLoadout": true,
       "unequip": false,
-      "morphPairing": false
+      "morphPairing": false,
+      "equipHand": false
     },
     "canSetUniteLayerGains": false,
     "inMatch": false,

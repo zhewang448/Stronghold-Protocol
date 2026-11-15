@@ -221,6 +221,11 @@ describe('extracted board files (when a local client was extracted)', { skip: !m
       for (const [n, e] of Object.entries(entries)) {
         if (!/\.webp$/.test(e?.path || '')) continue;
         assert.ok(existsSync(onDisk(e.path)), `${g}/${n}`);
+        // Opening sprites are native WebP exports, unlike the board's PNG-derived WebP copies.
+        if (g === 'ui/season/act3autochess/entry' && e.webp == null) {
+          assert.ok(['Sprite', 'Texture2D'].includes(e.kind) && e.w > 0 && e.h > 0, `${g}/${n}: native image metadata`);
+          continue;
+        }
         assert.ok(existsSync(onDisk(pngOf(e.path))), `${g}/${n}: PNG`);
         assert.ok(e.webp === 'lossy' || e.webp === 'lossless', `${g}/${n}: mode ${e.webp}`);
       }

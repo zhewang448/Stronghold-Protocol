@@ -200,6 +200,10 @@
     "anchor": "shared/plugins/rules.js#RULE_SWITCHES"
   },
   {
+    "name": "rule.equipHand",
+    "anchor": "shared/plugins/rules.js#RULE_SWITCHES"
+  },
+  {
     "name": "permission.assets.override",
     "anchor": "shared/plugins/manifest.js#PERMISSIONS"
   },
