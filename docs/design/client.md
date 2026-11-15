@@ -22,6 +22,34 @@ Host-console refresh keeps existing interaction and scroll containers, unfinishe
 缺素材、触屏及强制高对比度回退到系统指针，减少动画停用点击姿态切换。
 可选第三方素材只写入被忽略的 `public/assets/`，来源、安装与适配边界见 [鼠标说明](../CURSOR.md)。
 第一版的 75 ms 按压姿态为 [ASSUMED] 网页适配，不宣称逐帧复刻当前官方 PC 端。
+Normal healing ranges use cyan-blue battlefield highlights; damaging ranges keep orange. Placement previews and
+inspected operators / healing summons resolve the same loadout record (dmgType heal or attackKind heal).
+The solid fill, Pixi stripes and SVG stripes share that choice, preserving highlight groups and orientation.
+This does not recolour the card mini-map or infer a healing range from profession, incidental healing, regen, or skill
+text. Special skills that change the displayed ability need separate verified display metadata. Colour families follow
+[PRTS combat mechanics](https://prts.wiki/w/%E4%BD%9C%E6%88%98%E6%9C%BA%E5%88%B6#%E6%94%BB%E5%87%BB%E8%8C%83%E5%9B%B4);
+the exact RGB values are this UI's palette, not extracted official constants.
+
+**Match transition cues.** A round start has one `RoundPopup` (round, income and spectator state). Entering rest,
+ordinary combat or an Improv draft adds no central phase banner; the top bar still identifies the phase. A shared
+draft reaching the viewer's unpicked turn plays one `轮到你选` cue and its sound — in solo simulation too (decision 7
+of 2026-10-22, kept on 2026-11-14, history §37.225). Spectators and personal 教鞭 choices do not play that cue. `screens/game.js` owns the cue, using the installed theme's
+existing banner or the default disc, never both; the choice overlay keeps its persistent turn status and countdown.
+A queued or visible cue expires when that turn ends, its card is picked or the phase changes, and loading theme art
+does not replay a consumed turn. The round plate may finish before the cue; it never causes a second round plate.
+Source: player report and confirmed acceptance criteria, 2026-11-14; no gameplay or simulation changes.
+
+Match-information bond entries (#915, history §37.98) open the existing `BondPopup` directly: the in-game chips,
+briefing discs and strategy information discs share its effects, member list and ban marks. `MatchBondDialog` shares
+Modal's focus stack; Escape or its backdrop closes the card alone and restores its trigger. A strategy-turn change
+or leaving preparation also removes it. In-game ownership, live layers, morph rules and member skins use the existing
+view data; opening a member closes the information overlays before showing its operator card. Before combat the
+member grid is informational. Mode activation bans and drawn incomplete lineups keep their existing distinct meanings.
+On 规程, when the owner's bond entry carries `effectId`, the popup and the strip tier read that effect
+(`effectDescParams`, `displayThresholds`, `params`) instead of the bond's own effect. The effects column shows the
+current command line, each replacement the battle uses, and a retained opening passive when that buff is still the
+opening band's. A zero-count mapped row is popup data only; the strip does not draw it. A mode-off bond stays the
+grey disc and does not take the replacement text.
 
 **Operator skins (§34.23, [SKINS.md](../SKINS.md)).** [ASSUMED] Retain received skin IDs separately from displayed
 skins so the other-player switch restores loaded units when re-enabled, including boss prep partners. Any-phase
@@ -1408,45 +1436,12 @@ Covenant rendering and controls retain the mixed hand and visible temporary row.
 
 队友速查从成员栏右侧展开，按实际席位行定位并跟随名单垂直滚动；在场干员与盟约横向滚动时策略列固定。支持 4–20 席分组、空态、键盘 Escape 和触屏开关。规程大厅每阶六个正式槽，策略后另页带入零至二名，不展示旧候补；原四版本仍在简报按既有候补规则带入零至二名。
 
-## 可选终端主题（2026-11-10）
+## 界面主题与旧偏好迁移（2026-11-15）
 
-设置 → 外观 → 终端主题提供「默认」与「“全能的”可露希尔」，保存为本机 `settings.terminalTheme`。首次默认保持原界面；`settings.terminalVoice` 对局主题语音默认关闭，两项均纳入服主首次默认值和修改锁。主题切换立即生效，刷新保留选择，可随时切回默认。
+设置 → 外观 → 界面主题统一使用上游 spTheme 1 框架，可选择内置终端、已安装的三种官方主题或导入的本机主题包。`settings.uiTheme` 保存选择；`themeVoice` 对局语音默认关闭，`themeMotion` 控制主题动画。旧 `terminalTheme/terminalVoice` 只作为一次性迁移输入，显式新值优先。服主首次默认与锁定仍通过客户端偏好策略生效，解锁恢复原个人选择。
 
-五个官方版本共用此呈现开关，规程的标题、模式、自选和装备区继续使用当前逻辑。共享渲染器播放九个角色动作；动态立绘关闭、系统减少动画及后台暂停遵循既有约定。主题缺失或清单损坏时显示说明并保留默认呈现。来源、安装和 [ASSUMED] 的布局、三个阶段语音及原生粒子边界见 [终端主题](../TERMINAL-THEMES.md)。
+主题只决定呈现。规程指令、自编、装备区与经典版规则继续由版本数据决定；官方主题可在五版使用。角色预览、大厅与资金卡共用加载和动画代码，遵守动态立绘、减少动画、离屏及后台暂停。被动主题语音让位于干员语音，试听使用同一声道，中日语音跟随个人语言选择。主题缺失使用默认呈现并保留选择，以便资源补装后恢复。
 
-解包清单保存原生 Sprite 九宫格边框和骨骼动作时长。商店卡框、等级及刷新/冻结状态使用对应官方图片；HUD 的 `board_main` 与提示窗口的 `window_main_frame` 按原 prefab 用途适配。一次性动作完成一遍后回到 Idle，Sad_Begin 完成后进入 Sad_Idle；Default、Idle 与 Sad_Idle 保持。旧清单沿用固定原包的核对值，不要求先重装才能播放完整互动。阶段窗口的浏览器切分为 [ASSUMED]，未实现的 Unity 时间线边界保持。
+局外页面保持本库多人、训练、调配、个人数据和管理入口；大厅背景与音乐共用一个面板，统计与个人数据集中显示。三维简报预览与轻量策略小地图用途独立。来源、素材格式、兼容边界和本库验证见 [本轮迁移记录](../UPSTREAM-DEV-20261115.md) 与 [主题说明](../TERMINAL-THEMES.md)。
 
-
-### 上游 dev 适配（2026-11-12）
-
-规程领袖伤害前三榜采用上游归属，隐藏偏好按观看者保存，面板复用现有 HUD 实测避让、安全区与缩放；既有统计、队友和观战面板保留。本局信息、简报与策略页的盟约可打开原卡片，嵌套 Escape 仅关闭顶层并恢复焦点，成员库存与层数预测继续显示。等待室可原地转观战并保留调配，必须还有在线真人；手机矮屏提供本人席位的眼睛按钮，20 席分组及取景同步保持。本轮边界见 [迁移记录](../UPSTREAM-DEV-20261112.md)。
-
-### Windows 启动器下载代理（2026-11-10）
-
-「下载代理」为启动器全局设置，默认系统代理，另有直连与 HTTP(S) 手动地址。持久化字段 `DownloadProxyMode` / `DownloadProxyAddress`；仅后续下载或下次开服准备采用新选择，下载中禁止改动。原生安装、运行环境、自更新共用选定传输；子进程显式传递代理端点并加载现有 Undici 适配器，兼容 Node 22.14。本机管理请求绕过代理，第三方 URL 镜像仍独立选择。
-
-启动器独立 Release 使用 `launcher-v<启动器版本>`，签名和附件版本绑定该标签，不递增游戏 `RELEASE_TAG`，不改变游戏 Latest。旧启动器 1.4.0 及更早需手动升级一次，1.4.1 起自行发现独立发布。
-
-### 面向玩家的作战试算（2026-11-12）
-
-大厅「干员调配」附近提供「作战试算」，打开独立的 `/training/` 页面，不创建房间、不修改个人调配、不写战绩。单干员木桩与阵容模拟共用 A/B 比较；公共条件包括版本、难度/规程等级、地图、回合、时限、随机种子以及领袖战阵地数，改变条件使两个方案的结果都过期。阵容盟约使用正式人数、调和、装备授予与禁用规则计算，层数是用户指定的战斗初始值；单干员可以手动指定外部盟约阶数作为测试假设。
-
-公共只读 API 提供版本选项与场景构建；每个文档携带版本和内容标识，服务端拒绝过期内容、无效配置和非法部署。浏览器 Worker 运行正式引擎，取消或切换版本立即终止旧任务，旧结果不得覆盖新配置。数值使用现有有效扣血统计，召唤物归所属干员，平均 DPS 的分母是从部署开始的实际模拟秒数。战斗演练在相同条件下输出正式快照与事件，使用局内渲染器显示动作、弹道与生命变化，并提供暂停、倍速、重播和进度拖动；缺素材时沿用二维/头像降级。
-
-[ASSUMED] 训练木桩使用人工测试场地，不移动、不攻击；默认 60 秒，可选 30/60/120 秒。方案保存在独立浏览器存储并支持命名、导入和导出；不得写回个人调配。历史版本用各自数据，插件、多回合经济与联防继续使用现有工作台。界面延续现有色彩；桌面配置、棋盘、结果三列，手机使用配置/结果切换和固定运行栏。使用与验收见 [作战试算](../TRAINING.md)。
-
-### 玩家作战试算：真实战场交互（2026-11-12）
-
-公共条件的难度/规程等级选项同时列出独立和同盟模式，因此每个选项须显示模式前缀（如「独立模拟 · 险境模拟」「同盟模拟 · 险境模拟」）。modeId 仍是选择与存储身份，不能按显示名称去重。
-
-训练页复用 createFieldView/setPrep、局内朝向轮盘、单位头像与资料组件。备战只有呈现动画，模拟时间保持零；单干员自动落位让木桩进入所选技能/模组的攻击范围。底部干员/装备/召唤物库支持点选及拖拽，场上选中单位后在侧栏更换技能、精锐、装备与模组，层数通过盟约条展开。原版本/场景/保存格式继续使用；公共条件转入抽屉。
-
-默认实时演练，快速A/B计算保留。训练Worker输出fieldMeta、正式快照、战斗事件和有效伤害统计；暂停/倍速只改变页面调度，定位在独立Worker重置模拟并清空旧特效。A/B共用整数帧时钟；桌面可选双屏、手机单屏。未完成结果不覆盖完整结果，战斗时改配置需返回备战；切换版本终止旧Worker并释放原画布。
-
-[ASSUMED] 展示模式默认三维/精简特效，按既有资源能力降级到二维或头像战场；显示偏好独立保存。单体测试的地格自动排序、条件抽屉和移动端面板是训练交互，非官方玩法规则。原有效扣血口径、五版本身份和黄金结果不变。
-
-### 作战试算：图形战报（2026-11-12）
-
-结果侧栏优先展示完整摘要、按原战斗统计配色分段的伤害构成、带头像的贡献排行；可按伤害/有效治疗/承伤/击杀排序，点击单位回到检查器。可展开非模态详细战报，提供时间曲线、单位表和明确B−A方向的A/B比较，手机表格在面板内横向滚动。结果时限、提前击破、有漏怪的波次结束和领袖剩余生命分别标明。
-
-训练报告复用trackCombat的实际扣血/有效治疗统计，额外读取引擎的承伤、击杀和攻击动作计数并归入召唤物所有者；不修改战斗事件或数值。快算与实时会话共用报告器，按游戏秒采样累计量，并在提前结束/实时当前时刻保留真实末端点；定位从零重建，禁止重放追加重复历史。曲线刻度和A/B颜色复用现有图表帮助函数。平均DPS/HPS的分母保持实际全场秒数，区间速率另行标注。
+等待室按 `shared/playerCapacity.js` 的实际分组分页，4 席仍是一页，20 席为 A–E；每页保持真实席位编号与原立绘/取景操作。标出本组、已占席位和就绪人数，创建者计入就绪数，与底部开始条件一致。添加 AI 仍由服务器填最低空席，界面随后切到该席位所在页，不能把分页下标当成请求中的席位编号。切页动画按页内顺序，窄横屏限制立绘卡高度，让开始/准备操作可见。

@@ -73,6 +73,7 @@ export function unitInfo(u) {
     // an ally operator's equipped item ids (display: a 变形同构体 wearer counts for the bond it grants — the bond popup's
     // member list and the detail card's bond chips of a teammate's unit)
     items: u.side === 'ally' && u.kind === 'op' && Array.isArray(u.items) && u.items.length ? [...u.items] : undefined,
+    itemProgress: u.itemProgress?.map(p => ({ ...p })),
     // 补位: the replaced operator's charId when the chess fights as its stand-in (spine / avatar are the stand-in's; the
     // detail card composes the stand-in record, shared/standIn.js standInRecord)
     standInFor: u.side === 'ally' && u.kind === 'op' && typeof d.standInFor === 'string' ? d.standInFor : undefined,
@@ -114,6 +115,7 @@ export function animOf(u, t) {
   if (t < (u.skillAnimUntil ?? -1)) return ANIM.SKILL;
   if (t - u.lastAttackAt < ATTACK_ANIM_TIME) return u.skill && u.skill.active && u.skill.kind !== 'passive' ? ANIM.SKILL : ANIM.ATTACK;
   if (u.side === 'enemy' && u.moving && !u.blockedBy) return ANIM.MOVE;
+  if (u.side === 'ally' && u.kind === 'token' && u.mem.lethaniaPursuit && u.moving && !u.blocking.length) return ANIM.MOVE;
   return ANIM.IDLE;
 }
 

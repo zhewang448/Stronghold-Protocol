@@ -7,6 +7,7 @@
 // the player state).
 
 import { boardOrder, pieceDir } from '../board.js';
+import { equippedItemProgress } from '../itemProgress.js';
 import { syncCommand, commandBattleInput, keepsFunds } from '../bandCommands.js';
 import { computeBonds, bondSnapshot, activatedLayers, bondsWithGains } from '../bondsMeta.js';
 
@@ -143,6 +144,8 @@ export class PlayerRound {
     for (const { r, c, piece } of boardOrder(this.board)) {
       if (piece.kind === 'chess') {
         const u = { uid: piece.uid, kind: 'chess', chessId: piece.id, row: r, col: c, dir: pieceDir(piece), items: (piece.items || []).map((i) => i.id) };
+        const progress = equippedItemProgress(this, piece);
+        if (progress) u.itemProgress = progress;
         const pick = this.diyPickOf(piece.id);
         if (pick) {
           // 0.2.0 自选编队: a slotted DIY slot fights as its pick (sim getChess(id, { diy }): the operator's body, the pick's
@@ -184,6 +187,7 @@ export class PlayerRound {
       ...commandBattleInput(this, units),
       bonds: bondSnapshot(reached ? this.bondsView() : this.bonds),
       bandId: this.bandId,
+      ...(this.bandProgressView() ? { bandProgress: this.bandProgressView() } : {}),
       playerEffects: this.effects.filter((e) => e.battle !== false).map((e) => ({
         id: e.id, key: e.key ?? null, source: e.iconKind ?? null, params: e.params ?? null, counter: e.counter ?? null, data: e.data ?? null,
       })),
@@ -228,6 +232,8 @@ function regulationBench(ps) {
       items: (piece.items || []).map((it) => it.id),
       bonds: Array.isArray(rec && rec.bonds) ? rec.bonds.slice() : [],
     };
+    const progress = equippedItemProgress(ps, piece);
+    if (progress) u.itemProgress = progress;
     const pick = ps.diyPickOf(piece.id);
     if (pick) {
       u.diy = { charId: pick.charId, skillIndex: pick.skillIndex, uniEquipId: pick.uniEquipId };

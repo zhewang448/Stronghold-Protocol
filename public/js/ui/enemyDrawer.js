@@ -1,3 +1,4 @@
+import { StrategyProgress } from './strategyProgress.js';
 // 本局信息 dialog under the top bar (opened by the left 🔍, official btn_check_player / autochess_hud_player_info_dialog,
 // research 09 §2.1) with two tabs:
 //   本局信息 — own strategy, stage, disabled bonds with banned-member counts and the banned operator list (default) —
@@ -7,7 +8,7 @@
 //              match's factions and the enemy leader on boss rounds. The primary enemy preview is the pen on the board
 //              (the right 🔍▶▶ pans the camera there; tapping an enemy in the pen opens its detail card) — research 09 §6.2.
 
-import { html, Icon, Tabs, MicroLabel } from './components.js';
+import { html, Icon, Tabs } from './components.js';
 import { Img, UnitThumb, BondGlyph, BandIcon, RichText, GIcon } from './gameComponents.js';
 import { groupEnemies, factionTypes, briefingBondTip } from './gameLogic.js';
 import { matchInfoModel, DiyBannedLine, BannedOperatorGroups } from './matchInfo.js';
@@ -54,7 +55,7 @@ function EnemiesTab({ pub, priv, onEnemy }) {
     </div>` : html`<p class="edrawer__empty"><${GIcon} name="target" />${t('暂无敌方情报')}</p>`}
     ${boss ? html`<div class="eboss">
       <${UnitThumb} kind="enemy" id=${boss.enemyKey} size="md" />
-      <div><${MicroLabel} tone="gold">${t('ENEMY LEADER // 敌方领袖')}</${MicroLabel}><b>${boss.name}</b>
+      <div><span class="sw-sec__name"><i>[</i> ${t('ENEMY LEADER // 敌方领袖')} <i>]</i></span><b>${boss.name}</b>
         <span class="t-lo">${t('第 {r} 回合 · 最终攻势', { r: data.get('config')?.modes?.[pub.modeId]?.bossRound ?? pub.lastRound ?? 14 })}</span></div>
     </div>` : null}
   </div>`;
@@ -70,22 +71,29 @@ function InfoTab({ pub, priv, onChess, onBond, bandId = null, bandOwner = null, 
   const disabled = new Set(bonds.filter((b) => stateOf(b.bondId)).map((b) => b.bondId));
   // while scouting a teammate's prep board the drawer shows THEIR 策略 in place of one's own (user playtest #2 item 2)
   const band = (bandId || priv?.bandId) ? data.lookup('bands', bandId || priv.bandId) : null;
+  const bandEffect = band && effects?.find(e => e.iconKind === 'band' && e.id === (band.effectId || band.bandId));
   const stage = pub?.stageId ? data.lookup('stages', pub.stageId) : null;
   const withBans = bonds.filter((b) => disabled.has(b.bondId) || (perBond.get(b.bondId) || 0) > 0)
     .sort((a, b) => (disabled.has(b.bondId) - disabled.has(a.bondId)) || ((perBond.get(b.bondId) || 0) - (perBond.get(a.bondId) || 0)));
   return html`<div class="edrawer__body">
     ${band ? html`<div class="iband">
       <${BandIcon} bandId=${band.bandId} size="md" />
-      <div><${MicroLabel} tone="mint">STRATEGY // ${bandOwner ? t('{bandOwner} 的策略', { bandOwner }) : t('我的策略')}</${MicroLabel}><b>${band.name} <small class="t-lo">${band.effectName}</small></b>
-        <${RichText} text=${band.descRaw || band.desc} class="iband__desc" /></div>
+      <div><span class="sw-sec__name"><i>[</i> STRATEGY // ${bandOwner ? t('{bandOwner} 的策略', { bandOwner }) : t('我的策略')} <i>]</i></span><b>${band.name} <small class="t-lo">${band.effectName}</small></b>
+        <${RichText} text=${band.descRaw || band.desc} class="iband__desc" /><${StrategyProgress} effect=${bandEffect} /></div>
     </div>` : null}
     ${stage ? html`<p class="istage"><${Icon} name="rook" />${t('战场：')}<b>${stage.name || stage.id}</b></p>` : null}
-    <h4 class="ihead">${t('本局禁用干员情况')} <small class="num">${banned.length}</small></h4>
-    <div class="ibonds">
-      ${withBans.length ? withBans.map((b) => html`<button key=${b.bondId} type="button" class=${cx('ibond', disabled.has(b.bondId) && 'is-off')} data-bond=${b.bondId} onClick=${() => onBond(b.bondId)} title=${briefingBondTip(b.name, stateOf(b.bondId), perBond.get(b.bondId) || 0, model.regulation && b.isCore)}>
-        <${BondGlyph} bondId=${b.bondId} /><span>${b.name}</span>
-        ${perBond.get(b.bondId) ? html`<span class="ibond__ban num" title=${t('该盟约中被禁用的干员数')}><${Icon} name="user" />${perBond.get(b.bondId)}</span>` : null}
-      </button>`) : html`<span class="t-dim">${t('本局没有禁用盟约')}</span>`}
+    <h4 class="ihead"><span class="sw-sec__name"><i>[</i> ${t('本局禁用干员情况')} <i>]</i></span> <small class="num">${banned.length}</small></h4>
+    <div class=${cx('ibonds', model.regulation && 'ibonds--disc')}>
+      ${withBans.length ? withBans.map((b) => {
+        const off = disabled.has(b.bondId);
+        const bans = perBond.get(b.bondId) || 0;
+        // [ASSUMED] 规程 draws these bonds as the briefing's discs (lit first, grey when the core
+        // is absent). The chip hooks stay: .ibond, the unclassed name, .ibond__ban, data-bond.
+        return html`<button key=${b.bondId} type="button" class=${cx('ibond', model.regulation && 'ibond--disc', off && 'is-off', !off && bans > 0 && 'is-partial')} data-bond=${b.bondId} onClick=${() => onBond(b.bondId)} title=${briefingBondTip(b.name, stateOf(b.bondId), bans, model.regulation && b.isCore)}>
+          <${BondGlyph} bondId=${b.bondId} /><span>${b.name}</span>
+          ${bans ? html`<span class="ibond__ban num" title=${t('该盟约中被禁用的干员数')}><${Icon} name="user" />${bans}</span>` : null}
+        </button>`;
+      }) : html`<span class="t-dim">${t('本局没有禁用盟约')}</span>`}
     </div>
     ${banned.length ? html`<${BannedOperatorGroups} model=${model} onChess=${onChess} />` : null}
     <${DiyBannedLine} model=${model} class="idiybanned" />

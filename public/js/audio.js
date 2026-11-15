@@ -1244,23 +1244,31 @@ export class AudioManager {
 
   /**
    * @param {string} url
-   * @param {{ volume?: number, rate?: number, limited?: boolean, unitKey?: string | null, again?: (() => unknown) | null, pool?: any }} [o]
+   * @param {{ volume?: number, rate?: number, limited?: boolean, unitKey?: string | null, again?: (() => unknown) | null, pool?: any, isCurrent?: (() => boolean) | null }} [o]
    *   again: the sound's URL picked from the manifest again — played instead once when this one was a cosmetic plugin's
-   *   file that would not load (its entry fell back: see the header)
+   *   file that would not load (its entry fell back: see the header); isCurrent: an optional owner lifetime guard for a
+   *   one-shot whose request may finish after the state that requested it has changed
    */
-  _play(url, { volume = 1, rate = 1, limited = false, unitKey = null, again = null, pool = null } = {}) {
-    if (!this.ctx || !url || this.volumes.muted || this.volumes.sfx <= 0) return;
+  _play(url, { volume = 1, rate = 1, limited = false, unitKey = null, again = null, pool = null, isCurrent = null } = {}) {
+    const current = () => {
+      try { return typeof isCurrent !== 'function' || isCurrent() !== false; } catch { return false; }
+    };
+    if (!this.ctx || !url || !current() || this.volumes.muted || this.volumes.sfx <= 0) return;
     if (limited && pool) { this._playPool(url, { volume, unitKey, again, pool }); return; }
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
     if (limited) { if (!this.limiter.tryAcquire(now, unitKey, url)) return; }
     else if (this.uiVoices >= 12) return;
     else this.uiVoices += 1;
     const release = () => { if (limited) this.limiter.release(url); else this.uiVoices = Math.max(0, this.uiVoices - 1); };
+    const fieldToken = this.poolFieldToken;
     this._buffer(url).then((buf) => {
+      if (!current()) { release(); return; }
+      // Generic battle cues share the pools' field lifetime, including a late plugin failure's fallback.
+      if (limited && fieldToken !== this.poolFieldToken) { release(); return; }
       if (!buf && again && this.fellBack.has(url)) {
         release();
         const next = again();
-        if (typeof next === 'string' && next !== url) this._play(next, { volume, rate, limited, unitKey });
+        if (current() && typeof next === 'string' && next !== url) this._play(next, { volume, rate, limited, unitKey, isCurrent });
         return;
       }
       if (!buf || !this.ctx) { release(); return; }
@@ -1398,7 +1406,7 @@ export class AudioManager {
   /**
    * UI sound by name (sfx.ui keys). Unknown names are ignored.
    * @param {string} name
-   * @param {{ volume?: number, scope?: string }} [o]
+   * @param {{ volume?: number, scope?: string, isCurrent?: (() => boolean) | null }} [o]
    */
   sfx(name, o = {}) {
     try {
@@ -1406,7 +1414,7 @@ export class AudioManager {
       const url = pick();
       if (typeof url === 'string') {
         if (name === 'bondUp') this._playBondCue(url, o.volume ?? 0.9, o.scope, pick);
-        else this._play(url, { volume: o.volume ?? 0.9, again: pick });
+        else this._play(url, { volume: o.volume ?? 0.9, again: pick, isCurrent: o.isCurrent });
       }
     } catch { /* ignore */ }
   }
@@ -1544,19 +1552,27 @@ export class AudioManager {
     } catch (err) { this._warn('voice-preview', err); return false; }
   }
 
-  /** Optional terminal cue; passive cues yield to operator speech and explicit previews may take the channel. */
-  playTerminalVoice(url, preview = false) {
+  /** Validated theme-library audio uses the operator channel and yields to operator speech. */
+  playThemeVoice(url, { preview = false, onDone = null } = {}) {
     if (!this.ctx || !this.voiceGain || this.volumes.muted || this.volumes.voice <= 0) return false;
-    if (typeof url !== 'string' || !/^\/assets\/terminal-themes\/ac_s_closur\/audio\/(cn|jp)\/CN_\d{3}\.(wav|ogg)\?v=[a-f0-9]{16}$/.test(url)) return false;
-    if (!preview && this.voiceGate.playing) return false;
+    if (typeof url !== 'string' || !(url.startsWith('blob:') || /^\/assets\/[^\s?#]+\.(wav|ogg|mp3)(?:\?[^\s]*)?$/.test(url))) return false;
+    if (!preview && this.voiceGate.playing && this.voiceGate.playing.slot !== 'theme') return false;
     this._stopVoice();
-    this.voiceGate.start('terminal', null, typeof performance !== 'undefined' ? performance.now() : Date.now());
+    this.themeVoiceDone = typeof onDone === 'function' ? onDone : null;
+    this.voiceGate.start('theme', null, typeof performance !== 'undefined' ? performance.now() : Date.now());
     this._playVoice(url, ++this.voiceToken, 1);
     return true;
   }
 
-  stopTerminalVoice() {
-    if (this.voiceGate.playing?.slot === 'terminal') this._stopVoice();
+  stopThemeVoice() {
+    if (this.voiceGate.playing?.slot === 'theme') this._stopVoice();
+  }
+
+  _finishThemeVoice(token) {
+    if (token !== this.voiceToken) return;
+    const done = this.themeVoiceDone;
+    this.themeVoiceDone = null;
+    done?.();
   }
 
   /**
@@ -1583,12 +1599,12 @@ export class AudioManager {
       const next = again && this.fellBack.has(url) ? again() : null;
       if (next && next.url !== url && this.ctx && this.voiceGain) this._playVoice(next.url, token, volume, next.fallback);
       else if (fallback && fallback !== url && this.ctx && this.voiceGain) this._playVoice(fallback, token, volume);
-      else this.voiceGate.release();
+      else { this.voiceGate.release(); this._finishThemeVoice(token); }
     };
     this._buffer(url).then((buf) => {
       if (token !== this.voiceToken) return;   // taken over / stopped while it decoded: not ours to release
       if (!buf) { failed(); return; }
-      if (!this.ctx || !this.voiceGain) { this.voiceGate.release(); return; }
+      if (!this.ctx || !this.voiceGain) { this.voiceGate.release(); this._finishThemeVoice(token); return; }
       try {
         const src = this.ctx.createBufferSource();
         src.buffer = buf;
@@ -1605,6 +1621,7 @@ export class AudioManager {
           if (token === this.voiceToken) {
             if (this.voiceNode === node) this.voiceNode = null;
             this.voiceGate.release();
+            this._finishThemeVoice(token);
           }
           try { gain.disconnect(); } catch { /* ignore */ }
         };
@@ -1614,13 +1631,16 @@ export class AudioManager {
         this.voiceNode = node;
       } catch (err) {
         this._warn('voice-play', err);
-        if (token === this.voiceToken) this.voiceGate.release();
+        if (token === this.voiceToken) { this.voiceGate.release(); this._finishThemeVoice(token); }
       }
     }, failed);
   }
 
   /** Fade the line on air out (a higher priority line is taking the channel over). */
   _stopVoice() {
+    const themeDone = this.themeVoiceDone;
+    this.themeVoiceDone = null;
+    themeDone?.();
     const cur = this.voiceNode;
     this.voiceNode = null;
     this.voiceToken += 1;              // a line still decoding must not start afterwards

@@ -1,3 +1,4 @@
+import { RegulationBackdrop } from '../ui/regulationBackdrop.js';
 import { VersionSwitch } from '../ui/versionPicker.js';
 import { lobbyVersion, versionLabel, shownVersion, offeredDifficulties, soloTimedOf, setLobbyVersion, fallbackDifficulty, serverDefaultVersion, ladderModes, ladderPick, seasonOf } from '../versions.js';
 import { LobbyMusicButton } from '../ui/lobbyMusic.js';
@@ -5,7 +6,7 @@ import { AccountMeChip } from '../ui/accounts.js';
 import { OnlinePlayersButton, PresenceSelector } from '../ui/social.js';
 import { MatchmakingCount } from '../ui/matchmaking.js';
 import { Emblem } from './title.js';
-import { TerminalCompanion } from '../ui/terminalThemeSection.js';
+import { ThemeCompanion } from '../ui/themeCompanion.js';
 import { useHubBackdrop, HubBackdrop, HubRadar, BackdropSettings, BackdropGlyph, backdropTheme } from '../ui/hubBackdrop.js';
 // Lobby screen — a hub (owner's request, 2026-10-13): an original backdrop (ui/hubBackdrop.js: generated night scenes or
 // the player's own picture) with the game's dot-matrix emblem in the middle, a left column (密钥加入 · tips), a right
@@ -272,15 +273,6 @@ export function LadderList({ ladder, modeId, onMode, disabled = false }) {
   </div>`;
 }
 
-function RegulationBackdrop() {
-  const art = (name) => localAsset('ui/season/act3autochess', name);
-  return html`<span class="hub-reg" aria-hidden="true">
-    ${art('bkg_season_on') ? html`<img class="hub-reg__ground" src=${art('bkg_season_on')} alt="" />` : null}
-    ${art('bg_season_on') ? html`<img class="hub-reg__pic" src=${art('bg_season_on')} alt="" />` : null}
-    ${art('bg_front_season_on') ? html`<img class="hub-reg__skyline" src=${art('bg_front_season_on')} alt="" />` : null}
-    <span class="hub-reg__scan"></span>
-  </span>`;
-}
 
 const CODE_RE = new RegExp(`^[A-Z0-9]{${ROOM_CODE_LEN}}$`);
 /**
@@ -1076,9 +1068,8 @@ export function LobbyScreen() {
           <${SettingsButton} class="lobby-settings" variant="secondary" square=${true} />
           <${GuideButton} class="lobby-guide" variant="secondary" square=${true} />
           <${Button} variant="secondary" size="sm" square=${true} class="hub-bg-btn" onClick=${() => setBgOpen(true)}
-            title=${t('大厅背景')} aria-label=${t('大厅背景')}><${BackdropGlyph} /><//>
+            title=${t('背景与音乐')} aria-label=${t('背景与音乐')}><${BackdropGlyph} /><//>
           <${HubFullscreenButton} />
-          <${LobbyMusicButton} />
           <${PwaInstallButton} class="lobby-pwa" square=${true} />
         </div>
       </div>
@@ -1092,7 +1083,7 @@ export function LobbyScreen() {
 
     <main class="hub-stage">
       <div class="hub-center">
-        <div class="hub-center__mark"><${TerminalCompanion} fallback=${html`<${HubRadar} bg=${bg} /><${Emblem} />`} /></div>
+        <div class="hub-center__mark"><${ThemeCompanion} fallback=${html`<${HubRadar} bg=${bg} /><${Emblem} />`} /></div>
         <div class="hub-center__en">STRONGHOLD PROTOCOL <b>${season === 'act3autochess' ? 'REGULATION' : 'ALLIANCE'}</b></div>
         <h1 class="hub-center__title">${season === 'act3autochess' ? t('卫戍协议·规程') : t('卫戍协议：盟约')}</h1>
         <div class="hub-center__version" data-testid="hub-version">${versionLabel(selectedVersion)}</div>
@@ -1118,10 +1109,12 @@ export function LobbyScreen() {
           <${LoadoutButton} from="lobby" size="lg" class="hub-plate hub-plate--loadout" label=${t('干员调配')} />
           <${HubTile} icon="chart" label=${t('作战试算')} en="BATTLE TRAINING" onClick=${() => { location.href = `/training/?version=${encodeURIComponent(lobbyVersion(store.get()))}`; }} />
         </div>
+        <div class="hub-personal-tools" role="group" aria-label=${t('个人数据与统计')}>
         <${HubTile} icon="chart" label=${t('统计数据')} en="LOCAL RECORDS" onClick=${openStats} />
         <${HubTile} icon="download" label=${t('导出 / 导入个人数据')} en="PERSONAL DATA" onClick=${openPersonalData} />
         <${HubTile} icon="refresh" label=${t('找回数据')} en="RECOVER DATA" onClick=${openRecovery} />
         <${PersonalDataReminder} />
+        </div>
       </aside>
 
       <section class="hub-entries" aria-label=${t('模拟方式')}>
@@ -1166,8 +1159,9 @@ export function LobbyScreen() {
       </div>
     <//>
 
-    <${HubDialog} open=${bgOpen} micro="LOBBY BACKDROP" title=${t('大厅背景')} onClose=${() => setBgOpen(false)}>
+    <${HubDialog} open=${bgOpen} micro="LOBBY MEDIA" title=${t('背景与音乐')} onClose=${() => setBgOpen(false)}>
       <${BackdropSettings} bg=${bg} />
+      <${LobbyMusicButton} embedded=${true} />
     <//>
 
     <${MatchmakingModal} open=${modalOpen} onClose=${() => setModalOpen(false)} onJoin=${join} onSpectate=${spectate} directory=${directory} online=${online} busy=${busy} maint=${maint} mm=${mm} onQueue=${queueMatch} onCancel=${cancelMatch} />

@@ -4,7 +4,7 @@
 
 .room-screen .topbar { height: 1.36rem; }
 .room-topbar__tools { display: contents; }
-.room-screen--coop .room-topbar__tools .btn--square { width: max(.42rem, 36px); height: max(.42rem, 36px); min-width: max(.42rem, 36px); }
+.room-screen--coop .room-topbar__tools .btn--square { width: max(.42rem, calc(36px * var(--sp-ui, 1)), 32px); height: max(.42rem, calc(36px * var(--sp-ui, 1)), 32px); min-width: max(.42rem, calc(36px * var(--sp-ui, 1)), 32px); }
 .room-match-actions { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-end; gap: .06rem; min-width: 3.2rem; }
 .room-match-actions--active { flex-direction: row; align-items: center; justify-content: flex-end; gap: .12rem; min-height: .92rem; }
 .room-match-options { display: flex; flex-direction: row; align-items: center; justify-content: flex-end; gap: .12rem; min-height: .32rem; }
@@ -388,3 +388,12 @@
   .rseat__spectate { display:block; }
   .specbar--empty { display:none; }
 }
+.rs-seat-pages { display: flex; flex: none; flex-wrap: wrap; align-items: center; justify-content: center; gap: .08rem; padding: .08rem .3rem; }
+.rs-seat-pages button { display: flex; align-items: center; gap: .1rem; min-height: max(.42rem, calc(36px * var(--sp-ui, 1)), 32px); padding: .08rem .16rem;
+  border: 1px solid var(--line-2); color: var(--text-md); background: var(--bg-1); font: inherit; font-size: max(calc(.16 * var(--t)), 12px); cursor: pointer; }
+.rs-seat-pages button[aria-pressed="true"] { border-color: var(--mint-400); color: var(--mint-400); }
+.rs-seat-pages small { font-size: .85em; color: var(--text-md); }
+.rs-seat-pages button:focus-visible { outline: 2px solid var(--mint-400); outline-offset: 2px; }
+.rs--paged .rs-seats { justify-content: center; gap: .2rem; }
+.rs--paged .rseat { --w: min(18vw, 3.4rem, calc((100vw - 1.6rem) / var(--n, 4) - .3rem)); }
+@media (pointer: coarse) { .rs-seat-pages button { min-height: var(--tap-min); } }

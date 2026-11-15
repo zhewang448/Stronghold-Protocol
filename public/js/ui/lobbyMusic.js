@@ -1,5 +1,5 @@
 import { PHASE } from '../../../shared/constants.js';
-import { html, Button, Modal } from './components.js';
+import { html, Button, Modal, Icon } from './components.js';
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { store, selectRoute } from '../store.js';
 import { audio, bgmKeyFor } from '../audio.js';
@@ -120,14 +120,11 @@ export const music = {
   },
   async reset() { if (busy) return; ++revision; await saved(true,null); replace(null); status=t('默认大厅音乐'); refresh(); },
 };
-export function LobbyMusicButton() {
+export function LobbyMusicButton({ embedded = false } = {}) {
   const [open,setOpen]=useState(false),[state,setState]=useState(music.snapshot),[error,setError]=useState('');const input=useRef(null);
   useEffect(()=>{install();const fn=s=>setState(s);listeners.add(fn);fn(music.snapshot());return()=>listeners.delete(fn);},[]);
   const action=async fn=>{setError('');try{await fn();}catch(e){setError(e.message||t('操作失败'));}};
-  return html`<${Button} variant="secondary" size="sm" square=${true} class="hub-music-btn" title=${t('大厅音乐')} aria-label=${t('大厅音乐')} onClick=${()=>setOpen(true)}><span style="font-size:22px;line-height:1" aria-hidden="true">♫</span><//>
-    <style>.lobby-music-panel .modal__head{padding:14px 16px 4px}.lobby-music-panel .modal__title{font-size:18px}.lobby-music-panel .modal__head>:first-child{font-size:10px}.lobby-music-panel .modal__body{padding:12px 16px 16px}.lobby-music-panel .modal__actions{padding:10px 16px}.lobby-music-panel button{font-size:13px;min-height:36px;padding:8px 12px}</style>
-    <${Modal} class="lobby-music-panel" open=${open} title=${t('大厅音乐')} micro="LOBBY MUSIC" width="min(420px, calc(100vw - 32px))" onClose=${()=>setOpen(false)} actions=${html`<${Button} variant="secondary" onClick=${()=>setOpen(false)}>${t('关闭')}<//>`}>
-      <div style="display:grid;gap:14px;padding:8px 0;min-width:0">
+  const controls = html`      <div style="display:grid;gap:14px;padding:8px 0;min-width:0">
         <p style="margin:0;color:var(--muted);font-size:13px;line-height:1.7">${t('选择你喜欢的大厅音乐，每首最大 20MB。保存在当前浏览器，无需上传服务器；房间、战前信息和选人时继续播放，进入战场淡出并切换游戏音乐。')}</p>
         <div style="padding:14px;border:1px solid var(--mint,#58d9b5);background:rgba(30,90,75,.12);min-width:0">
           <strong style="display:block;font-size:15px;overflow-wrap:anywhere">${state.name||t('默认大厅音乐')}</strong>
@@ -141,6 +138,8 @@ export function LobbyMusicButton() {
         </div>
         <small style="color:var(--muted);font-size:12px;line-height:1.6">${t('音量和静音沿用游戏设置。刷新后保留；清理浏览器数据会删除音乐。')}</small>
         ${error?html`<p role="alert" style="margin:0;color:#ff9393;overflow-wrap:anywhere">${error}</p>`:null}
-      </div>
-    <//>`;
+      </div>`;
+  if (embedded) return html`<section class="lobby-media__music" aria-label=${t('大厅音乐')}><h3>${t('大厅音乐')}</h3>${controls}</section>`;
+  return html`<${Button} variant="secondary" size="sm" square=${true} class="hub-music-btn" title=${t('大厅音乐')} aria-label=${t('大厅音乐')} onClick=${()=>setOpen(true)}><${Icon} name="music" /><//>
+    <${Modal} class="lobby-music-panel" open=${open} title=${t('大厅音乐')} width="min(420px, calc(100vw - 32px))" onClose=${()=>setOpen(false)} actions=${html`<${Button} variant="secondary" onClick=${()=>setOpen(false)}>${t('关闭')}<//>`}>${controls}<//>`;
 }

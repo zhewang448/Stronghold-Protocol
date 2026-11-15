@@ -1608,6 +1608,7 @@ function clientPreferenceSettings(data) {
     if (field.type === 'boolean') return `<input type="checkbox" ${attrs} ${value ? 'checked' : ''}>`;
     if (field.type === 'choice') return `<select ${attrs}>${field.options.map(option => `<option value="${esc(option)}" ${option === value ? 'selected' : ''}>${typeof option === 'number' ? option === 0 ? '不限' : option : esc(names[option] || option)}</option>`).join('')}</select>`;
     if (field.type === 'number') return `<input type="number" ${attrs} min="${field.min}" max="${field.max}" step="${field.step}" value="${value}" required>`;
+    if (field.type === 'themeId') return `<input type="text" ${attrs} maxlength="40" value="${esc(value)}" placeholder="ac_s_closur">`;
     if (field.type === 'language') return `<input type="text" ${attrs} maxlength="32" value="${esc(value)}" placeholder="zh / en / ja / ko / zh-TW" required>`;
     return `<textarea ${attrs} spellcheck="false" aria-describedby="client-json-help">${esc(JSON.stringify(value, null, 2))}</textarea>`;
   };
@@ -1988,7 +1989,7 @@ document.addEventListener('click', (e) => {
     for (const input of document.querySelectorAll('[data-client-default]')) {
       const field = settingsData.clientPreferenceFields.find(f => f.key === input.dataset.clientDefault), value = settingsData.clientPreferences.defaults[field.key];
       if (input.type === 'checkbox') input.checked = value;
-      else input.value = ['boolean', 'number', 'choice', 'language'].includes(field.type) ? String(value) : JSON.stringify(value, null, 2);
+      else input.value = ['boolean', 'number', 'choice', 'language', 'themeId'].includes(field.type) ? String(value) : JSON.stringify(value, null, 2);
       input.setCustomValidity('');
     }
     for (const input of document.querySelectorAll('[data-client-control]')) input.checked = settingsData.clientPreferences.userControls[input.dataset.clientControl] !== false;
@@ -2003,7 +2004,7 @@ document.addEventListener('click', (e) => {
         if (!input.reportValidity()) return;
         const field = settingsData.clientPreferenceFields.find(f => f.key === input.dataset.clientDefault);
         try { defaults[field.key] = field.type === 'boolean' ? input.checked : field.type === 'number' || field.type === 'choice' && typeof field.default === 'number' ? Number(input.value)
-          : ['choice', 'language'].includes(field.type) ? input.value.trim() : JSON.parse(input.value); }
+          : ['choice', 'language', 'themeId'].includes(field.type) ? input.value.trim() : JSON.parse(input.value); }
         catch { input.setCustomValidity('请输入有效 JSON'); input.reportValidity(); return; }
       }
       const userControls = Object.fromEntries([...panel.querySelectorAll('[data-client-control]')].map(input => [input.dataset.clientControl, input.checked]));

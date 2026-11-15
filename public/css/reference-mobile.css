@@ -28,6 +28,11 @@
     padding: .2rem .25rem; gap: .2rem; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-x pan-y; }
   .room-screen.rs--solo .rs-seats { grid-template-columns: minmax(0, 3.2rem) minmax(0, 6.4rem); }
   .room-screen.rs--big .rs-seats { grid-template-columns: repeat(var(--n), minmax(3.2rem, 1fr)); justify-content: start; }
+  .room-screen.rs--paged .rs-seats { grid-template-columns: repeat(var(--n), minmax(0, 1fr)); justify-content: center; }
+  .room-screen.rs--paged .rseat { width: 100%; min-height: 0; }
+  .room-screen.rs--paged .rseat__art { flex: 1 1 auto; aspect-ratio: auto; min-height: calc(100px * var(--sp-ui, 1)); }
+  .room-screen.rs--paged .rseat__invite { min-height: 0; }
+  .room-screen.rs--paged .rseat__plus { width: .55rem; height: .55rem; }
   /* Reference utility-mobile.css:324–352: explicit chrome regions and bounded controls. */
   .room-screen .rs-top { display: grid; grid-template-columns: minmax(0, 1fr) auto;
     align-items: start; min-width: 0; padding: .15rem .2rem; gap: .15rem; }
@@ -55,6 +60,7 @@
 @media (max-width: 560px) {
   .room-screen .rs-seats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .room-screen.rs--solo .rs-seats { grid-template-columns: minmax(0, 1fr); }
+  .room-screen.rs--paged .rs-seats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .room-screen .rs-foot { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'options' 'status' 'actions'; }
   .room-screen .rs-foot__right { justify-self: stretch; }
 }

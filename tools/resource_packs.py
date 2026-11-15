@@ -42,7 +42,9 @@ def canonical(url):
         raise ValueError(f"unsafe resource URL: {url}")
     suffix = url.rsplit(".", 1)[-1].lower()
     board_json = re.match(r"^/assets/(?:local/(?:map/(?:fx/(?:materials|prefab)|autochess/(?:materials|tiles))|fx/(?:(?:index|textures)(?:-regulation-[0-9a-f]{12})?|(?:prefabs|mesh)/[A-Za-z0-9_.-]+)|scene/(?:act1autochess_m0[1-7]|act2autochess_m0[1-4])/scene)|terminal-themes/ac_s_closur/(?:manifest|spine/mascot|config/(?:skin_config|effect_preview_config)))\.json$", url)
-    if suffix not in EXTENSIONS and not board_json:
+    theme_json = re.match(r"^/assets/local/themes/(?:ac_n_initial|ac_n_iron|ac_s_closur)/(?:theme|layout|prefabs|spine/[A-Za-z0-9_.-]+)\.json$", url)
+    regulation_scene = re.match(r"^/assets/local/scene/act3autochess_m(?:0[1-6]|09|10|11|12)/scene\.json$", url)
+    if suffix not in EXTENSIONS and not board_json and not theme_json and not regulation_scene:
         raise ValueError(f"unsupported resource URL: {url}")
     return url.replace("[", "%5B").replace("]", "%5D")
 

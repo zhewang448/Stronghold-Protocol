@@ -6,6 +6,7 @@ import { SKIN_LIMITS, isCharId } from './protocol.js';
 import { UI_LIMITS } from './plugins/ui.js';
 import { isPluginId } from './plugins/manifest.js';
 import { CURSOR_SIZES, DEFAULT_CURSOR_SIZE } from './cursor.js';
+import { migrateThemePreferences, normalizeUiTheme } from './themePreferences.js';
 const bool = (key, label, value, group) => ({ key, label, default: value, type: 'boolean', group });
 const number = (key, label, value, min, max, step, group) => ({ key, label, default: value, type: 'number', min, max, step, group });
 const choice = (key, label, value, options, group) => ({ key, label, default: value, type: 'choice', options, group });
@@ -31,8 +32,9 @@ export const CLIENT_PREFERENCE_FIELDS = Object.freeze([
   choice('settings.officialFx', '官方特效', 'auto', ['auto', 'off', 'lite', 'full'], settings),
   choice('settings.dynamicIllustrations', '动态立绘', 'auto', ['auto', 'static'], settings),
   choice('settings.textSize', '文字大小', 'sm', ['sm', 'md', 'lg', 'xl'], settings),
-  choice('settings.terminalTheme', '终端主题', 'default', ['default', 'ac_s_closur'], settings),
-  bool('settings.terminalVoice', '对局主题语音', false, settings),
+  { key: 'settings.uiTheme', label: '界面主题', default: '', type: 'themeId', options: ['', 'ac_n_initial', 'ac_n_iron', 'ac_s_closur'], group: settings },
+  bool('settings.themeVoice', '对局主题语音', false, settings),
+  bool('settings.themeMotion', '主题动画', true, settings),
   choice('settings.cursorTheme', '鼠标指针', 'arknights', ['system', 'arknights'], settings),
   choice('settings.cursorSize', '鼠标大小', DEFAULT_CURSOR_SIZE, CURSOR_SIZES, settings),
   { key: 'settings.preloadVoiceLang', label: '预载语音语言', default: ['cn', 'jp'], type: 'voiceLanguages', group: settings },
@@ -68,6 +70,7 @@ export const defaultClientPreferencePolicy = () => ({ defaults: clientPreference
 const codes = new Set([...Array.from({ length: 26 }, (_, i) => 'Key' + String.fromCharCode(65 + i)), ...Array.from({ length: 10 }, (_, i) => 'Digit' + i),
   'Space', 'Backquote', 'Minus', 'Equal', 'BracketLeft', 'BracketRight', 'Backslash', 'Semicolon', 'Quote', 'Comma', 'Period', 'Slash', 'Delete', 'Insert', 'Home', 'End', 'PageUp', 'PageDown']);
 export function validClientPreference(field, value) {
+  if (field.type === 'themeId') return typeof value === 'string' && normalizeUiTheme(value) === value;
   if (field.type === 'boolean') return typeof value === 'boolean';
   if (field.type === 'choice') return field.options.includes(value);
   if (field.type === 'number') return typeof value === 'number' && Number.isFinite(value) && value >= field.min && value <= field.max
@@ -84,9 +87,21 @@ export function validClientPreference(field, value) {
 export function normalizeClientPreferencePolicy(raw, current = defaultClientPreferencePolicy()) {
   if (!object(raw) || Object.keys(raw).some(k => !['defaults', 'userControls'].includes(k))) return { error: '客户端设置配置格式无效' };
   const next = clone(current);
+  const aliases = { 'settings.terminalTheme': 'settings.uiTheme', 'settings.terminalVoice': 'settings.themeVoice' };
+  for (const section of ['defaults', 'userControls']) {
+    next[section] ||= {};
+    for (const [old, key] of Object.entries(aliases)) {
+      if (Object.hasOwn(next[section], old) && !Object.hasOwn(next[section], key)) next[section][key] = section === 'defaults' && key === 'settings.uiTheme' ? normalizeUiTheme(next[section][old]) : next[section][old];
+      delete next[section][old];
+    }
+    for (const field of CLIENT_PREFERENCE_FIELDS) if (!Object.hasOwn(next[section], field.key)) next[section][field.key] = section === 'defaults' ? clone(field.default) : true;
+  }
   for (const section of ['defaults', 'userControls']) if (Object.hasOwn(raw, section)) {
     if (!object(raw[section])) return { error: '客户端设置配置格式无效' };
-    for (const [key, value] of Object.entries(raw[section])) {
+    for (const [inputKey, inputValue] of Object.entries(raw[section])) {
+      const key = aliases[inputKey] || inputKey;
+      if (key !== inputKey && Object.hasOwn(raw[section], key)) continue;
+      const value = section === 'defaults' && inputKey === 'settings.terminalTheme' ? normalizeUiTheme(inputValue) : inputValue;
       const field = byKey.get(key);
       if (!field || !(section === 'userControls' ? typeof value === 'boolean' : validClientPreference(field, value))) return { error: '客户端设置值无效：' + (field?.label || key) };
       next[section][key] = clone(value);
@@ -97,7 +112,7 @@ export function normalizeClientPreferencePolicy(raw, current = defaultClientPref
 
 /** Explicit current values win over retired aliases; missing fields stay absent. */
 export function migrateClientSettings(raw) {
-  const value = object(raw) ? { ...raw } : {};
+  const value = migrateThemePreferences(object(raw) ? raw : {});
   if (!Object.hasOwn(value, 'dynamicIllustrations')) {
     if (value.dynamicIllustration === false || value.dynamicIllust === false) value.dynamicIllustrations = 'static';
   }

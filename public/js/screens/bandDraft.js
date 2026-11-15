@@ -28,7 +28,7 @@ import { useEffect, useMemo, useRef, useState } from '../../vendor/hooks.module.
 import { html, Button, Icon, MicroLabel, useTicker, secondsLeft } from '../ui/components.js';
 import { useGameData, BandIcon, BondGlyph, RichText, PlayerAvatar, LpTower, Sprite } from '../ui/gameComponents.js';
 import { StepHeader, ExitModal } from '../ui/matchChrome.js';
-import { StageMiniMap, stagePreview } from '../ui/stagePreview.js';
+import { StageMiniMap, stagePreview } from '../ui/stageMiniMap.js';
 import { MatchInfoDialog, matchInfoModel, MatchBondDialog, regulationCoreAbsent } from '../ui/matchInfo.js';
 // package (对局动画): the 「请选择策略」 band each time a pick becomes the player's (ui/matchIntro.js TurnBanner)
 import { actions, act, draftRequestScope } from '../ui/gameActions.js';
@@ -411,14 +411,16 @@ export function BandDraftScreen({ held = null } = {}) {
       </aside>
 
       <section class=${cx('draft-grid', grouped && 'draft-grid--grouped')} role="listbox" aria-label=${t('策略')}>
-        ${bands.map((b) => {
+        ${bands.flatMap((b, index) => {
           const who = pickers.get(b.bandId) || [];
           const isRandom = b.bandId === RANDOM_BAND_ID;
           const isTaken = !isRandom && taken.has(b.bandId);
           const otherGroups = otherBandGroups(draft, b.bandId);
           const badged = local.badges.has(b.bandId);
           const offNames = isRandom ? [] : bandOffBonds(b, offBonds).map((id) => gd.bond(id)?.name || id); // 本局禁用 (still selectable)
-          return html`<button key=${b.bandId} type="button" role="option" aria-selected=${sel === b.bandId ? 'true' : 'false'} data-band=${b.bandId}
+          const section = b.bandType === 'GENERAL' ? { id: 'general', name: t('泛用型策略') } : b.bandType === 'BONDRELEVANT' ? { id: 'bond', name: t('盟约型策略') } : null;
+          const heading = section && bands[index - 1]?.bandType !== b.bandType ? html`<div key=${`section-${section.id}`} class="draft-grid__sec" role="presentation" data-testid=${`band-section-${section.id}`}><span>${section.name}</span></div>` : null;
+          const tile = html`<button key=${b.bandId} type="button" role="option" aria-selected=${sel === b.bandId ? 'true' : 'false'} data-band=${b.bandId}
               aria-disabled=${isTaken ? 'true' : 'false'} title=${isTaken ? t('队友已选') : offNames.length ? bandOffLine(offNames) : undefined}
               class=${cx('dband', sel === b.bandId && 'is-sel', myPick === b.bandId && 'is-mine', isTaken && 'is-taken', offNames.length && 'is-off')} onClick=${() => { setSel(b.bandId); audio.sfx('tab', { volume: 0.5 }); }}>
             ${isRandom ? html`<span class="dband__random" aria-hidden="true">?</span>` : html`<${BandIcon} bandId=${b.bandId} size="lg" />`}
@@ -432,6 +434,7 @@ export function BandDraftScreen({ held = null } = {}) {
               aria-label=${t('{group}组已选择', { group: group.label })}>${group.label}</span>`)}</span>` : null}
             ${isTaken ? html`<span class="dband__taken">${t('队友已选')}</span>` : null}
           </button>`;
+          return heading ? [heading, tile] : [tile];
         })}
       </section>
 

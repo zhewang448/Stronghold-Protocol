@@ -5,6 +5,12 @@ all 1,010 results. The regulation mode resolution moves only `solo-FUNNY-1` and 
 mode to the 14-round level-1 mode when no modeId is given. Sources and every difference from the pinned upstream
 corpus are recorded in [the migration](../../docs/UPSTREAM-REGULATION-20261109.md).
 
+The 2026-11-15 upstream adoption intentionally moves 112 of the same 1,267 scenarios: first-period core bans,
+shared economy/equipment fixes, and regulation targeting, enemies and terrain. All five corpora pass read-only
+comparison with zero engine errors. [The migration](../../docs/UPSTREAM-DEV-20261115.md#黄金结果变化) explains the
+changes; [the complete move list](../../docs/UPSTREAM-DEV-20261115-GOLDEN-MOVES.json) names every scenario, changed
+field and before/after digest. No scenario, seed or performance threshold is removed or relaxed.
+
 The simulation is deterministic: the same seed and inputs give the same battle and the same match, bit for bit. These
 files record the exact outcome of a fixed corpus of seeded scenarios, so a change that alters gameplay — even one meant
 to be a pure refactor that only reorders random draws, hook order or iteration order — fails loudly instead of slipping

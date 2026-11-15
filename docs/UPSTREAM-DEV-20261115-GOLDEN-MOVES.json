@@ -1,0 +1,1946 @@
+{
+  "baseline": "a35b2583035c8c92b072eaf608322e9071daf19f",
+  "upstream_increment": {
+    "from": "f8a6619b3edaaa26c8ad61b730ad7c8475b7310d",
+    "to": "ba24283d87af7034898f10ade850becf9c35ae2b"
+  },
+  "corpus": 1267,
+  "changed_scenarios": 112,
+  "engine_errors": 0,
+  "method": "Compare each complete golden digest against this fork baseline; scenario identities/seeds are unchanged. Hashes use UTF-8 JSON with sorted keys and compact separators. Reasons describe the combined gameplay changes; they are not a per-commit causal bisection.",
+  "groups": [
+    {
+      "file": "test/golden/act1autochess/matches.json",
+      "version": "act1autochess",
+      "family": "matches",
+      "count": 13,
+      "reason": "第一期核心禁用由沿用第二期的 3 改为有来源的 2；另含售价继承、白铁返还等共用经济修复。后续阵容、采购及 RNG 随玩法变化。",
+      "scenarios": [
+        {
+          "id": "coop2-HARD-4",
+          "changed_fields": [
+            "end",
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "d5a344b85be29df6f8d74b50d947817ba9b517cd63c5cd22426a9d6b620b0489",
+          "after_sha256": "753bdd620b7f6dcceb8046ebed223e47fc954f053ec2ce7ec9648ca79666d492",
+          "first_changed_round": 1,
+          "end_changes": {
+            "teamLp": {
+              "before": 68,
+              "after": 66
+            },
+            "virtualMs": {
+              "before": 116900,
+              "after": 115400
+            }
+          }
+        },
+        {
+          "id": "coop2-NORMAL-1-coverage-standins",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players",
+            "standIns"
+          ],
+          "before_sha256": "050f42ae3ddb16956f094202d64ffc056cff7ad2375fbf13fc66a54e5b580710",
+          "after_sha256": "8992c8009048f399c96fbb0a6fcf1331405769312054a92409cd4799f5ec7d87",
+          "first_changed_round": 1,
+          "end_changes": {}
+        },
+        {
+          "id": "coop2-NORMAL-1-unowned-roster",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players",
+            "standIns"
+          ],
+          "before_sha256": "08a16e566198dd5264e3acadc6cc094de0e7328bb02ef1d6063326d723dc3304",
+          "after_sha256": "51b68b6c3cbfda812439acec1cbc6f0f207439d87bf860d868314d680640b0b3",
+          "first_changed_round": 1,
+          "end_changes": {}
+        },
+        {
+          "id": "coop2-NORMAL-14-standins",
+          "changed_fields": [
+            "end",
+            "rng",
+            "rounds",
+            "players",
+            "standIns"
+          ],
+          "before_sha256": "8472764424951a5ef031c472036e319bfbb6c6427ead7c1d24c0fc9b5015961d",
+          "after_sha256": "77bc07bc11a42c28a96f875086f674ac587eb7de996095d5427c665be82f3682",
+          "first_changed_round": 4,
+          "end_changes": {
+            "virtualMs": {
+              "before": 118400,
+              "after": 115400
+            }
+          }
+        },
+        {
+          "id": "coop2-NORMAL-3",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "a076266bbf08d010d31907b5407db51b93941f60b8dc8f1b086f5172b5d12d9e",
+          "after_sha256": "70ab315dfe708725c0608ac5bb3778f6db88a76cafff5b2b06d11c27b6be32d2",
+          "first_changed_round": 3,
+          "end_changes": {}
+        },
+        {
+          "id": "coop2-NORMAL-5-coverage-diy",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players",
+            "diy"
+          ],
+          "before_sha256": "06c6a5d8bfd1479e6b3ea25103e5ba87e71d222e04f24476c38682a3afaaa23e",
+          "after_sha256": "5284fcf3b3fc2de2def72bfca8699db9f0a595991a236bf999f6e0b668821a83",
+          "first_changed_round": 1,
+          "end_changes": {}
+        },
+        {
+          "id": "coop2-NORMAL-70-diy",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players",
+            "diy"
+          ],
+          "before_sha256": "e99411865ed52e089cc0f9aa35e453e5d0716161e293661b119b7f003d1fc0d8",
+          "after_sha256": "d0365b7c9e67039b97904084b6895c91bacfe14ae7cea6d5c34bfd72abe66ba9",
+          "first_changed_round": 1,
+          "end_changes": {}
+        },
+        {
+          "id": "coop2-NORMAL-8-serverrun",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "c7e6f0d2c3f41335fc56cac2b48229aa56afa83ff385d8611d800d431b85ce3a",
+          "after_sha256": "c496f69f18d66c8ef145db1818c7e89720a96ec799f502544013f64b2c38e036",
+          "first_changed_round": 1,
+          "end_changes": {}
+        },
+        {
+          "id": "solo-HARD-1",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "63b973ca2dde401a2edb9055d0ecad1845e0ae7ae5b2a6940aa2dd5cd739af15",
+          "after_sha256": "c8e092fed2e2d823af501641f22a60feab8b64e02e798428c7c9bcc3af6a9a57",
+          "first_changed_round": 2,
+          "end_changes": {}
+        },
+        {
+          "id": "solo-HARD-2",
+          "changed_fields": [
+            "end",
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "03586f562a30ff60aa1fbcfe8809e68a70683a53164038935b9d3f586af874fd",
+          "after_sha256": "5478e0ce507df78d53c93633df0a85cd2cc842ce44bed84be55e5adfec7386e2",
+          "first_changed_round": 4,
+          "end_changes": {
+            "teamLp": {
+              "before": 30,
+              "after": 3
+            }
+          }
+        },
+        {
+          "id": "solo-HARD-9-boosted",
+          "changed_fields": [
+            "end",
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "177537f4e1525e00b24819d4e25196c7c5f3e20f19e7e4f927e53b8e847a2bce",
+          "after_sha256": "eea191f1c675827ea8d88e1ce77d47d54504eba5f2a509be2973fde03137fb6d",
+          "first_changed_round": 1,
+          "end_changes": {
+            "teamLp": {
+              "before": 400,
+              "after": 399
+            }
+          }
+        },
+        {
+          "id": "solo-NORMAL-1",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "601b81089091e1a9806e7570b111d5032ddcc5b3df281ccf03500404da89bce2",
+          "after_sha256": "005d56dca8235ca74c61bc8306f7a755cc12f0d6bf6762c68d1f52cf6a40576a",
+          "first_changed_round": 2,
+          "end_changes": {}
+        },
+        {
+          "id": "solo-NORMAL-2",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "f15e5fcda56cab2901bbcadae5e67140d8f18e66c68a76e6835f8390131b2678",
+          "after_sha256": "82c7bdf875e9cd131ebe9afdbe0ee1742a39d039fa17cdec0bc8903961de9956",
+          "first_changed_round": 4,
+          "end_changes": {}
+        }
+      ]
+    },
+    {
+      "file": "test/golden/act1autochess/roster.json",
+      "version": "act1autochess",
+      "family": "roster",
+      "count": 1,
+      "reason": "香槟炸弹随琳琅诗怀雅离场；roster-041 少一次后续引爆。",
+      "scenarios": [
+        {
+          "id": "roster-041",
+          "changed_fields": [
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "ed28845ad000f2e248c7c7bd273927667239cd079827294de0725ea29006e0ba",
+          "after_sha256": "5916a9b6c9d9d368e7595afb5ba4c98d885c34dd28b3c2313d85cb66b56001ea"
+        }
+      ]
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/matches.json",
+      "version": "act1autochess-v1_1",
+      "family": "matches",
+      "count": 14,
+      "reason": "第一期核心禁用 3→2 及共用经济修复；标准场 coop4-FUNNY-6 从第 13 回合变化，不能归因于标准模式未变的核心禁用。",
+      "scenarios": [
+        {
+          "id": "coop2-HARD-4",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "95bf6902904423246aa3b3acd8ea7501b837623b15b38b3398dce9e3ac3d7736",
+          "after_sha256": "7e681127af802bfd31b889168dae85237583aeaaf1c2b259801c85039427226f",
+          "first_changed_round": 1,
+          "end_changes": {}
+        },
+        {
+          "id": "coop2-NORMAL-1-coverage-standins",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players",
+            "standIns"
+          ],
+          "before_sha256": "5b7cc93e0bab905f29d922a7aae0ef9beab023a0b8fcf7fba5a37c4f3e192836",
+          "after_sha256": "cff34aefae49adc70cbc62f2470ebdc01a2221a9b30bc11526151468373d5ffd",
+          "first_changed_round": 1,
+          "end_changes": {}
+        },
+        {
+          "id": "coop2-NORMAL-1-unowned-roster",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players",
+            "standIns"
+          ],
+          "before_sha256": "3b6fdbdbda0b2c0469f3c683acdde7822beea2d2175e91740824982deed54602",
+          "after_sha256": "e15dd6ebec142784c2870bbd6fbf8228a07720924d026ecb6c2782366b6004a6",
+          "first_changed_round": 1,
+          "end_changes": {}
+        },
+        {
+          "id": "coop2-NORMAL-14-standins",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players",
+            "standIns"
+          ],
+          "before_sha256": "87e1d6dd9080d90679b607e509391523ec98c62012aaa96c61bcf2ff42373117",
+          "after_sha256": "db3a96b19a2efe324e769bf24eed9a18ef26a0ae8e34d54291ed28baa93099e7",
+          "first_changed_round": 5,
+          "end_changes": {}
+        },
+        {
+          "id": "coop2-NORMAL-3",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "841b6282e7a41b6a4c00120cb26441ba057d242b67185d728d102905bbb5705c",
+          "after_sha256": "8d0c26ed945af825ce14a5e8250e5ed8c1e4d52c82c31fffe1bd7e6b6059c54a",
+          "first_changed_round": 3,
+          "end_changes": {}
+        },
+        {
+          "id": "coop2-NORMAL-5-coverage-diy",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players",
+            "diy"
+          ],
+          "before_sha256": "5b21019fd45829cb4c40b3e3045a0f91ce252713883eeb8686c1de14abc4b4a8",
+          "after_sha256": "82292aa240b66edb744330b060d307d59349eb3a3d750af35774b49391fab7c8",
+          "first_changed_round": 1,
+          "end_changes": {}
+        },
+        {
+          "id": "coop2-NORMAL-70-diy",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players",
+            "diy"
+          ],
+          "before_sha256": "331a0dc7aaab502a961c86d0a306c8a3e7210b202ac007c223af2453a367f09e",
+          "after_sha256": "9e9e5c64d90e481b88b75598f5d7a9fcc06b1d4417d79357addadfc2aab74a3d",
+          "first_changed_round": 3,
+          "end_changes": {}
+        },
+        {
+          "id": "coop2-NORMAL-8-serverrun",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "687a76d72b09331779489d15dc80005385e349431a187ecb434d72fb90ea8fcd",
+          "after_sha256": "5f5db24183a7f825809dec859f0077bd3492be8d9ccb219835015e1597e960c8",
+          "first_changed_round": 1,
+          "end_changes": {}
+        },
+        {
+          "id": "coop4-FUNNY-6",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "1cf8720117cedec5922735108e190e2614982cef098f3bde01800810b6c19980",
+          "after_sha256": "dd5c863dcc502d47868642441f55dfe4eee8287e2a83abe39dddedeb0f4f6e5d",
+          "first_changed_round": 13,
+          "end_changes": {}
+        },
+        {
+          "id": "solo-HARD-1",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "dcc214085a1c52373e82f79efa152c264ff887cc0dfbce022188e80c86210f40",
+          "after_sha256": "01e4302a61c105427952b365493ed20a48bd73aaf559cf67eca993fc3b66e4de",
+          "first_changed_round": 2,
+          "end_changes": {}
+        },
+        {
+          "id": "solo-HARD-2",
+          "changed_fields": [
+            "end",
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "2cd5d8451110067d6581929da4ce6bc61457fada068cdf1a02548a2639f0dbc0",
+          "after_sha256": "4a1da8303b30f64579730e7eff57cd7c4a149ea5f9ed42ec2f53ed6d92ca01ea",
+          "first_changed_round": 4,
+          "end_changes": {
+            "victory": {
+              "before": true,
+              "after": false
+            },
+            "roundsPassed": {
+              "before": 14,
+              "after": 13
+            },
+            "reason": {
+              "before": "victory",
+              "after": "defeat"
+            },
+            "teamLp": {
+              "before": 31,
+              "after": 0
+            },
+            "bossPoolLeft": {
+              "before": 0,
+              "after": 1151137
+            }
+          }
+        },
+        {
+          "id": "solo-HARD-9-boosted",
+          "changed_fields": [
+            "end",
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "f0a699b24a1b6b3e4679288e29b69ff4216ce532c058f601fe065808a440cf4c",
+          "after_sha256": "73039c7b23593c5efd5d14d8e16794320bbe389e37fd7251b6ee2483ff0e54dd",
+          "first_changed_round": 1,
+          "end_changes": {
+            "teamLp": {
+              "before": 394,
+              "after": 400
+            }
+          }
+        },
+        {
+          "id": "solo-NORMAL-1",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "84e496edb6ad44fbc8ee70570ca406dad708adbcf3ab888f3efc29382ee5efb8",
+          "after_sha256": "11895676c9178c1e277e49358439cd1b320d420d182c4aca79cea95e7ae2b761",
+          "first_changed_round": 2,
+          "end_changes": {}
+        },
+        {
+          "id": "solo-NORMAL-2",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "203947663a043dc0634ab5148fc6a1dcb33e7cf2db54b111f721c1444faccaf6",
+          "after_sha256": "de5a6e31802db22acee9eecf857d33bdc977ce208337b06c50a459dc2e9205c2",
+          "first_changed_round": 4,
+          "end_changes": {}
+        }
+      ]
+    },
+    {
+      "file": "test/golden/act1autochess-v1_1/roster.json",
+      "version": "act1autochess-v1_1",
+      "family": "roster",
+      "count": 1,
+      "reason": "香槟炸弹随琳琅诗怀雅离场；roster-041 少一次后续引爆。",
+      "scenarios": [
+        {
+          "id": "roster-041",
+          "changed_fields": [
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "ed28845ad000f2e248c7c7bd273927667239cd079827294de0725ea29006e0ba",
+          "after_sha256": "5916a9b6c9d9d368e7595afb5ba4c98d885c34dd28b3c2313d85cb66b56001ea"
+        }
+      ]
+    },
+    {
+      "file": "test/golden/act2autochess-v2_1/matches.json",
+      "version": "act2autochess-v2_1",
+      "family": "matches",
+      "count": 2,
+      "reason": "共用的售价继承、白铁装备返还等经济修复；两场分别从第 7 / 11 回合出现差异，禁用配置没有变化。",
+      "scenarios": [
+        {
+          "id": "coop2-NORMAL-5-coverage-diy",
+          "changed_fields": [
+            "end",
+            "rng",
+            "rounds",
+            "players",
+            "diy"
+          ],
+          "before_sha256": "76e868bc213bda73e6ba6d57c7034293ed370509f4c96816f33569be2425e6d4",
+          "after_sha256": "33a22658474d9864157a0edb75c7e7870bbc1ba36460e2433bb4e442c6c88b63",
+          "first_changed_round": 7,
+          "end_changes": {
+            "virtualMs": {
+              "before": 122900,
+              "after": 119900
+            }
+          }
+        },
+        {
+          "id": "solo-HARD-2",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "4df9a34c8dbb061ef5b9d3a409013fb4a7d7c6e41c6987e3247e0409f8afe149",
+          "after_sha256": "7be694f4e1d0e212e6bf6b5e4bc190dde6eabb728da1799eab8db5596caf97e4",
+          "first_changed_round": 11,
+          "end_changes": {}
+        }
+      ]
+    },
+    {
+      "file": "test/golden/act3autochess-v3_1/bonds.json",
+      "version": "act3autochess-v3_1",
+      "family": "bonds",
+      "count": 12,
+      "reason": "规程战斗/地块修复影响对应编队；莱塔尼亚 low/high 同时受召唤规则修复影响。",
+      "scenarios": [
+        {
+          "id": "bond-emptyShip-low",
+          "changed_fields": [
+            "players",
+            "units",
+            "hooks",
+            "events",
+            "snaps"
+          ],
+          "before_sha256": "429125326f5f7d76947e916765b733f76792f5628f3c4c60b189ec22ed94741b",
+          "after_sha256": "bb7c5ce2495d45c9b1733caca5b4f72b9e99ef90e4583521ce24cbdc11dd3126"
+        },
+        {
+          "id": "bond-indomShip-low",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "c2ae38aa5ede14d6a0ecc31d2e3a8481c4b49d2b95affc8ebfe2ada274699b84",
+          "after_sha256": "2ea36596a226f0a304e6b52a49e3fe1abfec42a08021705261471a0c96cb7c67"
+        },
+        {
+          "id": "bond-investShip-low",
+          "changed_fields": [
+            "players",
+            "units",
+            "hooks",
+            "events",
+            "snaps"
+          ],
+          "before_sha256": "9d8901b161787ee2e1e55898edfcc1ee5eb137a8d610943f59bb40402c09f344",
+          "after_sha256": "48cc4f726c4647293fd6c901520906f3a2783f8e2c2d38e39f1e9f8c8a863a4f"
+        },
+        {
+          "id": "bond-lethaniaShip-high",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "killed",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "e0c369c48e25b5a9427c26d3b89f820550320f9f388dbf7185f0c7396c2e324a",
+          "after_sha256": "dffc07a15bed88ead4b65bf66eac82aff38dc3382ef9216f2301336fa774e20c"
+        },
+        {
+          "id": "bond-lethaniaShip-low",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "29ba2ef4f916d996ac36862cb4a2f73a54d08864887c8d84c7cfa37e9b166321",
+          "after_sha256": "9b0a88fab278df5a6268fd1411afeea8d8cc327415e3a7fb4539d40f13fb8b68"
+        },
+        {
+          "id": "bond-maniShip-low",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "killed",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "261c2df9892ad98102d53cd4aac373351b9d599afa824ab9f7a7d26f2751f818",
+          "after_sha256": "6c11b9d4fc57f474c38d911339f1be4cefb57a49152b7b4bfdc47dcbb125ae3d"
+        },
+        {
+          "id": "bond-miraShip-high",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "10b3365da43379a1304702e5a2395c0f0dac0cc35fdbf2430e2b3d2b16635dc8",
+          "after_sha256": "6f0b5ce5e33e5b2faa4d7ddcc1e0693fb438ebde7d6b20efc10700fd08e26c08"
+        },
+        {
+          "id": "bond-siracusaShip-low",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "killed",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "0ca8b48a33653d11d8f3017b3666a588fc81e0e3f83843b7e710d6efaed857ea",
+          "after_sha256": "b43bece5528278bd9b81c443ee886b2788ed1469dd4fab94af94ffe1b986c77b"
+        },
+        {
+          "id": "bond-skillfulShip-high",
+          "changed_fields": [
+            "players",
+            "units",
+            "hooks",
+            "events",
+            "snaps"
+          ],
+          "before_sha256": "bffb220a5aa08be50f55bbc6fd3da8f2d45eeb4c7a26ba37571c8997c9ac0b37",
+          "after_sha256": "0bf07b8174ae27eccac992d43e44965dc9dda99ad7cd6e540ddc2ff3b39f6d91"
+        },
+        {
+          "id": "bond-swiftShip-low",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "0a98fc07d9c613133e2a6c5c38eb92bd36a1889ba08ded367b466a6e24c124f1",
+          "after_sha256": "7a79738b363b4e82dfaf0ae7f121c28251252be61d190331b6fcb390bf14b9a0"
+        },
+        {
+          "id": "bond-victoriaShip-low",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "d5ab36b2182c52fa452174141b0f2816d0a52c436bf247a51ee646db1e1b2a24",
+          "after_sha256": "1a175074ee341c61234438a7e86a6aa9849fb2748c3f8b9590a658808826dc65"
+        },
+        {
+          "id": "bond-visiShip-low",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "6d141f34ee52c642b6211c990a84dc1b498d4b41bafa7f32843b50adaba5edb9",
+          "after_sha256": "d17f17ca08ba78a6a8a70ef5d90d98fcb65b9222911a20b90e5ced2540ef0e48"
+        }
+      ]
+    },
+    {
+      "file": "test/golden/act3autochess-v3_1/diy.json",
+      "version": "act3autochess-v3_1",
+      "family": "diy",
+      "count": 9,
+      "reason": "规程战斗/地块及相关干员修复改变自选编队面对实际敌人的结果。",
+      "scenarios": [
+        {
+          "id": "diy-007",
+          "changed_fields": [
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "snaps"
+          ],
+          "before_sha256": "e8fe1229661f466bed54635b7ae19a866c21bd8c914c8527effdec71c677dc60",
+          "after_sha256": "564f57a748074b578fb0401a1960dc0e4631b27320d3c190b5387a9621fd0fc2"
+        },
+        {
+          "id": "diy-017",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "killed",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "50c30c565bed6fa0b60a737ccebcd4465c0e7f9548f7a3e874bb2d97d5110adc",
+          "after_sha256": "d0ca2560032e849be19e5bd87e77a3d2b861cff4f63e1c4d1e2e605f078c2fdd"
+        },
+        {
+          "id": "diy-020",
+          "changed_fields": [
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "518b1c417eaba39b740647ba83baf6dd47a0dd41b032755a6959c2b5bdae1fe9",
+          "after_sha256": "614d91f59822c5c5ad7d64d13c7be8e826432ceccd62f54c74da457d86b36849"
+        },
+        {
+          "id": "diy-027",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "killed",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "f93b754bc165bfc670aa855b1260e68bf5fd6dd8e7de0a1a77ff5639af2f2753",
+          "after_sha256": "58894c603ead498a8030f36188ded26f6181e1e34c45bd9a41cf22da631858b1"
+        },
+        {
+          "id": "diy-037",
+          "changed_fields": [
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "0d40a42985d370c151bdd472f622fc429e08b121ccf662486eb56cb27c25d779",
+          "after_sha256": "4afd5d4c3339e96f619b8ed98ff54e674cc2e68541f0761159a084b3fde3ff08"
+        },
+        {
+          "id": "diy-047",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "killed",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "0173d23e077bcdff3730af333453b6efb5ab321d55e015f4db18beaa3e4af45e",
+          "after_sha256": "e1503dfd50d1cedb8835249473e54b885a509e5b7ea338f5af40abbd3cbe63dd"
+        },
+        {
+          "id": "diy-057",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "killed",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "0fa8bfc13d6a86856f74a26e7fb7f116609700cbe7baee6049dbc74193791405",
+          "after_sha256": "8d046ab046083fa380e3d3c113999b6e1513adf9a541d0830cb025e10e85cd33"
+        },
+        {
+          "id": "diy-067",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "reason",
+            "killed",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "4bb31f31baa553c3d0aab009dd2c3f43ad6217aeaa2bbf293a8621d99d318996",
+          "after_sha256": "2fc667b86c0d94e18113a20fb455a987d2f1069c8377a0cdbc8d09783568a971"
+        },
+        {
+          "id": "diy-077",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "killed",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "14e13434113cd4b1d256231d695cc54fbaf23335424e227be440d2ce42bea3c7",
+          "after_sha256": "3586f06424317071fdf0c02bec009866795db633d3a8729bc326727ff2ac8b18"
+        }
+      ]
+    },
+    {
+      "file": "test/golden/act3autochess-v3_1/fields.json",
+      "version": "act3autochess-v3_1",
+      "family": "fields",
+      "count": 15,
+      "reason": "茧/械/后兽及隐秘核心受击区、隐匿和相应规程战斗修复改变领袖场；unite-2 记录联防单位结果变化。",
+      "scenarios": [
+        {
+          "id": "boss-boss_11-pair",
+          "changed_fields": [
+            "bossHpLeft",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "bb39f2bb969f3070419f62c7179821695e0e75c3a09ce8c48f480aeb91866871",
+          "after_sha256": "04b4f9754ce236cfcc73acb7c9ca20f4ea25957ab67585c0561f141aab40865c"
+        },
+        {
+          "id": "boss-boss_11-solo",
+          "changed_fields": [
+            "bossHpLeft",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "7ac3c7d07aed637545663fabd43f2caccbf89c1f10985cc42397403db17207d0",
+          "after_sha256": "b5f5aea888f302206377f88652070db5ad4458334d2de58be7da7e7132100f7c"
+        },
+        {
+          "id": "boss-boss_12-pair",
+          "changed_fields": [
+            "bossHpLeft",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "3697dea342097972f93fc985eccdcf0228c8dd7ab38932b4b7e5d76b6990b44f",
+          "after_sha256": "702e23b4ae3c10bef906b222b744a8c67e8ecd6eba2557b5f2203c214cdf2eae"
+        },
+        {
+          "id": "boss-boss_12-solo",
+          "changed_fields": [
+            "bossHpLeft",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "0ebfc15bbe0d771dbff2c432c0cc04eb6efe97f42625b98974e33485ddfd39ac",
+          "after_sha256": "63300d2b40ec6f17c7a24151490855b5ea691718181c18a89e1ec22afb832326"
+        },
+        {
+          "id": "boss-boss_13-solo",
+          "changed_fields": [
+            "bossHpLeft",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "766190db601333fc9c444c66710f9fa1b9e48ed4fb232dd607bc8cccf092526f",
+          "after_sha256": "d4480abc682f08ec0e713907801913d33a6e8db3896d83493a785ff48260e2e0"
+        },
+        {
+          "id": "boss-boss_3-pair",
+          "changed_fields": [
+            "bossHpLeft",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "412093fa242f81831fc5fd8af62dff8357a03817b998dba0ae81f439e17e4f7a",
+          "after_sha256": "ea9be35d11e8a1e0e6c12e56b59f1dc0e53394f8a5a59ff6a48f592f72a3dc47"
+        },
+        {
+          "id": "boss-boss_6-pair",
+          "changed_fields": [
+            "bossHpLeft",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "snaps"
+          ],
+          "before_sha256": "2e4614e94082f968926a28513e456094520832e302821cbc6a9e2be85283cd5f",
+          "after_sha256": "534edfd89a51beddf6510c956d1dbb6d14461ef5e24ea4cffc01fe6da68a5821"
+        },
+        {
+          "id": "hidden-boss_14-pair",
+          "changed_fields": [
+            "bossHpLeft",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "0a16902e171170a539099c40cb7063fff718b3fbd5e5966e5d8e012e7823eb72",
+          "after_sha256": "81e2520094ec0a014cd3b5243ae66ff32c4c6f00850de81f64cb0f010f352961"
+        },
+        {
+          "id": "hidden-boss_14-solo",
+          "changed_fields": [
+            "bossHpLeft",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "17cae324037a40b0497481f241b2925c192258aad86b8bbebfbcabecf8d5b55d",
+          "after_sha256": "a4bb77e97991801c3a1dc20e458dbbdf077034d2f2c5a6a4d645be42c0217a69"
+        },
+        {
+          "id": "hidden-boss_15-pair",
+          "changed_fields": [
+            "bossHpLeft",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "b28f341749002cb8488c37d40c0129f7b0772a4fc0bfdea5ef0dd2da84e7ce23",
+          "after_sha256": "6ff3e75c81fc1601eddfdfc53723eb89b9fa59c80505195bf4d2c7853e60997b"
+        },
+        {
+          "id": "hidden-boss_15-solo",
+          "changed_fields": [
+            "killed",
+            "bossHpLeft",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "9ff0197b07355474d02341277f8693126e3d7b93a896149a0e571a2b0a54dd44",
+          "after_sha256": "d0b0ca628810d6ce8b142fc0e927e122c03f506ec39fe962a1100ada8c5a622b"
+        },
+        {
+          "id": "hidden-boss_16-pair",
+          "changed_fields": [
+            "bossHpLeft",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "6327fa7af930ea75cb10d2b53eccad6561a57052fa4aee32ee1b86074523495f",
+          "after_sha256": "691b35095aafe7bcd20b1924e7f185b4f9c019563c46296460ce043f08355ca6"
+        },
+        {
+          "id": "hidden-boss_8-pair",
+          "changed_fields": [
+            "killed",
+            "bossHpLeft",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "78eac7711667556c687771acbf9206c62cbbb6397b844378b1c0368299e569e9",
+          "after_sha256": "1f5b1d075877bc3e328a9ff1ad47e497f304def9b716fc7e3dca2e45133c133e"
+        },
+        {
+          "id": "hidden-boss_9-pair",
+          "changed_fields": [
+            "bossHpLeft",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "53a4d062798654539918d2c8cf96a4202068d792936c95c8ac23b107fd3c7c3a",
+          "after_sha256": "27c4c9f75b30c30be2e08c4a17e96866a48494da16be5c45e1105cab6576808a"
+        },
+        {
+          "id": "unite-2",
+          "changed_fields": [
+            "players",
+            "units",
+            "hooks",
+            "events",
+            "snaps"
+          ],
+          "before_sha256": "b5a6b0a0d7102eb04b693a867f5f807a489de7115ab764e3bab4e937ccd7c603",
+          "after_sha256": "142bb3c7be4f028ca5e18efa132045cd1137cdc45ac530c37459aff473e720a0"
+        }
+      ]
+    },
+    {
+      "file": "test/golden/act3autochess-v3_1/matches.json",
+      "version": "act3autochess-v3_1",
+      "family": "matches",
+      "count": 14,
+      "reason": "核心优先禁用及模式数量、奖励池、获得时/延迟融合、铁皮容量、白铁返还、驻守和售价继承改变经济与后续战斗；共用战斗修复也参与整局结果。",
+      "scenarios": [
+        {
+          "id": "coop2-ABYSS-10-boosted",
+          "changed_fields": [
+            "end",
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "ea0a227398eb24bf38ff8f169582b144e587894836a7a0ecae678a9fa9772c9b",
+          "after_sha256": "b6af2277e9884e59b6ee6f64587a2d701bd66eccdec075269b1bb10d5527fc10",
+          "first_changed_round": 1,
+          "end_changes": {
+            "teamLp": {
+              "before": 765,
+              "after": 767
+            }
+          }
+        },
+        {
+          "id": "coop2-HARD-4",
+          "changed_fields": [
+            "end",
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "386ddb4bd4264cf470cfe77c4dc467a0624b3358219c54681d19e20b9e985f6d",
+          "after_sha256": "e305e062874dea133ade32f7fa7c2bcdb0b766de21fddc161870b590a0778cbf",
+          "first_changed_round": 4,
+          "end_changes": {
+            "teamLp": {
+              "before": 49,
+              "after": 63
+            }
+          }
+        },
+        {
+          "id": "coop2-NORMAL-1-coverage-standins",
+          "changed_fields": [
+            "end",
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "f93bf8ab26000981bbeb0872ad6c7c7f328b12bcde67b20d0175ce215cbeefa5",
+          "after_sha256": "716bab39be114271e5d45910a22cfa9eb1d388be9e7f0e2020a233125f331214",
+          "first_changed_round": 1,
+          "end_changes": {
+            "teamLp": {
+              "before": 54,
+              "after": 53
+            },
+            "virtualMs": {
+              "before": 118600,
+              "after": 120100
+            }
+          }
+        },
+        {
+          "id": "coop2-NORMAL-1-unowned-roster",
+          "changed_fields": [
+            "end",
+            "rng",
+            "rounds",
+            "players",
+            "standIns"
+          ],
+          "before_sha256": "d6ef9d86d9117aeea6c86715e43e8b80d6a8b59f52926633e761a9939b8206f1",
+          "after_sha256": "7b41f5f77e211d82ed964e6b18f43c1bd4e5faad9c2fa19eafd3cbc2dfcec0ca",
+          "first_changed_round": 1,
+          "end_changes": {
+            "victory": {
+              "before": false,
+              "after": true
+            },
+            "roundsPassed": {
+              "before": 13,
+              "after": 14
+            },
+            "reason": {
+              "before": "defeat",
+              "after": "victory"
+            },
+            "teamLp": {
+              "before": 0,
+              "after": 35
+            },
+            "bossPoolLeft": {
+              "before": 50777,
+              "after": 0
+            }
+          }
+        },
+        {
+          "id": "coop2-NORMAL-14-standins",
+          "changed_fields": [
+            "end",
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "c75d77d8c584faa033908b20a31dd23035d7e4c69e0c04020d33e32ec670582d",
+          "after_sha256": "835f6fde7a59515068d9ed31c6be55d64df99d9532e14377478c31496018b99e",
+          "first_changed_round": 1,
+          "end_changes": {
+            "teamLp": {
+              "before": 40,
+              "after": 49
+            }
+          }
+        },
+        {
+          "id": "coop2-NORMAL-3",
+          "changed_fields": [
+            "end",
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "ae952994c0a609958a02c9f068e85227707ae528c3754f4aa1a2601afc4e0f7c",
+          "after_sha256": "d4b121c5169f41277abf0b6b33c0a8b959e7604491a7371df88274e67d478a11",
+          "first_changed_round": 1,
+          "end_changes": {
+            "teamLp": {
+              "before": 69,
+              "after": 66
+            },
+            "virtualMs": {
+              "before": 118600,
+              "after": 117100
+            }
+          }
+        },
+        {
+          "id": "coop2-NORMAL-5-coverage-diy",
+          "changed_fields": [
+            "end",
+            "rng",
+            "rounds",
+            "players",
+            "diy"
+          ],
+          "before_sha256": "bcd359619094bb3db9ae3299fa2bada54fc133a21378d70e622b46934d56c04a",
+          "after_sha256": "45efdd379b9a245c39e62036be066111841bd93a345d8483078cb7f99d5aef2e",
+          "first_changed_round": 1,
+          "end_changes": {
+            "virtualMs": {
+              "before": 115600,
+              "after": 118600
+            }
+          }
+        },
+        {
+          "id": "coop2-NORMAL-70-diy",
+          "changed_fields": [
+            "end",
+            "rng",
+            "rounds",
+            "players",
+            "diy"
+          ],
+          "before_sha256": "9af0f53ddfc0367c49989b26eedccc00f92d915b514af5317d634a7f36ab68ca",
+          "after_sha256": "f530f5ac853dc8cf07d175697fba107ffeddcdb3b0d43f48cbed0d0dadf491a8",
+          "first_changed_round": 1,
+          "end_changes": {
+            "teamLp": {
+              "before": 54,
+              "after": 44
+            },
+            "virtualMs": {
+              "before": 121600,
+              "after": 117100
+            }
+          }
+        },
+        {
+          "id": "coop2-NORMAL-8-serverrun",
+          "changed_fields": [
+            "end",
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "17dcba9f46548818e11e77480aedd131fb1a5c697ddd489324dc5d915d789ef9",
+          "after_sha256": "480e299db2e5c8953cfb5405f19659a4b785d94fe801abac76f0c2ef3228c1e0",
+          "first_changed_round": 1,
+          "end_changes": {
+            "teamLp": {
+              "before": 28,
+              "after": 55
+            },
+            "virtualMs": {
+              "before": 120100,
+              "after": 118600
+            }
+          }
+        },
+        {
+          "id": "coop3-ABYSS-5",
+          "changed_fields": [
+            "end",
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "34cfa871767dafa8e0567121dd3b3b309b67a2a5cf9313ccdf179a88468f263b",
+          "after_sha256": "e8ca745026c0c1c05dd45f63b04bfa6c6b21b7281fc5db4beeabce44ba4defa3",
+          "first_changed_round": 4,
+          "end_changes": {
+            "teamLp": {
+              "before": 55,
+              "after": 16
+            },
+            "virtualMs": {
+              "before": 132500,
+              "after": 131000
+            }
+          }
+        },
+        {
+          "id": "coop4-ABYSS-7",
+          "changed_fields": [
+            "end",
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "2d3152f6d8f137f659173aa1f0f3913fa3469651f9c6e3914d681332f3804a95",
+          "after_sha256": "df47adb58d797014364a29a1c7774bd504e7fe8765fb56848bf7872a805f082f",
+          "first_changed_round": 1,
+          "end_changes": {
+            "bossPoolLeft": {
+              "before": 1834875,
+              "after": 1874622
+            },
+            "virtualMs": {
+              "before": 140200,
+              "after": 138350
+            }
+          }
+        },
+        {
+          "id": "coop4-FUNNY-6",
+          "changed_fields": [
+            "end",
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "9c3b2a1916cec9a226f59b9cea48da98a4c8c7d3eaf0f725ec00003fff4d8dd4",
+          "after_sha256": "ae3adc5301af1903235254496163e6f0df888a4a8b6987967465fc5a9362b24e",
+          "first_changed_round": 1,
+          "end_changes": {
+            "teamLp": {
+              "before": 120,
+              "after": 116
+            },
+            "virtualMs": {
+              "before": 130500,
+              "after": 129000
+            }
+          }
+        },
+        {
+          "id": "solo-FUNNY-1",
+          "changed_fields": [
+            "end",
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "9967a6acc2a249f918db9f2544d58740ed7a51660fd8fdfa5e9c3c1cca6954b8",
+          "after_sha256": "e8886714f01c24ade18199c3723593e1abe9567fc367d03fcbef5d38549f5318",
+          "first_changed_round": 1,
+          "end_changes": {
+            "teamLp": {
+              "before": 27,
+              "after": 28
+            }
+          }
+        },
+        {
+          "id": "solo-FUNNY-2",
+          "changed_fields": [
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "e26a03751cbe5cead9e05d90913c9908b17fb1433393e0b58f40d9d11e3c4e3b",
+          "after_sha256": "747b1b4c460f181430d421825bdb84df7802288eca00d6b53862e8f27279a2cb",
+          "first_changed_round": 1,
+          "end_changes": {}
+        }
+      ]
+    },
+    {
+      "file": "test/golden/act3autochess-v3_1/roster.json",
+      "version": "act3autochess-v3_1",
+      "family": "roster",
+      "count": 26,
+      "reason": "本轮规程战斗/生成数据修复的组合：茧/械/后兽受击、MAP09 隐匿地块、萨卡兹亡语、莱塔尼亚、幻影禁疗和望地形等。",
+      "scenarios": [
+        {
+          "id": "roster-002",
+          "changed_fields": [
+            "killed",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "58507fb24f4b93ac802e4230f0a2aa801de08940f876af13be5b4c25a5c50b4e",
+          "after_sha256": "fd35602e2f94aab86dc7a6c586b55d230c41be986dcdd4f227cd9aa3b1db2f00"
+        },
+        {
+          "id": "roster-004",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "reason",
+            "killed",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "ae2132d4331c67e4fe57b3aba40109caa12619ee52c266b9177934431d0bf27c",
+          "after_sha256": "a4d6c94bd8312ca8a2d0256ad6f8be841f049717b94d030578f836ce5f79dee1"
+        },
+        {
+          "id": "roster-007",
+          "changed_fields": [
+            "killed",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "59c9b588de11d7ddd329dfe7c0420b5d79c9b6df9b3645153875167b91143b67",
+          "after_sha256": "8a6d31fa043a43626c022b5804313d73cdb0134c09db238814dfba0b370a64c9"
+        },
+        {
+          "id": "roster-014",
+          "changed_fields": [
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "snaps"
+          ],
+          "before_sha256": "2267d7c4b92689d949fb8b9ecc43da2147d28ab2a9af2793014329dd8be823ed",
+          "after_sha256": "288363675e33d6f0927d12c0bcdb993aa966c995547f5c79305b71d5a3c2cd94"
+        },
+        {
+          "id": "roster-016",
+          "changed_fields": [
+            "killed",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "6d67b8ce4559eb6b402305e4a4950c5da7da7556abf41c8c801c0370972c0529",
+          "after_sha256": "8a7457e53d57d8b621111a7adf1e7cfbf4ae46151325238fe87cb8afb60c6bb1"
+        },
+        {
+          "id": "roster-017",
+          "changed_fields": [
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "42c273eafb7f5a020c00a5b3abea078998ba1e3912ea1858ba234e93b2af9db2",
+          "after_sha256": "dbc35be212ebd68a5633084c3746946c714ca495df436121917621b56d46d0ef"
+        },
+        {
+          "id": "roster-019",
+          "changed_fields": [
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "75e6abc018ebc745d739ec855b47795eea65c538dba3e962e53bc4c8a958f194",
+          "after_sha256": "7625fc6668601f615d11e71cc4dca86241475d164ff95c7c5e3cb136ff3a4646"
+        },
+        {
+          "id": "roster-020",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "7cf8b431ca7415dbce1e230f8d76c33c66b5012f62acdd715f070eba54dd7e7c",
+          "after_sha256": "791e6071ab95f54dcb25b2dc908c643a44e5a0b3188d5e5c89e8f6b2ede9999d"
+        },
+        {
+          "id": "roster-021",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "543b1d20014847adb6f82959f4cab10447af4131eeaee51502c36343f4bc00be",
+          "after_sha256": "850317df6a021e9d38a47b65c715f0b37103901b19fd55e03e09d1ad8ac4ba34"
+        },
+        {
+          "id": "roster-023",
+          "changed_fields": [
+            "players",
+            "units",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "2562e7e63761883e4df49fd1f783d8de845aff445b1490d63e46dd78071c5b3d",
+          "after_sha256": "db3e775125a3b8e1097d3f99002239d748c0a1686c765df760ce33f9e8be675f"
+        },
+        {
+          "id": "roster-024",
+          "changed_fields": [
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "81201c897f431ca1f8d23965440d8c56983204755ef18cdab54c3e9e76271b87",
+          "after_sha256": "0de7e0af264772d30b1e4ae457355ab6c459f8b606ea90f0155080ba411b2a15"
+        },
+        {
+          "id": "roster-027",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "ec9ae8440eeaa24ca4b860e9c9ab8fa7fa8be54481eed8868c751fdfc62a1617",
+          "after_sha256": "bf4c5b593a1ed80cb55fbfc0543076ba320149bd80d475b64e9d16c9fe914f96"
+        },
+        {
+          "id": "roster-028",
+          "changed_fields": [
+            "killed",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "c6d05e14e75ab7119489703caf1fd1c06092f1b61693d7e60fcf4c870d5e5f65",
+          "after_sha256": "1ee80460603041478c90b2dbd9721bc38d2bdb36a8bf8b0643d5ef48150f1921"
+        },
+        {
+          "id": "roster-033",
+          "changed_fields": [
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "b0fd92af53b16914603da45b1bd6138ab2358a2f4b65c9c4c6e7e52634878165",
+          "after_sha256": "71993aa40c8c710a36f067f71e4bf7248a1440fdc2b28e11bf7255e7b475fcc7"
+        },
+        {
+          "id": "roster-037",
+          "changed_fields": [
+            "killed",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "d6e620098b3af1d010916b82868702d021ecad4741cafef86d28ad98b55becb7",
+          "after_sha256": "89b4cae0351e3a992e4a56e6fcefb99060c97b886b68bce791f3265597fea598"
+        },
+        {
+          "id": "roster-038",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "killed",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "3cf4935566a0551d246f2b31bfbe2404635bb3436ccd6336902a4f08dfbc4cf0",
+          "after_sha256": "aeb2bf2e8d7c89576dd003a705d4a92741de7ff40d1adceaf11fc62556dfd328"
+        },
+        {
+          "id": "roster-039",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "5f2f41e8d1f9e5a5cf06d11423e1f786eb0b680ea5edc2ec9af8b54c0c45e0ec",
+          "after_sha256": "fc1cfce5b2af3d07ca739566a17510f74595058f0707f3b93089e83bd651e0c2"
+        },
+        {
+          "id": "roster-040",
+          "changed_fields": [
+            "killed",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "3735c9ec4af737e2b477d4651afdca4e6277640a37ce4394738056748db9f33e",
+          "after_sha256": "c8d92713af720f3a3f844527e26d0b549b0175e757978ae7cef9b1a1569605a5"
+        },
+        {
+          "id": "roster-041",
+          "changed_fields": [
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "snaps"
+          ],
+          "before_sha256": "16cd4ad5252a0ecabbd59114cfba5350a0b95559e6912e8a4d1adada443fe565",
+          "after_sha256": "73b25fd9b9be195d85b43bfe5a69ce5107d472981358bd876dc44901782417c7"
+        },
+        {
+          "id": "roster-043",
+          "changed_fields": [
+            "killed",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "38f8d094232372c3e518508c2215ede235f2fc42983cc38adafea950bc5edda9",
+          "after_sha256": "454cde555cac230a08ffee79d7ed17137dbf913acaf70e6f8a2b25dd9cafe344"
+        },
+        {
+          "id": "roster-047",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "330aa6cd2f13df3fe2dd9b708d4dd54fda2a4c928b24284b4afca2ec2951dc25",
+          "after_sha256": "707b889af246affab1f7b4a13abe0f25033401eb262e40fe10ee6d210e744509"
+        },
+        {
+          "id": "roster-048",
+          "changed_fields": [
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "071de96fdcf55f13b551f18e93c38248557ac25a77dae8f8b1656ddd13001c84",
+          "after_sha256": "0b5af8e407f82699c2b554acf63f7750cea1afa5135b368406fbb169957c4f6d"
+        },
+        {
+          "id": "roster-050",
+          "changed_fields": [
+            "killed",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "897c0e070fbe953f8988307de536a1c365821e49fdd7288b187ff4622b1255c7",
+          "after_sha256": "1449d64ba73dbc539f9eafde4a31e701c35dc13b2273b823f8a82b91c590899e"
+        },
+        {
+          "id": "roster-052",
+          "changed_fields": [
+            "killed",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "22a99fafae232cbf24a243adeff3c6176304cbb659aa3977ac44cf2039791a86",
+          "after_sha256": "f8b301d65bdb30e9d736f65a9a8311a23bdeea9ae277b5cc3ec0f7a0872d9ec1"
+        },
+        {
+          "id": "roster-057",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "killed",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "dcc1f820681039ed0ca4dad2ebe6e3a6a5ae5b402ebbabfba431ce6f9e0a3108",
+          "after_sha256": "60fd9d4cbd8703cff5cdfaa8099c4ae18581d3c5b590619b62f8a4b748f153a0"
+        },
+        {
+          "id": "roster-059",
+          "changed_fields": [
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "6a5a52b211438bd06e9c17588fe3cc71ef0b4b5085862bdc688700f3a0598ed7",
+          "after_sha256": "ca63dfd40c2187590e657dd537ee91a79c13430a6f87c52976b70ad3caf7a7ac"
+        }
+      ]
+    },
+    {
+      "file": "test/golden/act3autochess-v3_1/standins.json",
+      "version": "act3autochess-v3_1",
+      "family": "standins",
+      "count": 3,
+      "reason": "规程战斗/地块修复改变补位编队面对实际敌人的结果。",
+      "scenarios": [
+        {
+          "id": "standin-01",
+          "changed_fields": [
+            "killed",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "e63c21f49188407ab4b43627a23411e1c387b3d013a973bcdc9fe6ff11d93451",
+          "after_sha256": "01e078fa6c09151fcfecd4bbf873727517b5f3a0a63f5ad4f9c33212ec5498b0"
+        },
+        {
+          "id": "standin-06",
+          "changed_fields": [
+            "killed",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "snaps"
+          ],
+          "before_sha256": "3d145b56521c75932bfa639cdd780db3fd09dcb9fe09e49037ede186c12b3184",
+          "after_sha256": "62a6f90e53c400fdaf83270bd00785ead16e50df788aeba865a24a366ccc3b7b"
+        },
+        {
+          "id": "standin-07",
+          "changed_fields": [
+            "time",
+            "ticks",
+            "reason",
+            "killed",
+            "rngDraws",
+            "players",
+            "units",
+            "enemies",
+            "hooks",
+            "events",
+            "fx",
+            "snaps"
+          ],
+          "before_sha256": "c8cb6d8721faf4c208160c1d50e872d4b4859dc43956717a6591cc525662e037",
+          "after_sha256": "e870cdb7dc481b1974460f22af7e86647cf3436626b0c7d2f97a333e9e0f2ef6"
+        }
+      ]
+    },
+    {
+      "file": "test/golden/matches.json",
+      "version": "default",
+      "family": "matches",
+      "count": 1,
+      "reason": "共用经济/装备及战斗修复的整局影响；coop4-ABYSS-7 从第 9 回合变化并进入隐秘核心。",
+      "scenarios": [
+        {
+          "id": "coop4-ABYSS-7",
+          "changed_fields": [
+            "end",
+            "rng",
+            "rounds",
+            "players"
+          ],
+          "before_sha256": "9a2937e16ce83242c2720b83c1649d1e19f876f9fe5b3eb15751f1b4caf8e463",
+          "after_sha256": "0c5b1592591aeaf22ff26588d150ad6f6a6f6ec0678ebb672eddde4e54ff0892",
+          "first_changed_round": 9,
+          "end_changes": {
+            "hiddenReached": {
+              "before": false,
+              "after": true
+            },
+            "teamLp": {
+              "before": 9,
+              "after": 0
+            },
+            "bossPoolLeft": {
+              "before": 0,
+              "after": 2892237
+            },
+            "virtualMs": {
+              "before": 141100,
+              "after": 149550
+            }
+          }
+        }
+      ]
+    },
+    {
+      "file": "test/golden/roster.json",
+      "version": "default",
+      "family": "roster",
+      "count": 1,
+      "reason": "香槟炸弹随琳琅诗怀雅离场；roster-008 最终单位/事件变化，伤害不变。",
+      "scenarios": [
+        {
+          "id": "roster-008",
+          "changed_fields": [
+            "units",
+            "hooks",
+            "events",
+            "snaps"
+          ],
+          "before_sha256": "f2f5471786f7539a35a071a73690d05d97ac1a0d3e42491d622e47ac68e0cb68",
+          "after_sha256": "914a7cba61383b03d0ad2a9c061c5c3f26de2a99cdbc8f89d54a4456de53322a"
+        }
+      ]
+    }
+  ]
+}

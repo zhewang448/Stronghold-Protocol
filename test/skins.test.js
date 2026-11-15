@@ -299,7 +299,7 @@ describe('皮肤: the lobby seat and the match', () => {
     assert.ok(!JSON.stringify(a).includes(SKIN), 'Battle.result does not carry the skin');
   });
 
-  test('no file under server/sim reads Unit.skin except the three that carry it', () => {
+  test('no file under server/sim reads Unit.skin except the four that carry it', () => {
     const root = path.join(ROOT, 'server', 'sim');
     const hits = [];
     const walk = (dir) => {
@@ -311,7 +311,7 @@ describe('皮肤: the lobby seat and the match', () => {
     };
     walk(root);
     hits.sort();
-    assert.deepEqual(hits, ['server/sim/battle/players.js', 'server/sim/snapshot.js', 'server/sim/units.js']);
+    assert.deepEqual(hits, ['server/sim/battle/players.js', 'server/sim/battle/summons.js', 'server/sim/snapshot.js', 'server/sim/units.js']);
   });
 });
 

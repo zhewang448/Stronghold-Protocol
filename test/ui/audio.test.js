@@ -229,9 +229,13 @@ describe('per-season BGM', () => {
     assert.equal(bgmKeyFor('game', pub(3), 1), 'unite', 'the screen key does not change');
   });
 
-  test('musicSeason: title stays default; lobby, room, spectators, replays follow the screen', () => {
+  test('musicSeason: the title follows the start-up version; lobby, room, spectators, replays follow the screen', () => {
     const base = { versions, lobbyVersion: 'act3autochess@V3_1' };
-    assert.equal(musicSeason({ ...base, session: {} }), DEFAULT_VERSION, 'the title film is 盟约\'s');
+    // the owner, 2026-11-13: a first start opens on 规程, a later one on the version the lobby was left on
+    assert.equal(musicSeason({ ...base, session: {} }), 'act3autochess', 'the title of a 规程 lobby is 规程\'s');
+    assert.equal(musicSeason({ versions, lobbyVersion: null, session: {} }), 'act3autochess', 'a first start: 规程');
+    assert.equal(musicSeason({ versions, lobbyVersion: 'act2autochess', session: {} }), DEFAULT_VERSION, 'a 盟约 lobby: 盟约\'s title (and film)');
+    assert.equal(musicSeason({ versions, lobbyVersion: 'gone@X', session: {} }), 'act3autochess', 'an unknown stored id: 规程');
     assert.equal(musicSeason({ ...base, session: { entered: true } }), 'act3autochess');
     assert.equal(musicSeason({ ...base, session: { entered: true }, lobbyVersion: 'act2autochess' }), DEFAULT_VERSION);
     const room = { version: 'act1autochess@V1_1', spectators: [{ playerId: 'sp' }] };
@@ -248,7 +252,7 @@ describe('per-season BGM', () => {
     assert.equal(musicSeason({ ...base, session: { entered: true }, replayVersion: 'act1autochess', room: { version: 'act3autochess@V3_1' } }), 'act3autochess');
   });
 
-  test('installAudio follows the season and keeps the title on the default', () => {
+  test('installAudio follows the season, the title on the start-up version', () => {
     const calls = [];
     const origPlay = audio.playBgm;
     const prev = { season: audio.season, combatTrack: audio.combatTrack, lastBgmKey: audio.lastBgmKey };
@@ -260,7 +264,7 @@ describe('per-season BGM', () => {
         getManifest: () => seasonal, getState: () => state, selectRoute, seasonOf: musicSeason,
         subscribe: (fn) => { fire = fn; return () => {}; },
       });
-      assert.equal(audio.season, DEFAULT_VERSION, 'title stays the default season');
+      assert.equal(audio.season, 'act3autochess', 'the title of a 规程 lobby plays 规程\'s season');
       assert.equal(calls.at(-1), 'lobby');
       const entered = { ...state, session: { entered: true } };
       fire(entered, state);
@@ -866,6 +870,32 @@ describe('AudioManager', () => {
     a.setVolumes({ bgm: 5, sfx: -1, muted: true });
     assert.deepEqual(a.volumes, { bgm: 1, sfx: 0, voice: 0.8, muted: true });
     assert.equal(a.unlocked, false);
+  });
+  test('a one-shot owner guard cancels a cue whose audio finishes decoding after its turn ended', async () => {
+    const fw = fakeWindow();
+    const origFetch = globalThis.fetch;
+    let finishRequest;
+    let markRequested;
+    const requested = new Promise((resolve) => { markRequested = resolve; });
+    globalThis.fetch = () => {
+      markRequested();
+      return new Promise((resolve) => { finishRequest = resolve; });
+    };
+    try {
+      const a = new AudioManager({ win: fw.win, getManifest: () => manifest });
+      a.install();
+      fw.fire('pointerdown');
+      let current = true;
+      a.sfx('yourTurn', { isCurrent: () => current });
+      await requested;
+      current = false;
+      finishRequest({ ok: true, arrayBuffer: async () => new ArrayBuffer(8) });
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      assert.equal(fw.made.started, 0, 'stale decoded audio never starts');
+      assert.equal(a.uiVoices, 0, 'the canceled cue releases its reserved voice');
+    } finally {
+      globalThis.fetch = origFetch;
+    }
   });
   test('unlocks on the first gesture, then plays BGM and SFX from the manifest', async () => {
     const fw = fakeWindow();

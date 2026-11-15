@@ -1,4 +1,5 @@
 import { VersionPicker } from '../ui/versionPicker.js';
+import { roomSeatPages } from '../ui/roomSeatPages.js';
 import { VersionVote } from '../ui/versionVote.js';
 import { DEFAULT_VERSION, roomVersion, serverDefaultVersion, versionLabel, needsContent, offeredDifficulties, soloTimedOf, soloTimeMsgid, ladderModes, ladderPick, seasonOf } from '../versions.js';
 import { useAccount, AccountTag } from '../ui/accounts.js';
@@ -236,7 +237,7 @@ function CardPicker({ current, currentSkin, list, m, art, onPick, onClose, custo
   <//>`;
 }
 
-function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvite, onAddBot, onRemoveBot, onBotBand, searching, portraits, onPickCard = null, onSpectate = null }) {
+function SeatCard({ seat, index, animationIndex = index, room, facts, myId, busy, online, onKick, onInvite, onAddBot, onRemoveBot, onBotBand, searching, portraits, onPickCard = null, onSpectate = null }) {
   const seatAccount = useAccount(seat && !seat.isBot ? seat.playerId : null);
   const customIllust = useCustomIllust(seat && !seat.isBot ? seat.playerId : null);
   const [badCustom, setBadCustom] = useState(null);
@@ -245,7 +246,7 @@ function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvi
   const flash = useRise(!!seat && (seat.ready || seat.isBot || seat.playerId === room.hostId));
   if (!seat) {
     const invitable = room.mode !== 'solo' && !facts.spectating;
-    return html`<article class=${`rseat rseat--empty${searching ? ' is-searching' : ''}`} style=${`--i:${index}`}>
+    return html`<article class=${`rseat rseat--empty${searching ? ' is-searching' : ''}`} style=${`--i:${animationIndex}`}>
       <span class="rseat__clip" aria-hidden="true"></span>
       <header class="rseat__strip"><i></i><span class="num">P${index + 1}</span></header>
       <div class="rseat__art">
@@ -279,7 +280,7 @@ function SeatCard({ seat, index, room, facts, myId, busy, online, onKick, onInvi
   const owner = isOwnerName(seat.name);
   const canPick = isMe && !seat.isBot && !!onPickCard;
   return html`<article class=${`rseat${ready ? ' is-ready' : ''}${flash ? ' is-flash' : ''}${isMe ? ' is-me' : ''}${isHostSeat ? ' is-host' : ''}${offline ? ' is-offline' : ''}${seat.isBot ? ' is-bot' : ''}`}
-      style=${`--i:${index}`}>
+      style=${`--i:${animationIndex}`}>
     ${consent ? html`<span data-testid="script-consented">${t('已同意')}</span>` : null}
     ${facts.needsContent && !seat.isBot ? html`<span class=${`seat__content is-${seat.content || 'loading'}`} data-testid="seat-content">${facts.versionRoom ? (seat.content === 'ready' ? t('版本数据就绪') : seat.content === 'failed' ? t('版本数据校验失败') : t('版本数据载入中')) : (seat.content === 'ready' ? t('插件内容就绪') : seat.content === 'failed' ? t('插件内容校验失败') : t('插件内容载入中'))}</span>` : null}
     <span class="rseat__clip" aria-hidden="true"></span>
@@ -494,6 +495,7 @@ export function RoomScreen() {
   const [busy, setBusy] = useState(null);
   const [picker, setPicker] = useState(false);
   const [opts, setOpts] = useState(false);
+  const [seatPage, setSeatPage] = useState(null);
   const [found, setFound] = useState(false);
   const [since] = useState(() => Date.now());
   const alive = useRef(true);
@@ -530,6 +532,10 @@ export function RoomScreen() {
   const online = conn.status === 'online';
   const coop = room ? room.mode !== 'solo' : false;
   const facts = room ? roomFacts(room, me.playerId) : null;
+  const seatPages = roomSeatPages(facts?.seats, me.playerId, room?.hostId);
+  const shownPage = seatPages.find(page => page.index === seatPage) || seatPages.find(page => page.mine) || seatPages[0];
+  const shownSeats = shownPage?.entries || [];
+  useEffect(() => setSeatPage(null), [room?.code]);
   const mineOperator = facts?.mine ? seatOperator(facts.mine, portraits, { myId: me.playerId, myCard }) : null;
   const mineChar = mineOperator?.chess?.charId;
   const currentArt = { frameKey: myCustomIllust ? 'custom' : cardArtKey(mineChar, mySkin),
@@ -572,7 +578,12 @@ export function RoomScreen() {
   };
 
   const toggleReady = () => run('ready', () => net.request('room.ready', { ready: !myReady }));
-  const addBot = () => run('add-bot', () => net.request('room.addBot', {}));
+  const addBot = () => run('add-bot', async () => {
+    const nextSeat = facts.seats.findIndex(seat => !seat);
+    await net.request('room.addBot', {});
+    const page = seatPages.find(page => page.entries.some(row => row.index === nextSeat));
+    if (page) setSeatPage(page.index);
+  });
   const removeBot = (seat) => run(`remove-bot-${seat}`, () => net.request('room.removeBot', { seat }));
   const start = () => run('start', () => net.request('room.start', {}));
   const queueMatch = () => run('match', () => net.request('match.queue', { mode: 'coop', version: roomVersion(room), difficulty: room.difficulty, fillBots: false }));
@@ -669,7 +680,7 @@ export function RoomScreen() {
         ? html`<span class="t-mint">${t('已就绪 · 等待创建者开始模拟')}</span>`
         : html`<span class="t-lo">${t('准备就绪后，创建者即可开始模拟')}</span>`;
 
-  return html`<div class=${`screen room-screen rs${coop ? '' : ' rs--solo'}${facts.seats.length > DEFAULT_SEATS ? ' rs--big' : ''}${exiting ? ' is-leaving' : ''}`} style=${`--d-color:${DIFFICULTY_COLORS[room.difficulty]}; --n:${facts.seats.length}`}>
+  return html`<div class=${`screen room-screen rs${coop ? '' : ' rs--solo'}${facts.seats.length > DEFAULT_SEATS ? ' rs--big' : ''}${seatPages.length > 1 ? ' rs--paged' : ''}${exiting ? ' is-leaving' : ''}`} style=${`--d-color:${DIFFICULTY_COLORS[room.difficulty]}; --n:${shownSeats.length}`}>
     <div class="rs__bg" aria-hidden="true"></div>
     <${NameCardPickerHost} />
     ${versionOpen ? html`<${VersionPicker} mode="room" versions=${versions || []} current=${roomVersion(room)} serverDefault=${serverDefault} roomMode=${room.mode} onClose=${() => setVersionOpen(false)} note=${versionWhy} editable=${!versionWhy && room.hostControls?.version !== false} onPick=${async version => { try { await net.request('room.proposeVersion', { version }); setVersionOpen(false); } catch (err) { toastError(err); } }} />` : null}
@@ -709,8 +720,15 @@ export function RoomScreen() {
       </div>
     </header>
 
-    <main class="rs-seats">
-      ${facts.seats.map((s, i) => html`<${SeatCard} key=${s ? `p${s.playerId}` : `e${i}`} seat=${s} index=${i} room=${room} facts=${facts}
+    ${seatPages.length > 1 ? html`<nav class="rs-seat-pages" aria-label=${t('席位分组')}>
+      ${seatPages.map(page => html`<button type="button" key=${page.index} aria-pressed=${page.index === shownPage.index ? 'true' : 'false'}
+        data-testid=${`room-seat-page-${page.index}`} onClick=${() => setSeatPage(page.index)}>
+        <b>${t('{group}组', { group: page.label })}</b><span class="num">${page.occupied}/${page.entries.length}</span>
+        ${page.mine ? html`<span>${t('（本组）')}</span>` : null}<small>${t('已就绪')} ${page.ready}</small>
+      </button>`)}
+    </nav>` : null}
+    <main class="rs-seats" key=${shownPage?.index}>
+      ${shownSeats.map(({ seat: s, index: i }, pageIndex) => html`<${SeatCard} key=${s ? `p${s.playerId}` : `e${i}`} seat=${s} index=${i} animationIndex=${pageIndex} room=${room} facts=${facts}
         myId=${me.playerId} busy=${busy} online=${online} onKick=${kick} onInvite=${() => copy('code')} onAddBot=${addBot} onRemoveBot=${removeBot} onBotBand=${setBotBand} searching=${searching} portraits=${portraits}
         onSpectate=${spectate} onPickCard=${CARD_SYNC && cardList.length ? () => setPicking(true) : null} />`)}
       ${coop ? null : html`<aside class="solo-brief rs-brief brackets">

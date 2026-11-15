@@ -311,7 +311,7 @@ shared/cardArt.js 定义外观来源键、取景归一化与校验；public/js/u
 
 ### Optional terminal theme
 
-`shared/terminalTheme.js` validates the optional local theme manifest. `public/js/ui/terminalTheme.js` applies the personal selection, and `terminalThemeSection.js` provides settings and the shared-renderer companion. `tools/local-extract/terminal_theme.py` installs pinned official bundles into ignored art directories. See [TERMINAL-THEMES.md](TERMINAL-THEMES.md).
+`shared/uiTheme.js` validates interface theme packs; `shared/themePreferences.js` migrates the retired terminal settings. `public/js/uiTheme.js` loads the theme, while `ui/themeSettings.js` and `ui/themeCompanion.js` provide selection, character previews and the lobby companion. `ui/themeCharacter.js` shares the playback lifecycle with the funds card; theme speech uses the existing audio channel. `tools/local-extract/fetch_regulation.py` obtains pinned, checksummed official inputs, and `extract.py --only theme` writes the new theme format. The old installer and `tools/legacy-terminal-theme.mjs` remain for legacy asset conversion and package repair. See [TERMINAL-THEMES.md](TERMINAL-THEMES.md) and [THEMES.md](THEMES.md).
 
 ## Player battle training
 

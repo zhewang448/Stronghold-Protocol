@@ -1,3 +1,4 @@
+import { itemProgress, equippedItemProgress } from '../itemProgress.js';
 // server/match/match/views.js — Match methods: the state builders — m.public (publicView with statusOf / fieldOf, the
 // fields' progress, the teammates' live pendingLp / uniteLeft, the SETTLE uniteResult), the nextEnemies preview of
 // m.private and the prep scout's m.field (prepFieldMeta: board, hand and temp as units, the scouted player's effects and
@@ -8,6 +9,7 @@ import { PHASE, GEO } from '../../../shared/constants.js';
 import { TEST_PUBLIC_LOG } from '../../../shared/testMode.js';
 import { boardOrder, pieceDir } from '../board.js';
 import { bondList, offBondCounts } from '../bondsMeta.js';
+import { commandBondOverrides } from '../bandCommands.js';
 import { cardView } from '../choices.js';
 import { bountySpawns, previewOf } from '../waves.js';
 import { timelineAt } from '../fields.js';
@@ -23,6 +25,9 @@ function auditClock(at, startedAt) {
   if (!Number.isFinite(stamp) || !Number.isFinite(start)) return 0;
   return Math.max(0, stamp - start);
 }
+
+/** How many of the ascending thresholds `v` reaches (0: none). @param {number} v @param {readonly number[]} steps */
+export const levelOf = (v, steps) => steps.reduce((n, step) => (v >= step ? n + 1 : n), 0);
 
 /** A reported capsule numerator clamped to its denominator, else null (unknown — never a fabricated 0). */
 const finiteOrNull = (v, cap = Infinity) => {
@@ -152,8 +157,9 @@ export class MatchViews {
         // this round's in-battle gains included once the COMBAT phase ended (PlayerState.bondsView); [] once eliminated —
         // nobody can watch an eliminated player (g.watch refuses them, they have no field) and the result screen reads
         // m.result's own bonds, so their layers would only cost every m.public bytes for the rest of the match
-        // (the mode-off bonds with members included, `off: true`, as in m.private — bondsMeta.offBondCounts)
-        bonds: ps.alive ? bondList(this.gd, ps.bondsView(), { off: offBondCounts(ps.gd || this.gd, ps) }) : [],
+        // (the mode-off bonds with members included, `off: true`, as in m.private — bondsMeta.offBondCounts).
+        // A 规程 replacement adds `effectId` and, when that bond has no members yet, a zero row the strip does not draw.
+        bonds: ps.alive ? bondList(this.gd, ps.bondsView(), { off: offBondCounts(ps.gd || this.gd, ps), effectOverrides: commandBondOverrides(ps) }) : [],
         boardOps: this._boardOps(ps),
         fieldId: this.fieldOf(ps),
         status: this.statusOf(ps),
@@ -164,6 +170,8 @@ export class MatchViews {
         ...(Object.keys(ps.skins).length ? { skins: ps.skins } : {}),
         // the LP this round's own battle will cost at settlement so far (COMBAT / 联防 only, omitted when 0)
         ...this._pendingLpView(ps),
+        // the avatar's 完美连胜 / 领袖伤害 badges (omitted below their first level)
+        ...this._avatarView(ps),
       })),
       fields: this.fields.map((f) => {
         const v = { fieldId: f.fieldId, kind: f.kind, players: f.players.slice(), live: !!f.live };
@@ -187,7 +195,7 @@ export class MatchViews {
     if ((this.phase === PHASE.FINAL_ASSAULT || this.phase === PHASE.HIDDEN_CORE) && this.overtimeAt) v.overtimeAt = this.overtimeAt;
     if (this.bossPool) {
       v.bossHp = { hp: Math.max(0, Math.round(this.bossPool.hp)), max: Math.round(this.bossPool.maxHp) };
-      // Present only while the pool carries the operator map (规程). 盟约's public view grows no key.
+      // the leader ranking's top 3 while the pool runs, every version (§37.149; 规程 only from §37.124)
       if (this.bossPool.ops) v.leaderTop = this._leaderTopView();
     }
     if (this.phase === PHASE.CUSTOM_CHECK && this.gd.diyBringLimits) {
@@ -327,6 +335,27 @@ export class MatchViews {
     return loss > 0 ? { pendingLp: loss } : {};
   }
 
+  /**
+   * The avatar's status badges (§37.148), every version: `winStreak` (the rounds in a row settled without an LP loss) and
+   * `winStreakLevel` once that streak reaches the first of gd.winStreakThresholds (规程 [3, 5] → levels 1–2);
+   * `bossDamageLevel` while a leader pool runs (最终攻势 / 隐秘核心) and the player's share of it reaches the first of
+   * gd.bossDamageThresholds (20 / 50 / 80 % → 1–3, the BOSS_HIT tickers' steps). Alive players only; omitted below.
+   * @returns {{ winStreak?: number, winStreakLevel?: number, bossDamageLevel?: number }}
+   */
+  _avatarView(ps) {
+    if (!ps || !ps.alive) return {};
+    const out = {};
+    const streak = Math.max(0, Math.trunc(Number(ps.stats.perfectStreak) || 0));
+    const streakLevel = levelOf(streak, this.gd.winStreakThresholds);
+    if (streakLevel) { out.winStreak = streak; out.winStreakLevel = streakLevel; }
+    const pool = this.bossPool;
+    if (pool && pool.maxHp > 0 && pool.byPlayer) {
+      const damageLevel = levelOf((Number(pool.byPlayer.get(ps.playerId)) || 0) / pool.maxHp, this.gd.bossDamageThresholds);
+      if (damageLevel) out.bossDamageLevel = damageLevel;
+    }
+    return out;
+  }
+
   /** nextEnemies preview for m.private. */
   nextEnemiesFor(ps) {
     if (!ps.alive) return [];
@@ -410,6 +439,8 @@ export class MatchViews {
         moduleId: lo && typeof lo.moduleId === 'string' ? lo.moduleId : undefined,
         // the equipped items (like the sim's UnitInfo): a 变形同构体 wearer shows as a member of the bond it grants
         items: piece.kind === 'chess' && Array.isArray(piece.items) && piece.items.length ? piece.items.map((it) => it.id) : undefined,
+        itemProgress: equippedItemProgress(ps, piece),
+        progress: piece.kind === 'item' ? itemProgress(ps, piece) : undefined,
         standInFor: rec && rec.standInFor ? rec.standInFor : undefined,
         diy,
         // 皮肤 (docs/SKINS.md): built per player (the owner of the scouted board), so a teammate's piece shows THEIR
@@ -478,6 +509,8 @@ export class MatchViews {
         skillIndex: lo && Number.isInteger(lo.skillIndex) ? lo.skillIndex : undefined,
         moduleId: lo && typeof lo.moduleId === 'string' ? lo.moduleId : undefined,
         items: piece.kind === 'chess' && Array.isArray(piece.items) && piece.items.length ? piece.items.map((it) => it.id) : undefined,
+        itemProgress: equippedItemProgress(ps, piece),
+        progress: piece.kind === 'item' ? itemProgress(ps, piece) : undefined,
         standInFor: standIn && standIn.standInFor ? standIn.standInFor : undefined,
         diy,
         // 皮肤 (docs/SKINS.md): the scouted player's own appearance (see the prep view above)

@@ -1,6 +1,8 @@
-# 可露希尔终端主题
+# 官方界面主题与可露希尔
 
-「设置 → 外观 → 终端主题」可选择默认界面或「“全能的”可露希尔」。主题保存在本机，服主可设置首次默认值及修改权限。首次仍使用默认界面，对局主题语音默认关闭。主题作用于本机配色、商店、阶段提示及大厅角色；切回默认立即恢复。主题角色点击可试听，设置里可预览全部九个角色动作。语音跟随现有语音语言：日语使用日语，其他语言使用中文；音量与静音沿用干员语音声道。
+设置 → 外观 → 界面主题统一提供内置终端、已安装的官方终端贴图、乌萨斯齐心团、可露希尔，以及导入的 spTheme 1 主题包。首次保持内置界面，对局主题语音默认关闭；选择、动画和语音均遵守服主默认与修改权限。旧 `terminalTheme/terminalVoice` 自动迁移，显式新值优先。
+
+三种官方主题的卡框、顶栏、倒计时和阶段展示使用上游 prefab 体系，保留本库动态立绘、取景、单位状态条、多人速查和统计。大厅角色、设置预览与资金卡使用同一加载/播放实现，动作预览可选择可露希尔九种动作。被动主题语音让位于干员语音，试听可接管同一声道；日语选择使用日语文件，缺失时回退中文。减少动画、动态立绘关闭、离屏与后台会停止持续播放。
 
 ## 来源
 
@@ -14,44 +16,21 @@
 | `audio/sound_beta_2/voice_cn/ac_s_closur.ab` | `4817f7e6004b8bb760e3cef35c5bde7f` |
 | `audio/sound_beta_2/voice/ac_s_closur.ab` | `33b992fe87ece929f4be1289797bed3c` |
 
-## 安装
+## 准备素材
 
-使用现有 [素材说明](ASSETS.md) 的 UnityPy 提取环境，显式运行：
+使用已有 UnityPy 提取环境，先获取固定官方资源，再提取新格式：
 
 ```powershell
-.venv-extract/Scripts/python.exe tools/local-extract/terminal_theme.py
+python tools/local-extract/fetch_regulation.py --only theme
+.venv-extract/Scripts/python.exe tools/local-extract/extract.py --only theme --themes .cache/official-regulation/26-11-06-12-56-09-07186384 --out public/assets/local --manifest data/local-assets.json
 ```
 
-Linux/macOS 可使用已装提取依赖的 `python3`。`--plan` 只打印固定包身份，不导入 UnityPy、不访问网络。`--offline --cache <bundle根目录>` 只使用已缓存且 MD5 正确的原包。
+`--list` 只列出下载计划；每个原包按该版本 hot-update 清单的 MD5 校验。提取结果位于忽略目录 `public/assets/local/themes/<id>/`，包含 `theme.json`、`layout.json`、`prefabs.json`、图片、Spine、字体及中日语音。游戏启动不会下载官方原包。
 
-输出为忽略目录 `public/assets/terminal-themes/ac_s_closur/`，包含339张导出 Sprite（324个不同名称）、Spine 3.8 骨骼及贴图、九个动作、中文/日语各19段音频、原始两个配置 JSON，以及逐文件大小和 SHA-256 的 `manifest.json`。清单另记录 Sprite 尺寸、按 CSS 上/右/下/左顺序转换的原生边框 `spriteMeta` 和骨骼末关键帧时长 `animationDurations`。本次导出文件合计13,018,424字节。官方素材不进入 Git；源代码安装需单独执行安装器。已有清单可用相同命令重新解包补齐元数据；旧版清单仍可使用固定原包的已核对边框与动作时长。
+旧 `terminal_theme.py` 与旧清单校验工具保留用于既有包诊断和转换；新界面读取上述新格式。完整包和资源分包按新本机清单收录素材，不将原包、提取产物或图像写入 Git。
 
-游戏启动不下载原包，默认主题不请求本主题素材。选择后才读取本机服务器上的清单；清单损坏或缺失时显示说明并保留默认界面。静态角色保留为 WebGL 不可用时的回退。动态播放复用现有共享渲染器，遵守动态立绘设置、减少动画、离屏及后台暂停。原有外观插件的显式 CSS 变量继续优先。
+## 用户配置与回退
 
-## 浏览器适配范围
+主题缺失使用默认呈现，并保留已选身份便于补装；不会改变版本、房间或战斗规则。自定义背景、视频、音乐和外观插件仍沿用既有优先级。主题 ZIP 存在浏览器独立图库，个人数据备份只携带选择，换设备需重新导入主题包；服务器安装的官方素材不需要写入个人备份。
 
-主题样式在设备适配层之前加载，并使用既有主题状态选择器，兼容不支持 `:has()` 的浏览器。
-
-完整发行素材分包包含已安装主题清单及其逐项校验通过的文件；额外未列入清单的文件不进入发行包。精简程序包不附主题美术，缺失或损坏的已声明主题素材会阻止完整包发布。
-
-本库五个官方版本均可选择此本机外观，包括「规程·序列Ⅰ」和四个「盟约」版本。规程大厅保留随赛季变化的标题与模式选择；本机主题不改变对局规则、版本和房间数据。
-
-商店使用原包普通/五阶/六阶卡框、六张等级图片及刷新/冻结按钮的正常、激活和禁用底图。HUD 使用 `group_hud/root_bg/board` 引用的 `board_main`。回合提示窗口使用 `round_start` 内的 `window_main_frame`，按原生 `m_Border`（左124、下16、右62、上38）进行九宫格缩放，避免标题与关闭按钮随面板一起拉伸。阶段提示按休整、作战、首领分别使用蓝/金/粉窗口。
-
-[ASSUMED] 浏览器动作衔接为一次性动作完成一遍后回到待机，时长取原骨骼：庆祝2秒、高兴2.8333秒、互动5.9333秒、得意2.6667秒、说话5秒。失落 `Sad_Begin` 播完2.5667秒后转为 `Sad_Idle`；待机、初始姿态与低落保持当前姿态或循环。计时覆盖设置预览、大厅点击和已接入的阶段触发。
-
-[ASSUMED] 商店与提示框保留本库布局；阶段提示图片原生没有九宫格边框，浏览器按实测切分9/12/8/18像素保留标题栏，未将其声称为原生边框。原包 Unity 的189个粒子系统和40段 UI AnimationClip 不由浏览器逐帧重放。原始 `skin_config`、`effect_preview_config` 保留在安装目录供后续适配。
-
-[ASSUMED] 对局语音只接入可直接确认的模拟开始、最终攻势、隐秘核心三个阶段；被干员语音占用时跳过，重连不重播。十九段原始语音完整导出，但未实现原游戏所有概率触发器及粒子时间线。数据、伤害、经济、协议和 golden 场景均不改。
-
-## 验证
-
-```bash
-node --test test/ui/terminal-theme.test.js test/ui/audio.test.js test/ui/gameLogic.test.js test/client-preferences.test.js test/ui/lobby-hub.test.js
-node tools/i18n.mjs check --all --strict
-node --test test/docs-consistency.test.js test/docs-paths.test.js
-```
-
-迁入 main 前已保存检查点提交 `e82be1c`。原主题草稿的验证记录保留在来源工作树的 `.cache/theme-migration/`；本轮 main 集成的命令、浏览器检查、设置切换和独立副本回滚记录追加到既有迁移事务中。资源预载和分包包含主题清单、骨骼及两个配置 JSON。
-
-2026-11-10 优化前的 main 本地提交为 `d7cb0823`。解包核对、同输入浏览器 BASELINE/MODIFIED/ROLLBACK 结果、补丁、原始快照和可执行回滚保存在本机 `.cache/closure-refinement/`；这些本机验证产物不进入 Git。
+主题格式与作者指南见 [THEMES.md](THEMES.md)，本轮来源、兼容和验证见 [迁移记录](UPSTREAM-DEV-20261115.md)。

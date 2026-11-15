@@ -95,7 +95,7 @@ import { mergeLocalManifests, planFromManifests } from '../public/js/assetPack.j
 import { writePackIndex } from './packs.mjs';
 import { RELEASE_TAG } from '../server/release-version.js';
 import { CURSOR_SIZES } from '../shared/cursor.js';
-import { TERMINAL_THEME, validTerminalManifest } from '../shared/terminalTheme.js';
+import { TERMINAL_THEME, validTerminalManifest } from './legacy-terminal-theme.mjs';
 import { compareReleaseTags } from '../server/release-update.js';
 import { compareVersions, diffBases, manifestText, readBase, updateText } from './package-update.mjs';
 import {
@@ -114,7 +114,7 @@ export const PLAYER_DOCS = ['docs/PLAYING.md', 'docs/DEPLOY.md', 'docs/SKINS.md'
   'docs/LOCAL-DEV.md', 'docs/PRIVACY.md', 'docs/COMMUNITY-PLUGINS.md', 'docs/EXPANDED-COOP.md', 'docs/RELEASE-CANDIDATE.md',
   'docs/FORK-FEATURES.md', 'docs/CURSOR.md', 'docs/RELEASE-V0.3.3-EXTENDED.12.md',
   'docs/RELEASE-V0.3.3-EXTENDED.13.md', 'docs/RELEASE-V0.3.3-EXTENDED.14.md', 'docs/RELEASE-V0.3.3-EXTENDED.15.md',
-  'docs/TERMINAL-THEMES.md', 'docs/TRAINING.md', 'scripts/README.md'];
+  'docs/TERMINAL-THEMES.md', 'docs/THEMES.md', 'docs/examples/ui-theme/theme.json', 'docs/TRAINING.md', 'scripts/README.md'];
 /** Real interface screenshots referenced by the extension README. */
 export const PLAYER_DOC_DIRS = ['docs/img/features/'];
 const PLUGIN_DOCS = ['docs/PLAYING.md', 'docs/DEPLOY.md', 'docs/PLUGINS.md', 'docs/PLUGIN-GUIDE.md',
@@ -134,7 +134,7 @@ export const PLAYER_SCRIPTS = ['scripts/install-service-windows.ps1', 'scripts/l
   'scripts/start-tunnel.bat', 'scripts/start-tunnel.mjs', 'scripts/stop-server.bat', 'scripts/free-port.mjs',
   'scripts/host-runtime.mjs', 'scripts/recover-release.mjs'];
 /** The tools a player runs (npm run setup / doctor / assets, the postinstall) and the ones setup starts. */
-export const PLAYER_TOOLS = ['tools/build-resource-manifest.mjs', 'tools/crop-board-atlas.mjs', 'tools/doctor.mjs', 'tools/fetch-assets.mjs', 'tools/install-skins.mjs', 'tools/install-cursors.mjs', 'tools/install-dynamic-illustrations.mjs', 'tools/cache-dynamic-illustrations.mjs', 'tools/install-new-operators.mjs', 'tools/update-dynamic-catalogue.mjs', 'tools/prepare-operator-audio.mjs', 'tools/build-seat-art.mjs', 'tools/install-seat-art.mjs', 'tools/setup.mjs', 'tools/vendor.mjs', 'tools/fetch-stats-assets.mjs', 'tools/plugin.mjs'];
+export const PLAYER_TOOLS = ['tools/build-resource-manifest.mjs', 'tools/crop-board-atlas.mjs', 'tools/doctor.mjs', 'tools/fetch-assets.mjs', 'tools/install-skins.mjs', 'tools/install-cursors.mjs', 'tools/install-dynamic-illustrations.mjs', 'tools/cache-dynamic-illustrations.mjs', 'tools/install-new-operators.mjs', 'tools/update-dynamic-catalogue.mjs', 'tools/prepare-operator-audio.mjs', 'tools/build-seat-art.mjs', 'tools/install-seat-art.mjs', 'tools/setup.mjs', 'tools/vendor.mjs', 'tools/fetch-stats-assets.mjs', 'tools/plugin.mjs', 'tools/theme-template.mjs'];
 /** Whole tool directories: fetch-assets' modules, the local-client extraction setup runs. */
 export const PLAYER_TOOL_DIRS = ['tools/assets/', 'tools/local-extract/'];
 /** Whole runtime directories (their tracked files). */

@@ -120,7 +120,7 @@ export function ProtocolBoot({ players, myId, leaving = false }) {
   const list = (Array.isArray(players) ? players : []).slice(0, MAX_SEATS);
   const spots = bootLayout(list.length);
   return html`<div class=${cx('pboot', list.length <= 1 && 'pboot--solo', list.length > 6 && 'pboot--expanded', leaving && 'is-leaving')} role="status" aria-live="polite" aria-label=${t('协议启动！')}
-      data-testid="protocol-boot">
+      data-testid="protocol-boot" data-banner="gameStart">
     <div class="pboot__stage">
       <div class="pboot__scene" aria-hidden="true">
         <${Art} k="battleReady/bg_mountain1" class="pboot__mtn pboot__mtn--1" />
