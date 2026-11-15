@@ -46,7 +46,7 @@ test('regulationBriefingLayout is the version family, not a bond id', () => {
   assert.equal(regulationBriefingLayout({ version: null }), false);
   const brief = read('public/js/screens/briefing.js');
   assert.match(brief, /regulationBriefingLayout\(gd\.config\)/);
-  assert.match(brief, /<section class="brief__left">\s*<\$\{MatchEnemies\} pub=\$\{pub\} gd=\$\{gd\} \/>\s*<\/section>/);
+  assert.match(brief, /<section class="brief-sec brief-sec--enemy" style="--i:1">\s*<\$\{MatchEnemies\} pub=\$\{pub\} gd=\$\{gd\} \/>\s*<\/section>/);
   assert.doesNotMatch(brief, /enemyIconUrl|factionIconUrl|brief-boss|brief-faction/);
   assert.doesNotMatch(brief, /brief-legend|brief-banned|function BondRow|bannedPerBond|disabledBondSets/);
 });

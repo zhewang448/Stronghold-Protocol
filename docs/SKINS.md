@@ -210,6 +210,11 @@ this browser's outfits, as 干员调配's roster does. [ASSUMED] The whole map r
 a seat without a pick shows an operator its clients choose by player id (`seatOperator`), which the server does not
 compute; the map is bounded like `m.public`'s (`SKIN_LIMITS.entries`, the room's operators).
 
+Room portrait load errors are tracked per room, player and source. `useSeatArt` retries after 1, 3 and 10 seconds,
+then stops until the source changes, the network comes online or the page regains focus. A failed outfit still falls
+back to the operator's default art; every failed source is recorded so two missing files cannot alternate endlessly.
+Leaving the seat cancels its timers. These retry intervals and limits are an [ASSUMED] UI recovery policy.
+
 ## The switch model: the owner installs, each player switches on
 
 | Who | What they do | Where it is stored |
@@ -394,6 +399,8 @@ exists) gets no section rather than an empty grid.
 ## 等待室姓名牌底图
 
 姓名牌的「名片底图」独立于人物立绘，默认跟随预选盟约，也可选择无底图或已安装的载入图、阵营徽记及皮肤底图。手选不会被之后的盟约变更覆盖；图片支持拖动、缩放和重置，徽记无需裁切。配置同步给房间成员与观战者，只绘制在等待室姓名牌。
+
+自动模式覆盖各官方版本的核心盟约，包含规程的乌萨斯、伊比利亚和莱塔尼亚；莱塔尼亚使用素材目录的 `leithanien` 徽记。预览和房间席位共用同一映射。
 
 ![等待室名片底图的模式、分组素材与取景预览](img/features/namecard-backgrounds.webp)
 

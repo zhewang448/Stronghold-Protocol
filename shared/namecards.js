@@ -1,5 +1,5 @@
 // Waiting-room cosmetics. [ASSUMED] Owner-approved faction backgrounds and automatic bond selection.
-export const NAMECARD_BONDS = Object.freeze({ yanShip: 'yan', sargonShip: 'sargon', victoriaShip: 'victoria', kjeragShip: 'kjerag', lateranoShip: 'laterano', egirShip: 'egir', siracusaShip: 'siracusa', kazimierzShip: 'kazimierz' });
+export const NAMECARD_BONDS = Object.freeze({ yanShip: 'yan', sargonShip: 'sargon', victoriaShip: 'victoria', kjeragShip: 'kjerag', lateranoShip: 'laterano', egirShip: 'egir', siracusaShip: 'siracusa', kazimierzShip: 'kazimierz', ursusShip: 'ursus', iberiaShip: 'iberia', lethaniaShip: 'leithanien' });
 export const NAMECARD_CAMPS = Object.freeze(['rhodes', 'lungmen', 'yan', 'higashi', 'victoria', 'kazimierz', 'laterano', 'leithanien', 'columbia', 'ursus', 'siracusa', 'iberia', 'sargon', 'kjerag', 'egir', 'bolivar', 'minos', 'rim', 'sami', 'babel', 'rhine', 'penguin', 'blacksteel', 'karlan', 'glasgow', 'abyssal', 'siesta', 'dublinn', 'followers', 'lgd', 'pinus', 'chiave', 'lee', 'rainbow', 'student', 'sui', 'sweep', 'elite', 'action4', 'reserve1', 'reserve4', 'reserve6']);
 export function validNamecard(value) {
   return !!value && Object.getPrototypeOf(value) === Object.prototype && Object.keys(value).every(k => ['mode', 'id', 'x', 'y', 'zoom'].includes(k))

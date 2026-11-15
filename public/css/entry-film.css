@@ -1,0 +1,75 @@
+/* [ASSUMED] Manual opening entry, approved alongside the current home layout. */
+.entry-film-button.btn {
+  position: relative;
+  flex: none;
+  min-height: max(.34rem, 32px);
+  padding: .05rem .13rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-md);
+  font-size: max(13px, calc(.15 * var(--t)));
+  white-space: nowrap;
+  pointer-events: auto;
+}
+.entry-film-button::before, .entry-film-button::after {
+  content: '';
+  position: absolute;
+  top: .05rem;
+  bottom: .05rem;
+  width: .05rem;
+  min-width: 4px;
+  border: 1px solid var(--line-3);
+  transition: border-color var(--t-fast);
+  pointer-events: none;
+}
+.entry-film-button::before { left: 0; border-right: 0; }
+.entry-film-button::after { right: 0; border-left: 0; }
+.entry-film-button .btn__icon { color: var(--mint-400); }
+.entry-film-button.btn:hover:not(:disabled), .entry-film-button.btn:focus-visible { background-color: var(--mint-a10); color: var(--mint-400); }
+.entry-film-button:hover::before, .entry-film-button:hover::after, .entry-film-button:focus-visible::before, .entry-film-button:focus-visible::after { border-color: var(--mint-400); }
+.hub-entry-film { margin-top: max(.1rem, 8px); }
+/* The centre is decorative except for this action; custom art still keeps the action available. */
+[data-hub-theme="custom"] .hub-center { display: flex; }
+[data-hub-theme="custom"] .hub-center > :not(.hub-entry-film) { display: none; }
+:is(.sp-touch, .sp-coarse) .entry-film-button.btn { min-height: var(--tap-min); min-width: var(--tap-min); }
+.entry-film {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  background: #000;
+  color: var(--text-hi);
+  font-family: var(--font-cjk);
+}
+.entry-film::backdrop { background: #000; }
+.entry-film__scene { position: absolute; inset: 0; overflow: hidden; }
+.entry-film__loading { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 24px; font-size: max(14px, calc(.18 * var(--t))); text-align: center; }
+.entry-film__skip.btn {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  z-index: 2;
+  min-height: 44px;
+  max-width: calc(100% - 32px);
+  gap: 12px;
+  padding: 8px 14px;
+  border: 1px solid var(--line-3);
+  background: var(--bg-0);
+  color: var(--text-hi);
+  font-size: max(13px, calc(.16 * var(--t)));
+}
+.entry-film__skip kbd { font: inherit; font-size: 12px; color: var(--text-md); }
+@media (max-height: 520px) {
+  .hub-entry-film { margin-top: 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .entry-film-button::before, .entry-film-button::after { transition: none; }
+}

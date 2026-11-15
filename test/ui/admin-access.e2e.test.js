@@ -21,6 +21,8 @@ test('console login and access: desktop/mobile, local reset, remote password and
   const page = await browser.newPage(), errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.setViewport({ width: 1440, height: 900 });
+  await fetch(`${admin.url}/api/access`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Admin-Token': admin.token },
+    body: JSON.stringify({ loginEnabled: true, allowRemote: false }) });
   await page.goto(`${admin.url}/login`);
   await page.waitForSelector('#skip:not([hidden])');
   assert.equal(await page.$eval('#access-mode', (element) => element.textContent), '本机访问');
@@ -76,13 +78,21 @@ test('console login and access: desktop/mobile, local reset, remote password and
   await remote.click('[data-tab="settings"]');
   await remote.waitForFunction(() => document.querySelector('[data-password-help]')?.textContent.includes('验证旧密码'));
   assert.equal(await remote.$eval('[data-old-password-label]', (label) => label.hidden), false);
-  await page.click('[data-allow-remote]');
+  await page.click('[data-login-enabled]');
+  assert.equal(await page.$eval('[data-allow-remote]', input => input.checked), false, 'disabling login also disables remote access');
   await page.click('[data-access-form] button');
   await page.waitForFunction(() => document.querySelector('[data-access-status]').textContent.includes('仅允许本机访问'));
   const denied = await remote.goto(admin.url); assert.equal(denied.status(), 403);
   assert.equal((await fetch(`http://127.0.0.1:${game.port}/healthz`)).status, 200, 'game server continues across console rebinds');
-  await page.click('#admin-logout'); await page.waitForSelector('#skip');
-  await Promise.all([page.waitForNavigation(), page.click('#skip')]);
+  await Promise.all([page.waitForNavigation(), page.click('#admin-logout')]);
+  await page.waitForSelector('#admin-logout');
   assert.ok(page.url().endsWith('/'));
+  const fresh = await browser.createBrowserContext();
+  const local = await fresh.newPage();
+  await local.goto(`${admin.url}/login`);
+  await local.waitForSelector('#admin-logout');
+  assert.ok(local.url().endsWith('/'), 'a bookmarked login URL skips the disabled form without an existing session');
+  await local.screenshot({ path: path.join(output, 'login-disabled-console.png') });
+  await fresh.close();
   assert.deepEqual(errors, []);
 });

@@ -25,6 +25,12 @@ const ART = ['battleReady/rhodes', 'battleReady/bg_terrain', 'battleReady/bg_mou
 
 /** Whether every sprite has loaded (preloadBootArt): null = not fetched yet, false = missing or still loading. */
 let bootArt = null;
+// Keep the eight verified sprites for this page. Revalidating the HTTP URLs while their 1.7 s animation is already
+// running can take longer than the entire banner on a cold connection. Blob URLs reuse the fetched bytes.
+const bootUrls = new Map();
+
+/** A preloaded sprite, or its manifest-listed URL before preloading has finished. */
+export const bootArtUrl = (key) => bootUrls.get(key) || uiUrl(data.get('assets'), key);
 
 /**
  * True once the pre-game sprites are all in: screens/game.js shows the 0.3.0 banner until then, screens/bandDraft.js no
@@ -59,7 +65,7 @@ export function preloadBootArt() {
   let left = urls.length;
   // held until every sprite is in: an Image nothing refers to may be collected mid-load, which cancels its request
   const imgs = [];
-  for (const src of urls) {
+  for (const [index, src] of urls.entries()) {
     const img = new Image();
     imgs.push(img);
     img.onload = () => {
@@ -71,7 +77,14 @@ export function preloadBootArt() {
       waiting.clear();
     };
     img.onerror = () => { left = -1; };
-    img.src = src;
+    fetch(src).then((response) => {
+      if (!response.ok) throw new Error(`Pre-game sprite HTTP ${response.status}`);
+      return response.blob();
+    }).then((blob) => {
+      const url = URL.createObjectURL(blob);
+      bootUrls.set(ART[index], url);
+      img.src = url;
+    }, () => { left = -1; });
   }
 }
 
@@ -105,7 +118,7 @@ export function bootLayout(n) {
 
 /** An official sprite as a positioned image (no lazy loading: the screen lasts about 2.3 s). */
 function Art({ k, class: cls, mask = false }) {
-  const src = uiUrl(data.get('assets'), k);
+  const src = bootArtUrl(k);
   if (!src) return null;
   return mask
     ? html`<i class=${cls} style=${`--src:url("${src}")`}></i>`

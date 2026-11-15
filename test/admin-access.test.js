@@ -152,6 +152,28 @@ test('HTTP login gate protects pages/assets/APIs; local skip/reset and launcher 
   assert.equal((await call('/api/rooms', undefined, auth)).status, 403);
 });
 
+test('HTTP disabled login skips direct and expired-session login URLs, including after restart', async (t) => {
+  const { call, pageAuth, time, options } = await httpFixture(t);
+  const direct = await call('/login');
+  assert.equal(direct.status, 302);
+  assert.equal(direct.location, '/');
+  const page = await call('/'), local = pageAuth(page);
+  assert.equal((await call('/api/access', { loginEnabled: true, allowRemote: false }, local)).status, 200);
+  assert.equal((await call('/login')).status, 200, 'enabled login still renders the password form');
+  assert.equal((await call('/api/access', { loginEnabled: false, allowRemote: false }, local)).status, 200);
+  assert.equal((await call('/login')).location, '/', 'disabling takes effect immediately');
+  time(1000 + 12 * 60 * 60 * 1000);
+  assert.equal((await call('/api/rooms', undefined, local)).json.code, 'LOGIN_REQUIRED');
+  assert.equal((await call('/login', undefined, local)).location, '/', 'an expired session bypasses the disabled form');
+  assert.equal((await call('/')).status, 200);
+  assert.equal((await call('/login', undefined, { 'X-Forwarded-For': '203.0.113.1' })).status, 403, 'proxy requests cannot use the local bypass');
+  const restarted = await startAdmin(options);
+  t.after(() => restarted.close());
+  const response = await fetch(`${restarted.url}/login`, { redirect: 'manual' });
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get('location'), '/');
+});
+
 test('HTTP remote rebind, forced password, old-password check, revocation, persistence and immediate close', async (t) => {
   const { admin, call, pageAuth, time, options, dir } = await httpFixture(t);
   const local = pageAuth(await call('/'));

@@ -32,13 +32,13 @@ describe('twenty-player group choices on landscape touch phones', { skip: !enabl
         ]);
         render(html`<${BandDraftScreen} />`, document.querySelector('#app'));
       });
-      const selector = '.draft-detail__btns button:not(.btn--primary)';
+      const selector = '.draft-skip';
       await page.waitForSelector(selector);
       assert.equal(await page.$eval(selector, e => e.disabled), false, 'an AI still counts as a later single-group picker');
       assert.equal(await page.$eval(selector, e => e.title), '跳过本轮，稍后再选');
       await page.click(selector);
       await page.waitForFunction(() => globalThis.__MOCK__.S().pub.draft.turn === 'ai_2');
-      assert.equal(await page.$eval(selector, e => e.disabled), true, 'the one skip is consumed');
+      assert.equal(await page.$(selector), null, 'off-turn the upstream header removes the skip control');
     } finally { await page.close(); }
   });
 

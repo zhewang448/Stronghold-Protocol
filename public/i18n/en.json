@@ -4251,6 +4251,13 @@
   "点击进入": "Tap to start",
   "点击跳过": "Tap to skip",
   "这台服务器已经带有这个官方主题，直接在下面选用即可。": "This server already includes this official theme. Select it below.",
+  "卡池剩余": "Pool stock",
+  "{n}张": "{n} {count|copy|copies}",
+  "卡池余量为 0 时，已刷出的角色仍可购买。": "An operator already in the shop can still be purchased when pool stock is 0.",
+  "观看开场": "Watch opening",
+  "开场动画": "Opening animation",
+  "正在准备开场动画…": "Preparing the opening…",
+  "开场动画素材未就绪，请在「素材与资源」中下载或导入后重试。": "Opening animation assets are not ready. Download or import them in “Assets and resources”, then try again.",
   "独立装备区": "Separate equipment row",
   "其他版本也使用 5 格永久装备区，装备不占干员手牌；规程版本原本支持": "Use 5 permanent equipment slots in other versions without taking operator hand slots; Regulation already supports this"
 }

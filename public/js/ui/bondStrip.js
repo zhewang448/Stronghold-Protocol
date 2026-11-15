@@ -319,7 +319,7 @@ export function BondPopup({ bondId, entry, priv, stock = null, banned = [], onCl
               title=${`${name}${si ? t('（{note}）', { note: standInForText(mb.name) }) : ''}${mb.granted ? t('（变形同构体：视为本盟约成员）') : ''}${mb.banned ? t('（本局禁用）') : mb.onBoard ? t('（在场）') : mb.owned ? t('（整备区）') : ''}`}>
             <${UnitThumb} kind="chess" id=${mb.id} ownerId=${ownerId ?? priv?.playerId} size="sm" dim=${!mb.owned || mb.banned} rec=${si || mb.rec || null} title=${name} />
             <span class="bpop__mname">${name}</span>
-            ${hasStock ? html`<span class=${cx('bpop__stock', remaining === 0 && 'is-empty')} data-stock-id=${mb.id} data-stock=${remaining === null ? 'unlimited' : remaining} title=${mb.diy ? t('自选个人卡池') : undefined}
+            ${hasStock ? html`<span class=${cx('bpop__stock', remaining === 0 && 'is-empty', remaining > 0 && remaining <= 2 && 'is-low')} data-stock-id=${mb.id} data-stock=${remaining === null ? 'unlimited' : remaining} title=${mb.diy ? t('自选个人卡池') : undefined}
                 aria-label=${remaining === null ? t('卡池不限量') : t('卡池剩余 {n} 张', { n: remaining })}>${remaining === null ? '∞' : t('剩余{n}张', { n: remaining })}</span>` : null}
             ${mb.banned ? html`<span class="bpop__ban"><${Icon} name="close" /></span>` : null}
             ${mb.granted ? html`<span class="bpop__iso" aria-hidden="true">${t('同构')}</span>` : null}

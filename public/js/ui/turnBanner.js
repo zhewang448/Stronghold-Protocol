@@ -12,8 +12,7 @@
 // takes a click (pointer-events none). Styles: css/screens/protocol-boot.css (.tbanner).
 import { useEffect } from '../../vendor/hooks.module.js';
 import { html } from './components.js';
-import { uiUrl } from './assetUrls.js';
-import { data } from '../data.js';
+import { bootArtUrl } from './protocolBoot.js';
 import { t } from '../../../shared/i18n.js';
 
 /** How long the band stays (its animation's length). */
@@ -29,7 +28,7 @@ export const TURN_BANNER_LATE_MS = 5000;
 
 /** An official sprite: an image, or (`mask`) a box its shape is painted through in the CSS colour. */
 function Art({ k, class: cls, mask = false }) {
-  const src = uiUrl(data.get('assets'), k);
+  const src = bootArtUrl(k);
   if (!src) return null;
   return mask
     ? html`<i class=${cls} style=${`--src:url("${src}")`}></i>`

@@ -1,14 +1,16 @@
 // Connection and tool rows keep their geometry before and after online lobby returns.
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 describe('title controls survive lobby round trips', { skip: process.env.SP_E2E !== '1' || !existsSync(CHROME) }, () => {
-  let server, browser;
+  let server, browser, resourceFixture;
   before(async () => {
     const { startServer } = await import('../../server/index.js');
     const puppeteer = (await import('puppeteer-core')).default;
+    resourceFixture = readFileSync(new URL('../../public/js/resources/index.js', import.meta.url), 'utf8')
+      + '\nexport function __titleLayoutReady() { Object.assign(state, { phase: "ready", complete: false, selectionComplete: true, tier1Total: 1, optional: true }); for (const listener of listeners) listener({ ...state }); }\n';
     server = await startServer({ port: 0, host: '127.0.0.1', quiet: true, recovery: false });
     browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox'] });
   });
@@ -17,6 +19,7 @@ describe('title controls survive lobby round trips', { skip: process.env.SP_E2E 
     [1920, 1080, false, 'zh-CN', 'sm'], [1280, 720, false, 'zh-CN', 'sm'],
     [844, 390, true, 'zh-CN', 'sm'], [667, 375, true, 'zh-CN', 'xl'],
     [1440, 900, false, 'zh-CN', 'xl'], [1280, 720, false, 'en', 'xl'],
+    [1024, 768, false, 'zh-CN', 'xl'], [960, 540, false, 'zh-CN', 'sm'],
   ]) {
     test(`${width}×${height} ${lang} ${textSize}`, async () => {
       const context = await browser.createBrowserContext();
@@ -26,12 +29,15 @@ describe('title controls survive lobby round trips', { skip: process.env.SP_E2E 
         // Keep this layout regression on local fonts, including the supported offline fallbacks.
         await page.setRequestInterception(true);
         page.on('request', request => {
-          if (['fonts.googleapis.com', 'fonts.gstatic.com'].includes(new URL(request.url()).hostname)) request.abort();
+          const url = new URL(request.url());
+          if (url.pathname === '/js/resources/index.js') request.respond({ status: 200, contentType: 'text/javascript', body: resourceFixture });
+          else if (['fonts.googleapis.com', 'fonts.gstatic.com'].includes(url.hostname)) request.abort();
           else request.continue();
         });
         page.on('pageerror', e => errors.push(e.message));
         await page.setViewport({ width, height, hasTouch: touch, isMobile: touch, deviceScaleFactor: 1 });
         await page.evaluateOnNewDocument((lang, textSize) => {
+          globalThis.__SP_ENTRY_FILM__ = 'off';
           localStorage.setItem('sp.name', 'TitleReturn');
           localStorage.setItem('sp.pref.lang', JSON.stringify(lang));
           localStorage.setItem('sp.pref.settings', JSON.stringify({ textSize, upstreamReleaseNotes: false, extensionReleaseNotes: false }));
@@ -40,6 +46,11 @@ describe('title controls survive lobby round trips', { skip: process.env.SP_E2E 
         await page.waitForFunction(() => ['connected', 'online'].includes(globalThis.__SP__?.store.get().connection.status) && document.querySelector('.title-screen'));
         const settle = () => page.evaluate(() => document.getAnimations().forEach(a => { if (a.effect?.getTiming().iterations !== Infinity) a.finish(); }));
         const check = async () => {
+          await page.evaluate(async () => {
+            (await import('/js/resources/index.js')).__titleLayoutReady();
+            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+            document.querySelector('.title-information').scrollIntoView({ block: 'nearest' });
+          });
           await settle();
           const problems = await page.evaluate(() => {
             const row = document.querySelector('.title-conn'), problems = [];
@@ -52,6 +63,24 @@ describe('title controls survive lobby round trips', { skip: process.env.SP_E2E 
             if (panel.contains(notice) || panel.contains(updates)) problems.push('information actions inside login panel');
             const noticeBox = notice.getBoundingClientRect(), updatesBox = updates.getBoundingClientRect();
             if (Math.abs(noticeBox.top - updatesBox.top) > 1 || noticeBox.top < panel.getBoundingClientRect().bottom - 1) problems.push('information row placement');
+            const resource = document.querySelector('.res-pill'), footer = document.querySelector('.title-foot');
+            const groups = [panel, information, resource, footer];
+            for (let i = 0; i < groups.length; i++) {
+              const a = groups[i].getBoundingClientRect();
+              for (const other of groups.slice(i + 1)) {
+                const b = other.getBoundingClientRect();
+                if (Math.min(a.right, b.right) > Math.max(a.left, b.left) + 1 && Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top) + 1) problems.push(`${groups[i].className} overlaps ${other.className}`);
+              }
+            }
+            const resourceTitle = document.createRange();
+            resourceTitle.selectNodeContents(resource.querySelector('.res-pill__label').firstChild);
+            if (resourceTitle.getClientRects().length !== 1) problems.push('resource title wraps');
+            const resourceText = document.createRange();
+            resourceText.selectNodeContents(resource.querySelector('.res-pill__state'));
+            const resourceBox = resource.getBoundingClientRect();
+            if ([...resourceText.getClientRects()].some(r => r.right > resourceBox.right + 1 || r.left < resourceBox.left - 1)) problems.push('resource state overflows');
+            const scroller = document.querySelector('.title-scroll');
+            if (scroller.scrollWidth > scroller.clientWidth + 1) problems.push('horizontal title overflow');
             const elements = [...document.querySelectorAll('.title-conn .status-dot, .title-conn .ping, .title-conn .btn, .title-conn .fsbtn, .title-information .btn')].filter(e => e.getBoundingClientRect().width);
             for (let i = 0; i < elements.length; i++) {
               const e = elements[i], a = e.getBoundingClientRect();
@@ -82,6 +111,13 @@ describe('title controls survive lobby round trips', { skip: process.env.SP_E2E 
             return problems;
           });
           assert.deepEqual(problems, []);
+          assert.equal(await page.$eval('.res-pill__head', async button => {
+            button.scrollIntoView({ block: 'nearest' });
+            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+            const r = button.getBoundingClientRect();
+            return button.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+          }), true, 'resource manager entry remains reachable');
+          await page.$eval('.title-information', element => element.scrollIntoView({ block: 'nearest' }));
         };
         await page.evaluate(async () => {
           await document.fonts.ready;
@@ -107,6 +143,10 @@ describe('title controls survive lobby round trips', { skip: process.env.SP_E2E 
           }
         };
         for (let round = 0; round < 2; round++) {
+          await page.$eval('.title-login .btn--xl', async button => {
+            button.scrollIntoView({ block: 'center' });
+            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          });
           await page.click('.title-login .btn--xl');
           await page.waitForFunction(() => globalThis.__SP__.store.get().connection.status === 'online' && document.querySelector('.lobby-screen'));
           await settle();

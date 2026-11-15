@@ -2306,8 +2306,9 @@ export class Lobby {
 
   /** Announcing a core bond only changes public communication state. */
   bondPlan(session, { bondId }) {
-    if (bondId !== null && (typeof bondId !== 'string' || !Object.hasOwn(this.safeData().bonds || {}, bondId) || !this.safeData().bonds[bondId]?.isCore)) return fail(ERR.BAD_MSG);
     const room = this.roomOf(session);
+    const bonds = this.dataFor(room).bonds || {};
+    if (bondId !== null && (typeof bondId !== 'string' || !Object.hasOwn(bonds, bondId) || !bonds[bondId]?.isCore)) return fail(ERR.BAD_MSG);
     const seat = room?.seatOf(session.playerId);
     session.bondPlan = bondId;
     if (seat) { seat.bondPlan = bondId; seat.namecard = resolveNamecard(session.namecard, bondId, this.safeData().assets); }

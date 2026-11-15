@@ -62,7 +62,7 @@ import { net } from '../net.js';
 import { store, useStore, shallowEqual, emptyMatch, isSpectating, serverNow, loadPref, savePref } from '../store.js';
 import { data, useData, getConfig } from '../data.js';
 import { chessAvatarUrl } from '../ui/assetUrls.js';
-import { CARD_PREF, CARD_KEY, CARD_SKIN_KEY, cardStore, setCard, cardOperators, seatPortrait, seatOperator, cardAvatarUrl } from '../ui/seatArt.js';
+import { CARD_PREF, CARD_KEY, CARD_SKIN_KEY, cardStore, setCard, cardOperators, seatPortrait, seatOperator, cardAvatarUrl, useSeatArt } from '../ui/seatArt.js';
 import { C2S } from '../../../shared/protocol.js';
 import { difficultyInfo, modeInfo, LadderList, ProtoCard } from './lobby.js';
 import { ProtocolScene } from '../ui/protocolScene.js';
@@ -242,8 +242,12 @@ function SeatCard({ seat, index, animationIndex = index, room, facts, myId, busy
   const customIllust = useCustomIllust(seat && !seat.isBot ? seat.playerId : null);
   const [badCustom, setBadCustom] = useState(null);
   const bondTip = room.seatAvatars === true ? bondPlanTooltip(seat?.bondPlan) : null;
-  const [bad, setBad] = useState(null);
   const flash = useRise(!!seat && (seat.ready || seat.isBot || seat.playerId === room.hostId));
+  const portrait = seat?.isBot ? null : seatPortrait(seat, portraits);
+  const portraitOperator = seatOperator(seat, portraits, { myId, myCard: portraits.myCard });
+  const portraitDefault = !seat || seat.isBot ? null : seatPortrait({ ...seat, cardSkin: null }, { ...portraits, mySkin: '' });
+  const art = useSeatArt([portrait, portraitDefault], `${room.code}:${seat?.playerId}`);
+  const src = art.src;
   if (!seat) {
     const invitable = room.mode !== 'solo' && !facts.spectating;
     return html`<article class=${`rseat rseat--empty${searching ? ' is-searching' : ''}`} style=${`--i:${animationIndex}`}>
@@ -269,17 +273,13 @@ function SeatCard({ seat, index, animationIndex = index, room, facts, myId, busy
   const isHostSeat = seat.playerId === room.hostId;
   const offline = seat.connected === false && !seat.isBot;
   const ready = seat.ready || seat.isBot || isHostSeat;
-  const portrait = seat.isBot ? null : seatPortrait(seat, portraits);
-  const portraitOperator = seatOperator(seat, portraits, { myId, myCard: portraits.myCard });
-  const portraitDefault = seat.isBot ? null : seatPortrait({ ...seat, cardSkin: null }, { ...portraits, mySkin: '' });
-  const src = portrait && bad !== portrait ? portrait : portraitDefault && bad !== portraitDefault ? portraitDefault : null;
   const custom = customIllust && customIllust !== badCustom ? customIllust : null;
   const frameKey = custom ? (isMe ? 'custom' : 'custom:' + seat.playerId)
     : cardArtKey(portraitOperator?.chess?.charId, isMe ? portraits.mySkin : seat.cardSkin);
   const sharedFrame = isMe ? undefined : sharedCardArt(seat.cardArt, custom ? 'custom' : frameKey);
   const owner = isOwnerName(seat.name);
   const canPick = isMe && !seat.isBot && !!onPickCard;
-  return html`<article class=${`rseat${ready ? ' is-ready' : ''}${flash ? ' is-flash' : ''}${isMe ? ' is-me' : ''}${isHostSeat ? ' is-host' : ''}${offline ? ' is-offline' : ''}${seat.isBot ? ' is-bot' : ''}`}
+  return html`<article class=${`rseat${ready ? ' is-ready is-lit' : ''}${flash ? ' is-flash' : ''}${isMe ? ' is-me' : ''}${isHostSeat ? ' is-host' : ''}${offline ? ' is-offline' : ''}${seat.isBot ? ' is-bot' : ''}`}
       style=${`--i:${animationIndex}`}>
     ${consent ? html`<span data-testid="script-consented">${t('已同意')}</span>` : null}
     ${facts.needsContent && !seat.isBot ? html`<span class=${`seat__content is-${seat.content || 'loading'}`} data-testid="seat-content">${facts.versionRoom ? (seat.content === 'ready' ? t('版本数据就绪') : seat.content === 'failed' ? t('版本数据校验失败') : t('版本数据载入中')) : (seat.content === 'ready' ? t('插件内容就绪') : seat.content === 'failed' ? t('插件内容校验失败') : t('插件内容载入中'))}</span>` : null}
@@ -288,7 +288,7 @@ function SeatCard({ seat, index, animationIndex = index, room, facts, myId, busy
     <div class=${`rseat__art${canPick ? ' is-pickable' : ''}`} onClick=${canPick ? onPickCard : undefined} title=${canPick ? t('点击更换名片干员') : undefined}>
       ${custom ? html`<${CardArtImage} frameKey=${frameKey} frame=${sharedFrame} src=${custom} custom=${true} interactive=${canPick} onError=${() => setBadCustom(custom)} />`
         : src ? html`<${CardArtImage} frameKey=${frameKey} frame=${sharedFrame} src=${src} m=${portraits.m} charId=${portraitOperator?.chess?.charId} interactive=${canPick}
-          skin=${isMe ? portraits.mySkin : seat.cardSkin} onError=${() => setBad(src)} />`
+          skin=${isMe ? portraits.mySkin : seat.cardSkin} onError=${art.onError} />`
         : html`<span class="rseat__glyph">${seat.isBot ? html`<${Icon} name="robot" />` : [...(seat.name || '?')][0]}</span>`}
       ${canPick ? html`<button type="button" class="rseat__pick" onClick=${(e) => { e.stopPropagation(); onPickCard(); }} aria-label=${t('更换名片干员')}><${Icon} name="edit" /><span>${t('更换立绘')}</span></button>` : null}
       ${isHostSeat ? html`<span class="rseat__host">${t('创建者')}</span>` : null}
@@ -684,7 +684,7 @@ export function RoomScreen() {
         ? html`<span class="t-mint">${t('已就绪 · 等待创建者开始模拟')}</span>`
         : html`<span class="t-lo">${t('准备就绪后，创建者即可开始模拟')}</span>`;
 
-  return html`<div class=${`screen room-screen rs${coop ? '' : ' rs--solo'}${facts.seats.length > DEFAULT_SEATS ? ' rs--big' : ''}${seatPages.length > 1 ? ' rs--paged' : ''}${exiting ? ' is-leaving' : ''}`} style=${`--d-color:${DIFFICULTY_COLORS[room.difficulty]}; --n:${shownSeats.length}`}>
+  return html`<div class=${`screen room-screen rs${coop ? '' : ' rs--solo'}${facts.seats.length > DEFAULT_SEATS ? ' rs--big' : ''}${seatPages.length > 1 ? ' rs--paged' : ''}${exiting ? ' is-leaving' : ''}`} data-season=${seasonOf(roomVersion(room))} style=${`--d-color:${DIFFICULTY_COLORS[room.difficulty]}; --n:${shownSeats.length}`}>
     <div class="rs__bg" aria-hidden="true"></div>
     <${NameCardPickerHost} />
     ${versionOpen ? html`<${VersionPicker} mode="room" versions=${versions || []} current=${roomVersion(room)} serverDefault=${serverDefault} roomMode=${room.mode} onClose=${() => setVersionOpen(false)} note=${versionWhy} editable=${!versionWhy && room.hostControls?.version !== false} onPick=${async version => { try { await net.request('room.proposeVersion', { version }); setVersionOpen(false); } catch (err) { toastError(err); } }} />` : null}
@@ -731,13 +731,13 @@ export function RoomScreen() {
         ${page.mine ? html`<span>${t('（本组）')}</span>` : null}<small>${t('已就绪')} ${page.ready}</small>
       </button>`)}
     </nav>` : null}
-    <main class="rs-seats" key=${shownPage?.index}>
+    <main class=${`rs-seats${coop ? '' : ' seats--solo'}`} key=${shownPage?.index}>
       ${shownSeats.map(({ seat: s, index: i }, pageIndex) => html`<${SeatCard} key=${s ? `p${s.playerId}` : `e${i}`} seat=${s} index=${i} animationIndex=${pageIndex} room=${room} facts=${facts}
         myId=${me.playerId} busy=${busy} online=${online} onKick=${kick} onInvite=${() => copy('code')} onAddBot=${addBot} onRemoveBot=${removeBot} onBotBand=${setBotBand} searching=${searching} portraits=${portraits}
         onSpectate=${spectate} onPickCard=${CARD_SYNC && cardList.length ? () => setPicking(true) : null} />`)}
       ${coop ? null : html`<aside class="solo-brief rs-brief brackets">
         <${MicroLabel} tone="mint">BRIEFING<//>
-        <h2>${DIFFICULTY_NAMES[room.difficulty] ? t(DIFFICULTY_NAMES[room.difficulty]) : ''}<span class="num t-dim"> ${info.code}</span></h2>
+        <h2>${room.modeId ? info.name : DIFFICULTY_NAMES[room.difficulty] ? t(DIFFICULTY_NAMES[room.difficulty]) : ''}<span class="num t-dim"> ${info.code}</span></h2>
         <p>${info.desc}</p>
         <ul>
           ${info.effects.map((e) => html`<li key=${e}>${e}</li>`)}

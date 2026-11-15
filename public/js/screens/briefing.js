@@ -14,16 +14,16 @@
 // instead; the return below is every other version, unchanged.
 
 import { useState } from '../../vendor/hooks.module.js';
-import { html, Button, Icon, MicroLabel } from '../ui/components.js';
+import { html, Button, Icon } from '../ui/components.js';
 import { useGameData } from '../ui/gameComponents.js';
 import { StepHeader, ExitModal } from '../ui/matchChrome.js';
 import { DiyChoice } from '../ui/diyChoice.js';
 import { act } from '../ui/gameActions.js';
-import { MatchInfo, matchInfoModel, MatchBondDialog, regulationCoreAbsent } from '../ui/matchInfo.js';
+import { MatchBondGroups, MatchBondRow, MatchLegend, BannedOperators, matchInfoModel, MatchBondDialog, regulationCoreAbsent } from '../ui/matchInfo.js';
 import { MatchEnemies } from '../ui/matchEnemies.js';
 import { RegulationBriefing, regulationBriefingLayout } from '../ui/regulationBriefing.js';
 import { LoadoutButton } from './loadout.js';
-import { UnofficialMark } from '../ui/pluginTag.js';
+import { UnofficialMark, VersionTag } from '../ui/pluginTag.js';
 import { SetupReroll } from '../ui/setupReroll.js';
 import { actions } from '../ui/gameActions.js';
 import { sortedPlayers, phaseTotalSeconds, pregameStepCount, pregameStepIndex } from '../ui/gameLogic.js';
@@ -78,12 +78,18 @@ export function BriefingScreen() {
     <div class="brief__bg" aria-hidden="true"></div>
     <${StepHeader} step=${pregameStepIndex(gd.config, 'INFO_CHECK')} of=${pregameStepCount(gd.config)} title=${t('确认本局信息')} micro="BRIEFING // INFO CHECK" pub=${pub}
       total=${phaseTotalSeconds(pub, gd.config)} onExit=${() => setExit(true)} />
-    <${UnofficialMark} room=${room} class="brief__modmark" />
+    <${UnofficialMark} room=${room} class="brief__modmark" /><${VersionTag} room=${room} class="brief__vertag" />
     <main class="brief__main">
-      <section class="brief__left"><${MatchEnemies} pub=${pub} gd=${gd} /></section>
-      <section class="brief__right">
-        <${MatchInfo} model=${info} onPick=${pickGroup} onBond=${setBondId} disabled=${!me || !!me.ready || !!pub.rerollVote} busy=${busy} />
+      <section class="brief-sec brief-sec--enemy" style="--i:1">
+        <${MatchEnemies} pub=${pub} gd=${gd} />
       </section>
+
+      <section class="brief-sec brief-sec--core" style="--i:2"><${MatchBondGroups} model=${info} onPick=${pickGroup} onBond=${setBondId} disabled=${!me || !!me.ready || !!pub.rerollVote} busy=${busy} /></section>
+      <section class="brief-sec brief-sec--addon" style="--i:3">
+        <${MatchBondRow} title=${t('附加盟约')} micro="ADD-ON BONDS" bonds=${info.addon} model=${info} onBond=${setBondId} />
+        <${MatchLegend} model=${info} />
+      </section>
+      <section class="brief-sec brief-sec--banned" style="--i:4"><${BannedOperators} model=${info} /></section>
     </main>
     <${SetupReroll} pub=${pub} />
     <footer class="brief__foot">
@@ -99,7 +105,7 @@ export function BriefingScreen() {
         <span class="brief-ready__txt">${t('已就绪')} <b class="num">${readyN}</b><span class="num">/${players.length}</span></span>
         <span class=${cx('brief-ready__pips', players.length > 8 && 'is-many')}>${players.map((p) => html`<i key=${p.playerId} class=${cx(p.ready && 'on', p.playerId === myId && 'me')} title=${p.name}><${Icon} name="user" /></i>`)}</span>
       </div>
-      <${Button} variant="primary" size="xl" icon=${me?.ready ? 'check' : me ? 'play' : 'eye'} active=${!!me?.ready} loading=${busy}
+      <${Button} variant="primary" size="xl" class="brief-go" icon=${me?.ready ? 'check' : me ? 'play' : 'eye'} active=${!!me?.ready} loading=${busy}
         disabled=${!!me?.ready || !me || !!pub.rerollVote || editingDiy || info.choice?.picked === null} data-testid="brief-ready" onClick=${ready}>${me?.ready ? t('已就绪') : me ? t('准备就绪') : t('观战中')}<//>
     </footer>
     <${ExitModal} open=${exit} onClose=${() => setExit(false)} solo=${solo} />

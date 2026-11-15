@@ -1391,3 +1391,7 @@ it returns false for another location or a failed stow (reattaching on failure),
 The Stainless `SERVER_UPGRADE_SELF_EQUIP` handler walks a snapshot of carried items, upgrades valid normal items,
 returns each one and restores its old id if the return fails. UID, metadata and stock provenance remain attached to
 the original item. See [the match rule and footage](design/match.md#stainless-upgraded-equipment-return).
+
+### 预选盟约与房间版本
+
+`Lobby.bondPlan` 使用 `dataFor(room).bonds` 校验 `bondId` 的存在及 `isCore`，包含当前版本和玩法插件的核心盟约；未入房时沿用服务器默认版本。规程新增的乌萨斯、伊比利亚和莱塔尼亚可正常预选、广播及重连恢复，`null` 清空选择。偏好继续只改变公共沟通状态，详见 [协议约定](design/network.md#预选盟约的版本校验2026-11-15)。

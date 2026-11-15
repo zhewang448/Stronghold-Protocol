@@ -29,6 +29,7 @@ export async function initAdminAccess(host, api) {
     $('[data-password-help]').textContent = state.local ? '本机可直接修改密码，无需旧密码。其他浏览器会话会失效。' : '非本机修改密码需要验证旧密码。其他浏览器会话会失效。';
   }
   draw();
+  $('[data-login-enabled]').addEventListener('change', () => { if (!$('[data-login-enabled]').checked) $('[data-allow-remote]').checked = false; });
   $('[data-allow-remote]').addEventListener('change', () => { if ($('[data-allow-remote]').checked) $('[data-login-enabled]').checked = true; });
   $('[data-access-form]').addEventListener('submit', async (event) => {
     event.preventDefault();

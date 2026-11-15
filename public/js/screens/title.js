@@ -45,6 +45,7 @@ import { GIcon, Img } from '../ui/gameComponents.js';
 import { SettingsModal } from '../ui/settings.js';
 import { AnnouncementButton } from '../ui/announcement.js';
 import { ReleaseHistoryButton } from '../ui/releaseHistory.js';
+import { EntryFilmButton } from '../ui/entryFilmButton.js';
 import { ResourceLauncher } from '../ui/resourcePanel.js';
 import { useSettings } from '../ui/settings.js';
 import { installedCount } from '../content.js';
@@ -212,7 +213,8 @@ export function TitleScreen() {
   // logo at the size the film leaves it; the old art above / the dot emblem until those sprites have loaded
   // the start-up version's look (versions.js startupVersion: the stored lobby version, else 规程): 规程's season ground,
   // or the event's night / dusk lobby of a 盟约 start
-  const regStart = useStore((s) => seasonOf(startupVersion(s)) === REGULATION);
+  const entryVersion = useStore(startupVersion);
+  const regStart = seasonOf(entryVersion) === REGULATION;
   // 规程's opening (ui/regulationFilm.js): its last frame is this screen's ground and title art (RegulationStill);
   // undefined while it loads, null without the extracted group (the lobby's drawn ground and our own title then). The
   // still's layout from the first drawing when the local manifest lists the group, so the column does not jump
@@ -285,65 +287,69 @@ export function TitleScreen() {
       </div>
     </div>
 
-    ${regStill ? html`<i class="title-reg-gap" aria-hidden="true"></i>` : null}
-    <main class=${`title-main${regStill ? ' title-main--reg' : ''}`}>
-      ${regStill ? null : regStart ? (regLogo ? html`<${FilmLogo} src=${regLogo} />` : html`<${Emblem} />`) : logo ? html`<${FilmLogo} src=${logo} />` : html`<${Emblem} />`}
-      ${alphabetic || regStill ? null : html`<div class="title-en">
-        <span class="title-en__a">STRONGHOLD PROTOCOL</span>
-        <span class="title-en__b">${regStart ? 'REGULATION' : 'ALLIANCE'}</span>
-      </div>`}
-      <h1 class=${`title-cn${alphabetic ? ' title-cn--latin' : ''}${regStill ? ' sr-only' : ''}`}>${t('卫戍协议')}<span class="title-cn__colon">${alphabetic ? ': ' : '：'}</span><em>${regStart ? t('规程') : t('盟约')}</em></h1>
-      <p class="title-tag">${t('调配资金与干员，与同伴协同布防，抵御多波次进攻，直至击败敌方领袖。')}</p>
+    <div class="title-scroll">
+      ${regStill ? html`<i class="title-reg-gap" aria-hidden="true"></i>` : null}
+      <main class=${`title-main${regStill ? ' title-main--reg' : ''}`}>
+        ${regStill ? null : regStart ? (regLogo ? html`<${FilmLogo} src=${regLogo} />` : html`<${Emblem} />`) : logo ? html`<${FilmLogo} src=${logo} />` : html`<${Emblem} />`}
+        ${alphabetic || regStill ? null : html`<div class="title-en">
+          <span class="title-en__a">STRONGHOLD PROTOCOL</span>
+          <span class="title-en__b">${regStart ? 'REGULATION' : 'ALLIANCE'}</span>
+        </div>`}
+        <h1 class=${`title-cn${alphabetic ? ' title-cn--latin' : ''}${regStill ? ' sr-only' : ''}`}>${t('卫戍协议')}<span class="title-cn__colon">${alphabetic ? ': ' : '：'}</span><em>${regStart ? t('规程') : t('盟约')}</em></h1>
+        <p class="title-tag">${t('调配资金与干员，与同伴协同布防，抵御多波次进攻，直至击败敌方领袖。')}</p>
 
-      <div class="title-login">
-        ${pendingJoin ? html`<div class="title-invite">
-          <${Icon} name="key" />
-          <span>${t('收到同盟邀请')}</span><b class="num">${pendingJoin}</b><span class="t-lo">${t('· 输入代号后将自动加入')}</span>
-        </div>` : null}
-        <${TextField} label=${t('博士代号')} micro="CALLSIGN" size="lg" icon="user" value=${name} maxLength=${NAME_MAX_LEN}
-          placeholder=${t('输入你的代号（最多 {NAME_MAX_LEN} 字）', { NAME_MAX_LEN })} autoFocus=${!touchUi}
-          onInput=${setName} onEnter=${start} />
-        <${Button} variant="primary" size="xl" block=${true} iconRight="chevrons" disabled=${!valid} onClick=${start}>${t('开始')}<//>
-        <nav class="title-data-actions" aria-label=${t('个人数据')} data-testid="title-data-actions">
-          <${Button} variant="secondary" icon="refresh" class="title-data-recover" onClick=${openRecovery}>${t('找回数据')}<//>
-          <${Button} variant="ghost" icon="download" class="title-personal-data" onClick=${openPersonalData}>${t('导出 / 导入个人数据')}<//>
-        </nav>
-        <div class="title-conn">
-          <div class="title-conn__status">
-            <span class=${`status-dot ${dotClass}`}></span>
-            <span>${STATUS_TEXT[conn.status] ? t(STATUS_TEXT[conn.status]) : conn.status}</span>
-            <${PingPill} ms=${conn.ping} online=${online} />
-          </div>
-          <div class="title-conn__tools">
-            <${GuideButton} class="title-guide" label=${t('玩法说明')} />
-            <button type="button" class="title-settings fsbtn tapx" aria-label=${t('设置')} title=${t('设置')}
-              onClick=${() => setSettingsOpen(true)}><${GIcon} name="gear" /></button>
-            <${FullscreenButton} class="title-fs" />
+        <div class="title-login">
+          ${pendingJoin ? html`<div class="title-invite">
+            <${Icon} name="key" />
+            <span>${t('收到同盟邀请')}</span><b class="num">${pendingJoin}</b><span class="t-lo">${t('· 输入代号后将自动加入')}</span>
+          </div>` : null}
+          <${TextField} label=${t('博士代号')} micro="CALLSIGN" size="lg" icon="user" value=${name} maxLength=${NAME_MAX_LEN}
+            placeholder=${t('输入你的代号（最多 {NAME_MAX_LEN} 字）', { NAME_MAX_LEN })} autoFocus=${!touchUi}
+            onInput=${setName} onEnter=${start} />
+          <${Button} variant="primary" size="xl" block=${true} iconRight="chevrons" disabled=${!valid} onClick=${start}>${t('开始')}<//>
+          <nav class="title-data-actions" aria-label=${t('个人数据')} data-testid="title-data-actions">
+            <${Button} variant="secondary" icon="refresh" class="title-data-recover" onClick=${openRecovery}>${t('找回数据')}<//>
+            <${Button} variant="ghost" icon="download" class="title-personal-data" onClick=${openPersonalData}>${t('导出 / 导入个人数据')}<//>
+          </nav>
+          <div class="title-conn">
+            <div class="title-conn__status">
+              <span class=${`status-dot ${dotClass}`}></span>
+              <span>${STATUS_TEXT[conn.status] ? t(STATUS_TEXT[conn.status]) : conn.status}</span>
+              <${PingPill} ms=${conn.ping} online=${online} />
+            </div>
+            <div class="title-conn__tools">
+              <${GuideButton} class="title-guide" label=${t('玩法说明')} />
+              <button type="button" class="title-settings fsbtn tapx" aria-label=${t('设置')} title=${t('设置')}
+                onClick=${() => setSettingsOpen(true)}><${GIcon} name="gear" /></button>
+              <${FullscreenButton} class="title-fs" />
+            </div>
           </div>
         </div>
-      </div>
-      <div class="title-information">
-        <${AnnouncementButton} class="title-notice" />
-        <${ReleaseHistoryButton} class="title-updates" />
-      </div>
-    </main>
+        <div class="title-information">
+          <${AnnouncementButton} class="title-notice" />
+          <${ReleaseHistoryButton} class="title-updates" />
+          <${EntryFilmButton} version=${entryVersion} class="title-entry-film" />
+        </div>
+      </main>
 
-    <div class="title-preload"><${ResourceLauncher} enabled=${settings.preload} /></div>
+      <div class="title-preload"><${ResourceLauncher} enabled=${settings.preload} /></div>
+      <footer class="title-foot">
+        <div class="title-foot__actions">
+          <${ResumeMatchButton} />
+          <${PwaInstallButton} />
+          <${NoticesButton} />
+          ${installed ? html`<button type="button" class="title-plugins" data-testid="title-plugins" onClick=${openPlugins}>
+            <${Icon} name="info" />${t('本服务器安装了 {n} 个插件', { n: installed })}</button>` : null}
+        </div>
+        <span class="title-foot__meta">
+          <a class="title-repo" href="https://github.com/zhewang448/Stronghold-Protocol" target="_blank" rel="noopener noreferrer">${t('项目仓库')}</a>
+          <${MicroLabel}>v${APP_VERSION} · WEB SIMULATION<//>
+          ${DEV_BUILD ? html`<span class="title-dev" role="note">${t('开发版 · 不稳定，请勿用于公开服务器')}</span>` : null}
+        </span>
+        <span class="title-foot__copyright">${t('非官方同人复刻 · 游戏素材版权归 上海鹰角网络 / Yostar 所有')}</span>
+      </footer>
+    </div>
     <${SettingsModal} open=${settingsOpen} onClose=${() => setSettingsOpen(false)} />
     ${Installed ? html`<${Installed} open=${true} onClose=${() => setInstalled(null)} />` : null}
-
-    <footer class="title-foot">
-      <${ResumeMatchButton} />
-      <${PwaInstallButton} />
-      <${NoticesButton} />
-      ${installed ? html`<button type="button" class="title-plugins" data-testid="title-plugins" onClick=${openPlugins}>
-        <${Icon} name="info" />${t('本服务器安装了 {n} 个插件', { n: installed })}</button>` : null}
-      <span>${t('非官方同人复刻 · 游戏素材版权归 上海鹰角网络 / Yostar 所有')}</span>
-      <span class="title-foot__meta">
-        <a class="title-repo" href="https://github.com/zhewang448/Stronghold-Protocol" target="_blank" rel="noopener noreferrer">${t('项目仓库')}</a>
-        <${MicroLabel}>v${APP_VERSION} · WEB SIMULATION<//>
-        ${DEV_BUILD ? html`<span class="title-dev" role="note">${t('开发版 · 不稳定，请勿用于公开服务器')}</span>` : null}
-      </span>
-    </footer>
   </div>`;
 }

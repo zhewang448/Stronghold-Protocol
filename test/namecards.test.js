@@ -2,14 +2,23 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { startServer } from '../server/index.js';
 import { TestClient } from './helpers/wsClient.js';
-import { NAMECARD_BONDS, normalizeNamecard, resolveNamecard, validNamecard, dragNamecard } from '../shared/namecards.js';
+import { NAMECARD_BONDS, NAMECARD_CAMPS, normalizeNamecard, resolveNamecard, validNamecard, dragNamecard } from '../shared/namecards.js';
 import { validateC2S } from '../shared/protocol.js';
+import { getVersionData } from '../server/data.js';
+import { VERSIONS } from '../shared/versions.js';
 
-test('automatic backgrounds cover eight core bonds, use Yan emblem and allow safe manual overrides', () => {
-  const manifest = { ui: Object.fromEntries(Object.values(NAMECARD_BONDS).map(k => ['campLogo/logo_' + k, '/assets/' + k + '.png'])) };
+test('automatic backgrounds cover every official core bond, use Yan emblem and allow safe manual overrides', () => {
+  const manifest = { ui: Object.fromEntries(NAMECARD_CAMPS.map(k => ['campLogo/logo_' + k, '/assets/' + k + '.png'])) };
   const auto = normalizeNamecard(null);
   assert.equal(auto.mode, 'auto');
+  for (const version of VERSIONS) for (const [id, bond] of Object.entries(getVersionData(version.id).bonds)) {
+    if (bond.isCore) assert.ok(resolveNamecard(auto, id, manifest).resolved, `${version.id}: ${id} needs a background`);
+  }
   for (const [id, camp] of Object.entries(NAMECARD_BONDS)) assert.equal(resolveNamecard(auto, id, manifest).resolved, 'camp:' + camp);
+  for (const [id, camp] of [['ursusShip', 'ursus'], ['iberiaShip', 'iberia'], ['lethaniaShip', 'leithanien']]) {
+    assert.equal(resolveNamecard(auto, id, manifest).resolved, 'camp:' + camp);
+    assert.equal(resolveNamecard(auto, id, {}).resolved, null, 'missing art keeps the empty background fallback');
+  }
   assert.equal(resolveNamecard(auto, 'yanShip', manifest).resolved, 'camp:yan');
   for (const [bond, assets] of [[null, manifest], ['unknown', manifest], ['yanShip', {}]]) assert.equal(resolveNamecard(auto, bond, assets).resolved, null);
   const manual = { ...auto, mode: 'manual', id: 'camp:yan' };
@@ -40,13 +49,20 @@ test('two players and a spectator receive automatic/manual/none backgrounds; rec
   t.after(async () => { await Promise.all(clients.map(c => c.terminate())); });
   const ok = async (c, msg) => { assert.equal((await c.request(msg)).t, 'ok', JSON.stringify(msg)); };
   const host = await player('Host'), guest = await player('Guest'), watcher = await player('Watcher');
-  await ok(host, { t: 'room.create', mode: 'coop' });
+  await ok(host, { t: 'room.create', mode: 'coop', version: 'act3autochess@V3_1' });
   let state = await host.waitFor('room.state', s => s.hostId === host.id);
   await ok(guest, { t: 'room.join', code: state.code }); await ok(watcher, { t: 'room.spectate', code: state.code });
   await ok(host, { t: 'room.bondPlan', bondId: 'yanShip' });
   for (const c of [host, guest, watcher]) {
     state = await c.waitFor('room.state', s => s.seats.some(x => x?.playerId === host.id && x.namecard?.resolved === 'camp:yan'));
     assert.equal(state.seats.find(x => x?.playerId === host.id).namecard.mode, 'auto');
+  }
+  for (const [bondId, camp] of [['ursusShip', 'ursus'], ['iberiaShip', 'iberia'], ['lethaniaShip', 'leithanien']]) {
+    await ok(host, { t: 'room.bondPlan', bondId });
+    for (const c of [host, guest, watcher]) {
+      state = await c.waitFor('room.state', s => s.seats.some(x => x?.playerId === host.id && x.bondPlan === bondId));
+      assert.equal(state.seats.find(x => x?.playerId === host.id).namecard.resolved, 'camp:' + camp);
+    }
   }
   const manual = { mode: 'manual', id: 'loading:core', x: 23, y: 76, zoom: 175 };
   await ok(host, { t: 'room.namecard', selection: manual });

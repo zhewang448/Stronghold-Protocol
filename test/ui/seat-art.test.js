@@ -121,11 +121,7 @@ test('a picture that fails to load: the outfit gives way to the default portrait
   assert.equal(seatArtSrc([PLAIN, PLAIN], [PLAIN]), null, 'an outfit this page lacks drew the default already: no second try');
   assert.equal(seatArtSrc([null, null]), null);
   assert.equal(seatArtSrc(undefined), null);
-  // screens/room.js: the card gets both pictures and walks them on each failed load
-  const room = readFileSync(path.join(ROOT, 'public/js/screens/room.js'), 'utf8').replace(/\r\n/g, '\n');
-  assert.match(room, /const portraitDefault = seat\.isBot/);
-  assert.match(room, /portrait && bad !== portrait \? portrait : portraitDefault/);
-  assert.match(room, /onError=.*setBad/);
+  // Actual room recovery, fallback and retry limits are exercised in room-portrait-retry.e2e.test.js.
 });
 
 test('the pick\'s store: a string pref, \'\' for 默认; setCard persists and tells the store', () => {

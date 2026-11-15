@@ -1,5 +1,6 @@
 import { RegulationBackdrop } from '../ui/regulationBackdrop.js';
 import { VersionSwitch } from '../ui/versionPicker.js';
+import { EntryFilmButton } from '../ui/entryFilmButton.js';
 import { lobbyVersion, versionLabel, shownVersion, offeredDifficulties, soloTimedOf, setLobbyVersion, fallbackDifficulty, serverDefaultVersion, ladderModes, ladderPick, seasonOf } from '../versions.js';
 import { LobbyMusicButton } from '../ui/lobbyMusic.js';
 import { AccountMeChip } from '../ui/accounts.js';
@@ -49,6 +50,8 @@ import { PwaInstallButton, fullscreen } from '../ui/device.js';
 import { LoadoutButton } from './loadout.js';
 import { SweepReport } from './sweep.js';
 import { ProtocolScene } from '../ui/protocolScene.js';
+import { uiUrl } from '../ui/assetUrls.js';
+import { REGULATION, REGULATION_ART } from '../ui/regulationBackdrop.js';
 import { RadarScene, CreateArt, JoinArt } from '../ui/matchFlow.js';
 import { useLeave } from '../ui/transitions.js';
 import { net, identity } from '../net.js';
@@ -253,12 +256,21 @@ export function modeInfo(modeId) {
   };
 }
 
-/** The season's official solo modes, including its numbered ladder. */
+/** The season's official solo modes: full upstream speed-mode card, followed by its numbered ladder. */
 export function LadderList({ ladder, modeId, onMode, disabled = false }) {
   const side = ladder.filter((mode) => !DIFFICULTIES.includes(mode.difficulty));
   return html`<div class="ladder" data-testid="proto-ladder">
-    ${side.map((mode) => html`<button type="button" key=${mode.id} class=${`ladder__cell ladder__side${modeId === mode.id ? ' is-on' : ''}`}
-      data-mode=${mode.id} aria-pressed=${String(modeId === mode.id)} disabled=${disabled} onClick=${() => onMode?.(mode.id)}>${mode.name}</button>`)}
+    ${side.map((mode) => {
+      const info = modeInfo(mode.id);
+      return html`<button type="button" key=${mode.id} class=${`pcard diff-card ladder__side${modeId === mode.id ? ' is-on is-selected' : ''}`}
+          style=${`--d-color:${info.color}`} data-mode=${mode.id} aria-pressed=${String(modeId === mode.id)} disabled=${disabled} onClick=${() => onMode?.(mode.id)}>
+        <span class="pcard__glow" aria-hidden="true"></span>
+        <span class="pcard__head"><span class="pcard__name">${info.name}</span></span>
+        <span class="pcard__desc">${info.desc}</span>
+        <span class="pcard__meta">${info.code ? html`<span class="num">${info.code}</span>` : null}<${DifficultyRounds} info=${info} /></span>
+        <span class="pcard__stamp" aria-hidden="true"><${StampRing} /><span class="pcard__tick"><${Icon} name="check" /></span><span class="pcard__ok">${t('已选定')}</span></span>
+      </button>`;
+    })}
     <div class="ladder__grid" role="group" aria-label=${t('规程等级')}>
       ${DIFFICULTIES.map((difficulty) => {
         const modes = ladder.filter((mode) => mode.difficulty === difficulty);
@@ -579,6 +591,64 @@ export function ProtoCard({ roomMode, difficulty, selected, onSelect, matchmakin
  * Comes up from black over the hub (`chained`: straight after 选择同盟方式, already black) and fades back out
  * (ui/transitions.js); the picture is redrawn for each difficulty.
  */
+export const CARD_FIT_LEVELS = ['full', 'brief', 'names'];
+export function pickCardFit(overflows) {
+  return CARD_FIT_LEVELS.find((level) => !overflows(level)) || CARD_FIT_LEVELS[CARD_FIT_LEVELS.length - 1];
+}
+
+/**
+ * Sets 选择模拟协议's `data-fit` (pickCardFit; css/screens/lobby.css) before the screen paints: at every render (a new
+ * difficulty, language or label), when the list's box changes (the window, 文字大小 through the header and the button) and
+ * whenever a font finishes loading (a web font that arrives late — after a resize, say — makes the lines taller). A level
+ * only changes what the cards show, never the list's box, so measuring cannot loop.
+ */
+function ProtoFit() {
+  const ref = useRef(null);
+  const fit = () => {
+    const body = ref.current?.closest('.proto__body');
+    const list = body?.querySelector('.proto-list');
+    if (!list) return;
+    body.dataset.fit = pickCardFit((level) => { body.dataset.fit = level; return list.scrollHeight > list.clientHeight + 1; });
+  };
+  useLayoutEffect(fit);
+  useLayoutEffect(() => {
+    const list = ref.current?.closest('.proto__body')?.querySelector('.proto-list');
+    if (!list) return undefined;
+    let live = true;
+    const refit = () => { if (live) fit(); };
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(refit) : null;
+    ro?.observe(list);
+    const fonts = document.fonts;
+    fonts?.ready?.then(refit);
+    fonts?.addEventListener?.('loadingdone', refit);
+    return () => { live = false; ro?.disconnect(); fonts?.removeEventListener?.('loadingdone', refit); };
+  }, []);
+  return html`<i ref=${ref} class="proto__fit" hidden></i>`;
+}
+
+
+/** File names of the official 选择模拟协议 pictures (assets `modeChoice/<name>_rhodes_island`). */
+const PROTOCOL_ART = { FUNNY: 'funny', NORMAL: 'normal', HARD: 'hard', ABYSS: 'abyss' };
+
+/** The selected difficulty's scene (ui/protocolScene.js): the official picture on the drawn grid, squares and cable. */
+function ProtocolArt({ difficulty, season = null }) {
+  useData('assets', 'local');
+  // 规程: its season key art (the 乌萨斯 monument) where 盟约 shows Rhodes Island's 选择模拟协议 picture, when extracted
+  const reg = season === REGULATION ? localAsset(REGULATION_ART, 'bg_season_on') : null;
+  if (reg) return html`<div class="proto-reg-art" data-difficulty=${difficulty}><img src=${reg} alt="" /></div>`;
+  return html`<${ProtocolScene} difficulty=${difficulty} art=${uiUrl(data.get('assets'), `modeChoice/${PROTOCOL_ART[difficulty]}_rhodes_island`)} />`;
+}
+
+
+/** A difficulty's rounds (+ 隐秘核心) and battlefields: on its card's meta line, and in the brief when the cards show only their names. */
+function DifficultyRounds({ info }) {
+  return [
+    html`<span key="r"><b class="num">${info.rounds}</b> ${tc('rounds', '回合')}${info.hidden ? html` ${t('+ 隐秘核心')}` : null}</span>`,
+    info.stageNote ? html`<span key="s" class="pcard__stage"><${Icon} name="rook" />${info.stageNote}</span>` : null,
+  ];
+}
+
+
 export function ProtocolSelect({ card, roomMode, random, variant, difficulty, onDifficulty, onClose, matchmaking, brief, privateRoom, onPrivate,
   online, maint, busy, isSearching, onCreate, onBrowse, chained = false, onUnlimited = null, soloUnlimited = true, hostControls = {}, ladder = null, modeId = null, onMode = null, season = null }) {
   const currentVersion = useStore(shownVersion);
@@ -602,24 +672,27 @@ export function ProtocolSelect({ card, roomMode, random, variant, difficulty, on
   const hint = !online ? t('正在连接服务器…') : maint?.active ? t('服务器即将停机维护，暂时停止开启新的同盟')
     : isSearching ? t('正在匹配真人队友，AI 补位已暂停') : roomMode === 'solo' ? t('独自调配阵容，按自己的节奏开始模拟') : t('创建后可邀请好友，AI 队友已暂停');
   return html`<div class=${`proto${fx}`} style=${`--d-color:${selectedMode?.color || DIFFICULTY_COLORS[difficulty]}`} data-difficulty=${difficulty} data-season=${season} ref=${pageRef} role="main" aria-label=${t('选择模拟协议')}>
+    <div class="proto__body" data-mode=${roomMode} data-season=${season || seasonOf(currentVersion)} data-difficulty=${difficulty}>
     <div class="proto__bg" aria-hidden="true"></div>
+    <${ProtoFit} />
     <header class="proto-top">
       <button type="button" class="proto-back" onClick=${leave} title=${t('返回大厅 (Esc)')} aria-label=${t('返回大厅')}>
         <${Icon} name="chevronLeft" /><span class="proto-back__home"><${Icon} name="rook" /></span>
       </button>
       <div class="proto-title">
-        <h2>${t('选择模拟协议')}</h2>
-        <span class="proto-title__mode">${t(card.name)}<i>${card.en}</i></span>
+        <h2 class="modal__title">${t('选择模拟协议')}</h2>
+        <span class="proto-title__mode"><${Icon} name=${card.icon} />${t(card.name)}<i>${card.en}</i></span>
       </div>
     </header>
     <div class="proto-body">
       <section class="proto-stage">
-        <${ProtocolScene} key=${selectedMode?.difficulty || difficulty} difficulty=${selectedMode?.difficulty || difficulty} />
+        <div key=${selectedMode?.difficulty || difficulty} class="proto__pic"><${ProtocolArt} difficulty=${selectedMode?.difficulty || difficulty} season=${season || seasonOf(currentVersion)} /></div>
         <div class="proto-brief">
           <span class="proto-brief__code num">${info.code}</span>
           <b class="proto-brief__name">${selectedMode?.name || t(DIFFICULTY_NAMES[difficulty])}</b>
-          <p>${selectedMode?.desc || t(card.desc, card.params)}</p>
+          <p>${info.desc}</p>
           ${selectedMode?.offBonds.length ? html`<p class="proto-brief__off" data-testid="proto-off-bonds">${t('本模式未载入的盟约：{names}', { names: selectedMode.offBonds.join('、') })}</p>` : null}
+          <div class="proto-brief__more" data-testid="proto-brief-more"><span class="proto-brief__effects">${info.effects.map((effect) => html`<span key=${effect}>${effect}</span>`)}</span><span class="proto-brief__meta"><${DifficultyRounds} info=${info} /></span></div>
         </div>
         ${brief ? html`<div class="proto-fp">${brief}</div>` : null}
       </section>
@@ -630,7 +703,7 @@ ${timedSolo ? html`<label class="proto-unlimited" data-testid="solo-unlimited"><
             : allowedDifficulties.map((d) => html`<${ProtoCard} key=${d} roomMode=${roomMode} difficulty=${d} selected=${difficulty === d} onSelect=${onDifficulty}
             matchmaking=${matchmaking} random=${random} variant=${variant} disabled=${hostControls.difficulty === false} />`)}
         </div>
-        <div class="proto-foot">
+        <div class="proto-foot create-box">
           ${roomMode !== 'solo' ? html`<div class="proto-opts">
             ${roomMode !== 'solo' && CAN_PRIVATE ? html`<label class="proto-private" title=${t('不在公开大厅显示，仅通过房间码或邀请加入')}>
               <input type="checkbox" checked=${privateRoom} disabled=${hostControls.private === false} onChange=${(e) => onPrivate(e.currentTarget.checked)} /><span>${t('私密房间')}</span></label>` : null}
@@ -644,6 +717,7 @@ ${timedSolo ? html`<label class="proto-unlimited" data-testid="solo-unlimited"><
           </button>
         </div>
       </section>
+    </div>
     </div>
     ${busy === 'create' ? html`<${JoinLine} text=${roomMode === 'solo' ? t('正在进入模拟') : t('正在建立同盟')} />` : null}
   </div>`;
@@ -1087,6 +1161,7 @@ export function LobbyScreen() {
         <div class="hub-center__en">STRONGHOLD PROTOCOL <b>${season === 'act3autochess' ? 'REGULATION' : 'ALLIANCE'}</b></div>
         <h1 class="hub-center__title">${season === 'act3autochess' ? t('卫戍协议·规程') : t('卫戍协议：盟约')}</h1>
         <div class="hub-center__version" data-testid="hub-version">${versionLabel(selectedVersion)}</div>
+        <${EntryFilmButton} version=${selectedVersion} class="hub-entry-film" />
       </div>
 
       <aside class="hub-side">

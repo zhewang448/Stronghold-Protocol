@@ -194,6 +194,32 @@ test('diy sync: welcome brings the kit list and sends room.diy; edits are deboun
   s.dispose();
 });
 
+for (const restored of [{}, { [T5A]: SIEGE_PICK }]) {
+  test(`diy sync: restoring ${Object.keys(restored).length ? 'saved' : 'empty'} version picks during a match is silent; actual edits still notify`, async () => {
+    const net = fakeNet(), T = fakeTimers(), told = [];
+    const target = createStore({ diy: {}, diyVersion: 'act2autochess', diyKitted: null, open: false, diySync: 'idle' });
+    const sync = installDiySync({ net, timers: T, target, notify: text => told.push(text) });
+    net.replies.push({ error: 'ROOM_STARTED' });
+    net.emit('welcome', { diyKitted: [SIEGE, SHARP] });
+    // refreshViews restores the version and its local roster together after the room's content arrives.
+    target.set({ diyVersion: 'act1autochess', diy: restored });
+    await T.advance(SYNC_DEBOUNCE_MS + 10);
+    assert.deepEqual(net.sent, [{ t: 'room.diy', picks: restored }]);
+    assert.equal(target.get().diySync, 'locked');
+    assert.deepEqual(told, [], 'a refresh is not a user edit');
+    net.replies.push({ error: 'ROOM_STARTED' });
+    target.set({ diy: { [T6A]: { charId: SHARP } } });
+    await T.advance(SYNC_DEBOUNCE_MS + 10);
+    assert.equal(target.get().diySync, 'locked');
+    assert.deepEqual(told, ['自选编队是局外设置，修改将在下一局生效']);
+    net.replies.push({ error: 'ROOM_STARTED' });
+    net.emit('welcome', { diyKitted: [SIEGE, SHARP] });
+    await T.advance(100);
+    assert.equal(told.length, 1, 'reconnecting does not repeat the edit notice');
+    sync.dispose();
+  });
+}
+
 test('candidate capability keeps bench preferences local on old servers and syncs them on capable servers', async () => {
   const net = fakeNet(), T = fakeTimers();
   const picks = { [T5A]: SIEGE_PICK, diyBench_5_1: { charId: SHARP } };

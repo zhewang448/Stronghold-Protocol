@@ -41,7 +41,7 @@ import { mountThemeCharacter } from './themeCharacter.js';
 import { themeCharacterKey } from '../../../shared/uiTheme.js';
 import { regLook, regulationCharacter, regChromeUrls, regChromeStyle, regChromeTheme, regUpgradeModel, regShopCardFaceModel, regShopEmptyCardModel, regShopBackdropModel, regTierViImageStyle, prefabCssRotation } from './regHud.js';
 import { usePrefabPack } from './prefab/view.js';
-import { t } from '../../../shared/i18n.js';
+import { t, tParts } from '../../../shared/i18n.js';
 import { itemText } from './showTags.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
@@ -172,12 +172,15 @@ export function ChessCard({ slot, idx, priv, frozen = false, reason = null, free
   const lo = si ? standInLoadout(si, LOOKUPS.getChess, data.get('backups')) : c ? chessLoadout(c, priv?.loadout, dr ? diyGetter(LOOKUPS.getChess, priv, diyData) : LOOKUPS.getChess, { ops: priv?.ops ?? null, effects: data.get('effects') }) : null;
   const tap = () => { if (onTap) onTap(idx); else if (!disabled) onBuy(idx); else onDetail(slot.id, 'chess', hint); };
   const name = `${c?.name || t('干员')}${si ? t('（{note}）', { note: standInForText(c0.name) }) : ''}`;
+  const remaining = slot.remaining;
+  const hasStock = !free && (remaining === null || Number.isInteger(remaining) && remaining >= 0);
+  const stockLabel = hasStock ? remaining === null ? t('卡池不限量') : t('卡池剩余 {n} 张', { n: remaining }) : '';
   if (reg) {
     const button = html`<button type="button" class=${cx('scard', 'scard--reg', `scard--t${tier}`, focusedPortrait && 'is-portrait-focus', frozen && 'is-frozen', disabled && 'is-disabled', willMerge && 'is-merge', armed && 'is-armed', si && 'is-standin', repeat && 'is-repeat')}
       style=${face?.backing?.style} data-shop-slot=${free ? undefined : idx} aria-keyshortcuts=${free ? undefined : hotkeyLabelOf('buy')}
       title=${free || reason ? undefined : t('购买鼠标指向的商品 · {key}', { key: hotkeyLabelOf('buy') })}
       onClick=${tap} onContextMenu=${(e) => { e.preventDefault(); onDetail(slot.id, 'chess', hint); }}
-      aria-label=${`${t('{name}，价格 {price}', { name, price: slot.price })}${armed ? (disabled ? t('，无法购买') : t('，再次点击确认')) : ''}`} aria-pressed=${onTap ? String(!!armed) : undefined}>
+      aria-label=${`${t('{name}，价格 {price}', { name, price: slot.price })}${stockLabel ? ` · ${stockLabel}` : ''}${armed ? (disabled ? t('，无法购买') : t('，再次点击确认')) : ''}`} aria-pressed=${onTap ? String(!!armed) : undefined}>
       <span class="scard__tierbox" style=${tierView?.boxStyle}>
         <${TierChip} tier=${tier} size="md" class=${tierView?.chipClass} style=${tierView?.badgeStyle} overlay=${tierView?.overlay} />
       </span>
@@ -205,6 +208,12 @@ export function ChessCard({ slot, idx, priv, frozen = false, reason = null, free
       ${willMerge ? html`<span class="scard__mergetag" title=${hint}>${t('可晋升')}</span>` : null}
       ${frozen ? html`<span class="scard__ice" aria-hidden="true"><${Icon} name="snow" /></span>` : null}
       ${armed ? html`<${ArmedTag} reason=${reason} free=${free} />` : null}
+      ${hasStock ? html`<span class=${cx('scard__stock', remaining === 0 && 'is-empty', remaining > 0 && remaining <= 2 && 'is-low')}
+          data-stock=${remaining === null ? 'unlimited' : remaining} aria-label=${stockLabel}
+          title=${remaining === 0 ? t('卡池余量为 0 时，已刷出的角色仍可购买。') : stockLabel}>
+        <span class="scard__stock-label">${t('卡池剩余')}</span>
+        <span class="scard__stock-value">${remaining === null ? '∞' : tParts('{n}张', { n: html`<b class="num">${remaining}</b>`, count: remaining })}</span>
+      </span>` : null}
     </button>`;
     return reason && reason !== t('已售出') && !armed ? html`<${Tooltip} text=${reason} block=${true} class="scard-wrap">${button}<//>` : button;
   }
@@ -590,6 +599,7 @@ export function ShopBar({ priv, editable, collapsed, refreshBusy = false, onColl
   const frzReason = editable ? null : shopBlockReason('freeze', { config: data.get('config'), priv, editable });
   const free = Number(shop.freeRefreshes) || 0;
   const showReward = !!(reward && Array.isArray(reward.slots) && reward.slots.length);
+  const hasStock = !showReward && chessSlots.some(({ s }) => s && !s.sold && (s.remaining === null || Number.isInteger(s.remaining) && s.remaining >= 0));
 
   // A completed upgrade changes the level, so its confirmation cannot carry into the next upgrade.
   const levelKey = `lv:${shop.level ?? 1}`;
@@ -643,7 +653,7 @@ export function ShopBar({ priv, editable, collapsed, refreshBusy = false, onColl
     const shown = regulationCharacter(groups, themeCharacter);
     const hasChar = !!themeCharacterKey(shown);
     const chrome = regChromeUrls(groups, { themeId: settings?.uiTheme });
-    return html`<${Fragment}><${ShopBackdrop} model=${backdrop} /><section class=${cx('shopbar', 'shopbar--reg', frozen && 'is-frozen', focusedPortrait && 'has-portrait-focus', !editable && 'is-locked', showReward && 'has-reward', armed && 'has-armed')} style=${regChromeStyle(chrome)}
+    return html`<${Fragment}><${ShopBackdrop} model=${backdrop} /><section class=${cx('shopbar', 'shopbar--reg', frozen && 'is-frozen', focusedPortrait && 'has-portrait-focus', !editable && 'is-locked', showReward && 'has-reward', armed && 'has-armed', hasStock && 'has-stock')} style=${regChromeStyle(chrome)}
         data-reg-theme=${regChromeTheme(groups, settings?.uiTheme) || undefined} ref=${barRef} aria-label=${t('调度中心')}>
       <div class="shopbar__cluster" ref=${clusterRef}>
         <div class="shopbar__tools">

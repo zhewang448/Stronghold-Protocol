@@ -1,10 +1,29 @@
 // The battlefield mini map of the strategy draft (#65): the field a player deploys on, drawn from the stage's own tiles
-// (data/stages.json) so every battlefield of every official version has one, with no art to fetch. Rows go bottom-up as
+// (data/stages.json) so every battlefield of every official version has one. Official board textures are optional;
+// missing art keeps the same cell drawing. Rows go bottom-up as
 // on the board: the enemy gates (red) and the protected point (blue) stand where the match will have them.
 // Styles: css/screens/draft.css (.stagemap).
 
+import { useId, useState } from '../../vendor/hooks.module.js';
 import { html } from './components.js';
 import { fallbackTileClass } from './fallbackField.js';
+import { data } from '../data.js';
+import { SURFACES, SOURCES } from '../render/board3d/atlas.js';
+
+const MATERIALS = Object.freeze({
+  road: 'concrete', fence: 'concreteRed', high: 'plateS', gate: 'concreteRed', goal: 'ringHatch',
+  mire: 'concrete', smog: 'slats', deep: 'steel', infect: 'concreteStripe', 'duel-grass': 'concrete',
+});
+
+/** Manifest-listed official atlas regions, shared with the battle renderer; no guessed asset URLs. */
+export function miniMapMaterials(groups) {
+  const atlas = groups?.['map/autochess']?.TX_autochessi_D;
+  const url = typeof atlas === 'string' ? atlas : atlas?.path;
+  if (!url) return [];
+  return [...new Set(Object.values(MATERIALS))].map((name) => ({
+    name, url, ...SURFACES[name], ...SOURCES[SURFACES[name].src],
+  }));
+}
 
 /** The stage tiles of the field: GEO.FIELD's rows, from the protected point's column to the last gate's. */
 const RECT = Object.freeze({ r0: 9, r1: 12, c0: 2, c1: 12 });
@@ -41,9 +60,21 @@ export function stagePreview(stage) {
  * @param {{ stage: any, class?: string }} props nothing without tile data
  */
 export function StageMiniMap({ stage, class: cls }) {
+  const id = `stagemap-${useId()}`;
+  const [failed, setFailed] = useState(null);
   const map = stagePreview(stage);
   if (!map) return null;
+  const materials = miniMapMaterials(data.get('local')?.groups);
+  const textured = materials.length > 0 && failed !== materials[0].url;
   return html`<svg class=${cls ? `stagemap ${cls}` : 'stagemap'} viewBox=${`0 0 ${map.w} ${map.h}`} aria-hidden="true" data-testid="stage-minimap">
-    ${map.tiles.map((t) => html`<rect key=${`${t.x},${t.y}`} class=${`stagemap__t stagemap__t--${t.kind}`} x=${t.x + 0.04} y=${t.y + 0.04} width="0.92" height="0.92" />`)}
+    ${textured ? html`<defs>${materials.map((m) => html`<pattern key=${m.name} id=${`${id}-${m.name}`}
+        patternUnits="userSpaceOnUse" width="1" height="1" viewBox=${m.rect.join(' ')} preserveAspectRatio="xMidYMid slice">
+      <image href=${m.url} width=${m.w} height=${m.h} onError=${() => setFailed(m.url)} />
+    </pattern>`)}</defs>` : null}
+    ${map.tiles.map((tile) => html`<g key=${`${tile.x},${tile.y}`}>
+      <rect class=${`stagemap__t stagemap__t--${tile.kind}${textured ? ' is-textured' : ''}`} x=${tile.x + 0.04} y=${tile.y + 0.04} width="0.92" height="0.92"
+        style=${textured ? `fill:url(#${id}-${MATERIALS[tile.kind] || 'concrete'})` : undefined} />
+      ${tile.kind === 'gate' || tile.kind === 'goal' ? html`<rect class=${`stagemap__mark stagemap__mark--${tile.kind}`} x=${tile.x + 0.12} y=${tile.y + 0.12} width="0.76" height="0.76" />` : null}
+    </g>`)}
   </svg>`;
 }

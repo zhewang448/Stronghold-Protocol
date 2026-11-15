@@ -4,6 +4,7 @@
 import { chessPortraitUrl } from './assetUrls.js';
 import { createStore, loadPref, savePref } from '../store.js';
 import { ownerSkin } from './skins.js';
+import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
 
 /** FNV-1a of a string (the portrait pick: the same operator for a player on every client). */
 function hash32(s) {
@@ -159,4 +160,45 @@ export function seatCardSkin(seat, charId, { myId = null, localSkins = {}, playe
 export function seatArtSrc(srcs, failed = []) {
   for (const src of Array.isArray(srcs) ? srcs : []) if (src && !failed.includes(src)) return src;
   return null;
+}
+
+// [ASSUMED] Bounded UI recovery; a missing asset must not cause an endless request loop.
+const SEAT_ART_RETRY_MS = [1000, 3000, 10000];
+
+/** A transient image error must not hide the portrait until the seat is remounted. */
+export function useSeatArt(srcs, owner) {
+  const key = JSON.stringify([owner, ...srcs]);
+  const latest = useRef(key);
+  latest.current = key;
+  const empty = () => ({ key, failed: [], attempt: 0 });
+  const [state, setState] = useState(empty);
+  const current = state.key === key ? state : empty();
+  const src = seatArtSrc(srcs, current.failed);
+  useEffect(() => { setState(previous => previous.key === key ? previous : empty()); }, [key]);
+  useEffect(() => {
+    if (!current.failed.length || current.attempt >= SEAT_ART_RETRY_MS.length) return;
+    const timer = setTimeout(() => {
+      if (latest.current !== key) return;
+      setState(previous => previous.key === key ? { ...previous, failed: [], attempt: previous.attempt + 1 } : previous);
+    }, SEAT_ART_RETRY_MS[current.attempt]);
+    return () => clearTimeout(timer);
+  }, [key, current.failed, current.attempt]);
+  useEffect(() => {
+    const recover = () => {
+      if (latest.current === key) setState(previous => previous.key === key && previous.failed.length ? empty() : previous);
+    };
+    globalThis.addEventListener?.('online', recover);
+    globalThis.addEventListener?.('focus', recover);
+    return () => {
+      globalThis.removeEventListener?.('online', recover);
+      globalThis.removeEventListener?.('focus', recover);
+    };
+  }, [key]);
+  return { src, onError: () => {
+    if (!src || latest.current !== key) return;
+    setState(previous => {
+      const next = previous.key === key ? previous : empty();
+      return next.failed.includes(src) ? next : { ...next, failed: [...next.failed, src] };
+    });
+  } };
 }

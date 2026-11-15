@@ -497,9 +497,10 @@ export function canSendSettings({ store: app = store, content = appContentSet, c
  * change sends it again; false (skins, the card: their payload follows the data on screen — the skins filtered to its
  * operators, the card '' when it lacks the operator — so it changes whenever what the server keeps would) sends it on a
  * content change only when the payload changed (a version switch or a room's arrival then spends no heavy-message budget
- * on them).
+ * on them). `isEdit(s, prev)` can distinguish a user edit from a rebuilt view: both need a sync, but only an edit
+ * should display the locked-setting notice.
  */
-function installPrefSync({ net, timers, target, notify, key, stateKey, msgType, field, prepare, lockedText, tag, content = appContentSet, gate = null, app = store, seatBound = true }) {
+function installPrefSync({ net, timers, target, notify, key, stateKey, msgType, field, prepare, lockedText, tag, content = appContentSet, gate = null, app = store, seatBound = true, isEdit = null }) {
   const T = timers || { setTimeout: (fn, ms) => globalThis.setTimeout(fn, ms), clearTimeout: (id) => globalThis.clearTimeout(id) };
   // (`lockedText` is a msgid: the toast is translated when it shows — docs/I18N.md)
   const tell = notify || ((text) => toast(t(text), 'warn'));
@@ -574,7 +575,7 @@ function installPrefSync({ net, timers, target, notify, key, stateKey, msgType, 
   const offWelcome = net.on('welcome', () => { revision++; lastSent = null; pendingJson = null; seq++; schedule(50); });
   const keys = Array.isArray(key) ? key : [key];
   const offStore = target.subscribe((s, prev) => {
-    if (keys.some((k) => s[k] !== prev[k])) { revision++; edited = true; schedule(); }
+    if (keys.some((k) => s[k] !== prev[k])) { revision++; edited = edited || (isEdit ? isEdit(s, prev) : true); schedule(); }
     // closing the overlay sends a pending edit at once (review fix): the player's next click — 准备就绪 in the solo
     // briefing, 开始模拟 in the room — must not overtake the debounced message (the match locks its loadout when
     // INFO_CHECK ends, so a late edit would silently only apply to the next match). Same socket ⇒ ordered.
@@ -814,6 +815,8 @@ export function installDiySync({ net, timers, target = loadoutStore, notify, con
   const offKitContent = content ? content.subscribe(() => { const l = pickList(); if (l !== target.get().diyKitted) target.set({ diyKitted: l }); }) : null;
   const sync = installPrefSync({
     net, timers, target, notify, content, app, gate, key: 'diy', stateKey: 'diySync', msgType: 'room.diy', field: 'picks', tag: 'diy',
+    // Restoring the current version's picks on reload is a view change, including when both rosters are empty.
+    isEdit: (s, prev) => s.diyVersion === prev.diyVersion && !same(s.diy, prev.diy),
     lockedText: N_('自选编队是局外设置，修改将在下一局生效'),
     async prepare() {
       if (target === loadoutStore) refreshViews(); // the picks of the version on screen

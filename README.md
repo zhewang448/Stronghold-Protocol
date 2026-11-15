@@ -1,10 +1,10 @@
 # 卫戍协议：盟约 · Stronghold Protocol: Alliance
 
-![扩展版本](https://img.shields.io/badge/version-0.3.3--extended.15-blue)
+![扩展版本](https://img.shields.io/badge/version-0.4.0--extended.1-blue)
 ![上游基础版本](https://img.shields.io/badge/version-0.4.0-2ea44f)
 ![许可](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
 
-本地源码已适配上游 0.4.0；下方扩展标签仍表示最近已发布版本，本次源码适配尚未发布。
+本版基于上游 0.4.0，保留本库多人分组、独立库存、作战试算及主机管理扩展。
 
 在浏览器里招募干员、布置阵容，与朋友合作迎敌。本库是《明日方舟》「卫戍协议：盟约」的非商业同人扩展分支，支持独立模拟与默认 **1–4 人同盟模拟**，当前源码可选最多二十人，空位可由 AI 队友补齐。
 
@@ -14,7 +14,7 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 [下载正式版](https://github.com/zhewang448/Stronghold-Protocol/releases/latest) · [开始运行](#开始运行) · [特色图鉴](docs/FORK-FEATURES.md) · [本库特色详解](#本库特色详解) · [和朋友一起玩](#和朋友一起玩) · [更新记录](docs/LOCAL-CHANGELOG.md) · [反馈问题](https://github.com/zhewang448/Stronghold-Protocol/issues)
 
-> 当前版本为 **`v0.3.3-extended.15`**，基础游戏 0.3.3。**2026-11-13 更新**：本库首发「作战试算」，面向所有玩家提供真实训练场、单干员木桩、阵容演练、同条件 A/B 比较与图形战报；同步规程自选、领袖排行及资源管理改进，并附启动器 1.4.1。五个玩法版本并存，详细变化与升级方式见[发布说明](docs/RELEASE-V0.3.3-EXTENDED.15.md)。新版本尚不成熟，欢迎反馈问题，也欢迎点 Star ⭐。
+> 当前版本为 **`v0.4.0-extended.1`**，基础游戏 0.4.0。**2026-11-15 更新**：官方主题与开局界面、主动观看开场、三列队友速查、可选独立装备区，以及新盟约预选／名片和立绘恢复修复。附启动器 1.4.1，详细内容与升级方式见[发布说明](docs/RELEASE-V0.4.0-EXTENDED.1.md)。
 >
 > 非官方、非商业同人项目，与《明日方舟》官方无隶属或授权关系。游戏素材与数据的权利归原权利人；代码、素材及截图的许可边界见 [NOTICE.md](NOTICE.md)。
 
@@ -62,7 +62,7 @@ Windows 服主从同版本 Release 下载 StrongholdProtocolLauncher-v1.4.1-win-
 
 ### 下载整合包
 
-从[本库 Releases](https://github.com/zhewang448/Stronghold-Protocol/releases)选择附件，解压到新目录。**v0.3.3-extended.15 的基础安装由 lite 程序包＋common/local/fx 三组素材分包组成，动态立绘另为可选的 dynamic-art.zip**。新安装默认不下载动画；头像、竖图和静态立绘保留。推荐启动器自动组装；手动安装将四个基础 ZIP 的同名文件夹合并，需要动画时再合并第五个 dynamic ZIP。本版增量包直接适用于 v0.3.3-extended.14，更早版本可先升级至该版或重新安装。下表的单体 assets.zip 适用于仍提供它的较早版本：
+从[本库 Releases](https://github.com/zhewang448/Stronghold-Protocol/releases)选择附件，解压到新目录。**v0.4.0-extended.1 的基础安装由 lite 程序包＋common/local/fx 三组素材分包组成，动态立绘另为可选的 dynamic-art.zip**。新安装默认不下载动画；头像、竖图和静态立绘保留。推荐启动器自动组装；手动安装将四个基础 ZIP 的同名文件夹合并，需要动画时再合并第五个 dynamic ZIP。本版增量包直接适用于 v0.3.3-extended.15，更早版本可先升级至该版或重新安装。下表的单体 assets.zip 适用于仍提供它的较早版本：
 
 | 附件 | 适合的情况 |
 | --- | --- |

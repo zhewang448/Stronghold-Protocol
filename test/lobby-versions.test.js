@@ -100,6 +100,53 @@ const refused = (r, code, detail) => {
   if (detail) assert.equal(r.detail, detail);
 };
 
+test('bond plans validate and broadcast every core bond against the room version', () => {
+  for (const version of ALL) {
+    const h = harness({ versions: versionStub({ defaultId: 'act3autochess@V3_1' }) });
+    try {
+      const host = h.player('Host'), guest = h.player('Guest');
+      // Outside a room, preferences use the server's selected version.
+      ok(h.lobby.bondPlan(host, { bondId: 'ursusShip' }));
+      ok(h.lobby.create(host, { mode: 'coop', difficulty: 'NORMAL', version }));
+      const room = h.lobby.roomOf(host);
+      ok(h.lobby.join(guest, { code: room.code }));
+      const bonds = h.lobby.dataFor(room).bonds;
+      for (const [bondId, bond] of Object.entries(bonds)) {
+        if (!bond.isCore) continue;
+        ok(h.lobby.bondPlan(host, { bondId }));
+        assert.equal(host.bondPlan, bondId, version);
+        assert.equal(room.seatOf(host.playerId).bondPlan, bondId, version);
+        assert.equal(h.last(guest).seats[0].bondPlan, bondId, version);
+      }
+      const before = host.bondPlan;
+      const absent = version === 'act3autochess@V3_1' ? 'lateranoShip' : 'ursusShip';
+      for (const bondId of [absent, '__proto__', Object.keys(bonds).find(id => !bonds[id].isCore)]) {
+        refused(h.lobby.bondPlan(host, { bondId }), ERR.BAD_MSG);
+        assert.equal(host.bondPlan, before, 'invalid choices leave the preference unchanged');
+        assert.equal(room.seatOf(host.playerId).bondPlan, before);
+      }
+      ok(h.lobby.bondPlan(host, { bondId: null }));
+      assert.equal(h.last(guest).seats[0].bondPlan, null);
+    } finally { h.lobby.shutdown(); }
+  }
+});
+
+test('bond plans validate against a gameplay plugin room content set', () => {
+  const cs = 'f2'.repeat(32);
+  const h = harness({ plugins: { dataOf: id => id === cs ? { bonds: { pluginCore: { isCore: true } } } : null } });
+  try {
+    const host = h.player('Host');
+    ok(h.lobby.create(host, { mode: 'coop', difficulty: 'NORMAL' }));
+    const room = h.lobby.roomOf(host);
+    room.content = { cs, vanilla: false, plugins: [] };
+    ok(h.lobby.bondPlan(host, { bondId: 'pluginCore' }));
+    assert.equal(room.seatOf(host.playerId).bondPlan, 'pluginCore');
+    refused(h.lobby.bondPlan(host, { bondId: 'yanShip' }), ERR.BAD_MSG);
+    assert.equal(host.bondPlan, 'pluginCore');
+    ok(h.lobby.bondPlan(host, { bondId: null }));
+  } finally { h.lobby.shutdown(); }
+});
+
 test('matching separates official versions and switches invalidate room recruitment', () => {
   const h = harness();
   try {

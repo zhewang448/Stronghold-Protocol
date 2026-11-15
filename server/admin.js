@@ -948,8 +948,11 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
       if (!['GET', 'HEAD'].includes(req.method) && !adminSameOrigin(req)) return send(403, { error: '请求必须来自控制台本身' });
       let browserSession = access.session(req);
       const current = access.authenticated(req);
-      const redirectLogin = () => { res.writeHead(302, { Location: '/login', 'Cache-Control': 'no-store' }); res.end(); };
-      if (req.method === 'GET' && url.pathname === '/login') return send(200, fs.readFileSync(path.join(DIR, 'admin-login.html'), 'utf8'), 'text/html; charset=utf-8');
+      const redirect = (location = '/login') => { res.writeHead(302, { Location: location, 'Cache-Control': 'no-store' }); res.end(); };
+      if (req.method === 'GET' && url.pathname === '/login') {
+        if (!access.loginEnabled && localAdminRequest(req)) return redirect('/');
+        return send(200, fs.readFileSync(path.join(DIR, 'admin-login.html'), 'utf8'), 'text/html; charset=utf-8');
+      }
       if (['GET', 'HEAD'].includes(req.method) && url.pathname === '/login-display.woff2') {
         // One public display font for the unauthenticated login page, without exposing protected asset mounts.
         const file = path.join(root, 'public', 'fonts', 'novecento-wide-normal.woff2');
@@ -987,11 +990,11 @@ export async function startAdmin({ lobby, port = 3100, host = '127.0.0.1', log =
       }
       if (req.method === 'GET' && url.pathname === '/') {
         if (!browserSession && !access.loginEnabled && localAdminRequest(req)) browserSession = access.issue(req);
-        if (!browserSession) return redirectLogin();
+        if (!browserSession) return redirect();
         res.setHeader('Set-Cookie', access.cookie(req, browserSession));
         return send(200, page.replace('__TOKEN__', browserSession.token), 'text/html; charset=utf-8');
       }
-      if (!url.pathname.startsWith('/api/') && !browserSession) return redirectLogin();
+      if (!url.pathname.startsWith('/api/') && !browserSession) return redirect();
       if (req.method === 'GET' && ['/wall', '/resources'].includes(url.pathname) && session(req)) {
         return send(200, fs.readFileSync(path.join(DIR, 'monitor.html'), 'utf8').replace('__TOKEN__', browserSession.token), 'text/html; charset=utf-8');
       }

@@ -313,6 +313,12 @@ shared/cardArt.js 定义外观来源键、取景归一化与校验；public/js/u
 
 `shared/uiTheme.js` validates interface theme packs; `shared/themePreferences.js` migrates the retired terminal settings. `public/js/uiTheme.js` loads the theme, while `ui/themeSettings.js` and `ui/themeCompanion.js` provide selection, character previews and the lobby companion. `ui/themeCharacter.js` shares the playback lifecycle with the funds card; theme speech uses the existing audio channel. `tools/local-extract/fetch_regulation.py` obtains pinned, checksummed official inputs, and `extract.py --only theme` writes the new theme format. The old installer and `tools/legacy-terminal-theme.mjs` remain for legacy asset conversion and package repair. See [TERMINAL-THEMES.md](TERMINAL-THEMES.md) and [THEMES.md](THEMES.md).
 
+## Manual season opening
+
+The manual season opening uses `public/js/ui/entryFilmButton.js` on the title and lobby. It lazily loads
+`ui/entryFilm.js`, which runs the existing alliance/regulation scenes in a native dialog and returns music/focus
+when playback ends or the route changes. `public/css/entry-film.css` owns its button and overlay; no boot hook plays it.
+
 ## Player battle training
 
 The lobby opens `/training/` for independent operator and squad exercises. `server/training.js` composes the existing console builder, match bond counting and version service; `server/http/training.js` exposes public read-only options/build endpoints. `shared/training.js` owns the bounded, versioned A/B document and fingerprints. `public/js/training/` owns the editor, browser Worker, effective combat accounting and optional position/HP playback; no room intents or loadout writes. See [training](TRAINING.md).

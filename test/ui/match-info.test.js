@@ -359,7 +359,7 @@ test('draftInfoStatus: the dialog repeats the turn and its seconds (warning at â
 
 test('briefing, draft and info drawer reuse one match model and the draft keeps its local information entry',()=>{
  const brief=read('public/js/screens/briefing.js'),draft=read('public/js/screens/bandDraft.js'),game=read('public/js/screens/game.js');
- assert.match(brief,/MatchInfo, matchInfoModel/);assert.match(brief,/MatchInfo.*model=/);assert.match(brief,/brief__left/);assert.match(brief,/brief__right/);assert.match(draft,/MatchEnemies/);
+ assert.match(brief,/BannedOperators, matchInfoModel/);assert.match(brief,/MatchBondGroups.*model=/);assert.match(brief,/brief-sec--enemy/);assert.match(brief,/brief-sec--core/);assert.match(draft,/MatchEnemies/);
  assert.match(draft,/MatchInfoDialog, matchInfoModel/);assert.match(draft,/data-testid="match-info-open"/);assert.match(draft,/setInfoOpen\(true\)/);assert.match(draft,/infoStatus/);
  assert.match(game,/EnemyDrawer/);assert.match(read('public/js/ui/enemyDrawer.js'),/matchInfoModel/);assert.doesNotMatch(brief,/function BondRow|bannedPerBond/);
 });

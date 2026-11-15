@@ -3,7 +3,22 @@
    nickname console. Pure CSS/SVG art; an optional backdrop image fades in underneath.
    ========================================================================================== */
 
-.title-screen { align-items: center; justify-content: center; }
+.title-screen { align-items: stretch; justify-content: flex-start; }
+/* [ASSUMED] Responsive spacing follows the approved home preview; artwork and corner tools stay fixed. */
+.title-scroll {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 2.7rem);
+  grid-template-rows: minmax(min-content, 1fr) auto;
+  align-items: center;
+  gap: .24rem;
+  padding: max(calc(72px * var(--sp-ui, 1)), .7rem) .44rem .3rem;
+  overflow-y: auto;
+  scrollbar-gutter: stable both-edges;
+}
 
 /* ---- backdrop ----------------------------------------------------------------------------------- */
 .title-bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
@@ -142,9 +157,13 @@
   position: relative;
   z-index: 2;
   display: flex;
+  flex: none;
   flex-direction: column;
   align-items: center;
-  margin-top: -.3rem;
+  max-width: 100%;
+  grid-column: 1 / -1;
+  grid-row: 1;
+  justify-self: center;
 }
 
 .emblem { position: relative; display: flex; align-items: center; gap: .26rem; margin-bottom: .26rem; animation: rise-in 600ms var(--ease-out) backwards; }
@@ -196,10 +215,12 @@
 .title-cn--latin { font-family: var(--font-display); font-size: .6rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
 .title-cn em { font-style: normal; color: var(--mint-500); text-shadow: 0 0 .26rem rgba(23, 249, 183, .45); }
 .title-tag {
+  max-width: 100%;
   margin-top: .12rem;
   font-size: calc(.19 * var(--t));
   color: var(--text-lo);
   letter-spacing: .1em;
+  text-align: center;
   animation: rise-in 600ms 200ms var(--ease-out) backwards;
 }
 @keyframes rise-in { from { opacity: 0; transform: translateY(.14rem); } }
@@ -208,6 +229,7 @@
   --bk-c: var(--mint-500);
   position: relative;
   width: 4.9rem;
+  max-width: 100%;
   margin-top: .42rem;
   display: flex;
   flex-direction: column;
@@ -244,6 +266,7 @@
   .title-main .emblem__bracket { height: 1.1rem; }
 }
 @media (max-height: 560px) {
+  .title-scroll { gap: 16px; padding: 52px 12px 16px; }
   .title-main { margin-top: 0; max-width: calc(100vw - 32px); }
   .title-main .emblem, .title-main .title-en { display: none; }
   .title-main .title-cn { font-size: .8rem; }
@@ -252,11 +275,6 @@
   .title-login { width: min(440px, calc(100vw - 40px)); margin-top: 12px; gap: 8px; padding: 12px 16px; }
   .title-data-actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 8px; }
   .title-corner--tl { display: none; }
-  .title-screen .title-preload { left: 12px; top: 12px; right: auto; bottom: auto; }
-  .title-preload .res-pill { width: auto; max-width: 160px; }
-  .title-preload .res-pill__body, .title-preload .res-pill__hint, .title-preload .res-pill__label .micro { display: none; }
-  .title-screen .title-foot { left: 12px; top: 52px; right: auto; bottom: auto; max-width: max(70px, calc((100vw - 440px) / 2 - 24px)); flex-wrap: wrap; }
-  .title-foot > span { display: none; }
 }
 /* The complete download and local-pack import actions live in resourcePanel.js. */
 .asset-download, .asset-import-dialog { text-align: left; }
@@ -306,7 +324,7 @@
 .title-conn__tools > * { flex: none; }
 .title-conn .ping__value { min-width: 4ch; text-align: right; }
 /* Informational actions stay on their own row below the login panel, before and after login. */
-.title-information { display: flex; align-items: center; justify-content: center; gap: .16rem; max-width: calc(100vw - 32px); margin-top: .16rem; }
+.title-information { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .16rem; max-width: calc(100vw - 32px); margin-top: .2rem; }
 .title-information > .btn { flex: none; white-space: nowrap; }
 /* Keep the invisible touch targets in their own layout space too. */
 .sp-coarse .title-conn, .sp-coarse .title-conn__tools { gap: max(.1rem, calc(10px * var(--sp-ui, 1))); }
@@ -327,39 +345,64 @@ html[data-script="alphabetic"] .title-login .btn--xl { letter-spacing: .3em; }
 .title-conn .ping { height: max(.26rem, 1.6em); font-size: calc(.15 * var(--t)); }
 
 .title-foot {
-  position: absolute;
+  position: relative;
   z-index: 2;
-  left: .44rem;
-  right: .44rem;
-  bottom: .3rem;
-  display: flex;
-  justify-content: space-between;
+  flex: none;
+  width: 100%;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: .18rem;
   font-size: calc(.13 * var(--t));
   color: var(--text-dim);
 }
+.title-foot__actions { display: flex; flex-wrap: wrap; align-items: center; gap: .18rem; min-width: 0; }
+.title-foot__copyright { grid-column: 2; grid-row: 1; min-width: 0; text-align: center; }
 
 /* ---- offline resource preload (docs/ASSETS.md「Preload」): the home screen's own way in ---------------- */
-.title-preload { position: absolute; z-index: 3; right: .44rem; bottom: .86rem; }
-.res-pill { width: 2.7rem; padding: .1rem .12rem; background: rgba(10, 14, 12, .74); border: 1px solid var(--line-2); }
+.title-preload { position: relative; z-index: 3; grid-column: 2; grid-row: 1; align-self: end; width: 100%; }
+.res-pill { width: 100%; padding: .1rem .12rem; background: rgba(10, 14, 12, .74); border: 1px solid var(--line-2); }
 .res-pill.is-on { border-color: var(--mint-800); background: rgba(13, 20, 17, .86); }
 .res-pill__head {
-  display: flex; align-items: baseline; justify-content: space-between; gap: .12rem; width: 100%;
-  padding: 0; background: none; border: 0; color: var(--text-hi); font-size: calc(.15 * var(--t)); text-align: left; cursor: pointer;
+  display: flex; flex-direction: column; align-items: stretch; gap: .06rem; width: 100%; min-width: 0;
+  padding: 0; background: none; border: 0; color: var(--text-hi); font-size: max(14px, calc(.15 * var(--t))); line-height: 1.5; text-align: left; cursor: pointer;
 }
 .res-pill__head:disabled { cursor: default; }
-.res-pill__label { display: flex; align-items: baseline; gap: .06rem; }
+.res-pill__label { display: flex; flex-wrap: wrap; align-items: baseline; gap: .06rem; white-space: nowrap; }
 .res-pill.is-on .res-pill__label { color: var(--mint-400); }
-.res-pill__label .micro { color: var(--text-dim); }
-.res-pill__state { font-size: calc(.14 * var(--t)); color: var(--mint-400); white-space: nowrap; }
+.res-pill__label .micro { color: var(--text-lo); font-size: max(11px, calc(.1 * var(--t))); }
+.res-pill__state { min-width: 0; font-size: max(13px, calc(.14 * var(--t))); color: var(--mint-400); white-space: normal; overflow-wrap: anywhere; }
 .res-pill__body { display: flex; flex-direction: column; gap: .07rem; margin-top: .09rem; }
 .res-pill__body .pbar { min-width: 0; }
 .res-pill__text { margin: 0; font-size: calc(.13 * var(--t)); line-height: 1.6; color: var(--text-md); }
 .res-pill__text.is-dim { color: var(--text-dim); }
 .res-pill__text.is-warn { color: var(--amber); }
-.res-pill__hint { margin: .06rem 0 0; font-size: calc(.13 * var(--t)); line-height: 1.6; color: var(--text-dim); }
+.res-pill__hint { margin: .06rem 0 0; font-size: max(12px, calc(.13 * var(--t))); line-height: 1.6; color: var(--text-lo); }
 .res-pill:hover .res-pill__hint { color: var(--text-md); }
+.is-reg-still .title-scroll { grid-template-rows: minmax(0, 1fr) auto auto; }
+.is-reg-still .title-main, .is-reg-still .title-preload { grid-row: 2; }
+.is-reg-still .title-foot { grid-row: 3; }
+@media (max-width: 1000px) {
+  .title-screen .title-scroll { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(min-content, 1fr) auto auto; }
+  .title-screen .title-main { grid-row: 1; }
+  .title-screen .title-preload { grid-column: 1; grid-row: 2; justify-self: end; width: min(100%, 270px); }
+  .title-screen .title-foot { grid-row: 3; }
+  .title-foot { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .title-foot__copyright { grid-column: 1 / -1; grid-row: 2; }
+  .title-foot .title-foot__meta { grid-column: 2; }
+  .title-screen .title-reg-gap { display: none; }
+}
+@media (max-width: 700px) {
+  .title-screen .title-preload { justify-self: center; width: min(100%, 440px); }
+  .res-pill__label .micro { display: none; }
+  .title-data-actions { grid-template-columns: minmax(0, 1fr); }
+  .title-foot { grid-template-columns: minmax(0, 1fr); text-align: center; }
+  .title-foot__actions { justify-content: center; }
+  .title-foot .title-foot__meta { grid-column: 1; grid-row: 2; justify-self: center; justify-content: center; }
+  .title-foot__copyright { grid-row: 3; }
+}
 /* a development build (shared/constants.js DEV_BUILD): an unmissable tag in the footer */
 .title-dev {
   padding: .03rem .1rem;
@@ -372,7 +415,7 @@ html[data-script="alphabetic"] .title-login .btn--xl { letter-spacing: .3em; }
 }
 
 /* ---- title footer repository link (upstream v0.2.5) ------------------------------------------------ */
-.title-foot__meta { display: flex; align-items: flex-end; gap: .16rem; flex-wrap: wrap; justify-content: flex-end; }
+.title-foot__meta { display: flex; grid-column: 3; grid-row: 1; justify-self: end; min-width: 0; max-width: 100%; align-items: flex-end; gap: .16rem; flex-wrap: wrap; justify-content: flex-end; }
 .title-repo { color: inherit; text-decoration: none; border-bottom: 1px solid transparent; }
 .title-repo:hover, .title-repo:focus-visible { color: var(--text-hi); border-bottom-color: currentColor; }
 /* the server's plugins (DESIGN §32 P1a): 「本服务器安装了 N 个插件」, a button listing them (ui/pluginPanel.js InstalledPlugins) */
@@ -436,11 +479,10 @@ html[data-script="alphabetic"] .title-login .btn--xl { letter-spacing: .3em; }
 .title-reg { position: absolute; inset: 0; --reg-ink: #0d0b0a; background: var(--reg-ink); }
 /* …or, with 规程's opening extracted, the opening's last frame (ui/regulationBackdrop.js RegulationStill): the official
    season screen's ground, key art, skyline and title art on the 1280 × 720 canvas fitted to the screen. Our own title
-   gives way to that art (the h1 stays for screen readers) and the login column starts under it: the art's bottom edge
-   is 34 canvas units below the middle of the screen. */
+   gives way to that art (the h1 stays for screen readers). The spare grid row gives the art room while the entry and
+   footer reserve their own space; short windows scroll instead of covering the information actions. */
 .title-reg__still { position: absolute; inset: 0; }
-.title-screen.is-reg-still { --reg-u: min(calc(100vw / 1280), calc(100vh / 720)); justify-content: flex-start; }
-.title-reg-gap { display: block; flex: 0 0 calc(50% - 34 * var(--reg-u)); }
+.title-reg-gap { display: block; grid-column: 1 / -1; grid-row: 1; min-height: 0; }
 .title-main--reg { margin-top: .06rem; }
 
 /* 规程's opening (ui/regulationFilm.js) in the entry overlay and its still: the whole screen, not 盟约's 1280 × 720
