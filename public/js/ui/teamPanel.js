@@ -127,8 +127,9 @@ export function rowLpTip(lp, cap = 10) {
  *   badges: how the 完美连胜 / 领袖伤害 badges are drawn (ui/avatarBadges.js); null draws the CSS stand-ins
  */
 export function TeamPanel({ pub, myId, watching, bubbles, emotes = [], emoteNow = Date.now(), emoteTtl = 3000,
-  onWatch, compact = false, observe = null, self: selfLive = null, cap = 10, uniteLocal = null, spMarks = null, onBond = null, onOp = null, layersDisabled = false, badges = null }) {
+  onWatch, compact = false, observe = null, self: selfLive = null, cap = 10, uniteLocal = null, spMarks = null, onBond = null, onOp = null, layersDisabled = false, viewKey = null, badges = null }) {
   const [openPid, setOpenPid] = useState(null);
+  const [flyoutRequest, setFlyoutRequest] = useState(0);
   const panelRef = useRef(null);
   const feedRef = useRef(null);
   // the playerId whose avatar just called onWatch, so the other click of a double-click does not open the view again
@@ -154,6 +155,7 @@ export function TeamPanel({ pub, myId, watching, bubbles, emotes = [], emoteNow 
   const askedRecently = (p) => askedAt.current.id === p?.playerId && Date.now() - askedAt.current.at < AVATAR_CLICK_GAP_MS;
   const noteAsked = (p) => { askedAt.current = { id: p.playerId, at: Date.now() }; };
   const click = (p, self) => {
+    if (!self) setFlyoutRequest((request) => request + 1);
     if (!observe) {
       // your own row still goes home; a teammate already on screen (or just opened by this double-click) does not
       if (self || teammateClickWatches({ watching, player: p, askedRecently: askedRecently(p) })) {
@@ -253,6 +255,7 @@ export function TeamPanel({ pub, myId, watching, bubbles, emotes = [], emoteNow 
       })}
     </div>` : null}
     <${TeamFlyout} panelRef=${panelRef} players=${players} myId=${myId} phaseKey=${phaseKey}
+      openRequest=${flyoutRequest} viewKey=${`${watching || ''}:${viewKey || ''}`}
       onBond=${onBond} onOp=${onOp} layersDisabled=${layersDisabled} />
   </aside>`;
 }

@@ -125,11 +125,12 @@ test('teammate lookup: twenty-seat component fixture follows roster scrolling an
       root.style.cssText = 'position:fixed;inset:0;z-index:2000;background:#101713;';
       document.body.append(root);
       const events = [];
-      const draw = () => render(html`<${TeamPanel} pub=${pub} myId="p_0" watching=${null} bubbles=${new Map()} onWatch=${() => {}}
+      const fixture = { pub, events, watching: null, viewKey: 'own' };
+      const draw = () => render(html`<${TeamPanel} pub=${pub} myId="p_0" watching=${fixture.watching} viewKey=${fixture.viewKey} bubbles=${new Map()} onWatch=${() => {}}
         layersDisabled=${pub.phase === 'UNITE'}
         onBond=${(id, owner) => events.push({ kind: 'bond', id, owner })}
         onOp=${(unit, player) => events.push({ kind: 'op', id: unit.id, owner: player.playerId })} />`, root);
-      globalThis.__TEAM_LOOKUP__ = { pub, events, draw };
+      globalThis.__TEAM_LOOKUP__ = Object.assign(fixture, { draw });
       draw();
     }, pub);
     for (const [w, height] of [[1280, 720], [667, 375]]) {
@@ -175,7 +176,33 @@ test('teammate lookup: twenty-seat component fixture follows roster scrolling an
     await c.page.waitForSelector('.team__fly-window');
     assert.ok(await c.page.$$eval('.team__fly-bonds .bond', nodes => nodes.length > 0 && nodes.every(el => el.classList.contains('is-frozen'))));
     await c.page.focus('.team__bonds-toggle'); await c.page.keyboard.press('Escape');
+    await c.page.waitForFunction(() => !document.querySelector('.team__fly-window'));
     assert.equal(await c.exists('.team__fly-window'), false);
+    await c.page.setViewport({ width: 1280, height: 720, deviceScaleFactor: 1 });
+    await c.page.evaluate(() => document.activeElement?.blur());
+    await c.page.mouse.move(1270, 710);
+    await c.page.waitForFunction(() => getComputedStyle(document.querySelector('.team__bonds-toggle')).opacity === '0');
+    assert.equal(await c.page.$eval('.team__bonds-toggle', el => getComputedStyle(el, '::before').width), '12px');
+    await c.page.hover('.team__row[data-player-id="p_1"] .team__btn');
+    await c.page.waitForFunction(() => document.querySelector('.team__bonds-toggle')?.getAttribute('aria-expanded') === 'true');
+    await c.page.mouse.move(1270, 710);
+    await c.page.waitForFunction(() => !document.querySelector('.team__fly-window'));
+    await c.click('.team__row[data-player-id="p_1"] .team__btn');
+    await c.page.waitForFunction(() => document.querySelector('.team__bonds-toggle')?.getAttribute('aria-expanded') === 'true');
+    await c.page.mouse.move(1270, 710);
+    assert.ok(await c.exists('.team__fly-window'));
+    await c.page.evaluate(() => { const fixture = globalThis.__TEAM_LOOKUP__; fixture.watching = 'n:p_1'; fixture.viewKey = 'other'; fixture.draw(); });
+    await c.page.waitForFunction(() => !document.querySelector('.team__fly-window'));
+    await c.page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
+    await c.click('.team__row[data-player-id="p_1"] .team__btn');
+    await c.page.waitForFunction(() => document.querySelector('.team__fly-window')?.getAttribute('aria-hidden') === 'false');
+    assert.equal(await c.page.$eval('.team__fly-window', el => getComputedStyle(el).animationName), 'team-fly-fade-in');
+    await c.click('.team__bonds-toggle');
+    await c.page.waitForFunction(() => document.querySelector('.team__bonds-toggle')?.getAttribute('aria-expanded') === 'false');
+    await c.click('.team__bonds-toggle');
+    await c.page.waitForFunction(() => document.querySelector('.team__bonds-toggle')?.getAttribute('aria-expanded') === 'true');
+    await new Promise(resolve => setTimeout(resolve, 180));
+    assert.ok(await c.page.$eval('.team__fly-window', el => !el.inert));
     assert.deepEqual(problemsOf([c]), []);
   } finally { h.m.dispose(); await c.close(); await srv.close(); }
 });

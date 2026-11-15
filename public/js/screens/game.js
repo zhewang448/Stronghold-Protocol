@@ -2141,6 +2141,7 @@ function MatchScreen() {
       <${TeamPanel} onBond=${(id, ownerId) => openBond(id, ownerId, 'team')} pub=${pub} myId=${myId} watching=${watchingNow} bubbles=${bubbles} onWatch=${watchPlayer} cap=${gd.config?.lpCapPerRound ?? 10} uniteLocal=${uniteLocal}
         onOp=${(unit, player) => setDetail({ kind: 'chess', id: unit.id, owner: player.playerId, foreign: player.playerId !== myId })}
         layersDisabled=${layersDisabled}
+        viewKey=${`${field?.fieldId || ''}:${strip.ownerId || ''}`}
         spMarks=${sp ? spMarks(sp, { solo }) : null}
         self=${Number.isFinite(priv?.lp) ? { lp: priv.lp, pending: liveLpNow.pending, unite: liveLpNow.unite, left: liveLpNow.left } : null}
         observe=${cc ? { canObserve: (p) => observeTarget(p, pub, myId, { observing: watchingOther, ownDone: localDone }), observing: watchingOther, onBack: backHome } : null}

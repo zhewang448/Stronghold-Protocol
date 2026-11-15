@@ -1,4 +1,5 @@
 // MovCloud PR #922 b3a9a994 (GPL-3.0-or-later), adapted to this fork's grouped 4–20-seat roster.
+// Local interaction [ASSUMED]: hover previews, avatar clicks pin, and battlefield navigation dismisses the preview.
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { html, Icon, BondDisc } from './components.js';
 import { UnitThumb, BandIcon, RichText } from './gameComponents.js';
@@ -66,11 +67,54 @@ function BandPopup({ band, onClose }) {
   </div>`;
 }
 
-export function TeamFlyout({ panelRef, players, myId = null, phaseKey = null, layersDisabled = false, onBond = null, onOp = null }) {
-  const [open, setOpen] = useState(false), [layout, setLayout] = useState(null), [band, setBand] = useState(null);
+export function TeamFlyout({ panelRef, players, myId = null, phaseKey = null, viewKey = null, openRequest = 0, layersDisabled = false, onBond = null, onOp = null }) {
+  const [open, setOpen] = useState(false), [present, setPresent] = useState(false), [layout, setLayout] = useState(null), [band, setBand] = useState(null);
   const toggle = useRef(null), scroll = useRef(null), drag = useRef(null), dragged = useRef(false);
+  const hoverTimer = useRef(0), hover = useRef({ inside: false, pinned: false, blocked: false });
   const ids = players.map((p) => p.playerId).join(':');
-  useEffect(() => { setOpen(false); setBand(null); }, [phaseKey]);
+  const close = () => {
+    clearTimeout(hoverTimer.current);
+    hover.current.pinned = false;
+    hover.current.blocked = hover.current.inside;
+    setOpen(false);
+  };
+  useEffect(() => {
+    if (!openRequest) return;
+    clearTimeout(hoverTimer.current);
+    hover.current.pinned = true;
+    hover.current.blocked = false;
+    setOpen(true);
+  }, [openRequest]);
+  // A navigation takes priority over an avatar request from the same event.
+  useEffect(() => { close(); setBand(null); }, [phaseKey, viewKey]);
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const enter = (event) => {
+      if (event.pointerType === 'touch' || !matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+      hover.current.inside = true;
+      clearTimeout(hoverTimer.current);
+      if (hover.current.blocked || hover.current.pinned) return;
+      hoverTimer.current = setTimeout(() => setOpen(true), 100);
+    };
+    const leave = () => {
+      hover.current.inside = false;
+      hover.current.blocked = false;
+      clearTimeout(hoverTimer.current);
+      if (!hover.current.pinned) hoverTimer.current = setTimeout(() => {
+        if (!hover.current.inside && !hover.current.pinned) setOpen(false);
+      }, 90);
+    };
+    panel.addEventListener('pointerenter', enter);
+    panel.addEventListener('pointerleave', leave);
+    return () => { clearTimeout(hoverTimer.current); panel.removeEventListener('pointerenter', enter); panel.removeEventListener('pointerleave', leave); };
+  }, [panelRef]);
+  useEffect(() => {
+    if (open) { setPresent(true); return; }
+    if (!present) return;
+    const timer = setTimeout(() => setPresent(false), matchMedia('(prefers-reduced-motion: reduce)').matches ? 80 : 120);
+    return () => clearTimeout(timer);
+  }, [open, present]);
   useEffect(() => {
     if (open) return;
     setBand(null);
@@ -123,7 +167,7 @@ export function TeamFlyout({ panelRef, players, myId = null, phaseKey = null, la
     if (!open) return;
     const away = (event) => {
       if (!(event.target instanceof Element) || panelRef.current?.contains(event.target)) return;
-      if (event.target.closest('button, a, input, select, textarea, [role="button"]')) setOpen(false);
+      if (event.target.closest('button, a, input, select, textarea, [role="button"]')) close();
     };
     document.addEventListener('pointerdown', away, true);
     return () => document.removeEventListener('pointerdown', away, true);
@@ -163,13 +207,17 @@ export function TeamFlyout({ panelRef, players, myId = null, phaseKey = null, la
   };
   const byId = new Map(players.map((p) => [p.playerId, p]));
   const label = open ? t('收起队友速查') : t('展开队友速查');
-  return html`<div class=${`team__fly${open ? ' is-open' : ''}`} onKeyDown=${(event) => {
-    if (event.key === 'Escape' && open) { event.stopPropagation(); setOpen(false); toggle.current?.focus(); }
+  return html`<div class=${`team__fly${open ? ' is-open' : present ? ' is-closing' : ''}`} onKeyDown=${(event) => {
+    if (event.key === 'Escape' && open) { event.stopPropagation(); close(); toggle.current?.focus(); }
   }}>
     <button ref=${toggle} type="button" class="team__bonds-toggle" aria-expanded=${String(open)} aria-controls="team-bonds"
       aria-label=${label} title=${label} onKeyDown=${(event) => { if (event.key === ' ') event.stopPropagation(); }}
-      onClick=${() => setOpen(!open)}><${Icon} name=${open ? 'chevronLeft' : 'chevronRight'} /></button>
-    ${open && layout ? html`<div id="team-bonds" class="team__fly-window" role="region" aria-label=${t('队友速查')}
+      onClick=${() => {
+        if (open) close();
+        else { clearTimeout(hoverTimer.current); hover.current.pinned = true; hover.current.blocked = false; setOpen(true); }
+      }}><${Icon} name="chevronRight" /></button>
+    ${(open || present) && layout ? html`<div id="team-bonds" class="team__fly-window" role="region" aria-label=${t('队友速查')}
+      aria-hidden=${String(!open)} inert=${!open}
       style=${{ top: `${layout.top}px`, height: `${layout.height}px`, width: `${layout.width}px` }}>
       <div class="team__fly-scroll" ref=${scroll} onPointerDown=${down} onPointerMove=${move} onPointerUp=${up} onPointerCancel=${up}
         onClickCapture=${(event) => { if (dragged.current) { dragged.current = false; event.preventDefault(); event.stopPropagation(); } }}>
