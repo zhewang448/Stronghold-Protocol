@@ -2745,7 +2745,7 @@ button.ally-card:disabled { filter: grayscale(.7) brightness(.7); cursor: defaul
 
 /* Upstream v0.4.0 presentation, scoped to .proto to retain extension controls. */
 .proto .proto-brief p, .proto .proto-hint, .proto .proto-foot .proto-start__label { text-wrap: pretty; }
-.proto .modal.proto-veil { padding: 0px; background: rgb(11, 12, 12); backdrop-filter: none; }
+.proto .modal.proto-veil { padding: 0px; background: rgb(11, 12, 12); -webkit-backdrop-filter: none; backdrop-filter: none; }
 .proto { position: fixed; inset: 0px; width: auto; max-height: none; padding: var(--sa-t, 0px) var(--sa-r, 0px) var(--sa-b, 0px) var(--sa-l, 0px); color: rgb(238, 240, 239); background: rgb(11, 12, 12); border: 0px; box-shadow: none; overscroll-behavior: contain; animation: proto-in 200ms var(--ease-out) backwards; }
 .proto::after, .proto > .modal__stripe { display: none; }
 .proto > .modal__body { flex: 1 1 auto; min-height: 0px; display: flex; flex-direction: column; padding: 0px; overflow: hidden; color: inherit; }
