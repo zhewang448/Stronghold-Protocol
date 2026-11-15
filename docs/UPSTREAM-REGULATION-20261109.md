@@ -1,5 +1,11 @@
 # 规程开发线与队友速查迁移
 
+## 队友速查三列展示更新（2026-11-15）
+
+维护者选择 MovCloud 的第一项预览，参考 [PR #922 `b3a9a994`](https://github.com/MovCloud/Stronghold-Protocol/tree/b3a9a9946bb551fca9e9007f1a6feb4556553df3) 的 FlyBonds、三列网格、单元格拖动及详情交互（GPL-3.0-or-later）。本库继续从公开在场名册读取身份与精锐标记，保留二十席分组和名单滚动；只迁移展示，不引入参考的 peek 订阅。盟约不再复用完整 BondStrip，禁止盟约隐藏、名称和人数放到提示与详情中；策略固定在同行，干员详情按 charId 解析对应普通／精锐记录。回合／阶段切换、外部操作、Escape 收起，联防和领袖阶段沿用层数冻结。触屏命中和可用宽度为 [ASSUMED] 的本库布局适配。当前约定见 [客户端规则](design/client.md)。
+
+## 初次迁移记录
+
 2026-11-09（Asia/Shanghai），基于本库 `907e4425`。本次是源码迁移，尚未发布安装包。
 
 固定来源为原上游 [b1ca5efb](https://github.com/sganggs/Stronghold-Protocol/tree/b1ca5efba9ea1749bcfcd282694c69b94bc89639)，相对上次适配的 `eff7d93a` 共 52 个提交；同时适配 [PR #922](https://github.com/sganggs/Stronghold-Protocol/pull/922) 的 `0c6c5b22` 和 [PR #919](https://github.com/sganggs/Stronghold-Protocol/pull/919) 的 `637f7218`。代码沿用 GPL-3.0-or-later；官方数据和游戏美术权利归原权利人。

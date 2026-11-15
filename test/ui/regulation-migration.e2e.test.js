@@ -104,7 +104,18 @@ test('teammate lookup: twenty-seat component fixture follows roster scrolling an
     }
     const pub = m.publicView();
     await c.open('?render=fallback'); await c.enter('LookupTester');
-    await c.page.waitForFunction(() => globalThis.__SP__.data.get('config')?.version?.id === 'act3autochess@V3_1');
+    await c.page.evaluate(async () => {
+      const { data } = await import('/js/data.js');
+      const { GAME_FILES } = await import('/js/ui/gameComponents.js');
+      await data.loadAll(GAME_FILES);
+      const names = ['config', 'chess', 'bonds', 'bands', 'effects'];
+      const values = Object.fromEntries(await Promise.all(names.map(async name => {
+        const response = await fetch(`/data/versions/act3autochess-v3_1/${name}.json`);
+        if (!response.ok) throw new Error(`${name}: HTTP ${response.status}`);
+        return [name, await response.json()];
+      })));
+      data.setContent({ id: 'act3autochess@V3_1', values });
+    });
     await c.page.evaluate(async pub => {
       const { render } = await import('/vendor/preact.module.js');
       const { html } = await import('/js/ui/components.js');
@@ -113,7 +124,13 @@ test('teammate lookup: twenty-seat component fixture follows roster scrolling an
       root.id = 'team-layout-fixture';
       root.style.cssText = 'position:fixed;inset:0;z-index:2000;background:#101713;';
       document.body.append(root);
-      render(html`<${TeamPanel} pub=${pub} myId="p_0" watching=${null} bubbles=${new Map()} onWatch=${() => {}} />`, root);
+      const events = [];
+      const draw = () => render(html`<${TeamPanel} pub=${pub} myId="p_0" watching=${null} bubbles=${new Map()} onWatch=${() => {}}
+        layersDisabled=${pub.phase === 'UNITE'}
+        onBond=${(id, owner) => events.push({ kind: 'bond', id, owner })}
+        onOp=${(unit, player) => events.push({ kind: 'op', id: unit.id, owner: player.playerId })} />`, root);
+      globalThis.__TEAM_LOOKUP__ = { pub, events, draw };
+      draw();
     }, pub);
     for (const [w, height] of [[1280, 720], [667, 375]]) {
       await c.page.setViewport({ width: w, height, deviceScaleFactor: 1 });
@@ -125,23 +142,38 @@ test('teammate lookup: twenty-seat component fixture follows roster scrolling an
       console.log('FLYOUT_GEOMETRY', await c.page.evaluate(() => {
         const box = selector => { const el = document.querySelector(selector); return el ? { rect: el.getBoundingClientRect().toJSON(), scrollTop: el.scrollTop, clientHeight: el.clientHeight, scrollHeight: el.scrollHeight } : null; };
         return { roster: box('#team-layout-fixture .team__list'), scroll: box('.team__fly-scroll'),
-          band: box('.team__fly-bands'), row: box('.team__row[data-player-id="p_19"]'), cell: box('.team__fly-row[data-player-id="p_19"] .team__fly-ops') };
+          band: box('.team__fly-row[data-player-id="p_19"] .team__fly-band'), row: box('.team__row[data-player-id="p_19"]'), cell: box('.team__fly-row[data-player-id="p_19"] .team__fly-ops') };
       }));
       await c.page.waitForFunction(() => {
         const root = document.querySelector('#team-layout-fixture');
         const row = root.querySelector('.team__row[data-player-id="p_19"]');
-        const cell = root.querySelector('.team__fly-row[data-player-id="p_19"] .team__fly-ops');
+        const cell = root.querySelector('.team__fly-row[data-player-id="p_19"]');
         return row && cell && Math.abs(row.getBoundingClientRect().top - cell.getBoundingClientRect().top) < 2;
       });
       const fixed = await c.page.evaluate(() => {
-        const band = document.querySelector('.team__fly-bands');
+        const row = document.querySelector('.team__fly-row[data-player-id="p_19"]');
+        const band = row.querySelector('.team__fly-band');
         const left = band.getBoundingClientRect().left;
-        const list = document.querySelector('.team__fly-scroll'); list.scrollLeft = list.scrollWidth;
-        return Math.abs(band.getBoundingClientRect().left - left) < 1;
+        const bonds = row.querySelector('.team__fly-bonds'), ops = row.querySelector('.team__fly-ops');
+        bonds.scrollLeft = bonds.scrollWidth;
+        return Math.abs(band.getBoundingClientRect().left - left) < 1 && ops.scrollLeft === 0;
       });
       assert.ok(fixed); assert.ok(await noHorizontalOverflow(c));
+      assert.equal(await c.page.$$eval('.team__fly .bond__name', nodes => nodes.length), 0);
+      assert.equal(await c.page.$$eval('.team__fly-cell', nodes => nodes.length), 40);
+      await c.click('.team__fly-row[data-player-id="p_19"] .team__fly-opbtn');
+      assert.equal(await c.page.evaluate(() => globalThis.__TEAM_LOOKUP__.events.at(-1)?.owner), 'p_19');
+      await c.click('.team__fly-row[data-player-id="p_19"] .team__fly-band');
+      await c.page.waitForSelector('.team__fly-bandpop');
+      assert.ok(await c.page.$eval('.team__fly-bandpop', el => el.textContent.includes('策略')));
+      await c.click('.team__fly-close');
       await c.shot(`twenty-${w}`);
     }
+    await c.page.evaluate(() => { const fixture = globalThis.__TEAM_LOOKUP__; fixture.pub.phase = 'UNITE'; fixture.draw(); });
+    await c.page.waitForFunction(() => !document.querySelector('.team__fly-window'));
+    await c.click('.team__bonds-toggle');
+    await c.page.waitForSelector('.team__fly-window');
+    assert.ok(await c.page.$$eval('.team__fly-bonds .bond', nodes => nodes.length > 0 && nodes.every(el => el.classList.contains('is-frozen'))));
     await c.page.focus('.team__bonds-toggle'); await c.page.keyboard.press('Escape');
     assert.equal(await c.exists('.team__fly-window'), false);
     assert.deepEqual(problemsOf([c]), []);

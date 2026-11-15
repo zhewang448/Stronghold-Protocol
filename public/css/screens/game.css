@@ -1853,29 +1853,49 @@
 .gm-rescue p { margin: 6px 0; }
 .gm-rescue button { display: block; margin-top: 4px; min-height: 32px; color: #101d1a; background: #8fe2c7; border: 0; padding: 4px 10px; }
 
-/* Teammate lookup follows the measured roster rows, including pool-group gaps and vertical scrolling. */
-.team__fly { position: absolute; inset: 0 auto 0 100%; width: 0; z-index: 6; pointer-events: none; --fly-toggle: max(.24rem, 24px); }
-.team__bonds-toggle { position: absolute; left: 0; top: 0; bottom: 0; width: var(--fly-toggle); padding: 0; display: grid; place-items: center; border: 0; color: var(--text-md); background: rgba(8, 13, 11, .75); cursor: pointer; pointer-events: auto; }
-.team__bonds-toggle:hover, .team__bonds-toggle.is-open { color: var(--mint-400); background: var(--bg-panel); }
+/* PR #922 b3a9a994: icon-only bonds, independent horizontal cells and a strategy square in every roster row. */
+.team__fly { position: absolute; inset: 0 auto 0 100%; width: 0; z-index: 6; pointer-events: none; --fly-toggle: max(.32rem, 44px); }
+.team__bonds-toggle { position: absolute; left: 0; top: 0; bottom: 0; width: var(--fly-toggle); padding: 0; display: grid; place-items: center;
+  border: 1px solid var(--line-2); border-left: 0; border-radius: 0 3px 3px 0; color: var(--text-md); background: rgba(8, 13, 11, .88); cursor: pointer; pointer-events: auto; }
+.team__bonds-toggle:hover, .team__fly.is-open .team__bonds-toggle { color: var(--mint-400); background: var(--mint-900); }
 .team__bonds-toggle:focus-visible { outline: 2px solid var(--mint-400); outline-offset: -2px; }
-.team__bonds-toggle .icon { width: .15rem; height: .15rem; }
-.team__fly-window { position: absolute; left: var(--fly-toggle); display: flex; width: max-content; min-width: 0; gap: 5px; padding: 0 5px; pointer-events: auto; overflow: hidden; }
-.team__fly-scroll { display: grid; grid-template-columns: max-content max-content; align-content: start; column-gap: 5px; min-width: 0; min-height: 0; height: 100%; flex: 0 1 auto; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: var(--mint-700) var(--bg); }
-.team__fly-scroll:focus-visible { outline: 2px solid var(--mint-400); outline-offset: -2px; }
-.team__fly-row { display: contents; }
-.team__fly-bands { display: flex; flex-direction: column; flex: none; min-height: 0; height: 100%; overflow: hidden; }
-.team__fly-bonds, .team__fly-ops, .team__fly-band { display: flex; align-items: center; flex: none; padding: 0 5px; box-sizing: border-box; background: rgba(6, 10, 9, .94); }
-.team__fly-bonds .bstrip { flex-wrap: nowrap; gap: .08rem; }
-.team__fly-bonds .bond { --disc: .35rem; }
-.team__fly-bonds .bslot { width: auto; }
-.team__fly-bonds .bslot__count { top: -.03rem; font-size: max(.1rem, 10px); }
-.team__fly-bonds .bslot__count small { font-size: max(.08rem, 9px); }
-.team__fly-ops { gap: 7px; min-width: .4rem; }
-.team__fly-ops .uthumb { --ut: max(.35rem, 24px); flex: none; }
-.team__fly-band .bandicon { --bi: max(.35rem, 24px); }
-.team__fly-empty { color: var(--text-md); min-width: .25rem; text-align: center; }
+.team__bonds-toggle .icon { width: max(.16rem, 14px); height: max(.16rem, 14px); }
+.team__fly-window { position: absolute; left: var(--fly-toggle); box-sizing: border-box; min-width: 0; padding: 0 6px; pointer-events: auto; overflow: hidden; }
+.team__fly-scroll { display: flex; flex-direction: column; height: 100%; min-height: 0; overflow: hidden; }
+.team__fly-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(--fly-square); align-items: center; column-gap: 6px; flex: none; min-width: 0; }
+.team__fly-cell { display: flex; align-items: center; box-sizing: border-box; min-width: 0; height: var(--fly-square); padding: 0 6px;
+  background: rgba(6, 10, 9, .86); border-radius: 3px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; touch-action: pan-x;
+  scrollbar-width: none; cursor: grab; }
+.team__fly-cell::-webkit-scrollbar { width: 0; height: 0; }
+.team__fly-cell.is-dragging { cursor: grabbing; user-select: none; }
+.team__fly-cell:focus-visible { outline: 2px solid var(--mint-400); outline-offset: -2px; }
+.team__fly-track { display: flex; align-items: center; gap: .1rem; width: max-content; flex: none; }
+.team__fly-bonds .bond { --disc: max(24px, calc(var(--fly-square) * .65)); flex: none; }
+.team__fly-ops .team__fly-track { gap: 6px; }
+.team__fly-ops .uthumb { --ut: max(24px, calc(var(--fly-square) * .65)); flex: none; }
+.team__fly-opbtn { flex: none; padding: 0; border: 0; border-radius: 2px; background: none; line-height: 0; cursor: pointer; }
+.team__fly-opbtn:hover .uthumb, .team__fly-opbtn:focus-visible { outline: 2px solid var(--mint-400); outline-offset: -2px; }
+.team__fly-band { display: grid; place-items: center; box-sizing: border-box; width: var(--fly-square); height: var(--fly-square); flex: none;
+  padding: 0; border: 0; border-radius: 3px; color: inherit; background: rgba(6, 10, 9, .86); cursor: pointer; }
+.team__fly-band .bandicon { --bi: calc(var(--fly-square) - 8px); background: transparent; }
+.team__fly-band .bandicon img { object-fit: contain; }
+.team__fly-band.is-empty { background: none; cursor: default; }
+.team__fly-band:hover, .team__fly-band:focus-visible { outline: 2px solid var(--mint-400); outline-offset: -2px; }
 .team__fly-spacer { display: block; flex: none; }
-@media (pointer: coarse) { .team__fly { --fly-toggle: 36px; } }
+.team__fly-bandpop { position: fixed; z-index: 40; box-sizing: border-box; width: min(360px, calc(100vw - 16px)); max-height: min(280px, calc(100vh - 16px));
+  overflow: auto; padding: 12px; background: rgba(8, 12, 11, .97); border: 1px solid var(--line-2); border-radius: 4px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .6); color: var(--text-hi); font-size: max(calc(.14 * var(--t)), 12px); pointer-events: auto; }
+.team__fly-bandpop-head { display: flex; align-items: flex-start; gap: 8px; }
+.team__fly-bandpop-head > div { min-width: 0; flex: 1; }
+.team__fly-bandpop-head small { display: block; color: var(--text-md); font-size: max(calc(.11 * var(--t)), 11px); }
+.team__fly-bandpop-head b { display: block; font-size: max(calc(.17 * var(--t)), 14px); }
+.team__fly-bandpop > p { margin: 8px 0 0; color: var(--text-md); line-height: 1.5; }
+.team__fly-close { flex: none; width: max(.24rem, 28px); height: max(.24rem, 28px); display: grid; place-items: center; padding: 0; border: 0; color: var(--text-md); background: none; cursor: pointer; }
+@media (pointer: coarse) {
+  .team .team__row { min-height: 44px; }
+  .team__fly-opbtn, .team__fly-bonds .bond { min-width: 44px; min-height: 44px; }
+  .team__fly-close { width: 44px; height: 44px; }
+}
 
 /* 规程 command: the strategy badge remains the anchor for click and drag interactions. */
 .effects__row { display: flex; align-items: center; gap: .12rem; }
