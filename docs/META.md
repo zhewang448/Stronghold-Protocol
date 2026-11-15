@@ -115,7 +115,8 @@ only the hidden count. The client labels the row 装备区 and shows the stash c
 `g.move` accepts `{ area: 'temp', idx: 0..4 }` for items only with this switch. Boss benches retain the row −7 mapping.
 `m.private.equipHand = true` publishes the effective layout, including in historical-version rooms; the client uses
 it for placement, shop capacity, the fallback field and Ready. The room choice defaults off and never disables a
-version's native row. Covenant rooms with the choice off keep their existing inventory, deadlines and readiness.
+version's native row. In a room with a native equipment row, its settings checkbox displays checked and disabled;
+the stored room preference is retained for other versions. Covenant rooms with the choice off keep their existing inventory, deadlines and readiness.
 
 Sources: season `constData.maxDeckChessCnt = 10`, `maxDeckEquipmentChessCnt = 5`, `tile_acbag` level tiles, and the
 2026-11-08 client `autochessmapareamanagerhotfixer.lua` (`CHAR_HAND_0..3`, `EQUIP_HAND_0..3`).

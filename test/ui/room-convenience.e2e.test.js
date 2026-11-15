@@ -14,6 +14,27 @@ test('room convenience: six defaults, host/guest sync, all versions and actual p
   const req=(page,t,body={})=>page.evaluate(async(t,body)=>{try{return await (await import('/js/net.js')).net.request(t,body);}catch(e){return{error:e.code,message:e.message};}},t,body);
   const phase=(page,value)=>page.waitForFunction(value=>globalThis.__SP__.store.get().match?.public?.phase===value,{},value);
   try{
+    for (const mode of ['solo', 'coop']) {
+      const { page, context } = await newPage('Equipment ' + mode);
+      assert.ok(!(await req(page, 'room.create', { mode, difficulty: 'NORMAL', version: 'act3autochess@V3_1' })).error);
+      await page.waitForFunction(() => globalThis.__SP__.data.get('config')?.version?.rules?.equipHand === true);
+      await page.waitForSelector('.rs-pill__gear'); await page.click('.rs-pill__gear');
+      const selector = '[name="convenience-equipHand"]';
+      const option = () => page.$eval(selector, input => ({ checked: input.checked, disabled: input.disabled }));
+      for (const stored of [false, true]) {
+        assert.ok(!(await req(page, 'room.setConvenience', { key: 'equipHand', on: stored })).error);
+        await page.waitForFunction(stored => globalThis.__SP__.store.get().room.convenience.equipHand === stored, {}, stored);
+        await page.waitForFunction(selector => document.querySelector(selector)?.checked && document.querySelector(selector)?.disabled, {}, selector);
+        assert.deepEqual(await option(), { checked: true, disabled: true }, 'native equipment row is always on');
+      }
+      assert.ok(!(await req(page, 'room.setConvenience', { key: 'equipHand', on: false })).error);
+      assert.ok(!(await req(page, 'room.proposeVersion', { version: 'act2autochess' })).error);
+      await page.waitForFunction(selector => document.querySelector(selector)?.disabled === false && document.querySelector(selector)?.checked === false, {}, selector);
+      await page.$eval(selector, input => input.scrollIntoView({ block: 'center' })); await page.click(selector);
+      await page.waitForFunction(() => globalThis.__SP__.store.get().room.convenience.equipHand === true);
+      assert.deepEqual(await option(), { checked: true, disabled: false }, 'covenant keeps its editable preference');
+      await context.close();
+    }
     const {page:host,context:hc}=await newPage('Host');const {page:guest,context:gc}=await newPage('Guest');
     assert.ok(!(await req(host,'room.create',{mode:'coop',difficulty:'NORMAL',version:'act2autochess'})).error);
     const code=await host.evaluate(()=>globalThis.__SP__.store.get().room.code);assert.ok(!(await req(guest,'room.join',{code})).error);

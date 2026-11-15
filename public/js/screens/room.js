@@ -412,6 +412,8 @@ function RoomOptions({ room, facts, myId, busy, online, variant, onPrivate, onMa
   const [spectatorLimit, setSpectatorLimit] = useState(String(room.spectatorLimit ?? MAX_SPECTATORS));
   useEffect(() => setSpectatorLimit(String(room.spectatorLimit ?? MAX_SPECTATORS)), [room.spectatorLimit]);
   const choices = roomConvenience(room.convenience);
+  const config = getConfig();
+  const nativeEquipHand = config?.version?.id === roomVersion(room) && config.version.rules?.equipHand === true;
   const conveniences = [
     ['benchEquip', t('允许整备区装备'), t('第一期也可直接给整备区干员配发装备；第二期原本支持')],
     ['soloUnlimited', t('独立模拟不限时'), t('第一期独立模拟不再计时；第二期原本不限时，同盟不受此项影响')],
@@ -467,8 +469,9 @@ function RoomOptions({ room, facts, myId, busy, online, variant, onPrivate, onMa
         <span>${t('队友救援')}<small>${t('联防后符合条件的博士可消耗 10 生命救援队友；本局不计入官方统计')}</small></span></label>` : null}
       ${conveniences.map(([key, label, hint]) => {
         const plugin = room.content?.rules && Object.hasOwn(room.content.rules, key);
+        const native = key === 'equipHand' && nativeEquipHand;
         const pluginOn = key === 'prepLoadout' ? room.content?.rules?.[key] === 'prep' : key === 'unequip' ? room.content?.rules?.[key] === 'allow' : key === 'equipHand' ? room.content?.rules?.[key] === 'separate' : room.content?.rules?.[key] === 'plus';
-        return html`<label key=${key} class="rs-opt"><input type="checkbox" name=${`convenience-${key}`} checked=${plugin ? pluginOn : choices[key]} disabled=${!host || !!busy || !online || room.inMatch === true || !!plugin || locked('convenience.' + key) || (key === 'soloUnlimited' && coop)} onChange=${e => onConvenience(key, e.currentTarget.checked)} /><span>${label}<small>${plugin ? t('由房间玩法插件决定') : hint}</small></span></label>`;
+        return html`<label key=${key} class="rs-opt"><input type="checkbox" name=${`convenience-${key}`} checked=${native || (plugin ? pluginOn : choices[key])} disabled=${native || !host || !!busy || !online || room.inMatch === true || !!plugin || locked('convenience.' + key) || (key === 'soloUnlimited' && coop)} onChange=${e => onConvenience(key, e.currentTarget.checked)} /><span>${label}<small>${!native && plugin ? t('由房间玩法插件决定') : hint}</small></span></label>`;
       })}
     </fieldset>
     ${room.random === true ? html`<div class="rs-opt rs-opt--variant"><span>${t('模式分支')}</span>
@@ -503,7 +506,7 @@ export function RoomScreen() {
   const inFlight = useRef(false); // synchronous guard against double clicks (state updates are async)
   const [, tick] = useState(0);
   useEffect(() => { const id = setInterval(() => tick((x) => x + 1), 1000); return () => { clearInterval(id); alive.current = false; }; }, []);
-  useData('chess', 'assets', 'seat-art', 'skins', 'bands', 'bonds');
+  useData('config', 'chess', 'assets', 'seat-art', 'skins', 'bands', 'bonds');
   const m = data.get('assets');
   // 名片干员: the pickable operators, the default pool (5★/6★ by charId, the same order on every client), one's pick
   const cardList = useMemo(() => cardOperators(data.list('chess'), data.get('seat-art'), m, data.get('skins')),
