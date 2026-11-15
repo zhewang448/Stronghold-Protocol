@@ -444,8 +444,12 @@
 /* the ready face on the countdown, where the official holder puts it (ui/prefab/hud.js cornerOffset) */
 .gtop__clock--pf { position: relative; }
 .readywrap.readywrap--pf { position: absolute; left: var(--pf-rx, 0); top: var(--pf-ry, 100%); z-index: 3; align-items: flex-start; }
-/* the 🔍 buttons stay above the band's long shadow (board_shadow overflows the 510-unit root) */
-.gtop--pf .gtop__frame { z-index: 2; }
+/* Keep the checks readable beside the larger prefab band, at each theme image's aspect ratio. The touch layer
+   still owns its invisible hit-area floor; these selectors also beat its short-screen sprite height. */
+.gtop--pf .gtop__iconbtn.has-sprite,
+.gtop--pf .enemybtn.has-sprite { height: .72rem; }
+/* The checks stay above the band's long shadow (board_shadow overflows the 510-unit root). */
+.gtop--pf .gtop__frame { z-index: 2; height: .8rem; }
 .gtop__band.gtop__band--pf { position: relative; z-index: 1; }
 /* the bond row over the band: 可露希尔's three TVs hang under its mid screen (group_hud tv_normal / tv_battle / tv_boss,
    ~0.65rem below the band) and covered the discs' tops; the theme preview draws the discs in front of them (the owner,

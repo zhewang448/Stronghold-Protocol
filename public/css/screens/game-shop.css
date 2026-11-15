@@ -42,7 +42,8 @@
   box-shadow: 0 .04rem .14rem rgba(0, 0, 0, .45);
   transition: background var(--t-fast), box-shadow var(--t-fast), transform var(--t-fast);
 }
-.toolbtn:hover:not(:disabled) { background: rgba(8, 11, 10, .9); background: color-mix(in srgb, var(--tb) 16%, rgba(8, 11, 10, .9)); box-shadow: 0 0 .18rem transparent; box-shadow: 0 0 .18rem color-mix(in srgb, var(--tb) 40%, transparent); }
+/* Keep theme plates' image size, position and repeat unchanged when hovering. */
+.toolbtn:hover:not(:disabled) { background-color: rgba(8, 11, 10, .9); background-color: color-mix(in srgb, var(--tb) 16%, rgba(8, 11, 10, .9)); box-shadow: 0 0 .18rem transparent; box-shadow: 0 0 .18rem color-mix(in srgb, var(--tb) 40%, transparent); }
 .toolbtn:active:not(:disabled) { transform: translateY(1px); }
 .toolbtn:disabled { --tb: var(--line-3); color: var(--text-dim); cursor: not-allowed; }
 .toolbtn__img { width: .34rem; height: .34rem; object-fit: contain; }
@@ -50,7 +51,7 @@
 .toolbtn--amber { --tb: var(--amber); }
 .toolbtn--ice.is-on { background: var(--ice); color: #0b1822; }
 .toolbtn--ice.is-on kbd { color: #28435a; border-color: #5d88aa; }
-.toolbtn--ice.is-on:hover:not(:disabled) { background: #c2e5ff; color: #0b1822; box-shadow: 0 0 .22rem rgba(159, 212, 255, .6); }
+.toolbtn--ice.is-on:hover:not(:disabled) { background-color: #c2e5ff; color: #0b1822; box-shadow: 0 0 .22rem rgba(159, 212, 255, .6); }
 .toolbtn--ice.is-on kbd { background: rgba(255, 255, 255, .35) !important; }
 .toolbtn__free { font-size: .13rem; padding: .01rem .06rem; background: var(--mint-500); color: var(--text-on-mint); letter-spacing: 0; }
 .toolbtn .hex { --hex-h: .26rem; }
