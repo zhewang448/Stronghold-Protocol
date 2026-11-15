@@ -145,6 +145,8 @@
   width: .58rem; height: .58rem;
   background: var(--reg-refresh-icon, none) center / .48rem .48rem no-repeat, var(--reg-refresh-icon-bg, none) center / contain no-repeat;
 }
+/* The disabled plate already contains its grey icon; the normal yellow overlay belongs only to group_normal. */
+.shopbar--reg[data-reg-theme="ac_s_closur"] .toolbtn--amber:disabled > .toolbtn__ticon { display: none; }
 .shopbar--reg[data-reg-theme="ac_s_closur"] .toolbtn--ice { width: 1.72rem; height: .76rem; --lbl-x: .27rem; --lbl-y: .02rem; color: #e8e8e8; }
 
 /* 升级 is the drawn pack's group_upgrade (ui/regHud.js regUpgradeModel): a 112×190 stage whose layers are absolute

@@ -62,10 +62,11 @@ function charBackdrop(groups, themeId, plateUrl) {
 // frozen_bg_unlock (乌萨斯齐心团, 可露希尔); group_disable is bg_lock or frozen_bg_disable.
 const CHROME_SPRITES = Object.freeze({
   refresh: Object.freeze(['sprites/refresh_bg_normal.webp']),
-  refreshLock: Object.freeze(['sprites/bg_lock.webp', 'sprites/refresh_bg_lock.webp', 'sprites/refresh_bg_disable.webp']),
+  // Other themes also have a card-sized bg_lock; prefer the button's own plate before the initial theme's fallback.
+  refreshLock: Object.freeze(['sprites/refresh_bg_lock.webp', 'sprites/refresh_bg_disable.webp', 'sprites/bg_lock.webp']),
   frozen: Object.freeze(['sprites/frozen_bg_normal.webp']),
   frozenOn: Object.freeze(['sprites/frozen_bg_unselect.webp', 'sprites/frozen_bg_unlock.webp']),
-  frozenLock: Object.freeze(['sprites/bg_lock.webp', 'sprites/frozen_bg_disable.webp']),
+  frozenLock: Object.freeze(['sprites/frozen_bg_disable.webp', 'sprites/bg_lock.webp']),
   money: Object.freeze(['sprites/bg_money.webp']),
   costFree: Object.freeze(['sprites/cost_free.webp']),
 });

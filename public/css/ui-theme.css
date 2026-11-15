@@ -90,11 +90,13 @@ html[data-sp-slot~="effect_choose_self_select"] .spov__inner {
   background-size: 100% 100%; background-repeat: no-repeat;
 }
 html[data-sp-slot~="img_check_player"] .gtop__iconbtn {
+  --chk-theme: var(--sp-img-img_check_player);
   background-image: var(--sp-img-img_check_player);
   background-size: 100% 100%; background-repeat: no-repeat;
   background-color: rgba(78, 216, 175, .06);
 }
 html[data-sp-slot~="img_check_enemy"] .enemybtn {
+  --chk-theme: var(--sp-img-img_check_enemy);
   background-image: var(--sp-img-img_check_enemy);
   background-size: 100% 100%; background-repeat: no-repeat;
 }

@@ -216,6 +216,22 @@ test('chrome sprites prefer the active official pack, then ac_n_initial, and ski
   assert.equal(regChromeUrls({}, { themeId: 'not-official' }).char, '');
 });
 
+test('disabled chrome prefers each theme button plate over colliding card lock art', () => {
+  const groups = {
+    'themes/ac_n_initial': group('ac_n_initial', INITIAL_FILES),
+    'themes/ac_n_iron': group('ac_n_iron', ['sprites/bg_lock.webp', 'sprites/refresh_bg_disable.webp', 'sprites/frozen_bg_disable.webp']),
+    'themes/ac_s_closur': group('ac_s_closur', ['sprites/bg_lock.webp', 'sprites/refresh_bg_lock.webp', 'sprites/frozen_bg_disable.webp']),
+  };
+  for (const [themeId, refresh] of [['ac_s_closur', 'refresh_bg_lock'], ['ac_n_iron', 'refresh_bg_disable']]) {
+    const urls = regChromeUrls(groups, { themeId });
+    assert.equal(urls.refreshLock, `/assets/local/themes/${themeId}/sprites/${refresh}.webp`);
+    assert.equal(urls.frozenLock, `/assets/local/themes/${themeId}/sprites/frozen_bg_disable.webp`);
+  }
+  const initial = regChromeUrls(groups, { themeId: 'ac_n_initial' });
+  assert.equal(initial.refreshLock, '/assets/local/themes/ac_n_initial/sprites/bg_lock.webp');
+  assert.equal(initial.frozenLock, initial.refreshLock, 'the initial theme genuinely uses its shared lock plate');
+});
+
 // The upgrade parts each pack's group_upgrade names (any size: none of them goes through the plate size filter)
 const UP_FILES = {
   ac_n_initial: ['repeat_line', 'deco_up', 'deco_down', 'stripe_line', 'frame_matte', 'icon', 'frame', 'level_2', 'frame_glow',

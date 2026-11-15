@@ -1458,3 +1458,6 @@ Covenant rendering and controls retain the mixed hand and visible temporary row.
 ### 本库官方主题 HUD 快速修复（2026-11-15）
 
 预制顶栏两侧查看按钮使用 .72rem 高度并保留各主题图片比例，外框高度 .8rem；旧非预制顶栏不变，触屏命中范围仍由设备层保证。冻结、刷新及已冻结状态的悬停只改变背景颜色/亮度，保持背景图尺寸、位置与不平铺属性，不移动文字、费用或按钮盒。
+
+
+官方主题的查看按钮在正常、悬停与选中态统一从 --chk-theme 读取主题图，无主题时回退原状态图；悬停仅提亮。冻结/刷新禁用底图优先选择当前主题的专用 frozen_bg_disable、refresh_bg_lock/refresh_bg_disable，共享 bg_lock 只作后备；可露希尔禁用刷新底图已含灰色图标，正常态黄色图标层不叠画。

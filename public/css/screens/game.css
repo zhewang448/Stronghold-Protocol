@@ -456,11 +456,11 @@
 /* official sprites: the picture is the whole button */
 .gtop__iconbtn.has-sprite, .enemybtn.has-sprite {
   width: .555rem; min-width: 0; height: .46rem; padding: 0; border: 0; border-radius: 0; box-shadow: none;
-  background: var(--chk-sprite) center / 100% 100% no-repeat;
+  background: var(--chk-theme, var(--chk-sprite)) center / 100% 100% no-repeat;
 }
 .gtop__iconbtn.has-sprite.is-wide, .enemybtn.has-sprite.is-wide { width: .967rem; }
-.gtop__iconbtn.has-sprite:hover, .enemybtn.has-sprite:hover:not(.is-grey) { background: var(--chk-sprite) center / 100% 100% no-repeat; filter: brightness(1.2); box-shadow: none; }
-.gtop__iconbtn.has-sprite.is-on { background: var(--chk-sprite) center / 100% 100% no-repeat; }
+.gtop__iconbtn.has-sprite:hover, .enemybtn.has-sprite:hover:not(.is-grey) { background: var(--chk-theme, var(--chk-sprite)) center / 100% 100% no-repeat; filter: brightness(1.2); box-shadow: none; }
+.gtop__iconbtn.has-sprite.is-on { background: var(--chk-theme, var(--chk-sprite)) center / 100% 100% no-repeat; }
 
 /* the 准备 question (funds left, an unused command — §37.201): its sentences, then the 「本局不再提醒」 box */
 .ready-ask .modal__text + .modal__text { margin-top: .06rem; }
