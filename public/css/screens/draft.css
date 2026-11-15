@@ -408,7 +408,7 @@
 .draft-order { overflow: hidden; }
 .draft-order__list { padding-left: .08rem; padding-right: .12rem; scrollbar-width: thin; }
 .draft-order__group { display: flex; flex: none; flex-direction: column; gap: .16rem; }
-.draft-order__group--framed { padding: .06rem; border: 1px solid color-mix(in srgb, var(--pool-group-color) 38%, transparent); }
+.draft-order__group--framed { padding: .06rem; border: 1px solid var(--pool-group-color); border: 1px solid color-mix(in srgb, var(--pool-group-color) 38%, transparent); }
 .draft-order__group .dorder { min-width: 0; }
 .draft-stage { width: calc(100% - .3rem); max-width: 3.9rem; align-self: center; }
 .draft-order > .draft-order__plan { flex: none; margin-right: .3rem; min-width: 0; white-space: normal; }
