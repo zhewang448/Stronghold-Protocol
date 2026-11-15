@@ -261,7 +261,7 @@ describe('3: the temp overflow row (临时整备区)', () => {
 
   test('the own prep board shows permanent equipment or occupied temporary storage (source contract)', () => {
     const game = read('public/js/screens/game.js');
-    assert.match(game, /const equipHand = data\.get\('config'\)\?\.version\?\.rules\?\.equipHand === true;/);
+    assert.match(game, /const equipHand = usesEquipHand\(data\.get\('config'\), priv\);/);
     assert.match(game, /const tempNotice = \(equipHand \|\| temp\.count > 0\) && !!view && viewKind !== 'loading' && showPrep && alive && !pen && !sp;/);
     assert.match(game, /<\$\{TempRowNotice\} equipHand=\$\{equipHand\} view=\$\{view\} count=\$\{temp\.count\} items=\$\{temp\.items\} label=\$\{!drag && !facing\}\s+ready=\$\{phase === PHASE\.PREP && !!priv\?\.ready\} \/>/);
     assert.match(game, /toast\(tempReadyReason\(L\.priv\) \|\| refused, 'warn'\)/, 'Space says why');

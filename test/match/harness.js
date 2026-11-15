@@ -109,6 +109,7 @@ export function makeMatch(o = {}) {
     // still has no kitted key.
     ...(o.kitted !== undefined ? { kitted: o.kitted } : {}),
     ...(o.rules !== undefined ? { rules: o.rules } : {}),
+    ...(o.convenience !== undefined ? { convenience: o.convenience } : {}),
   });
   const m = h.m;
   if (m.clientCombat && o.clients !== false) {

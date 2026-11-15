@@ -241,6 +241,6 @@ test('solo reset updates convenience defaults while preserving difficulty and ig
   assert.equal((await host.request({ t: 'room.resetSettings' })).t, 'ok');
   assert.equal(room.version, 'act1autochess'); assert.equal(room.difficulty, 'NORMAL'); assert.equal(room.capacity, 1);
   assert.equal(room.soloUnlimited, false);
-  assert.deepEqual(room.convenience, { benchEquip: false, soloUnlimited: false, prepLoadout: false, unequip: true, morphPairing: true });
+  assert.deepEqual(room.convenience, { benchEquip: false, soloUnlimited: false, prepLoadout: false, unequip: true, morphPairing: true, equipHand: false });
   for (const key of ['private', 'aiPicksLast', 'aiTakeoverEnabled', 'independentPools', 'rescueEnabled']) assert.equal(room[key], false, key);
 });

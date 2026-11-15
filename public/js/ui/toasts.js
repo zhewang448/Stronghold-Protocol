@@ -101,7 +101,7 @@ export function describeError(err) {
   if (err.code === 'PLUGIN_RULE_CONFLICT') {
     // Existing wire detail is bounded to 120 characters. The ids precede the longer developer explanation.
     const match = typeof err.detail === 'string' && /^PLUGIN_RULE_CONFLICT (\w+): ([a-z0-9-]{2,32}) and ([a-z0-9-]{2,32}) set /.exec(err.detail);
-    const labels = { shopBias: N_('商店装备偏向'), prepLoadout: N_('休整期调配'), morphPairing: N_('变形同构体配对'), unequip: N_('卸下装备') };
+    const labels = { shopBias: N_('商店装备偏向'), prepLoadout: N_('休整期调配'), morphPairing: N_('变形同构体配对'), unequip: N_('卸下装备'), equipHand: N_('独立装备区') };
     if (match && Object.hasOwn(labels, match[1])) {
       const name = id => { const p = catalog.get().plugins.find(p => p.id === id); return p ? pluginName(p) : id; };
       return t('「{a}」和「{b}」的规则开关「{rule}」选项冲突', { a: name(match[2]), b: name(match[3]), rule: t(labels[match[1]]) });

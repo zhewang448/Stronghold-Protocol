@@ -35,6 +35,64 @@ function setup(t, data = regulation, options = {}) {
   return { h, ps, m, items, chars, item, chess, fill };
 }
 
+for (const version of ['act2autochess', 'act2autochess@V2_1', 'act1autochess', 'act1autochess@V1_1']) {
+  test(`${version}: room equipment row separates inventory, survives prep and drives client capacity`, t => {
+    const data = version === 'act2autochess' ? DATA : getVersionData(version);
+    const { ps, m, item, chess, fill, items } = setup(t, data, { convenience: { equipHand: true, unequip: true } });
+    assert.equal(ps.equipHand, true);
+    assert.notEqual(data.config.version?.rules?.equipHand, true, 'version data is not modified');
+    const it = item(), op = chess();
+    assert.equal(ps.temp[4], it); assert.equal(ps.hand[9], op);
+    assert.equal(ps.tempDue(it), Infinity);
+    const config = data.config;
+    const ctx = placementContext({ priv: ps.privateView(), config, editable: true, stage: m.gd.stage(m.stageId), getItem: id => m.gd.item(id) });
+    assert.equal(canPlace(ctx, it.uid, { area: 'temp', idx: 0 }).ok, true);
+    assert.equal(canPlace(ctx, it.uid, { area: 'hand', idx: 0 }).ok, false);
+    assert.equal(canPlace(ctx, op.uid, { area: 'temp', idx: 0 }).ok, false);
+    fill('chess');
+    const originalShop = ps.shop.slots;
+    ps.shop.slots = [{ kind: 'item', id: items[1], basePrice: 0 }];
+    assert.equal(shopBlockReason('buy', { priv: ps.privateView(), config, editable: true, slot: { kind: 'item', price: 0 } }), null);
+    assert.ok(ps.buy(0).ok, 'equipment purchase does not need a character slot');
+    assert.ok(ps.equip(it.uid, op.uid).ok);
+    assert.ok(ps.unequip(it.uid).ok, 'unequip uses the equipment row with a full character hand');
+    fill('item');
+    assert.equal(shopBlockReason('buy', { priv: ps.privateView(), config, editable: true, slot: { kind: 'item', price: 0 } }), '装备区已满');
+    assert.deepEqual(tempInfo(ps.privateView(), config), { count: 0, items: 0 });
+    assert.equal(tempReadyReason(ps.privateView(), config), null);
+    assert.ok(ps.setReady(true).ok, 'unused equipment does not block Ready');
+    ps.setReady(false);
+    const permanent = ps.temp.slice(0, 5), overflow = item(7);
+    assert.equal(ps.privateView().stashCount, 1);
+    assert.equal(ps.privateView().temp.length, 5);
+    assert.deepEqual(ps.setReady(true), { error: ERR.TEMP_NOT_EMPTY });
+    assert.match(tempReadyReason(ps.privateView(), config), /暂存 1 个单位/);
+    ps.endPrep();
+    assert.deepEqual(ps.temp, permanent); assert.equal(ps.find(overflow.uid), null);
+    ps.shop.slots = originalShop;
+    checkInvariants(m);
+  });
+
+  test(`${version}: disabled equipment-row choice retains the mixed hand`, t => {
+    const data = version === 'act2autochess' ? DATA : getVersionData(version);
+    const { ps, item, chess } = setup(t, data, { convenience: { equipHand: false } });
+    const it = item(), op = chess();
+    assert.equal(ps.equipHand, false);
+    assert.equal(ps.find(it.uid).area, 'hand'); assert.equal(ps.find(op.uid).area, 'hand');
+    assert.equal(ps.privateView().equipHand, undefined);
+  });
+}
+
+test('regulation keeps its native equipment row when the room choice is off or a plugin requests official rules', t => {
+  const { ps } = setup(t, regulation, { convenience: { equipHand: false }, rules: { equipHand: 'official' } });
+  assert.equal(ps.equipHand, true);
+});
+
+test('declared plugin equipment rule overrides the room choice for covenant', t => {
+  const { ps } = setup(t, DATA, { convenience: { equipHand: true }, rules: { equipHand: 'official' } });
+  assert.equal(ps.equipHand, false);
+});
+
 test('regulation keeps five permanent equipment slots separate from ten character slots', t => {
   const { ps, item, chess } = setup(t);
   const it = item(), op = chess();

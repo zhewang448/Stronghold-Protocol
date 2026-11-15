@@ -985,6 +985,12 @@
             "official",
             "allow"
           ]
+        },
+        "equipHand": {
+          "enum": [
+            "official",
+            "separate"
+          ]
         }
       }
     },

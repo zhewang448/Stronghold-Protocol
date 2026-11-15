@@ -4250,5 +4250,7 @@
   "拖动及选择朝向时：关闭保持原视角；适度缩小保留七成大小的商店，镜头适度放大；完全收起使用原有放大视角。结束后恢复原状。": "While dragging or choosing a facing: Off keeps the view; Moderate keeps the shop at 70% with a smaller zoom; Fully collapse uses the original zoom. The view returns afterwards.",
   "点击进入": "Tap to start",
   "点击跳过": "Tap to skip",
-  "这台服务器已经带有这个官方主题，直接在下面选用即可。": "This server already includes this official theme. Select it below."
+  "这台服务器已经带有这个官方主题，直接在下面选用即可。": "This server already includes this official theme. Select it below.",
+  "独立装备区": "Separate equipment row",
+  "其他版本也使用 5 格永久装备区，装备不占干员手牌；规程版本原本支持": "Use 5 permanent equipment slots in other versions without taking operator hand slots; Regulation already supports this"
 }

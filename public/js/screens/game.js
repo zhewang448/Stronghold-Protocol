@@ -85,7 +85,7 @@ import { AiTakeoverPanel } from '../ui/aiTakeover.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from '../../vendor/hooks.module.js';
 import { PHASE, GEO, PING_TTL_MS } from '../../../shared/constants.js';
 import { ruleOption } from '../../../shared/plugins/rules.js';
-import { effectiveRoomRules } from '../../../shared/roomConvenience.js';
+import { effectiveRoomRules, usesEquipHand } from '../../../shared/roomConvenience.js';
 
 import { html, Spinner, PhaseBanner, ResultDialog, Icon, Button, confirmDialog, closeAllDialogs, useTicker } from '../ui/components.js';
 import { useGameData, GIcon } from '../ui/gameComponents.js';
@@ -2022,7 +2022,7 @@ function MatchScreen() {
   const ufShown = !!(selEntry && editable && !facing && !drag && showPrep && ufGeo);
   // the temp overflow row holds pieces (user playtest #3 item 3): framed and labelled on the own prep board
   const temp = tempInfo(priv);
-  const equipHand = data.get('config')?.version?.rules?.equipHand === true;
+  const equipHand = usesEquipHand(data.get('config'), priv);
   const tempNotice = (equipHand || temp.count > 0) && !!view && viewKind !== 'loading' && showPrep && alive && !pen && !sp;
   // the ready button shows why it is refused under it (ui/hud.js ReadyToggle): the effects column moves down a line
   const readyWhy = phase === PHASE.PREP && alive && !priv?.ready && (hasPersonalChoice || temp.count > 0);

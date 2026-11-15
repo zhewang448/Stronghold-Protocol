@@ -397,3 +397,13 @@
 .rs--paged .rs-seats { justify-content: center; gap: .2rem; }
 .rs--paged .rseat { --w: min(18vw, 3.4rem, calc((100vw - 1.6rem) / var(--n, 4) - .3rem)); }
 @media (pointer: coarse) { .rs-seat-pages button { min-height: var(--tap-min); } }
+
+/* Keep solo-room rule controls within the shared responsive options panel. */
+.rs--solo .rs-opts {
+  width: min(max(5.2rem, 32px, calc(320px * var(--sp-ui, 1))), calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  transform: translateX(var(--room-options-x));
+}
+@media (max-width: 900px), (max-height: 520px) {
+  .rs--solo .rs-opts { left: 0; }
+}

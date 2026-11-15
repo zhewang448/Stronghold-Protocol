@@ -11,6 +11,7 @@ import { deployedRecord, fieldsStandIn, standInOf } from './standIn.js';
 import { t } from '../../../../shared/i18n.js';
 import { morphSlotPolicy } from '../../../../shared/plugins/rules.js';
 import { chessIsDiy, itemForbidsDiy, equipmentCapacity } from '../../../../shared/itemRules.js';
+import { usesEquipHand } from '../../../../shared/roomConvenience.js';
 
 
 // ---- placement (canPlace mirror) ------------------------------------------------------------------------
@@ -221,7 +222,7 @@ export function placementContext({ priv, stage, editable, field = 'normal', getC
       if (u && u.defId === 'enemy_9038_achest' && Number.isInteger(u.y) && Number.isInteger(u.x)) chestTiles.add(tileKey(u.y, u.x));
     }
   }
-  return { priv, pieces, boardAt, handAt, deploy, cap, count, field, editable: !!editable, getChess, getToken, getItem, backups, chestTiles, equipPerChess: config?.economy?.equipPerChess, equipHand: config?.version?.rules?.equipHand === true, morphMode: morphMode === 'plus' ? 'plus' : 'official' };
+  return { priv, pieces, boardAt, handAt, deploy, cap, count, field, editable: !!editable, getChess, getToken, getItem, backups, chestTiles, equipPerChess: config?.economy?.equipPerChess, equipHand: usesEquipHand(config, priv), morphMode: morphMode === 'plus' ? 'plus' : 'official' };
 }
 
 /**

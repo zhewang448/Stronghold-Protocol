@@ -41,7 +41,7 @@ import { hotkeyLabelOf, useSettings, settingsStore } from './settings.js';
 import { usePrefabPack } from './prefab/view.js';
 import { RegHudBand, RegCountdown, RegReadyFace, packHud, cornerOffset } from './prefab/hud.js';
 import { t, tParts, N_ } from '../../../shared/i18n.js';
-import { effectiveRoomRules } from '../../../shared/roomConvenience.js';
+import { effectiveRoomRules, usesEquipHand } from '../../../shared/roomConvenience.js';
 import { UnofficialMark, ruleLine } from './pluginTag.js';
 import { TestMark } from './testConsole.js';
 import { FrameRatePill } from './frameRatePill.js';
@@ -354,7 +354,7 @@ export function pendingTip(lp, pending, { unite = false, cap = 10, left = null }
  * @returns {{ count: number, items: number }}
  */
 export function tempInfo(priv, config = data.get('config')) {
-  if (config?.version?.rules?.equipHand === true) return { count: priv?.stashCount || 0, items: 0 };
+  if (usesEquipHand(config, priv)) return { count: priv?.stashCount || 0, items: 0 };
   const list = (Array.isArray(priv?.temp) ? priv.temp : []).filter((p) => p && typeof p === 'object');
   return { count: list.length, items: list.filter((p) => p.kind === 'item').length };
 }
@@ -365,7 +365,7 @@ export const TEMP_RULE = N_('放入整备区或战场、配发或使用后才能
 /** Why 准备就绪 is refused while the temp row holds pieces (null when it is empty). */
 export function tempReadyReason(priv, config = data.get('config')) {
   const info = tempInfo(priv, config);
-  if (config?.version?.rules?.equipHand === true) return info.count ? t('暂存 {count} 个单位：{rule}', { count: info.count, rule: t('有空位时自动移入；休整期结束时仍在暂存的单位将被销毁') }) : null;
+  if (usesEquipHand(config, priv)) return info.count ? t('暂存 {count} 个单位：{rule}', { count: info.count, rule: t('有空位时自动移入；休整期结束时仍在暂存的单位将被销毁') }) : null;
   return info.count ? t('临时整备区还有 {count} 个单位：{rule}', { count: info.count, rule: t(TEMP_RULE) }) : null;
 }
 
@@ -392,7 +392,7 @@ export function ReadyToggle({ priv, onToggle, busy, readyCount, total, pack = nu
     ${reason ? html`<${Tooltip} text=${reason} placement="bottom">${btn}<//>` : btn}
     ${why ? html`<span class="readywrap__why" id="readywrap-why" role="status" data-testid="ready-why">
       <${Icon} name="warn" />${choice ? html`<span>${reason}</span>`
-        : data.get('config')?.version?.rules?.equipHand === true ? html`<span>${reason}</span>`
+        : usesEquipHand(data.get('config'), priv) ? html`<span>${reason}</span>`
         : html`<span>${tParts('临时整备区 {n} 个单位待处理', { n: html`<b class="num">${temp.count}</b>`, count: temp.count })}</span>`}</span>` : null}
     ${Number.isFinite(total) && total > 1 ? html`<span class="readywrap__count">${t('已就绪')} <b class="num">${readyCount}</b>/<span class="num">${total}</span></span>` : null}
   </div>`;

@@ -493,7 +493,7 @@ The internal welcome preserves the socket’s negotiated delta version and clear
 
 ### Room convenience protocol (2026-10-25)
 
-room.state.convenience contains five booleans: benchEquip, soloUnlimited, prepLoadout, unequip, morphPairing. room.setConvenience {key,on} is host-only before start, clears other human readiness, and broadcasts to players and spectators. Choices remain across version changes and subsequent matches and are copied through version/gameplay hosts, PREP recovery, test journals, public state and results. Plugin-declared switches cannot be overridden by the room.
+room.state.convenience contains six booleans: benchEquip, soloUnlimited, prepLoadout, unequip, morphPairing, equipHand. room.setConvenience {key,on} is host-only before start, clears other human readiness, and broadcasts to players and spectators. Choices remain across version changes and subsequent matches and are copied through version/gameplay hosts, PREP recovery, test journals, public state and results. Plugin-declared switches cannot be overridden by the room. equipHand defaults false; true enables the separate five-slot equipment row in covenant versions. The effective split layout is sent as m.private.equipHand = true, alongside stashCount; a version's native row always remains enabled.
 
 `room.state.enemyHpMultiplier` is omitted at its default of 1. The host may set it before a match with `room.setEnemyHpMultiplier { multiplier }`, a finite number from 0.1 through 100. Changes clear other humans' readiness, stop public matchmaking and broadcast the room state. A non-default multiplier makes a room ineligible for public matchmaking. The value persists across room version changes, worker hosts, recovery and test journals.
 
@@ -587,7 +587,7 @@ The WebSocket handshake records only a bounded, valid HTTP(S) Origin host (inclu
 ### 主机房间默认值与逐项权限（2026-11-03）
 
 `roomCreation { defaults, hostControls }` 统一配置 18 项房间选项：难度、版本、私密、人数、观战席、AI 后选、
-真人头像优先、观战接替 AI、联防叠层、敌人血量、独立卡池、队友救援、五项便利规则和插件。
+真人头像优先、观战接替 AI、联防叠层、敌人血量、独立卡池、队友救援、六项便利规则和插件。
 默认值只在创建时捕获；保存权限立即广播，但不改写已有房间的值。`welcome` 按需携带配置，
 `site.settings.roomCreation` 推送更新；`room.state.hostControls` 携带禁止修改的字段。
 所有 setter 和别名在服务端检查权限，包括 `room.setMode`、`room.setMaxSeats`、`room.setSoloUnlimited`。

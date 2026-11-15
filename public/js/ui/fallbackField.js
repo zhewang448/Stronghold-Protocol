@@ -26,6 +26,7 @@ import { chessAvatarUrl, itemIconUrl, tokenAvatarUrl, enemyIconUrl } from './ass
 import { tileKey, hasFlag, UF, penPlacement, PEN, fieldTile, ownStandIn, ownDiyRecord } from './gameLogic.js';
 import { t } from '../../../shared/i18n.js';
 import { ownerSkin } from './skins.js';
+import { usesEquipHand } from '../../../shared/roomConvenience.js';
 
 const DRAG_PX = 6;
 const DMG_TTL = 900;
@@ -93,7 +94,7 @@ export function fallbackFloat(e, settings) {
  */
 export function createFallbackView(host, opts = {}) {
   const dataStore = opts.data;
-  const equipHand = () => dataStore?.get?.('config')?.version?.rules?.equipHand === true;
+  const equipHand = () => usesEquipHand(dataStore?.get?.('config'), st.priv);
   const m = () => opts.assets || dataStore?.get?.('assets') || null;
   const lookup = (file, id) => dataStore?.lookup?.(file, id) ?? null;
   const listeners = new Map();

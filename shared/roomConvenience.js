@@ -1,6 +1,6 @@
 // Room-local convenience choices. Defaults are the maintainer's 2026-10-25 decision.
 // They supplement a version's rules; a declared gameplay-plugin rule takes precedence.
-export const CONVENIENCE_DEFAULTS = Object.freeze({ benchEquip: true, soloUnlimited: true, prepLoadout: true, unequip: false, morphPairing: false });
+export const CONVENIENCE_DEFAULTS = Object.freeze({ benchEquip: true, soloUnlimited: true, prepLoadout: true, unequip: false, morphPairing: false, equipHand: false });
 export const CONVENIENCE_KEYS = Object.freeze(Object.keys(CONVENIENCE_DEFAULTS));
 
 export function roomConvenience(raw) {
@@ -9,7 +9,12 @@ export function roomConvenience(raw) {
 
 export function convenienceRules(raw, pluginRules = null) {
   const choices = roomConvenience(raw);
-  return { prepLoadout: choices.prepLoadout ? 'prep' : 'locked', unequip: choices.unequip ? 'allow' : 'official', morphPairing: choices.morphPairing ? 'plus' : 'official', ...pluginRules };
+  return { prepLoadout: choices.prepLoadout ? 'prep' : 'locked', unequip: choices.unequip ? 'allow' : 'official', morphPairing: choices.morphPairing ? 'plus' : 'official', ...(choices.equipHand ? { equipHand: 'separate' } : {}), ...pluginRules };
+}
+
+/** The private view carries the room's inventory layout; the version remains the fallback for older views. */
+export function usesEquipHand(config, priv = null) {
+  return priv?.equipHand === true || config?.version?.rules?.equipHand === true;
 }
 
 const effectiveCache = new WeakMap();

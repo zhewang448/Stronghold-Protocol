@@ -418,6 +418,7 @@ function RoomOptions({ room, facts, myId, busy, online, variant, onPrivate, onMa
     ['prepLoadout', t('休整期调整技能与模组'), t('休整期未准备就绪时，可以调整干员技能与模组')],
     ['unequip', t('允许卸下装备'), t('可单独取回已配发装备；整备区与临时区都满时无法卸下')],
     ['morphPairing', t('变形同构体增强规则'), t('同构体不占装备格，每名干员限一件，仅配对最左侧盟约装备')],
+    ['equipHand', t('独立装备区'), t('其他版本也使用 5 格永久装备区，装备不占干员手牌；规程版本原本支持')],
   ];
   useEffect(() => {
     const away = (e) => { if (!e.target.closest?.('.rs-opts, .rs-pill__gear')) onClose(); };
@@ -466,7 +467,7 @@ function RoomOptions({ room, facts, myId, busy, online, variant, onPrivate, onMa
         <span>${t('队友救援')}<small>${t('联防后符合条件的博士可消耗 10 生命救援队友；本局不计入官方统计')}</small></span></label>` : null}
       ${conveniences.map(([key, label, hint]) => {
         const plugin = room.content?.rules && Object.hasOwn(room.content.rules, key);
-        const pluginOn = key === 'prepLoadout' ? room.content?.rules?.[key] === 'prep' : key === 'unequip' ? room.content?.rules?.[key] === 'allow' : room.content?.rules?.[key] === 'plus';
+        const pluginOn = key === 'prepLoadout' ? room.content?.rules?.[key] === 'prep' : key === 'unequip' ? room.content?.rules?.[key] === 'allow' : key === 'equipHand' ? room.content?.rules?.[key] === 'separate' : room.content?.rules?.[key] === 'plus';
         return html`<label key=${key} class="rs-opt"><input type="checkbox" name=${`convenience-${key}`} checked=${plugin ? pluginOn : choices[key]} disabled=${!host || !!busy || !online || room.inMatch === true || !!plugin || locked('convenience.' + key) || (key === 'soloUnlimited' && coop)} onChange=${e => onConvenience(key, e.currentTarget.checked)} /><span>${label}<small>${plugin ? t('由房间玩法插件决定') : hint}</small></span></label>`;
       })}
     </fieldset>

@@ -1,4 +1,4 @@
-// shared/plugins/rules.js — the four gameplay rule switches a content / script / trusted plugin may declare
+// shared/plugins/rules.js — the gameplay rule switches a content / script / trusted plugin may declare
 // (DESIGN §34.15). One table is the only source of the names, options and the Chinese phrases the room shows.
 // No Node API: the manifest, the content set, the match, the battle sim and the client all import it.
 //
@@ -18,7 +18,7 @@
 import { problem } from './dataUtils.js';
 import { N_ } from '../i18n.js';
 
-/** @typedef {'shopBias'|'prepLoadout'|'morphPairing'|'unequip'} RuleName */
+/** @typedef {'shopBias'|'prepLoadout'|'morphPairing'|'unequip'|'equipHand'} RuleName */
 
 /**
  * Closed switches. `options[0]` is the default (today's behaviour). `phrase` is the Chinese line shown for a
@@ -40,6 +40,10 @@ export const RULE_SWITCHES = Object.freeze({
   unequip: Object.freeze({
     options: Object.freeze(['official', 'allow']),
     phrase: Object.freeze({ allow: N_('可以卸下装备') }),
+  }),
+  equipHand: Object.freeze({
+    options: Object.freeze(['official', 'separate']),
+    phrase: Object.freeze({ separate: N_('独立装备区') }),
   }),
 });
 

@@ -13,6 +13,7 @@ import { checkLoadout, checkLoadoutOps, cultivationCharIds, checkNotOwned, resol
 import { cultivationOf } from '../../../shared/potential.js';
 import { tileKey, boardOrder } from '../board.js';
 import { TEMP_SIZE } from './common.js';
+import { ruleOption } from '../../../shared/plugins/rules.js';
 
 /** The charIds a player may set a potential / 练度 for, per game-data object (shared/protocol.js cultivationCharIds). */
 const OPS_IDS = new WeakMap();
@@ -31,7 +32,8 @@ export class PlayerBasics {
 
   get deployCap() { return Math.max(1, this.gd.deployCap + this.deployCapBonus, this.deployCapMin); }
   get deployCount() { let n = 0; for (const p of this.board.values()) if (p.kind === 'chess') n++; return n; }
-  get equipHand() { return this.gd.config.version?.rules?.equipHand === true; }
+  // Owner-requested room extension (2026-11-15); a season's native equipment row is always retained.
+  get equipHand() { return this.gd.config.version?.rules?.equipHand === true || ruleOption(this.m.rules, 'equipHand') === 'separate'; }
   get tempEmpty() { return this.temp.every((x, i) => (this.equipHand && i < TEMP_SIZE) || x == null); }
 
   /**

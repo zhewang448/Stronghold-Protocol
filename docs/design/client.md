@@ -1132,7 +1132,7 @@ Settings `upstreamReleaseNotes` and `extensionReleaseNotes` both default to true
 
 ### Room convenience controls (2026-10-25)
 
-The bottom gear contains five convenience checkboxes. Defaults are on/on/on/off/off in bench equipment, untimed solo, prep loadout, unequip and morph enhancement order. Untimed solo is read-only in co-op; its stored preference applies on applicable solo versions. Non-hosts, offline clients and started rooms cannot edit. A plugin-controlled choice shows its effective value read-only. The options panel scrolls within short screens; checkbox dimensions do not shrink with long descriptions. The duplicate footer untimed checkbox is removed.
+The bottom gear contains six convenience checkboxes. Defaults are on/on/on/off/off/off in bench equipment, untimed solo, prep loadout, unequip, morph enhancement and independent equipment-row order. The last choice is labelled 独立装备区 and enables five permanent equipment slots in covenant versions; regulation already supplies them. Untimed solo is read-only in co-op; its stored preference applies on applicable solo versions. Non-hosts, offline clients and started rooms cannot edit. A plugin-controlled choice shows its effective value read-only. The options panel scrolls within short screens; checkbox dimensions do not shrink with long descriptions. The duplicate footer untimed checkbox is removed.
 
 
 ### Extension appearance settings (2026-10-26)
@@ -1424,12 +1424,12 @@ Hub 卡片和弹窗共用一条目录轮询，平时 10 秒、打开弹窗 4 秒
 
 ### Regulation equipment row
 
-The loaded `config.version.rules.equipHand` switch labels row 8 装备区 and accepts item-card moves within its five
+The effective private `equipHand` flag (falling back to `config.version.rules.equipHand`) labels row 8 装备区 and accepts item-card moves within its five
 slots. Equipment can be dropped on a unit to equip it; empty character-hand slots refuse equipment, and equipment
 slots refuse characters/summons. The shop checks capacity in the offered card's row. The permanent row has no red
 pending frame. The HUD, Ready reason and row label use private `stashCount`, with the auto-refill/expiry rule;
 the stash itself is not drawn. Boss prep retains the same bench transform (row 8 → boss row 1, mirrored on the right).
-Covenant rendering and controls retain the mixed hand and visible temporary row.
+Covenant rooms with the independent equipment-row choice off retain the mixed hand and visible temporary row.
 
 
 ### 规程迁移补充（2026-11-09）

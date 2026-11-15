@@ -141,7 +141,7 @@ export class PlayerViews {
       },
       hand: this.hand.map((p) => (p ? this.pieceView(p) : null)),
       temp: (this.equipHand ? this.temp.slice(0, this.gd.tempSize) : this.temp).map((p) => (p ? this.pieceView(p) : null)),
-      ...(this.equipHand ? { stashCount: this.tempPieces().length } : {}),
+      ...(this.equipHand ? { equipHand: true, stashCount: this.tempPieces().length } : {}),
       board,
       // The stage's 外勤医疗 reserve medic is present during prep, but is not a draggable board piece.
       prepMapChars: this.m.prepMapChars(this),

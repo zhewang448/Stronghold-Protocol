@@ -29,11 +29,13 @@ function collector() {
 }
 
 test('the closed table is the only list of names and options', () => {
-  assert.deepEqual(RULE_NAMES, ['shopBias', 'prepLoadout', 'morphPairing', 'unequip']);
+  assert.deepEqual(RULE_NAMES, ['shopBias', 'prepLoadout', 'morphPairing', 'unequip', 'equipHand']);
   assert.deepEqual(RULE_SWITCHES.shopBias.options, ['official', 'bondBias']);
   assert.deepEqual(RULE_SWITCHES.prepLoadout.options, ['locked', 'prep']);
   assert.deepEqual(RULE_SWITCHES.morphPairing.options, ['official', 'plus']);
   assert.deepEqual(RULE_SWITCHES.unequip.options, ['official', 'allow']);
+  assert.deepEqual(RULE_SWITCHES.equipHand.options, ['official', 'separate']);
+  assert.deepEqual(rulePhrases({ equipHand: 'separate' }), ['独立装备区']);
   assert.equal(ruleOption(null, 'unequip'), 'official');
   assert.equal(ruleOption({ unequip: 'nope' }, 'unequip'), 'official');
   assert.equal(ruleOption({ unequip: 'allow' }, 'unequip'), 'allow');

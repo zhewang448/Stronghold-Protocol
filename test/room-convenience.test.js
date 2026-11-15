@@ -78,9 +78,9 @@ function lobbyHarness() {
   const player = name => { const p=registry.create(name);p.connected=true;p.ws={readyState:1,bufferedAmount:0,send(){}};return p; };
   return {lobby,player};
 }
-test('five room choices use exactly the requested defaults and no shop bias',()=>{
-  assert.deepEqual(roomConvenience(),{benchEquip:true,soloUnlimited:true,prepLoadout:true,unequip:false,morphPairing:false});
-  assert.deepEqual(Object.keys(CONVENIENCE_DEFAULTS),['benchEquip','soloUnlimited','prepLoadout','unequip','morphPairing']);
+test('six room choices use exactly the requested defaults and no shop bias',()=>{
+  assert.deepEqual(roomConvenience(),{benchEquip:true,soloUnlimited:true,prepLoadout:true,unequip:false,morphPairing:false,equipHand:false});
+  assert.deepEqual(Object.keys(CONVENIENCE_DEFAULTS),['benchEquip','soloUnlimited','prepLoadout','unequip','morphPairing','equipHand']);
   for(const key of Object.keys(CONVENIENCE_DEFAULTS)) {
     assert.equal(validateC2S({t:'room.setConvenience',key,on:true}),null);
     assert.notEqual(validateC2S({t:'room.setConvenience',key,on:1}),null);
@@ -88,7 +88,30 @@ test('five room choices use exactly the requested defaults and no shop bias',()=
   assert.notEqual(validateC2S({t:'room.setConvenience',key:'shopBias',on:true}),null);
   assert.equal(convenienceRules().prepLoadout,'prep');
   assert.equal(convenienceRules(null,{prepLoadout:'locked'}).prepLoadout,'locked');
+  assert.equal(convenienceRules({equipHand:true}).equipHand,'separate');
+  assert.equal(convenienceRules({equipHand:true},{equipHand:'official'}).equipHand,'official');
   const room={convenience:roomConvenience()};assert.equal(effectiveRoomRules(room),effectiveRoomRules(room));
+});
+
+test('equipment-row choice synchronizes, invalidates readiness, survives version changes and reaches the match', () => {
+  const { lobby, player } = lobbyHarness();
+  const host = player('Host'), guest = player('Guest');
+  assert.deepEqual(lobby.create(host, { mode: 'coop' }), { ok: true });
+  const room = lobby.roomOf(host);
+  assert.deepEqual(lobby.join(guest, { code: room.code }), { ok: true });
+  room.seatOf(guest.playerId).ready = true;
+  assert.equal(lobby.setConvenience(guest, { key: 'equipHand', on: true }).error, 'NOT_HOST');
+  assert.deepEqual(lobby.setConvenience(host, { key: 'equipHand', on: true }), { ok: true });
+  assert.equal(room.toState().convenience.equipHand, true);
+  assert.equal(room.seatOf(guest.playerId).ready, false);
+  assert.equal(lobby.matchmaking.eligible(room), false);
+  lobby.applyVersion(room, 'act2autochess', 'test');
+  assert.equal(room.convenience.equipHand, true);
+  room.seatOf(guest.playerId).ready = true;
+  assert.deepEqual(lobby.start(host), { ok: true });
+  assert.equal(room.match.players.get(host.playerId).equipHand, true);
+  assert.equal(lobby.setConvenience(host, { key: 'equipHand', on: false }).error, 'ROOM_STARTED');
+  lobby.shutdown();
 });
 test('settled record preserves the exact convenience choices through normalization', () => {
   const choices=roomConvenience({unequip:true,morphPairing:true,benchEquip:false});

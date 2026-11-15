@@ -34,7 +34,7 @@ export const ROOM_CONFIG_FIELDS = Object.freeze([
   { key: 'allowDuplicateBands', label: '允许重复选择策略', default: false },
   { key: 'rescueEnabled', label: '队友救援', default: false },
   ...Object.entries(CONVENIENCE_DEFAULTS).map(([key, value], index) => ({
-    key: 'convenience.' + key, label: ['允许整备区装备', '独立模拟不限时', '休整期调整技能与模组', '允许卸下装备', '变形同构体增强规则'][index], default: value,
+    key: 'convenience.' + key, label: ['允许整备区装备', '独立模拟不限时', '休整期调整技能与模组', '允许卸下装备', '变形同构体增强规则', '独立装备区'][index], default: value,
   })),
   { key: 'plugins', label: '房间插件（留空沿用插件管理默认，[] 表示不启用可选插件）', default: null, list: true },
 ]);

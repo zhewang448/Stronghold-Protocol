@@ -84,7 +84,7 @@ test('disk recovery keeps the rescue rule and each target rescue allowance', con
 
 test('disk recovery preserves all room convenience choices and effective match rules', t => {
   const f = fixture(t);
-  const choices = { benchEquip: false, soloUnlimited: false, prepLoadout: false, unequip: true, morphPairing: true };
+  const choices = { benchEquip: false, soloUnlimited: false, prepLoadout: false, unequip: true, morphPairing: true, equipHand: true };
   f.room.convenience = choices;
   f.room.enemyHpMultiplier = 2.5;
   f.room.private = true;
@@ -109,6 +109,8 @@ test('disk recovery preserves all room convenience choices and effective match r
   assert.equal(restored.match.rules.prepLoadout, 'locked');
   assert.equal(restored.match.rules.unequip, 'allow');
   assert.equal(restored.match.rules.morphPairing, 'plus');
+  assert.equal(restored.match.rules.equipHand, 'separate');
+  assert.equal(restored.match.players.get('p_0').equipHand, true);
 });
 
 test('disk recovery preserves AI-last and duplicate-strategy choices; old snapshots keep both off', t => {

@@ -14,6 +14,7 @@ import { isTestCommand } from './testMode.js';
 import { PLUGIN_OFFER_SLOTS } from './plugins/limits.js';
 import { PRESENCE_STATUSES } from './social.js';
 import { isSharedAvatar } from './avatar.js';
+import { CONVENIENCE_KEYS } from './roomConvenience.js';
 
 import { LEADER_OPS_MAX } from './leaderOps.js';
 
@@ -528,7 +529,7 @@ export const C2S = {
   // test: only the literal true (DESIGN §34.8). Omit it for a normal room — `false` is a bad field, so a
   // string cannot sneak in as "not a test". The server still refuses it unless SP_TEST_MODE is on.
   'room.setSoloUnlimited': { on: isBool },
-  'room.setConvenience': { key: v => ['benchEquip', 'soloUnlimited', 'prepLoadout', 'unequip', 'morphPairing'].includes(v), on: isBool },
+  'room.setConvenience': { key: v => CONVENIENCE_KEYS.includes(v), on: isBool },
   'room.setEnemyHpMultiplier': { multiplier: v => isNum(v, 0.1, 100) },
   'room.setIndependentPools': { on: isBool },
   'room.setRescue': { on: isBool },

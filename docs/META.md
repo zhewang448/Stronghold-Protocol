@@ -100,7 +100,8 @@ band draft / 机变 / PREP deadline, and BATTLE_CHECK / ROUND_START / SETTLE run
 
 ### Regulation equipment row and overflow
 
-`config.version.rules.equipHand === true` (规程·序列Ⅰ) splits the regular inventory: `hand` has 10 character /
+`config.version.rules.equipHand === true` (规程·序列Ⅰ), or the host's room choice `convenience.equipHand = true`
+(`rules.equipHand = 'separate'`), splits the regular inventory: `hand` has 10 character /
 summon slots; `temp[0..4]` has 5 permanent item slots. The equipment row does not block Ready or expire.
 `PlayerState.handSlot(kind)` checks the correct row; `stow` handles every grant, merge and returned item;
 `itemCards()` enumerates unequipped items for bots. `tempPieces()` and `tempEmpty` mean hidden overflow in this mode.
@@ -112,7 +113,9 @@ prep deadline. Expiry returns stock/pool copies and dispatches item `onDestroy` 
 sends its owner a private notice. `m.private.temp` contains only the five equipment slots and `stashCount` reveals
 only the hidden count. The client labels the row 装备区 and shows the stash count/rule separately from its slots.
 `g.move` accepts `{ area: 'temp', idx: 0..4 }` for items only with this switch. Boss benches retain the row −7 mapping.
-Covenant inventory, views, deadlines and readiness keep their existing behavior.
+`m.private.equipHand = true` publishes the effective layout, including in historical-version rooms; the client uses
+it for placement, shop capacity, the fallback field and Ready. The room choice defaults off and never disables a
+version's native row. Covenant rooms with the choice off keep their existing inventory, deadlines and readiness.
 
 Sources: season `constData.maxDeckChessCnt = 10`, `maxDeckEquipmentChessCnt = 5`, `tile_acbag` level tiles, and the
 2026-11-08 client `autochessmapareamanagerhotfixer.lua` (`CHAR_HAND_0..3`, `EQUIP_HAND_0..3`).
@@ -1312,7 +1315,7 @@ The host’s pre-match `room.setAiTakeover {on}` opts a co-op room in; default o
 
 ### Room-local convenience choices (2026-10-25)
 
-shared/roomConvenience.js normalizes five room booleans. Lobby snapshots them into Match options and wireOptions preserves them for historical-version hosts. Match combines prepLoadout, unequip and morphPairing with verified plugin rules (plugin wins); benchEquip bypasses only the historical bench target gate. A timed solo uses its existing soloUnlimited path. New-room defaults are three on, two off; standalone Match fixtures are unchanged. Recovery, journals and result metadata retain the choices.
+shared/roomConvenience.js normalizes six room booleans. Lobby snapshots them into Match options and wireOptions preserves them for historical-version hosts. Match combines prepLoadout, unequip, morphPairing and equipHand with verified plugin rules (plugin wins); benchEquip bypasses only the historical bench target gate. A timed solo uses its existing soloUnlimited path. New-room defaults are three on, three off; standalone Match fixtures are unchanged. Recovery, journals and result metadata retain the choices. The owner-requested equipHand extension (2026-11-15) gives all four covenant versions the regulation equipment row without changing version data.
 
 ## 公开房间目录（本库扩展 #12）
 
