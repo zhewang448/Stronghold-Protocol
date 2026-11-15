@@ -2,7 +2,7 @@
 // timers / auto-assign / effects); a single human (solo or co-op with AI teammates) is never timed outside battles.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ERR, PHASE } from '../../shared/constants.js';
+import { ERR, PHASE, RANDOM_BAND_ID } from '../../shared/constants.js';
 import { DATA, makeMatch, checkInvariants } from './harness.js';
 import { BAND_TURN_SECONDS } from '../../server/match/Match.js';
 
@@ -16,14 +16,14 @@ test('focused random timeout and forced fallback resolve once with the same bonu
     h.m.enterBandDraft();
     const pid = h.m.draftTurn(), ps = h.ps(pid);
     const before = ps.funds;
-    assert.deepEqual(h.m.handle(pid, { t: 'g.bandFocus', bandId: 'band_random' }), { ok: true });
-    if (route === 'manual') h.m.handle(pid, { t: 'g.band', bandId: 'band_random' });
+    assert.deepEqual(h.m.handle(pid, { t: 'g.bandFocus', bandId: RANDOM_BAND_ID }), { ok: true });
+    if (route === 'manual') h.m.handle(pid, { t: 'g.band', bandId: RANDOM_BAND_ID });
     else if (route === 'timeout') h.sched.advance(TURN_MS + 1);
     else h.m._applyBand(ps, h.m.timeoutBand(pid), { dedupe: true });
-    assert.notEqual(ps.bandId, 'band_random');
+    assert.notEqual(ps.bandId, RANDOM_BAND_ID);
     assert.equal(ps.lp, h.m.gd.startLp(ps.bandId) + 1);
     assert.equal(ps.funds, before + 1);
-    h.m._applyBand(ps, 'band_random');
+    h.m._applyBand(ps, RANDOM_BAND_ID);
     assert.equal(ps.funds, before + 1, 'duplicate assignment never pays twice');
     outcomes.push(ps.bandId);
   }
@@ -38,8 +38,8 @@ test('random strategy resolves from the free pool and grants the stated bonus', 
   const pid = m.draftTurn();
   const ps = h.ps(pid);
   const funds = ps.funds;
-  assert.deepEqual(m.handle(pid, { t: 'g.band', bandId: 'band_random' }), { ok: true });
-  assert.notEqual(ps.bandId, 'band_random');
+  assert.deepEqual(m.handle(pid, { t: 'g.band', bandId: RANDOM_BAND_ID }), { ok: true });
+  assert.notEqual(ps.bandId, RANDOM_BAND_ID);
   assert.equal(ps.lp, m.gd.startLp(ps.bandId) + 1);
   assert.equal(ps.funds, funds + 1);
   assert.equal(new Set(Object.values(m.draft.picks)).size, Object.keys(m.draft.picks).length);

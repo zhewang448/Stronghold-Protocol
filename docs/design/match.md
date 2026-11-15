@@ -39,13 +39,16 @@ LOBBY(room) → INFO_CHECK (co-op 25 s; solo and any single-human match untimed 
 ```
 Solo FUNNY has 9 rounds (boss at R9); everything is read from `data/config.json → modes[modeId]`.
 
-The extension adds a first-slot `band_random` card (name and LP `?`) to the strategy draft. It is a reveal-on-assignment choice: the server
+The extension adds a first-slot `sp_random_strategy` card (name and LP `?`) to the strategy draft. It is a reveal-on-assignment choice: the server
 draws one still-free allowed strategy from `rngDraft`, records the selected real strategy as the player pick, and grants
 one extra LP and one Fund. A player who highlights it and times out receives the same seeded resolution and bonus;
 forced assignment accepts the sentinel too. AI and unhighlighted timeouts retain their existing choices. This is an
 `[ASSUMED]` extension rule. Shop-stock changes also refresh other players' private views within the affected pool;
 remaining counts never enter public views, battle inputs or results.
 The card's effect label is 「随机策略」; its description names an unselected 策略, not a 盟约.
+`band_random` remains the official regulation strategy “追随者们”: select it directly without the extension's bonus,
+keep its 21 starting LP and its two-command choice at each prep. Classic clients' old `band_random` random intent is
+accepted only when that version has no official strategy with this id; saved timeout focus follows the same rule.
 
 2026-11-05 maintainer request: the co-op room option `allowDuplicateBands` (「允许重复选择策略」) defaults to false.
 The host may change it before starting; a change clears other humans' ready state and exits matchmaking. It is fixed

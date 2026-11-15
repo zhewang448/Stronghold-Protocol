@@ -485,6 +485,11 @@ test('regulation card faces follow each theme prefab, including star angles and 
   const tierChip = chessNodes.find((node) => node.type?.name === 'TierChip');
   assert.equal(tierChip?.props.overlay?.type, 'i');
   assert.equal(hasClass(tierChip?.props.overlay, 'tier__prefab-vi'), true);
+  const profession = chessNodes.find(node => hasClass(node, 'scard__prof--mask'));
+  assert.equal(profession.type, 'span', 'profession tint belongs to a transparent mask, never an img background');
+  assert.equal(profession.props.style.maskImage, profession.props.style.WebkitMaskImage);
+  assert.equal(profession.props.style.backgroundColor, closure6.profession.color);
+  assert.match(chessNodes.find(node => hasClass(node, 'scard__name')).props.style.fontSize, /12px/);
   assert.equal(chessNodes.some((node) => hasClass(node, 'scard__class')), false, 'the face shows profession mark and name only');
   const itemCard = ItemCard({ slot: { kind: 'item', id: 'item_x', price: 2 }, idx: 0, reg: true,
     faceModel: item, facePack: pack, onBuy() {}, onDetail() {} });
@@ -512,6 +517,7 @@ test('盟约 shop markup stays, and 规程 adds the new face without replacing t
     const devices = html.indexOf('/css/devices.css');
     const theme = html.indexOf('/css/ui-theme.css');
     assert.ok(shop >= 0 && reg > shop && theme > reg && devices > theme, page);
+    assert.equal((html.match(/href="\/css\/ui-theme\.css"/g) || []).length, 1, `${page}: theme stylesheet must be loaded once`);
   }
   const css = read('public/css/screens/game-reghud.css');
   assert.match(css, /\.shopbar\.shopbar--reg/);

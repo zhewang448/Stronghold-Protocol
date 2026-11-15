@@ -971,7 +971,11 @@
 .hub-side .tips { margin-top: .04rem; background: rgba(8, 14, 13, .72); }
 
 /* right column: 缺人同盟 card, then the S.W.E.E.P.报告 and 干员调配 plates, above the entries */
-.hub-right { grid-column: 3; grid-row: 1; position: relative; z-index: 1; display: flex; flex-direction: column; gap: .16rem; min-width: 0; min-height: 0; padding-top: .06rem; }
+.hub-right { --hub-tool-gap: .12rem; --hub-tool-height: max(.7rem, calc(48px * var(--sp-ui, 1)), 32px); --hub-tool-icon: max(.44rem, 22px); grid-column: 3; grid-row: 1; position: relative; z-index: 1; display: flex; flex-direction: column; gap: var(--hub-tool-gap); min-width: 0; min-height: 0; padding-top: .06rem; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; }
+.hub-personal-tools { display: flex; flex-direction: column; gap: var(--hub-tool-gap); }
+.hub-right .hub-tile, .hub-right .hub-plate { min-height: 0; height: var(--hub-tool-height) !important; flex: none; box-sizing: border-box; }
+.hub-right .hub-plate { padding-left: .16rem !important; }
+.hub-right :is(.hub-tile__icon, .hub-plate__glyph, .lo-entry__icon, .hub-plate > .btn__icon) { width: var(--hub-tool-icon) !important; height: var(--hub-tool-icon) !important; }
 .hub-recruit { flex: none; background: linear-gradient(180deg, rgba(9, 17, 16, .88), rgba(6, 11, 10, .9)); border: 1px solid rgba(223, 230, 226, .14);
   border-top: 2px solid var(--mint-500); box-shadow: 0 .06rem .24rem rgba(0, 0, 0, .45); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 .hub-recruit__head { display: flex; align-items: center; gap: .08rem; height: .42rem; padding: 0 .08rem 0 .14rem; border-bottom: 1px solid rgba(223, 230, 226, .08); }
@@ -1010,7 +1014,7 @@
 .hub-recruit__create:hover { background: rgba(78, 216, 175, .1); }
 
 /* light plates with bracket marks (S.W.E.E.P.报告 opens screens/sweep.js, 干员调配 is loadout.js's LoadoutButton) */
-.hub-right__plates { display: flex; flex-direction: column; gap: .12rem; }
+.hub-right__plates { display: flex; flex-direction: column; gap: var(--hub-tool-gap); }
 /* searching in the background (back in the hub): the queue card sits at the bottom of the column, just above the
    entries row, so the three big entries stay reachable (2026-10-14, the owner's request) */
 .hub-right .create-box { margin-top: auto; }
@@ -1111,11 +1115,10 @@
 }
 /* phones in landscape: a shorter card (two rooms) and slimmer plates */
 @media (max-height: 560px) and (min-aspect-ratio: 4/3) {
-  .hub-right { gap: .1rem; }
+  .hub-right { --hub-tool-gap: max(.08rem, 6px); --hub-tool-height: max(.55rem, calc(40px * var(--sp-ui, 1)), 32px); }
   .hub-recruit__head { height: max(.36rem, 26px); }
   .hub-recruit__list { --row-h: max(.5rem, 32px); height: calc(var(--row-h) * 2 + .04rem + .12rem); padding: .06rem; }
   .hub-recruit__row:nth-child(n + 3) { display: none; }
-  .hub-right__plates { gap: .08rem; }
   .hub-plate { height: max(.5rem, 32px) !important; gap: .1rem; }
   .hub-plate__glyph, .hub-plate .lo-entry__icon, .hub-plate > .btn__icon { width: max(.36rem, 22px) !important; height: max(.36rem, 22px) !important; padding: .04rem; }
   .hub-plate__label, .hub-plate .btn__label { font-size:max(calc(.16 * var(--t)), 12px); }

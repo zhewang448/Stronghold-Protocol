@@ -90,11 +90,13 @@ export function BandOffNote({ names = [] }) {
  * Bands selectable in a mode (modeTypeList contains the mode's type), sorted by sortId.
  * @param {any[]} bands
  * @param {string|null} modeType 'SINGLE'|'MULTI'
+ * @param {string|null} [modeId] specific mode exclusions (regulation 极速模拟)
  */
-export function allowedBands(bands, modeType) {
+export function allowedBands(bands, modeType, modeId = null) {
   const sid = (b) => (Number.isFinite(b.sortId) ? b.sortId : 99);
   return (Array.isArray(bands) ? bands : [])
-    .filter((b) => b && (!modeType || !Array.isArray(b.modeTypeList) || b.modeTypeList.includes(modeType)))
+    .filter((b) => b && (!modeType || !Array.isArray(b.modeTypeList) || b.modeTypeList.includes(modeType))
+      && (!modeId || !Array.isArray(b.inactiveModeIds) || !b.inactiveModeIds.includes(modeId)))
     .sort((a, b) => sid(a) - sid(b) || (a.bandId < b.bandId ? -1 : a.bandId > b.bandId ? 1 : 0));
 }
 
@@ -271,8 +273,8 @@ export function BandDraftScreen({ held = null } = {}) {
   const offBonds = modeOffBonds(mode); // the bonds this mode never activates (标准: 10 of 23)
   const solo = roomSolo || mode?.type === 'SINGLE' || String(pub?.modeId || '').includes('single');
   const allowDuplicates = pub.allowDuplicateBands === true;
-  const bands = useMemo(() => [randomBandCard(allowDuplicates), ...allowedBands(gd.list('bands'), mode?.type || (solo ? 'SINGLE' : 'MULTI'))],
-    [gd.ready, mode?.type, solo, allowDuplicates, data.locale()]);
+  const bands = useMemo(() => [randomBandCard(allowDuplicates), ...allowedBands(gd.list('bands'), mode?.type || (solo ? 'SINGLE' : 'MULTI'), pub?.modeId)],
+    [gd.ready, mode?.type, pub?.modeId, solo, allowDuplicates, data.locale()]);
   const players = sortedPlayers(pub);
   const draft = normalizeDraft(pub?.draft, players, myId, pub?.poolGroups);
   const grouped = draft.groups.length > 1;

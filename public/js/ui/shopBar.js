@@ -193,9 +193,9 @@ export function ChessCard({ slot, idx, priv, frozen = false, reason = null, free
       ${lo?.skill ? html`<${SkillBadge} chess=${c} lo=${lo} standIn=${!!si} />` : null}
       ${face ? html`<span class="scard__namebar" style=${face.namebar}>
         <span class="scard__plate">
-          <${Img} src=${profMarkUrl(m, c?.profession)} class="scard__prof" fallback=${html`<span class="scard__prof is-pending" aria-hidden="true"></span>`}
-            style=${{ ...face.profession.style, backgroundColor: face.profession.color }} />
-          <span class="scard__name" style=${{ ...face.name.style, color: face.name.color, fontSize: `${face.name.fontSize}rem` }}>${c?.name || slot.id}</span>
+          <span class="scard__prof scard__prof--mask" aria-hidden="true" style=${{ ...face.profession.style,
+            backgroundColor: face.profession.color, maskImage: `url("${profMarkUrl(m, c?.profession)}")`, WebkitMaskImage: `url("${profMarkUrl(m, c?.profession)}")` }}></span>
+          <span class="scard__name" style=${{ ...face.name.style, color: face.name.color, fontSize: `max(calc(${face.name.fontSize} * var(--t)), 12px)` }}>${c?.name || slot.id}</span>
         </span>
       </span>` : html`<span class="scard__namebar"><span class="scard__plate">
         <${Img} src=${profMarkUrl(m, c?.profession)} class="scard__prof" fallback=${html`<span class="scard__prof is-pending" aria-hidden="true"></span>`} />
@@ -295,7 +295,7 @@ export function ItemCard({ slot, idx, frozen = false, reason = null, free = fals
         <${Img} src=${itemIconUrl(m, it)} fallback=${html`<${GIcon} name="bolt" />`} />
       </span>
       ${face?.item ? html`<span class="scard__namebar" style=${face.item.namebar}>
-        <span class="scard__name" style=${{ ...face.item.name, color: face.item.nameColor, fontSize: `${face.item.nameFontSize}rem` }}>${it?.name || slot.id}</span>
+        <span class="scard__name" style=${{ ...face.item.name, color: face.item.nameColor, fontSize: `max(calc(${face.item.nameFontSize} * var(--t)), 12px)` }}>${it?.name || slot.id}</span>
       </span>` : html`<span class="scard__namebar"><span class="scard__name">${it?.name || slot.id}</span></span>`}
       ${frozen ? html`<span class="scard__ice" aria-hidden="true"><${Icon} name="snow" /></span>` : null}
       ${armed ? html`<${ArmedTag} reason=${reason} free=${free} />` : null}

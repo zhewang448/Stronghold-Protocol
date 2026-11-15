@@ -345,7 +345,8 @@ export class MatchPhases {
    * @param {string} playerId
    */
   timeoutBand(playerId) {
-    const f = this.draft && this.draft.focus instanceof Map ? this.draft.focus.get(playerId) : null;
+    const saved = this.draft && this.draft.focus instanceof Map ? this.draft.focus.get(playerId) : null;
+    const f = saved === 'band_random' && !this.gd.band(saved) ? RANDOM_BAND_ID : saved;
     if (f === RANDOM_BAND_ID) return f;
     if (typeof f === 'string' && this.gd.bandAllowed(f) && !this.bandTaken(f, playerId)) return f;
     return this.defaultBand(playerId);
@@ -356,6 +357,8 @@ export class MatchPhases {
    * while waiting for its turn). A missing / null bandId clears it. Only a timed-out turn reads it (timeoutBand).
    */
   bandFocus(ps, bandId, opts = {}) {
+    // Older classic clients used this id for the extension's random choice. Never alias an official strategy.
+    if (bandId === 'band_random' && !this.gd.band(bandId)) bandId = RANDOM_BAND_ID;
     if (this.phase !== PHASE.BAND_DRAFT || !this.draft) return fail(ERR.WRONG_PHASE);
     const d = this.draft;
     const targetError = this.draftTargetError(d, this.draftGroup(ps.playerId), opts);
@@ -370,6 +373,7 @@ export class MatchPhases {
   }
 
   pickBand(ps, bandId, opts = {}) {
+    if (bandId === 'band_random' && !this.gd.band(bandId)) bandId = RANDOM_BAND_ID;
     if (this.phase !== PHASE.BAND_DRAFT || !this.draft) return fail(ERR.WRONG_PHASE);
     const targetError = this.draftTargetError(this.draft, this.draftGroup(ps.playerId), opts);
     if (targetError) return targetError;
@@ -385,6 +389,7 @@ export class MatchPhases {
   }
 
   _applyBand(ps, bandId, { dedupe = false } = {}) {
+    if (bandId === 'band_random' && !this.gd.band(bandId)) bandId = RANDOM_BAND_ID;
     const d = this.draft;
     const g = ps && this.draftGroup(ps.playerId);
     if (!d || !g || !ps || d.picks[ps.playerId]) return;

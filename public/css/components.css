@@ -1305,19 +1305,30 @@
 .combo__opt.is-on { color: var(--mint-400); }
 .combo__opt.is-off { color: var(--text-dim); }
 /* 设置 and 游戏版本: the briefing's grey header bar and the result screen's button plate. */
+.modal__box.settings-modal {
+  width: min(max(9.4rem, 32px, calc(560px * var(--sp-ui, 1))), calc(100vw - 32px)) !important;
+  /* The shared settings surface keeps the same controls when mounted inside the red regulation lobby. */
+  --mint-400: #59f4ca; --mint-500: #4ed8af; --mint-600: #35d8b4; --mint-glow: #17f9b7;
+  --mint-a10: rgba(78, 216, 175, .10); --mint-a20: rgba(78, 216, 175, .20); --mint-a35: rgba(78, 216, 175, .35);
+}
+.modal__box.settings-modal .set-row__label { font-size: max(calc(.18 * var(--t)), 13px); }
+.modal__box.settings-modal :is(.set-hint, .set-key__desc) { font-size: max(calc(.14 * var(--t)), 12px); line-height: 1.5; color: var(--text-md); }
+.modal__box.settings-modal .set-keys__note { font-size: max(calc(.14 * var(--t)), 12px); line-height: 1.5; }
+.modal__box.settings-modal :is(.set-toggle, .set-key) { min-height: 32px; font-size: max(calc(.15 * var(--t)), 12px); }
 .modal__box.setdlg .modal__head, .modal__box.verpick .modal__head {
   background: linear-gradient(90deg, rgba(122, 126, 128, .5), rgba(92, 96, 98, .42) 60%, rgba(80, 84, 86, .36));
 }
 .modal__box.setdlg .modal__title, .modal__box.verpick .modal__title { font-size: max(calc(.28 * var(--t)), 16px); letter-spacing: .06em; }
 .modal__box.setdlg .modal__actions .btn, .modal__box.verpick .modal__actions .btn { min-height: max(.5rem, calc(44px * var(--sp-ui, 1)), 32px); }
 .modal__box.setdlg .set-keys__head.sw-sec__head, .modal__box.setdlg .sw-sec__head {
-  display: flex; align-items: center; justify-content: flex-start; gap: .1rem; height: auto;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: .1rem; height: auto;
   min-height: max(.62rem, calc(44px * var(--sp-ui, 1)), 32px); padding: 0 .08rem 0 .04rem;
   background: linear-gradient(rgba(24, 29, 28, .74), rgba(24, 29, 28, .74));
 }
-.modal__box.setdlg .sw-sec__glyph { position: static; transform: none; flex: none; }
+.modal__box.setdlg .sw-sec__glyph { position: static; left: auto; top: auto; transform: none; flex: none; }
 .modal__box.setdlg .sw-sec__glyph .icon { color: #1d2322; }
-.modal__box.setdlg .sw-sec__name { min-width: 0; }
+.modal__box.setdlg .sw-sec__name { min-width: 0; flex-wrap: wrap; }
+.modal__box.setdlg .set-storage__actions { display: flex; flex-wrap: wrap; align-items: center; gap: .08rem; }
 .modal__box.setdlg .set-keys__head > .btn,
 .modal__box.setdlg .set-keys__head > .set-storage__actions,
 .modal__box.setdlg .set-keys__head > .theme-page__actions { margin-left: auto; }

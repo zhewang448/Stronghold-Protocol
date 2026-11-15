@@ -1226,12 +1226,13 @@ function cssRules(src) {
 describe('multi-device & browser compatibility (static)', () => {
   const index = readFileSync(path.join(PUBLIC, 'index.html'), 'utf8');
 
-  test('index.html: landscape viewport without page zoom, notch-aware, devices.css then the theme sheet, boot diagnostics', () => {
+  test('index.html: landscape viewport without page zoom, notch-aware, one theme sheet before device adaptations, boot diagnostics', () => {
     const vp = index.match(/<meta name="viewport" content="([^"]+)"/)?.[1] || '';
     for (const k of ['width=device-width', 'initial-scale=1', 'maximum-scale=1', 'user-scalable=no', 'viewport-fit=cover']) assert.ok(vp.includes(k), `viewport has ${k}`);
     const sheets = [...index.matchAll(/<link rel="stylesheet" href="(\/css\/[^"]+)"/g)].map((x) => x[1]);
-    assert.equal(sheets[sheets.length - 2], '/css/devices.css', 'devices.css stays the last layout sheet');
-    assert.equal(sheets[sheets.length - 1], '/css/ui-theme.css', 'a local interface theme paints after the device sheet');
+    assert.equal(sheets[sheets.length - 2], '/css/ui-theme.css', 'theme decorations precede the device adaptations');
+    assert.equal(sheets[sheets.length - 1], '/css/devices.css', 'device adaptations take precedence');
+    assert.equal(sheets.filter(sheet => sheet === '/css/ui-theme.css').length, 1, 'one theme stylesheet');
     assert.match(index, /<script nomodule src="\/js\/bootLegacy\.js">/, 'a browser without ES modules gets the external fallback');
     const boot = readFileSync(path.join(PUBLIC, 'js/boot.js'), 'utf8');
     const legacy = readFileSync(path.join(PUBLIC, 'js/bootLegacy.js'), 'utf8');

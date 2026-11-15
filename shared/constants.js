@@ -24,7 +24,8 @@ export const DEFAULT_SEATS = 4;
 export const MAX_SEATS = 20;
 export const ROOM_CAPACITIES = Object.freeze([4, 8, 10, 16, 20]);
 export const MAX_DRAFT_CARDS = 6;
-export const RANDOM_BAND_ID = 'band_random';
+// Extension-only intent. `band_random` is the official 规程 strategy “追随者们”.
+export const RANDOM_BAND_ID = 'sp_random_strategy';
 /**
  * Spectator seats of a co-op room (community report #26, owner's decision 2026-10-04) — a remake feature: the official
  * room has 1–4 players and no spectator seat (there only eliminated players and 联防 bystanders watch, research 09 §3.1).
