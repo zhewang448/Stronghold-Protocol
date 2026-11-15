@@ -565,7 +565,7 @@ The verified exception is 魔王 S3's `cetsyr_skill_03_buff_01` / `beijing_01`: 
 the start of `UnitView.root`, sorting after that owner's platform and before its body. Each owner's items are sorted
 and batched independently; finished effects and destroyed owners release the node. Its authored order 0 and its
 siblings' original pass remain unchanged [ASSUMED: a scoped painter-order mapping, not full Unity distance sorting;
-history 0.3.4 §37.106].
+history 0.4.0 §37.106].
 
 ### 33.7 Materials (`descriptor.materials[]`)
 
@@ -1488,7 +1488,7 @@ index.json — version 1 and the version 2 fields (§33.12, §33.15; Phase 3c) �
     flags — S2 `sleach_skill_02_flag_01` with its ground, S3 `sleach_skill_03_flag_01` with its range loops and its strike
     `sleach_skill_03_range_start_01` / `_02` (the flag model itself — a pole and a skinned cloth of the unported SimSpine
     shader, drawn through the basic fallback — does not show yet [open]).
-    Since 0.3.4 (history §37.202): 旅骨 S1 / S2's alchemy unit and 承曦格雷伊 S2's ball are the same kind of binding. The kit
+    Since 0.4.0 (history §37.202): 旅骨 S1 / S2's alchemy unit and 承曦格雷伊 S2's ball are the same kind of binding. The kit
     lands the unit at once and emits no attack, so the binding's `fly` draws the projectile from the caster to the tile
     (`projectile_chr_hbound_s1` / `_s2`, trail `hbound_trail_01`, speed 10; `projectile_chr_greyy2_s2`, trail
     `greyy2_skill_02_trail`, speed 8). The looping reached effect (`hbound_skill1_range_01` / `hbound_skill2_range_01`,

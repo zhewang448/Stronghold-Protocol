@@ -1971,7 +1971,7 @@ No damage/heal settlement or other guardian trigger changes.
 still returns the resulting DP balance; an attributed agent/charger/pioneer gain or merchant deduction emits only
 the actual signed change. `gainSp` keeps its original return contract and emits actual `spTotal` gained after the
 mutable hook and charge/cap normalization for `bond`, `talent`, `skill` only. The event is not a settlement hook.
-Browser hosts (including the worker) and server live battles enable it; previews do not. [§37.3](history/0.3.4.md).
+Browser hosts (including the worker) and server live battles enable it; previews do not. [§37.3](history/0.4.0.md).
 
 ### Delayed enemy replacement and completion
 

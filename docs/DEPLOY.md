@@ -417,6 +417,7 @@ npm run package -- --out <目录>        # 完整包 Stronghold-Protocol-v<版�
 npm run package:lite -- --out <目录>   # 精简包 Stronghold-Protocol-v<版本>-lite.zip
 npm run package -- --update --from <旧版本的完整包>[,<…>] --out <目录>   # 更新包 Stronghold-Protocol-v<版本>-update.zip
 node tools/package.mjs --assets --out <目录>   # 素材包 Stronghold-Protocol-v<版本>-assets.zip（给「导入素材包」用，不放进 Releases）
+node tools/package.mjs --theme-packs --out <目录>   # 主题包 Stronghold-Protocol-v<版本>-theme-ac_s_closur.zip（给「界面主题 → 导入主题包」用，不放进 Releases）
 ```
 
 完整包在打包机已经提取战场场景时带上 `public/assets/local/scene/`（`--dry-run` 摘要里的 `battlefield scenes` 一行）。还没有提取时完整包仍能打，棋盘用金属地块。要带上 11 个官方场景，先运行 `python3 tools/local-extract/fetch_scenes.py`，再用提取环境的 Python 运行 `tools/local-extract/extract.py --only scene`（或 `node tools/setup.mjs --scenes`），然后再 `npm run package`。精简包不带场景。`.cache/official-scenes/` 在拒绝名单里，不会打进任何包。`tools/local-extract/scenes.py` 和 `fetch_scenes.py` 必须先提交：打包读的是 `git ls-files`，未提交的脚本不会进玩家包。
@@ -428,6 +429,7 @@ node tools/package.mjs --assets --out <目录>   # 素材包 Stronghold-Protocol
 - **MANIFEST.json**：三种包的根目录都有（`npm ci` 之后写入）：除素材（`public/assets/`、`public/fonts/`、`data/assets.json`、`data/local-assets.json`，归 setup 管）以外每个文件的大小和 sha256，同一版本的三种包内容相同。`npm run doctor` 和更新包的启动检查（`server/update.js`）用它核对安装。
 - **更新包**（0.2.1 起，每个版本都发）：`--from` 后面列出**此次支持升级的每个旧版本完整包**（Releases 上的 zip，或它解压出来、没动过的文件夹；逗号分隔或写多个 `--from`），例如发布 0.2.2 时 `--from Stronghold-Protocol-v0.2.0.zip,Stronghold-Protocol-v0.2.1.zip`。工具照常构建完整包的临时目录（`npm ci` 等），逐个文件（大小 + sha256）和每个旧版本比较：和任何一个旧版本不同、或旧版本没有的文件都打进去，所以一个更新包能覆盖在列出的每个版本上；旧版本有、新版本没有的文件记进 `UPDATE.json` 的 `removed`（连同各旧版本里的 sha256，玩家那边只删内容一致的文件；只差大小写的同名文件和 `.env` 之类的本机文件名不删，摘要里会列出）。旧版本必须比当前版本旧、带素材（不能是精简包或更新包）、每个版本只给一次，`--dry-run` 只读取并检查旧版本。更新包里还有新版本的 `MANIFEST.json` 和 `UPDATE.json`（适用的旧版本、文件数、字节数、文件列表和 `removed`），同样经过拒绝名单和个人信息检查；摘要列出和每个旧版本相比改动 / 新增 / 删除的文件数和更新包里各类文件的数量。发布时在 Releases 说明里写明更新包适用的版本（即 `--from` 列出的版本）。0.3.0 至少以 0.2.6 完整包为基线；新增的插件模块、Schemas、作者工具、模板、SES / Acorn 与前端库都会作为新增或改变的文件进入更新包。删除列表以实际基线比较为准，不要凭开发过程里曾出现过的页面名手写。`--keep-stage` 保留更新包目录和完整包的临时目录（`<目录>/Stronghold-Protocol-v<版本>-update/` 里的 `Stronghold-Protocol/` 和 `.full/`）。
 - **素材包**（`--assets`，0.3.0 起，可选）：给标题画面「导入素材包」用的范例，只含这个版本导入时能收下的美术——`data/assets.json`、`data/local-assets.json`、`data/local-fx.json` 列出的文件（字体也在其中），按打包机上的语音和官方特效开关取舍，和完整包一致；不含清单本身（浏览器读的是服务器上的清单）、清单没有列出的本地提取残留文件，也不含任何代码。zip 里只有一个文件夹 `Stronghold-Protocol-v<版本>-assets/`，里面是 `public/assets/…`、`public/fonts/…` 和中英文说明 `README.txt`（是什么、对应哪个版本的清单、怎么导入；其他版本的服务器上，内容变了的文件校验不符、不会收下）。每个路径都带 `public/`，导入时整包按同一个前缀识别；说明文件是导入结果里唯一「跳过」的文件。打包前做和完整包相同的检查：清单列出的文件都在、没有只差大小写的路径、个人信息扫描（素材也查）、`data/assets.json` 已提交（`--allow-dirty` 跳过这一项）、开发版本要加 `--allow-dev`；`--dry-run [--list]` 只检查、不写文件。不运行 `npm ci`，也没有 `MANIFEST.json`。素材包要和发布的完整包用同一份素材来打：打包后又重新提取过本地素材（例如官方特效）就要重打，改过的文件在别人的服务器上会校验不符；本地提取的那部分（场景、官方特效等）也只对提供同一份提取结果的服务器（这个版本的完整包）有效，自己从其他客户端版本提取的服务器会拒收这些文件，其余照常导入。0.3.0 的素材包是 30936 个文件、990 MB，zip 约 711 MB。素材包**不附在 GitHub Release 上，也不提交到仓库**：维护者可以把它放到网盘等处另行提供下载；Releases 仍然只有完整包、精简包和更新包。
+本库的完整包与素材包继续保留打包机已安装的可露希尔主题。另可运行 `node tools/package.mjs --theme-packs` 生成独立导入包，在「设置 → 界面主题」导入，供未安装主题的服务器使用。导入只保存在当前站点的浏览器；服务端同名主题优先。此处与上游默认扣除可露希尔的发行安排不同，具体取舍见 [0.4.0 增量适配](UPSTREAM-V0.4.0-20261115.md)。
 - **需要**：已下载素材的仓库（完整包）——打包前先联网运行一次 `node tools/fetch-assets.mjs`，补齐清单计划但本机还没有的素材（清单只列出磁盘上有的文件，打包工具看不出缺了哪些；`data/assets.json` 有变化就先提交）；能访问 npm 的网络（`npm ci`）；`zip`（或 bsdtar 的 `tar`，Windows 10 起自带）；更新包还要之前各版本的完整包（工具自己读 zip，不需要 `unzip`；Releases 上可以重新下载）。`--out` 默认是系统临时目录下的 `stronghold-protocol-release`，不能在仓库里面；`--force` 覆盖已有的 zip，`--keep-stage` 保留打包用的目录供检查。
 
 ## 8. 插件：服主策略文件（0.3.0 起）
@@ -557,7 +559,7 @@ Node 22 的 `--permission` **不限制网络**（TCP/UDP/DNS/监听均可能可�
 
 ## 11. 四版本开放与部署配置
 
-本扩展分支默认开放四个玩法版本：第二期下半、第二期上半、第一期下半、第一期上半；默认选中仍为 `act2autochess`。大厅可自行选择，已有房间仍通过房主提案与真人一致投票切换，不会因默认启用列表改变而强制切版。`SP_VERSIONS=act2autochess` 可恢复单版部署，也可指定版本 id 的逗号列表；`SP_VERSIONS=all` 与当前默认一致。`SP_VERSION_DEFAULT` 必须属于启用列表，`startServer({ versions })` 显式选项优先于环境变量。历史版使用隔离宿主，仅首次开局启动，受 `SP_MAX_VERSION_HOSTS` 限制。本地七名联动仅默认版开放，旧安装快照不承诺跨升级恢复。外部 LLM 仍禁用，观战接替 AI 可由主机控制台“对局设置 → 观战接替 AI”保存放行，未保存时默认允许，可用 `SP_AI_TAKEOVER=0` 显式关闭，保存值优先；额外策略、Worker 和事件循环采样默认关闭。
+本扩展分支默认开放五个玩法版本：规程·序列Ⅰ、第二期下半、第二期上半、第一期下半、第一期上半；大厅默认选中 `act3autochess@V3_1`，省略版本字段的旧对局仍表示 `act2autochess`。大厅可自行选择，已有房间仍通过房主提案与真人一致投票切换，不会因默认启用列表改变而强制切版。`SP_VERSIONS=act2autochess` 可恢复单版部署，也可指定版本 id 的逗号列表；`SP_VERSIONS=all` 与当前默认一致。`SP_VERSION_DEFAULT` 必须属于启用列表，`startServer({ versions })` 显式选项优先于环境变量。历史版使用隔离宿主，仅首次开局启动，受 `SP_MAX_VERSION_HOSTS` 限制。本地七名联动仅默认版开放，旧安装快照不承诺跨升级恢复。外部 LLM 仍禁用，观战接替 AI 可由主机控制台“对局设置 → 观战接替 AI”保存放行，未保存时默认允许，可用 `SP_AI_TAKEOVER=0` 显式关闭，保存值优先；额外策略、Worker 和事件循环采样默认关闭。
 
 启动脚本支持直接指定启用版本与默认选中项，无需先修改终端环境变量：
 

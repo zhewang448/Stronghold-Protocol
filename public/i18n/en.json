@@ -4234,5 +4234,21 @@
   "主动刷新": "Manual refreshes",
   "本回合获得": "Gained this round",
   "本回合已满": "Round limit reached",
-  "席位分组": "Seat groups"
+  "席位分组": "Seat groups",
+  "仅统计自己 · 同名干员合并 · 召唤物计入所属干员": "Your units only · Same-name operators combined · Summons count toward their operator",
+  "下载本服务器提供的素材，存进本站的站点存储（和导入素材包同一处）。关闭窗口会暂停；清除站点数据后可再次下载。": "Downloads the assets this server provides into this site's storage (the same place as imported asset packs). Closing this dialog pauses the download; download again after clearing site data.",
+  "此浏览器无法使用站点存储，下载的素材只能放进 HTTP 缓存，刷新后可能需要重新下载。": "This browser cannot use site storage, so downloads stay in the HTTP cache only and may download again after a reload.",
+  "当前不是 HTTPS 连接，下载的素材只能放进浏览器的 HTTP 缓存。Windows 版 Chrome 的 HTTP 缓存最多约 320 MB，放不下完整素材，刷新后会重新下载。请服主为网站配置 HTTPS，或在本机用 localhost 打开。": "This connection is not HTTPS, so downloads can only go to the browser's HTTP cache. Chrome on Windows keeps about 320 MB there, less than the full assets, so a reload downloads them again. Ask the host to set up HTTPS, or open the game through localhost on the host's own computer.",
+  "浏览器存储空间不足，后面的素材只放进了 HTTP 缓存，刷新后可能需要重新下载。": "Browser storage is full: the remaining files went to the HTTP cache only and may download again after a reload.",
+  "已导入或已下载到站点存储的素材直接使用，不再向服务器请求。": "Imported files and files downloaded to site storage are used directly and are not requested from the server.",
+  "更新说明": "Release notes",
+  "更新版本": "Newer version",
+  "更早版本": "Older version",
+  "更新说明加载失败，请稍后重试。": "Could not load release notes. Please try again later.",
+  "适度缩小": "Moderate",
+  "完全收起": "Fully collapse",
+  "拖动及选择朝向时：关闭保持原视角；适度缩小保留七成大小的商店，镜头适度放大；完全收起使用原有放大视角。结束后恢复原状。": "While dragging or choosing a facing: Off keeps the view; Moderate keeps the shop at 70% with a smaller zoom; Fully collapse uses the original zoom. The view returns afterwards.",
+  "点击进入": "Tap to start",
+  "点击跳过": "Tap to skip",
+  "这台服务器已经带有这个官方主题，直接在下面选用即可。": "This server already includes this official theme. Select it below."
 }

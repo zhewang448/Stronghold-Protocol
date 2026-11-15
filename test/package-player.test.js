@@ -21,11 +21,14 @@ test('release tags drop a trailing -dev and keep an already released version', (
   assert.equal(releaseTag('0.2.5-dev'), 'v0.2.5');
   assert.equal(releaseTag('0.2.4'), 'v0.2.4');
   assert.equal(releaseTag('9.9.9'), 'v9.9.9');
+  assert.equal(releaseTag(RELEASE_TAG.slice(1).split('-extended.')[0]), RELEASE_TAG);
+  assert.equal(releaseTag(pkg.version).slice(1).split('-extended.')[0], pkg.version.replace(/-dev$/, ''),
+    'a newer source package must not reuse an older base version in its archive tag');
 });
 
-test('extension-only documentation points to this fork at its extension release tag', () => {
+test('extension-only documentation points to this fork at the packaged source version tag', () => {
   const text = rewritePlayerDoc('[参考](docs/REFERENCE-UI-REVIEW.md#后续跟进与私有归档)', 'README.md', [], pkg.version);
-  assert.equal(text, `[参考](https://github.com/zhewang448/Stronghold-Protocol/blob/${RELEASE_TAG}/docs/REFERENCE-UI-REVIEW.md#后续跟进与私有归档)`);
+  assert.equal(text, `[参考](https://github.com/zhewang448/Stronghold-Protocol/blob/${releaseTag(pkg.version)}/docs/REFERENCE-UI-REVIEW.md#后续跟进与私有归档)`);
 });
 
 test('the packaged package.json keeps only scripts whose node files ship', () => {

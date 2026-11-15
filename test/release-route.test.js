@@ -11,8 +11,9 @@ import { applyReleaseStage } from '../server/release-install.js';
 import { restoreReleaseBackup } from '../server/update-backups.js';
 import { manifest, put, read, sha, storedZip } from './helpers/release-fixture.js';
 
-const revision = Number(RELEASE_TAG.match(/\d+$/)[0]);
-const version = (offset) => RELEASE_TAG.replace(/\d+$/, String(revision + offset));
+const sourceTag = RELEASE_TAG.startsWith(`v${APP_VERSION}-`) ? RELEASE_TAG : `v${APP_VERSION}-extended.0`;
+const revision = Number(sourceTag.match(/\d+$/)[0]);
+const version = (offset) => sourceTag.replace(/\d+$/, String(revision + offset));
 const hashes = (files) => Object.fromEntries(Object.entries(files).map(([rel, body]) => [rel, { size: Buffer.byteLength(body), sha256: sha(body) }]));
 
 test('route planning chooses the least downloaded compatible chain', () => {

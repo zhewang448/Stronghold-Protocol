@@ -7,6 +7,7 @@ import { themePack, previewThemeVoice } from '../uiTheme.js';
 import { mountThemeCharacter } from './themeCharacter.js';
 import { data, useData } from '../data.js';
 import { regulationCharacter } from './regHud.js';
+import { themeCharacterKey } from '../../../shared/uiTheme.js';
 import { t, N_ } from '../../../shared/i18n.js';
 
 const ACTIONS = [['Idle', N_('待机')], ['Default', N_('初始姿态')], ['Happy', N_('高兴')], ['Interact', N_('互动')],
@@ -21,10 +22,14 @@ export function ThemeCompanion({ fallback = null, preview = false }) {
   useData('local');
   const character = themePack(settings.uiTheme)?.character || null;
   const shown = character ? regulationCharacter(data.get('local')?.groups, character) : null;
+  const characterKey = themeCharacterKey(shown);
   useEffect(() => {
+    controller.current = null;
+    setAnimations([]);
     if (!shown || !host.current) return undefined;
-    return mountThemeCharacter(host.current, shown, { onReady: value => { controller.current = value; setAnimations(value.animations); } });
-  }, [shown?.imageUrl, shown?.spine?.skel, settings.dynamicIllustrations, settings.themeMotion]);
+    const dispose = mountThemeCharacter(host.current, shown, { onReady: value => { controller.current = value; setAnimations(value.animations); } });
+    return () => { controller.current = null; dispose(); };
+  }, [characterKey, settings.dynamicIllustrations, settings.themeMotion]);
   if (!shown) return fallback;
   return html`<div class=${preview ? 'theme-preview' : 'theme-lobby-character'}>
     <button type="button" class="theme-companion" ref=${host} onClick=${() => previewThemeVoice()} aria-label=${t('试听主题语音')}></button>

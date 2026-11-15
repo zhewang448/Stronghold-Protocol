@@ -63,6 +63,9 @@ export default [
       'public/fonts/**',
       'public/dev/**',
       '.cache/**',
+      // Local update/recovery backups contain older installed source trees, not current project code.
+      'logs/**',
+      'artifacts/**',
       'coverage/**',
     ],
   },

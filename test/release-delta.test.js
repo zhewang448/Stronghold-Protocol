@@ -13,13 +13,16 @@ import { manifest, put, read, releaseFor, sha, storedZip, tag, until } from './h
 
 const hashes = (files) => Object.fromEntries(Object.entries(files).map(([rel, body]) => [rel, { size: Buffer.byteLength(body), sha256: sha(body) }]));
 const zipFor = (files) => storedZip(Object.entries(files).map(([rel, body]) => [`Stronghold-Protocol/${rel}`, body]));
+const releasedBaseTag = RELEASE_TAG.split('-extended.')[0];
 
 function fixture(t, targetTag = tag) {
+  const targetApp = targetTag.replace(/^v/, '').split('-extended.')[0];
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-release-delta-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   const old = { 'package.json': JSON.stringify({ version: APP_VERSION, type: 'module' }),
     'server/index.js': '// old', 'server/keep.js': '// stable', 'server/retired.js': '// retired' };
-  const next = { 'package.json': old['package.json'], 'server/index.js': '// new', 'server/keep.js': '// stable' };
+  const next = { 'package.json': JSON.stringify({ version: targetApp, type: 'module' }),
+    'server/index.js': '// new', 'server/keep.js': '// stable' };
   const oldArt = { 'data/assets.json': JSON.stringify({ same: '/assets/same.png', changed: '/assets/changed.png' }),
     'public/assets/same.png': 'same image', 'public/assets/changed.png': 'old image' };
   const art = { ...oldArt, 'data/assets.json': JSON.stringify({ same: '/assets/same.png', changed: '/assets/changed.png', fresh: '/assets/new.png' }),
@@ -27,14 +30,14 @@ function fixture(t, targetTag = tag) {
   for (const [rel, body] of Object.entries({ ...old, ...oldArt })) put(root, rel, body);
   put(root, 'MANIFEST.json', manifest(old));
   const shipped = Object.fromEntries(Object.entries({ ...next, ...art }).filter(([rel, body]) => ({ ...old, ...oldArt })[rel] !== body));
-  const update = { format: 1, app: APP_VERSION, tag: targetTag, from: [APP_VERSION], fromTags: [RELEASE_TAG],
+  const update = { format: 1, app: targetApp, tag: targetTag, from: [APP_VERSION], fromTags: [RELEASE_TAG],
     count: Object.keys(shipped).length, bytes: Object.values(shipped).reduce((n, body) => n + Buffer.byteLength(body), 0),
     files: hashes(shipped), art: hashes(art), removed: [{ path: 'server/retired.js', sha256: [sha(old['server/retired.js'])] }] };
   const delta = (change = () => {}, extras = {}) => {
     const doc = structuredClone(update); change(doc);
-    return zipFor({ ...shipped, 'MANIFEST.json': manifest(next), 'UPDATE.json': JSON.stringify(doc), ...extras });
+    return zipFor({ ...shipped, 'MANIFEST.json': manifest(next, targetApp), 'UPDATE.json': JSON.stringify(doc), ...extras });
   };
-  const full = zipFor({ ...next, ...art, 'MANIFEST.json': manifest(next) });
+  const full = zipFor({ ...next, ...art, 'MANIFEST.json': manifest(next, targetApp) });
   const stage = (zip = delta()) => {
     const zipPath = path.join(root, 'delta.zip'), stagePath = path.join(root, 'stage');
     fs.writeFileSync(zipPath, zip);
@@ -131,7 +134,7 @@ test('incompatible or malformed signed delta falls back to an independently veri
 
 test('unsigned releases, same-version repairs and downgrades skip delta downloads', async t => {
   for (const mode of ['unsigned', 'repair', 'downgrade']) await t.test(mode, async t => {
-    const target = mode === 'repair' ? RELEASE_TAG : mode === 'downgrade' ? `v${APP_VERSION}` : tag;
+    const target = mode === 'repair' ? RELEASE_TAG : mode === 'downgrade' ? releasedBaseTag : tag;
     const f = fixture(t, target), remote = signedRelease(f);
     if (mode === 'unsigned') remote.release.assets = remote.release.assets.filter(a => !a.name.startsWith('SHA256SUMS'));
     const staged = await downloadAndStage({ root: f.root, ...remote });
@@ -168,7 +171,7 @@ test('delta paths, duplicate metadata and target file hashes are checked strictl
 });
 
 test('console reports delta size for upgrades and full size for repairs or downgrades', async t => {
-  for (const targetTag of [tag, RELEASE_TAG, `v${APP_VERSION}`]) await t.test(targetTag, async t => {
+  for (const targetTag of [tag, RELEASE_TAG, releasedBaseTag]) await t.test(targetTag, async t => {
     const f = fixture(t, targetTag), remote = signedRelease(f);
     const updater = createReleaseUpdater({ root: f.root, fetchImpl: async () => new Response(JSON.stringify([remote.release])) });
     const view = (await updater.check()).versions.find(v => v.tag === targetTag);

@@ -315,7 +315,7 @@ export function ChoiceView({ pub, sp, myId, solo, personal = false, busyIdx = nu
           </div>`;
         })}
       </div>` : null}
-      <div class=${cx('spov__grid', sp.cards.length <= 3 && 'spov__grid--3', sp.cards.length > 6 && 'spov__grid--expanded')}
+      <div class=${cx('spov__grid', sp.cards.length <= 3 && 'spov__grid--3', sp.cards.length > 6 && 'spov__grid--expanded', onCollapse && 'spov__grid--collapse')}
         style=${sp.cards.length > 6 ? `--sp-cols:${Math.min(6, Math.ceil(sp.cards.length / 2))}` : undefined}>
         ${sp.cards.map((card) => {
           const r = resolveSpCard(card, sp.family);
