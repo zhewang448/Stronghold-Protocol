@@ -4,6 +4,9 @@
 ![上游基础版本](https://img.shields.io/badge/version-0.4.0-2ea44f)
 ![许可](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
 
+> **[打开项目展示页 · 本库改进图鉴](https://zhewang448.github.io/Stronghold-Protocol/)**
+> 用真实界面图解，快速了解本库相对上游的小优化与扩展功能。
+
 本版基于上游 0.4.0，保留本库多人分组、独立库存、作战试算及主机管理扩展。
 
 在浏览器里招募干员、布置阵容，与朋友合作迎敌。本库是《明日方舟》「卫戍协议：盟约」的非商业同人扩展分支，支持独立模拟与默认 **1–4 人同盟模拟**，当前源码可选最多二十人，空位可由 AI 队友补齐。

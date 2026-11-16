@@ -157,6 +157,9 @@ footer p { color: var(--sub); max-width: 80ch; margin-top: 22px; font-size: 16px
 footer nav { display: flex; gap: 25px; flex-wrap: wrap; margin-top: 30px; }
 .footer-legal { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 8px; }
 .footer-legal p { font-size: 14px; color: var(--muted); }
+.star-invite { margin-top: 40px; padding-top: 32px; border-top: 1px solid var(--line); }
+.star-invite p { margin-top: 16px; }
+.star-invite .button { margin-top: 24px; min-width: 0; max-width: 100%; }
 .lightbox { width: min(96vw, 1600px); height: min(94svh, 1200px); max-width: none; max-height: none; padding: 20px; background: var(--bg); border: 1px solid var(--line); color: var(--ink); }
 .lightbox::backdrop { background: rgb(0 0 0 / .88); }
 .lightbox[open] { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 16px; }
