@@ -49,6 +49,7 @@ const nodeFiles = [
   'shared/**/*.js',
   'tools/**/*.js',
   'tools/**/*.mjs',
+  'site/**/*.mjs',
   'scripts/**/*.js',
   'scripts/**/*.mjs',
   'types/**/*.js',
@@ -79,7 +80,7 @@ export default [
     rules,
   },
   {
-    files: ['public/js/**/*.js', 'public/studio/**/*.js'],
+    files: ['public/js/**/*.js', 'public/studio/**/*.js', 'site/**/*.js'],
     languageOptions: {
       ecmaVersion: 2024,
       sourceType: 'module',

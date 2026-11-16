@@ -1,0 +1,74 @@
+[
+  {
+    "label": "upstream",
+    "phase": "BAND_DRAFT",
+    "file": "E:\\Stronghold-Protocol\\.cache\\showcase-20261116\\upstream-band_draft.png",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "fixture": "public/dev/game-mock.html",
+    "input": "phase=BAND_DRAFT&shot=1&render=fallback",
+    "errors": [],
+    "observation": {
+      "phase": "BAND_DRAFT",
+      "map": "act2autochess_m01",
+      "title": "Game Mock · 卫戍协议：盟约",
+      "text": "42\nms\n绝境模拟\n本局信息\n2\n/2\n选择策略\n请选择策略\n跳过选择\n玩法说明\nCOUNTDOWN\nSTRONGHOLD PROTOCOL\nCOLLABORATIVE SYSTEM\nDoctor·"
+    }
+  },
+  {
+    "label": "upstream",
+    "phase": "PREP",
+    "file": "E:\\Stronghold-Protocol\\.cache\\showcase-20261116\\upstream-prep.png",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "fixture": "public/dev/game-mock.html",
+    "input": "phase=PREP&shot=1&render=fallback",
+    "errors": [],
+    "observation": {
+      "phase": "PREP",
+      "map": "act2autochess_m01",
+      "title": "Game Mock · 卫戍协议：盟约",
+      "text": "整备区\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n×2\nSIMPLIFIED VIEW\n42\nms\n绝境模拟\n回合\n6\n休息一下\n24\n▶▶\nCOUNTDOWN\n准备就绪\nSpace\n已就绪 1/4\n"
+    }
+  },
+  {
+    "label": "fork",
+    "phase": "BAND_DRAFT",
+    "file": "E:\\Stronghold-Protocol\\.cache\\showcase-20261116\\fork-band_draft.png",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "fixture": "public/dev/game-mock.html",
+    "input": "phase=BAND_DRAFT&shot=1&render=fallback",
+    "errors": [],
+    "observation": {
+      "phase": "BAND_DRAFT",
+      "map": "act2autochess_m01",
+      "title": "Game Mock · 卫戍协议：盟约",
+      "text": "42\nms\n绝境模拟\n本局信息\n2\n/2\n选择策略\n请选择策略\n跳过选择\n玩法说明\nCOUNTDOWN\n战场#05(下半) 源石流发生装置\nDoctor·B\n歌利亚\n凯\n凯尔希\n决策中7s\n决策中\nA"
+    }
+  },
+  {
+    "label": "fork",
+    "phase": "PREP",
+    "file": "E:\\Stronghold-Protocol\\.cache\\showcase-20261116\\fork-prep.png",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "fixture": "public/dev/game-mock.html",
+    "input": "phase=PREP&shot=1&render=fallback",
+    "errors": [],
+    "observation": {
+      "phase": "PREP",
+      "map": "act2autochess_m01",
+      "title": "Game Mock · 卫戍协议：盟约",
+      "text": "整备区\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n×2\nSIMPLIFIED VIEW\n42\nms\n--\nFPS\n绝境模拟\n回合\n6\n休息一下\n24\n▶▶\nCOUNTDOWN\n准备就绪\nSpace\n已"
+    }
+  }
+]

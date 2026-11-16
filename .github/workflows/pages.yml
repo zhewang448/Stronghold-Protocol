@@ -1,0 +1,54 @@
+name: Project showcase
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - site/**
+      - tools/build-site.mjs
+      - shared/i18n.js
+      - shared/i18nPacks.js
+      - server/release-version.js
+      - launcher/StrongholdProtocolLauncher.csproj
+      - package.json
+      - NOTICE.md
+      - LICENSE
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: project-showcase-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Build the static showcase only
+        run: node tools/build-site.mjs --out .cache/site-dist
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: .cache/site-dist
+  deploy:
+    if: github.repository == 'zhewang448/Stronghold-Protocol' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy the project showcase
+        id: deployment
+        uses: actions/deploy-pages@v4

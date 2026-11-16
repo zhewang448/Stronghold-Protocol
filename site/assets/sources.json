@@ -1,0 +1,260 @@
+[
+  {
+    "file": "assets/screenshots/operator-skins.webp",
+    "width": 1440,
+    "height": 803,
+    "source": "docs/img/features/operator-skins.webp",
+    "sourceSha256": "682361b247205a76d443eece575c65e66399daa7adfa8fcc9fc1f9ef1c4c2140",
+    "sha256": "7742ec8b24e5b39e9a30ea18f5aa0fbe644c864df773be88b114d3ce78d91a3d"
+  },
+  {
+    "file": "assets/screenshots/diy-four-choose-two.webp",
+    "width": 1440,
+    "height": 900,
+    "source": "docs/img/features/diy-four-choose-two.webp",
+    "sourceSha256": "8368f5f71a64a5221e89db593fbfd067ec5c2be8ba11850b9d070b7f96d7e469",
+    "sha256": "4d5c9a7dafc4048f5e47a6ce22f8d5137f6a78ff0b3845ecd9fe283bc7639729"
+  },
+  {
+    "file": "assets/screenshots/room-settings.webp",
+    "width": 673,
+    "height": 1080,
+    "source": "docs/img/features/room-settings.webp",
+    "sourceSha256": "bd0ffa715d238eaa723ab63a7c1529a006fa9368205a226d51183e979bf21d4f",
+    "sha256": "48389aa232031f998802188575c0146c5bb849798dbb483abc6435c84755a002"
+  },
+  {
+    "file": "assets/screenshots/strategy-minimap.webp",
+    "width": 1440,
+    "height": 900,
+    "source": "docs/img/features/strategy-minimap.webp",
+    "sourceSha256": "3812e59a75de594b1e692dd1b2f224b35368cd23cf8b49ff8d5c95bbb8f5ef1d",
+    "sha256": "b75de94df8409a462c3c9c0edbc2d74eb7164919ceb8bcdab55fafb180526603"
+  },
+  {
+    "file": "assets/screenshots/bond-forecast.webp",
+    "width": 565,
+    "height": 858,
+    "source": "docs/img/features/bond-forecast.webp",
+    "sourceSha256": "f9aab94e5cd712b6c8299e96e1bf22a48f00558d1d94193dfc780d6ae88c6089",
+    "sha256": "b969c2c9569cecf18a0770c1d0ac1c4376fd3c0d407b10874f317f3425e3d652"
+  },
+  {
+    "file": "assets/screenshots/shop-portrait-default.webp",
+    "width": 720,
+    "height": 280,
+    "source": "docs/img/features/shop-portrait-default.webp",
+    "sourceSha256": "ce7679696a6de25c96368ff597823a4d287be08da3217826027532abd0e4b609",
+    "sha256": "6e65e5362279b440285ffba24999d18d190361abe30fd5ac8691d53db8bd7eb4"
+  },
+  {
+    "file": "assets/screenshots/battle-hud-official.webp",
+    "width": 425,
+    "height": 260,
+    "source": "docs/img/features/battle-hud-official.webp",
+    "sourceSha256": "1614be1edb8e7f0a5e1d15a673e9e20590f20914a870abbe5c4e172c5934b94a",
+    "sha256": "b100634174fb00084301fea38230abadc8ee2d5f9c5549df31e8ddc95c9c3ebb"
+  },
+  {
+    "file": "assets/screenshots/merged-main-settled-20-1280.webp",
+    "width": 1280,
+    "height": 720,
+    "source": ".cache/team-flyout-grid-20261115/merged-main-settled-20-1280.png",
+    "sourceSha256": "c2d718a4fac0ebac55167bc1e6c7d4ecc59286201164ed578d8ff8dd280d4867",
+    "sha256": "d286e4b7450626448c6b02dc74fd4324afcf6b52c58bee88c6bfc8fdc14bf3ef"
+  },
+  {
+    "file": "assets/screenshots/shop-portrait-focus.webp",
+    "width": 720,
+    "height": 280,
+    "source": "docs/img/features/shop-portrait-focus.webp",
+    "sourceSha256": "638e9682d64bb9ad49b5ec87820a6579ebe0eed30091789072ae39b720db3756",
+    "sha256": "63e80545d6531996e65cdb321f7c1215cda4bf364ddd12e505fc3ea5607074e0"
+  },
+  {
+    "file": "assets/screenshots/training-battlefield.webp",
+    "width": 1440,
+    "height": 1051,
+    "source": "docs/img/features/training-battlefield.webp",
+    "sourceSha256": "6972d11f3bf757a3e74bd7be41d93bb698709fbecf33c8e4a46b5ecc0cfc995a",
+    "sha256": "9bb3070580081fc72e2f654fb161862e0b2eaf01fe4f252fabc92b17ceea77db"
+  },
+  {
+    "file": "assets/screenshots/dynamic-skin-states.webp",
+    "width": 1185,
+    "height": 660,
+    "source": "docs/img/features/dynamic-skin-states.webp",
+    "sourceSha256": "ded5db46cfc248562fd09004048ff69e954343f532154387ee25e09fea0a8003",
+    "sha256": "3e5bfa01feb3da97ca79d3c78c9b548806f48668e0be3f423a57595f279d7ebc"
+  },
+  {
+    "file": "assets/screenshots/room-posters.webp",
+    "width": 1440,
+    "height": 900,
+    "source": "docs/img/features/room-posters.webp",
+    "sourceSha256": "311b7c47953651e19fef50f30cf65503a53326bbf62c59ea00bbb44203a9aa46",
+    "sha256": "e40db352d9818d8c898075a5af738322ede5bf16379500f37a22dffe6c8382ae"
+  },
+  {
+    "file": "assets/screenshots/namecard-backgrounds.webp",
+    "width": 500,
+    "height": 440,
+    "source": "docs/img/features/namecard-backgrounds.webp",
+    "sourceSha256": "4987b84a0f531f505b6b4c5192ef7d00fa11f88e1faea5d8067fa4de08c7d5db",
+    "sha256": "a3c0a3edc63e183b879064c91c384f59cb7558c32e7327955c2db4adefda8ba0"
+  },
+  {
+    "file": "assets/screenshots/namecard-room.webp",
+    "width": 590,
+    "height": 735,
+    "source": "docs/img/features/namecard-room.webp",
+    "sourceSha256": "91f261d8f0609ed3cc76e959ef7efe99e5220a4740e07ab294f8b66fff76a3e6",
+    "sha256": "28330219160c85972277d15faf5f3d76e99f7853af65f4fcbd8ff0ce678d8c56"
+  },
+  {
+    "file": "assets/screenshots/cursor-settings.webp",
+    "width": 576,
+    "height": 810,
+    "source": "docs/img/features/cursor-settings.webp",
+    "sourceSha256": "7b876e4b6f932553c7053c92a2b936bd13d1c3ab730d1aec54721a95a72f6208",
+    "sha256": "36e2cc9a16e28193007e68d67ca1929e99cf449ef6660a588eea168317382f37"
+  },
+  {
+    "file": "assets/screenshots/mobile-hub.webp",
+    "width": 844,
+    "height": 390,
+    "source": "docs/img/features/mobile-hub.webp",
+    "sourceSha256": "3e8eea4c7a39fa4db2344d3f17198c796ee682f974e5e152251d67a0b7ebb6ad",
+    "sha256": "72d1313d0cd5de3a1789c6d73e40bc8590557ef487d378891f4d850d69da6e9e"
+  },
+  {
+    "file": "assets/screenshots/expanded-coop-groups.webp",
+    "width": 1440,
+    "height": 900,
+    "source": "docs/img/features/expanded-coop-groups.webp",
+    "sourceSha256": "4ed623be82cb4ced326e487fb506f274f1b58398c25e6f92f5456fc7f8758d84",
+    "sha256": "9573deec34862b35ae4e1210206f9a4c7a1aca54912b34c8e7287e015165d05e"
+  },
+  {
+    "file": "assets/screenshots/online-players.webp",
+    "width": 1440,
+    "height": 900,
+    "source": "docs/img/features/online-players.webp",
+    "sourceSha256": "824a7ad09f985f1577dfa8d6e656c7643903eb0f7b164124e1df4165a32a96f2",
+    "sha256": "4c2e89f67289717229e6dc17e09b54d4c54e6387241fc2aa70db9c2ba95c625d"
+  },
+  {
+    "file": "assets/screenshots/chat-management.webp",
+    "width": 1440,
+    "height": 1000,
+    "source": "docs/img/features/chat-management.webp",
+    "sourceSha256": "4837f5821f5aa5d93548257ead70116d5d3f2483b67dc86b7a21f84ad3cd7a70",
+    "sha256": "836dd9e73f56dff8aa4e67e652195a16160fd3831558a59b1da0dcd797be0bf3"
+  },
+  {
+    "file": "assets/screenshots/briefing-mobile.webp",
+    "width": 844,
+    "height": 390,
+    "source": "docs/img/features/briefing-mobile.webp",
+    "sourceSha256": "11b977243f57e3fb1ba95202275a3a84c94318908def30e572e93abada254ab4",
+    "sha256": "4c9a041352ab4a3def7216960e6dd06cbed6ca55a7d376896b0fd76edb62c502"
+  },
+  {
+    "file": "assets/screenshots/training-report.webp",
+    "width": 1440,
+    "height": 1051,
+    "source": "docs/img/features/training-report.webp",
+    "sourceSha256": "a60b126d08eba24fb7f7b076c5c687f2f229182bc7263be26ce7b64f08ffad9e",
+    "sha256": "57cd6bb5ac9e7113d92bf77e481039fa4eb6596b52c2aac971ee14d819688f74"
+  },
+  {
+    "file": "assets/screenshots/round-chart.webp",
+    "width": 1440,
+    "height": 1000,
+    "source": "docs/img/features/round-chart.webp",
+    "sourceSha256": "dea9d0e53195594217d3c10c3f91fba78f1b43c7b96210ca321f924818246c58",
+    "sha256": "b35cb24ca8d30ddc90db1d3a6e97030778014782543fdfa19b8ae4414e54c474"
+  },
+  {
+    "file": "assets/screenshots/round-ranking.webp",
+    "width": 1440,
+    "height": 1000,
+    "source": "docs/img/features/round-ranking.webp",
+    "sourceSha256": "b2063773b707848a3a771c663ce8e89f24ba43f89f90b043ca1b4b8f99f4ce81",
+    "sha256": "055af5294047d00367a74cd24ec28e3fe0320b82dc1cf1daef1d71a570ddbf8e"
+  },
+  {
+    "file": "assets/screenshots/personal-data.webp",
+    "width": 600,
+    "height": 830,
+    "source": "docs/img/features/personal-data.webp",
+    "sourceSha256": "27cba472e7f024165d23a37e024da85bb209fecd38f000e61d04ba9c521e894f",
+    "sha256": "adddff659f3ed998accdaf6b5d8490485c6f580dbc205d4f1005a89bd3310390"
+  },
+  {
+    "file": "assets/screenshots/recovery-desktop.webp",
+    "width": 1280,
+    "height": 800,
+    "source": ".cache/domain-recovery/recovery-desktop.png",
+    "sourceSha256": "615cb27ad90dbb1761dd72847dcf4130f45ccfe2443d6c700f4648213c82895b",
+    "sha256": "14d28210b02903ad2a6645c51aa6bc0d75a8636526f7a621e86b55e133e52366"
+  },
+  {
+    "file": "assets/screenshots/update-backups.webp",
+    "width": 1064,
+    "height": 392,
+    "source": "docs/img/features/update-backups.webp",
+    "sourceSha256": "9c3c74642b917afee0fcc0871be6675725b0d6fb79262865301e46c943e7fc46",
+    "sha256": "050aee984bf5d8ac7e160693b940f3e16cb807ff40c57c4b5765e2b076a01b0f"
+  },
+  {
+    "file": "assets/screenshots/host-console.webp",
+    "width": 1440,
+    "height": 1000,
+    "source": "docs/img/features/host-console.webp",
+    "sourceSha256": "fc3a60055f648dea2b15389a2f9620c75158f7d24913f52e8828f45b174d2333",
+    "sha256": "eb5cc173e9fed536d02f48352bd7f22a2a0b6b5641b643b5c2829fa3dbca6985"
+  },
+  {
+    "file": "assets/screenshots/host-settings.webp",
+    "width": 904,
+    "height": 1080,
+    "source": "docs/img/features/host-settings.webp",
+    "sourceSha256": "c0bd842c9d6d5eeea7bedeaa6b562723feace751cd6ea92ea4cd979e56473eca",
+    "sha256": "94fa5b25ecc60210a5917be4a20eb68152e3311c8882c72c7ffd5aa0a1bb4f14"
+  },
+  {
+    "file": "assets/screenshots/announcement-drafts.webp",
+    "width": 1400,
+    "height": 1049,
+    "source": "docs/img/features/announcement-drafts.webp",
+    "sourceSha256": "ff4ecd5abc564f37c5ab24c71497046ff6ce0804553a2bd47123fec2ad2f8293",
+    "sha256": "142a3c5b5f230f0f037c234020d586074735d2ee624d4a1446136e7a30635044"
+  },
+  {
+    "file": "assets/screenshots/optional-dynamic-download.webp",
+    "width": 1440,
+    "height": 900,
+    "source": "docs/img/features/optional-dynamic-download.webp",
+    "sourceSha256": "d94f71ae2c18e53c72ccd3756afddf57cfd990afcb537800c6ba6726c0388a9d",
+    "sha256": "443120c52d24d65bd9ae0359895d49ebb71b7f0ac98709baf15f5bd4c842ff78"
+  },
+  {
+    "file": "assets/screenshots/upstream-band_draft.webp",
+    "width": 1440,
+    "height": 900,
+    "source": ".cache/showcase-20261116/upstream-band_draft.png",
+    "sourceSha256": "219ff2b237c0c5002c766ad3f3b7a6f2e4fa78e65f81e9d881d667b8b86948b7",
+    "sha256": "e5cebbe599400b2186165e3b700883c3e183ca680413a6203deaecf944ad64eb",
+    "description": "Actual upstream UI, fixed snapshot, public/dev/game-mock.html?phase=BAND_DRAFT&shot=1&render=fallback, 1440x900, 2026-11-16. Fixture demonstration, not a live player match."
+  },
+  {
+    "file": "assets/screenshots/fork-band_draft.webp",
+    "width": 1440,
+    "height": 900,
+    "source": ".cache/showcase-20261116/fork-band_draft.png",
+    "sourceSha256": "5e4124357701ef9446b9703cf921cdaaa4d38c43b206d8f872e891d5989ccdff",
+    "sha256": "88373919e797d01fa474174fd4e602a928b00a9aedaec4b43e5701449872c752",
+    "description": "Actual fork UI, fixed snapshot, public/dev/game-mock.html?phase=BAND_DRAFT&shot=1&render=fallback, 1440x900, 2026-11-16. Fixture demonstration, not a live player match."
+  }
+]

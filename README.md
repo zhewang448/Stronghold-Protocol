@@ -12,7 +12,7 @@
 
 A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance*, with online invitations, host tools, round statistics, replays, personal-data backups and optional cosmetics.
 
-[下载正式版](https://github.com/zhewang448/Stronghold-Protocol/releases/latest) · [开始运行](#开始运行) · [特色图鉴](docs/FORK-FEATURES.md) · [本库特色详解](#本库特色详解) · [和朋友一起玩](#和朋友一起玩) · [更新记录](docs/LOCAL-CHANGELOG.md) · [反馈问题](https://github.com/zhewang448/Stronghold-Protocol/issues)
+[本库改进图鉴](https://zhewang448.github.io/Stronghold-Protocol/) · [下载正式版](https://github.com/zhewang448/Stronghold-Protocol/releases/latest) · [开始运行](#开始运行) · [特色图鉴](docs/FORK-FEATURES.md) · [本库特色详解](#本库特色详解) · [和朋友一起玩](#和朋友一起玩) · [更新记录](docs/LOCAL-CHANGELOG.md) · [反馈问题](https://github.com/zhewang448/Stronghold-Protocol/issues)
 
 > 当前版本为 **`v0.4.0-extended.1`**，基础游戏 0.4.0。**2026-11-15 更新**：官方主题与开局界面、主动观看开场、三列队友速查、可选独立装备区，以及新盟约预选／名片和立绘恢复修复。附启动器 1.4.1，详细内容与升级方式见[发布说明](docs/RELEASE-V0.4.0-EXTENDED.1.md)。
 >
