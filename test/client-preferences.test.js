@@ -32,6 +32,27 @@ test('every client setting has a validated default and allows user changes initi
     { defaults: { 'cosmetics.ids': ['a'] } }, { defaults: { 'screenFit.ui': 77 } }]) assert.ok(normalizeClientPreferencePolicy(raw).error);
 });
 
+test('old lobby policies load into the live background fields without leaving retired console controls', () => {
+  const legacyDefaults = { 'lobbyMedia.scene': 'frost', 'lobbyMedia.dim': 0.27, 'lobbyMedia.music': true };
+  const legacyControls = { 'lobbyMedia.scene': false, 'lobbyMedia.dim': false, 'lobbyMedia.music': false };
+  const canonical = defaultClientPreferencePolicy();
+  for (const raw of [canonical, { defaults: {}, userControls: {} }]) {
+    const { config } = normalizeClientPreferencePolicy({ defaults: { ...raw.defaults, ...legacyDefaults }, userControls: { ...raw.userControls, ...legacyControls } });
+    assert.equal(config.defaults['hubBackdrop.theme'], 'frost');
+    assert.equal(config.defaults['hubBackdrop.dim'], 27);
+    assert.equal(config.userControls['hubBackdrop.theme'], false);
+    assert.equal(config.userControls['hubBackdrop.dim'], false);
+    assert(!Object.keys(config.defaults).some(key => key.startsWith('lobbyMedia.')));
+    assert(!Object.keys(config.userControls).some(key => key.startsWith('lobbyMedia.')));
+  }
+  const preferred = normalizeClientPreferencePolicy({ defaults: { ...legacyDefaults, 'hubBackdrop.theme': 'calm', 'hubBackdrop.dim': 60 }, userControls: legacyControls }).config;
+  assert.equal(preferred.defaults['hubBackdrop.theme'], 'calm');
+  assert.equal(preferred.defaults['hubBackdrop.dim'], 60);
+  assert.equal(preferred.userControls['hubBackdrop.theme'], true);
+  assert.equal(normalizeClientPreferencePolicy({ defaults: { 'lobbyMedia.backdrop': true } }).config.defaults['hubBackdrop.theme'], 'custom');
+  assert.ok(normalizeClientPreferencePolicy({ defaults: { 'lobbyMedia.dim': 9 } }).error);
+});
+
 test('live lock uses the host default without touching sparse saved values, then restores them', t => {
   const previous = globalThis.localStorage, values = new Map();
   globalThis.localStorage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };

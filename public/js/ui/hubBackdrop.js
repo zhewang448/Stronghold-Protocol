@@ -37,13 +37,21 @@ export function loadBackdropPref(raw = loadPref(PREF_KEY, null)) {
     videoSound: o.videoSound === true,videoPaused: o.videoPaused === true,
   };
 }
-export const backdropPreferences = createClientPreferenceStore({ prefix: 'hubBackdrop', preference: PREF_KEY, normalize: loadBackdropPref });
+function migrateBackdropPref(stored) {
+  const legacy = loadPref('lobby.media', null);
+  return {
+    ...(THEME_IDS.includes(legacy?.scene) ? { theme: legacy.scene } : {}),
+    ...(Number.isFinite(legacy?.dim) ? { dim: Math.round(legacy.dim * 100) } : {}),
+    ...(stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {}),
+  };
+}
+export const backdropPreferences = createClientPreferenceStore({ prefix: 'hubBackdrop', preference: PREF_KEY, migrate: migrateBackdropPref, normalize: loadBackdropPref });
 
 // ---- the picture store (IndexedDB: a Blob, no base64 bloat, no localStorage quota) ------------------------------
 const DB_NAME = 'sp-hub-backdrop';
 const STORE = 'kv';
 const KEY = 'image';
-function withStore(mode, fn) {
+function withStore(mode, fn, operation = null) {
   return new Promise((resolve, reject) => {
     if (!globalThis.indexedDB) { reject(new Error('no indexedDB')); return; }
     const open = indexedDB.open(DB_NAME, 1);
@@ -51,16 +59,21 @@ function withStore(mode, fn) {
     open.onerror = () => reject(open.error);
     open.onsuccess = () => {
       const db = open.result;
+      // The store may finish opening after a later choice. Do not start an obsolete write.
+      if (operation && !operation.active()) { db.close(); resolve(); return; }
       const tx = db.transaction(STORE, mode);
       const rq = fn(tx.objectStore(STORE));
+      if (operation) operation.abort = () => {
+        try { tx.abort(); } catch { /* the write already committed */ }
+      };
       tx.oncomplete = () => { db.close(); resolve(rq.result); };
-      tx.onerror = tx.onabort = () => { db.close(); reject(tx.error); };
+      tx.onabort = () => { db.close(); reject(tx.error); };
     };
   });
 }
 const idbGet = () => withStore('readonly', (s) => s.get(KEY));
-const idbPut = (blob) => withStore('readwrite', (s) => s.put(blob, KEY));
-const idbDel = () => withStore('readwrite', (s) => s.delete(KEY));
+const idbPut = (blob, operation) => withStore('readwrite', (s) => s.put(blob, KEY), operation);
+const idbDel = operation => withStore('readwrite', (s) => s.delete(KEY), operation);
 
 /** Decode a picked file and re-encode it at most MAX_EDGE on its longest side (JPEG). */
 async function shrink(file) {
@@ -69,7 +82,7 @@ async function shrink(file) {
     const img = await new Promise((resolve, reject) => {
       const im = new Image();
       im.onload = () => resolve(im);
-      im.onerror = () => reject(new Error('decode'));
+      im.onerror = () => reject(new Error(t('背景读取失败，换一个文件试试')));
       im.src = url;
     });
     const k = Math.min(1, MAX_EDGE / Math.max(img.naturalWidth, img.naturalHeight, 1));
@@ -81,7 +94,7 @@ async function shrink(file) {
     g.fillStyle = '#0b1110'; g.fillRect(0, 0, w, h); // a transparent PNG gets the hub's ground colour
     g.drawImage(img, 0, 0, w, h);
     const blob = await new Promise((resolve) => c.toBlob(resolve, 'image/jpeg', 0.86));
-    if (!blob) throw new Error('encode');
+    if (!blob) throw new Error(t('背景读取失败，换一个文件试试'));
     return blob;
   } finally {
     URL.revokeObjectURL(url);
@@ -93,38 +106,76 @@ async function shrink(file) {
  * `ready` turns true once the stored picture was looked up (a custom backdrop draws nothing but the sky until then).
  */
 export function useHubBackdrop() {
-  const [mediaKind,setMediaKind]=useState('image');const revision=useRef(0);
+  const [mediaKind, setMediaKind] = useState('image');
+  const [busy, setBusy] = useState(false);
+  const mediaChanged = useRef(false);
+  const pending = useRef(null);
+  const cancel = () => {
+    const operation = pending.current;
+    pending.current = null;
+    operation?.abort?.();
+  };
   const pref = useStore(value => value, Object.is, backdropPreferences);
   const [imageUrl, setImageUrl] = useState(null);
   const [ready, setReady] = useState(false);
   useEffect(() => {
-    let dead = false;const initialRevision=revision.current;
-    idbGet().then((blob) => {
-      if (!dead && initialRevision===revision.current && blob instanceof Blob) {setMediaKind(blob.type.startsWith('video/')?'video':'image');setImageUrl(URL.createObjectURL(blob));}
-    }).catch(() => {}).finally(() => { if (!dead) setReady(true); });
-    return () => { dead = true; };
+    let mounted = true;
+    idbGet().then(blob => {
+      if (mounted && !mediaChanged.current && blob instanceof Blob) {
+        setMediaKind(blob.type.startsWith('video/') ? 'video' : 'image');
+        setImageUrl(URL.createObjectURL(blob));
+      }
+    }).catch(() => {}).finally(() => { if (mounted) setReady(true); });
+    return () => { mounted = false; cancel(); };
   }, []);
   useEffect(() => () => { if (imageUrl) URL.revokeObjectURL(imageUrl); }, [imageUrl]);
-  const update = patch => backdropPreferences.set(patch);
-  /** @returns {Promise<boolean>} false when the picture is shown but could not be stored on this device */
-  const setImage = async (file) => {
-    if (!canChangeClientPreference('hubBackdrop.theme')) return false;
-    ++revision.current;const video=file.type.startsWith('video/')||/\.(mp4|webm|m4v)$/i.test(file.name||'');
-    const blob = video?await validateVideo(file):await shrink(file);
+
+  const update = patch => {
+    if (Object.hasOwn(patch, 'theme') && pending.current && canChangeClientPreference('hubBackdrop.theme')) {
+      cancel();
+      setBusy(false);
+    }
+    backdropPreferences.set(patch);
+  };
+  const changeMedia = async action => {
+    if (!canChangeClientPreference('hubBackdrop.theme')) return null;
+    cancel();
+    const operation = { active: () => pending.current === operation && canChangeClientPreference('hubBackdrop.theme'), abort: null };
+    pending.current = operation;
+    setBusy(true);
+    try { return await action(operation); }
+    catch (error) { if (operation.active()) throw error; return null; }
+    finally {
+      if (pending.current === operation) {
+        pending.current = null;
+        setBusy(false);
+      }
+    }
+  };
+  // null means a newer action superseded this one. false means the preview is session-only.
+  const setImage = file => changeMedia(async operation => {
+    const video = file.type.startsWith('video/') || /\.(mp4|webm|m4v)$/i.test(file.name || '');
+    const blob = video ? await validateVideo(file) : await shrink(file);
+    if (!operation.active()) return null;
     let saved = true;
-    try { await idbPut(blob); } catch { saved = false; }
+    try { await idbPut(blob, operation); } catch { saved = false; }
+    if (!operation.active()) return null;
+    mediaChanged.current = true;
     setImageUrl(URL.createObjectURL(blob));
-    setMediaKind(video?'video':'image');update({ theme: 'custom',videoPaused:false,videoSound:false });
+    setMediaKind(video ? 'video' : 'image');
+    backdropPreferences.set({ theme: 'custom', videoPaused: false, videoSound: false });
     return saved;
-  };
-  const clearImage = async () => {
-    if (!canChangeClientPreference('hubBackdrop.theme')) return;
-    ++revision.current;setMediaKind('image');
-    try { await idbDel(); } catch { /* nothing stored */ }
+  });
+  const clearImage = () => changeMedia(async operation => {
+    await idbDel(operation);
+    if (!operation.active()) return null;
+    mediaChanged.current = true;
+    setMediaKind('image');
     setImageUrl(null);
-    update({ theme: 'night', dim: 45, blur: 0 });
-  };
-  return { pref, update, imageUrl, mediaKind, ready, setImage, clearImage };
+    backdropPreferences.set({ theme: 'night', dim: 45, blur: 0 });
+    return true;
+  });
+  return { pref, update, imageUrl, mediaKind, ready, busy, setImage, clearImage };
 }
 
 /** What the backdrop draws: a theme id, 'photo' (custom picture) or 'blank' (custom picture still loading). */
@@ -335,9 +386,8 @@ function Swatch({ theme }) {
 
 /** The body of the 大厅背景 dialog. */
 export function BackdropSettings({ bg }) {
-  const { pref, update, imageUrl } = bg;
+  const { pref, update, imageUrl, busy } = bg;
   const fileRef = useRef(null);
-  const [busy, setBusy] = useState(false);
   const browse = () => fileRef.current?.click();
   const onFile = async (e) => {
     const input = e.currentTarget;
@@ -347,14 +397,15 @@ export function BackdropSettings({ bg }) {
     const video=file.type.startsWith('video/')||/\.(mp4|webm|m4v)$/i.test(file.name||'');
     if(!video&&!/^image\//.test(file.type)){toast(t('请选择图片、MP4 或 WebM 视频'),'warn');return;}
     if(file.size>(video?MAX_VIDEO_BYTES:MAX_FILE)){toast(video?t('视频太大（上限 60MB）'):t('图片太大（上限 30MB）'),'warn');return;}
-    setBusy(true);
     try {
-      if (!(await bg.setImage(file))) toast(t('这个浏览器无法保存背景：本次可以使用，刷新后会恢复默认背景'), 'warn');
-    } catch(e) {
-      toast(e.message||t('背景读取失败，换一个文件试试'), 'warn');
-    } finally {
-      setBusy(false);
+      if (await bg.setImage(file) === false) toast(t('这个浏览器无法保存背景：本次可以使用，刷新后会恢复默认背景'), 'warn');
+    } catch (error) {
+      toast(error.message || t('背景读取失败，换一个文件试试'), 'warn');
     }
+  };
+  const clear = async () => {
+    try { await bg.clearImage(); }
+    catch { toast(t('操作失败'), 'warn'); }
   };
   const custom = pref.theme === 'custom';
   return html`<div class="bgset">
@@ -374,10 +425,10 @@ export function BackdropSettings({ bg }) {
     </div>
     <//><input ref=${fileRef} type="file" accept="image/*,video/mp4,video/webm,.mp4,.webm,.m4v" hidden onChange=${onFile} />
     ${custom && imageUrl ? html`<div class="bgset__custom">
-      <div class="bgset__row">
+      <${ClientPreference} name="hubBackdrop.theme"><div class="bgset__row">
         <button type="button" class="btn btn--secondary btn--sm" disabled=${busy} onClick=${browse}><span class="btn__label">${busy ? t('处理中…') : t('更换背景')}</span></button>
-        <button type="button" class="btn btn--ghost btn--sm" disabled=${busy} onClick=${() => bg.clearImage()}><span class="btn__label">${t('移除背景')}</span></button>
-      </div>
+        <button type="button" class="btn btn--ghost btn--sm" disabled=${busy} onClick=${clear}><span class="btn__label">${t('移除背景')}</span></button>
+      </div><//>
       ${bg.mediaKind==='video'?html`<${ClientPreference} name="hubBackdrop.videoSound"><label class="bgset__check"><input type="checkbox" checked=${pref.videoSound} onChange=${e=>{audio._unlock();update({videoSound:e.currentTarget.checked});}} /><span>${t('播放视频声音（暂停大厅 BGM）')}</span></label><//><${ClientPreference} name="hubBackdrop.videoPaused"><button type="button" class="btn btn--secondary btn--sm" onClick=${()=>update({videoPaused:!pref.videoPaused})}>${pref.videoPaused?t('播放视频'):t('暂停视频')}</button><//>`:null}
       <${ClientPreference} name="hubBackdrop.dim"><label class="bgset__slider"><span>${t('暗化')}</span>
         <input type="range" min="0" max="85" step="1" value=${pref.dim} onInput=${(e) => update({ dim: Number(e.currentTarget.value) })} />
@@ -386,7 +437,7 @@ export function BackdropSettings({ bg }) {
         <input type="range" min="0" max="16" step="1" value=${pref.blur} onInput=${(e) => update({ blur: Number(e.currentTarget.value) })} />
         <b class="num">${pref.blur}px</b></label><//>
       <${ClientPreference} name="hubBackdrop.overlay"><label class="bgset__check"><input type="checkbox" checked=${pref.overlay} onChange=${(e) => update({ overlay: e.currentTarget.checked })} /><span>${t('叠加战术网格')}</span></label><//>
-    </div>` : busy ? html`<p class="bgset__note">${t('图片处理中…')}</p>` : null}
+    </div>` : busy ? html`<p class="bgset__note" role="status">${t('图片处理中…')}</p>` : null}
     <${ClientPreference} name="hubBackdrop.motion"><label class="bgset__check"><input type="checkbox" checked=${pref.motion} onChange=${(e) => update({ motion: e.currentTarget.checked })} /><span>${t('动态效果（云层、粒子、雷达扫描）')}</span></label><//>
     <p class="bgset__note">${t('图片上限 30MB；视频上限 60MB、最高 1080p，推荐横版 H.264 MP4 / WebM。仅保存在当前浏览器。视频默认静音，可搭配 ♫ 大厅音乐；切出大厅或隐藏网页会暂停视频。')}</p>
   </div>`;

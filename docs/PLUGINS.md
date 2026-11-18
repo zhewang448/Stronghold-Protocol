@@ -334,7 +334,7 @@ battle music `audio.bgm.combatAlts` (the mode's own 开战 tracks, 骑士之日 
 plugin changes: the client plays it instead of `combat` in the rounds it covers, so a plugin's `combat` is heard only
 where no such track plays. A track a plugin writes replaces that music in every version: the seasons' own tables
 (`audio.seasons`, docs/ASSETS.md "BGM" — 规程's lobby and leaders, 第一期's 开战) give that key up while the plugin is on
-(shared/plugins/visual.js layVisualOps). A player's own lobby music (大厅背景与音乐, `ui/lobbyMedia.js`) outranks a plugin's
+(shared/plugins/visual.js layVisualOps). A player's own lobby music (大厅背景与音乐, `ui/lobbyMusic.js`) outranks a plugin's
 `audio.bgm.lobby` in that player's browser while it is switched on. Writing an
 entry the installation has needs the permission `assets.override`, a new entry `assets.add` — the decision the permission
 is: a write to a path whose entry the installation's manifest already has is an override, whatever it writes there, so an

@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { readCatalogue, render, escapeHtml } from '../site/render.mjs';
+import { HERO_SCREENSHOTS, readCatalogue, render, escapeHtml } from '../site/render.mjs';
 import { buildSite } from '../tools/build-site.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -54,7 +54,46 @@ test('showcase output is readable without JavaScript and every image and anchor 
   assert.match(html, /我是玩家/);
   assert.match(html, /我要开服/);
   assert.match(html, /releases\/latest/);
-  assert.equal(metadata.versions.launcher, '1.4.1');
+  const csproj = await fs.readFile(path.join(root, 'launcher/StrongholdProtocolLauncher.csproj'), 'utf8');
+  const [, version] = csproj.match(/<Version>([^<]+)<\/Version>/);
+  assert.equal(metadata.versions.launcher, version);
+  assert(html.includes(`启动器 ${version}`));
+});
+
+test('showcase validates its screenshots before replacing managed output and removes obsolete assets', async t => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'stronghold-site-test-'));
+  t.after(() => fs.rm(temp, { recursive: true, force: true }));
+  const fixture = path.join(temp, 'src');
+  const outDir = path.join(temp, 'dist');
+  for (const file of ['site/assets', 'site/styles.css', 'site/app.js', 'shared/i18n.js', 'shared/i18nPacks.js', 'launcher/StrongholdProtocolLauncher.csproj', 'package.json', 'NOTICE.md', 'LICENSE']) {
+    await fs.cp(path.join(root, file), path.join(fixture, file), { recursive: true });
+  }
+  const catalogue = await readCatalogue();
+  const save = () => fs.writeFile(path.join(fixture, 'site/catalogue.json'), JSON.stringify(catalogue));
+  const build = () => buildSite({ sourceRoot: fixture, outDir });
+  const hero = Object.values(HERO_SCREENSHOTS);
+  const usage = catalogue.features.flatMap(feature => [feature.picture.file, feature.comparisonPicture?.file]);
+  const unusedNext = catalogue.features.find(feature => !hero.includes(feature.picture.file) && usage.filter(file => file === feature.picture.file).length === 1);
+  const { picture } = unusedNext;
+  await save();
+  await build();
+  const originalHtml = await fs.readFile(path.join(outDir, 'index.html'), 'utf8');
+  unusedNext.picture = { ...picture, file: 'assets/screenshots/absent.webp' };
+  await save();
+  await assert.rejects(build, /missing from the manifest/);
+  assert.equal(await fs.readFile(path.join(outDir, 'index.html'), 'utf8'), originalHtml);
+  assert((await fs.stat(path.join(outDir, picture.file))).isFile());
+
+  const replacement = catalogue.features.find(feature => feature !== unusedNext).picture;
+  unusedNext.picture = replacement;
+  await save();
+  const { metadata } = await build();
+  assert(!metadata.files.includes(picture.file));
+  await assert.rejects(fs.stat(path.join(outDir, picture.file)), { code: 'ENOENT' });
+
+  await fs.writeFile(path.join(outDir, 'unrelated.txt'), 'keep me');
+  await assert.rejects(build, /files outside a previous site build/);
+  assert.equal(await fs.readFile(path.join(outDir, 'unrelated.txt'), 'utf8'), 'keep me');
 });
 
 test('showcase rendering escapes source text and preserves original screenshot hashes', async () => {

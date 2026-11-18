@@ -956,7 +956,7 @@ export class AudioManager {
 
   /**
    * Decode audio bytes in this manager's context (null before the first gesture, or when the bytes do not decode).
-   * ui/lobbyMedia.js checks the player's own music with it, and hands the result to setLobbyTrack (no second decode).
+   * A caller can pass the decoded result to setLobbyTrack to avoid a second decode.
    * @param {ArrayBuffer} ab @returns {Promise<AudioBuffer|null>}
    */
   decodeBytes(ab) {
@@ -1078,7 +1078,7 @@ export class AudioManager {
   }
 
   /**
-   * 自定义大厅音乐 (ui/lobbyMedia.js): the player's own file in place of the lobby's track, wherever bgmKeyFor answers
+   * 自定义大厅音乐: the player's own file in place of the lobby's track, wherever bgmKeyFor answers
    * 'lobby' (title, lobby, room, briefing, draft, 协议启动, result) — through the same BGM gain, fades and volume. `own` = { id, read }
    * (`read` resolves the file's bytes, decoded here: nothing is fetched), or null for the manifest's track again. The
    * screen's track changes at once. `decoded`: the AudioBuffer the file's check already made in this context
@@ -1111,7 +1111,7 @@ export class AudioManager {
     const [intro, loop] = await Promise.all([track.intro ? this._buffer(track.intro) : null, this._buffer(track.loop)]);
     if (token !== this.bgmToken || !this.ctx) return;
     // the player's own lobby track that would not load (its file gone or no longer decodable): the official track, and
-    // ui/lobbyMedia.js is told (onLobbyTrackFailed) so the switch shows it off
+    // Tell the caller via onLobbyTrackFailed so it can show the correct playback state
     if (!loop && this.lobbyTrack && track.loop === LOCAL_BGM + this.lobbyTrack.id) {
       this.buffers.delete(track.loop);
       this.lobbyTrack = null;

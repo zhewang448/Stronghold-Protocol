@@ -1,12 +1,4 @@
-// test/ui/lobby-media.test.js — 自定义大厅背景与音乐 (PR #643 split 8): which files a slot takes (type, extension, size
-// limits, empty), the saved switches sanitised, the audio manager playing the player's own lobby track from its bytes
-// (never fetched, only for the 'lobby' key, through the BGM gain; off → the manifest's track; a file that will not decode
-// → the official track and onLobbyTrackFailed; a track already decoded by the file's check is not decoded again), the
-// buffer cache's budget around it (#814 review: a superseded own track's read / decode that finishes late records nothing,
-// so the budget never leaks; a track larger than the whole budget no longer flushes every sound and then itself; an idle
-// track leaves first), the picture / video / music guards (moving pictures sniffed, 2560 px, 1080p, 6 minutes, the
-// storage messages), the site CSP allowing blob: media and no remote media origin, and the lobby css following 文字大小
-// without !important. (The browser side: test/ui/lobby-media.e2e.test.js.)
+// Lobby audio decoding, buffer budget, and the CSP used by custom backgrounds.
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -16,56 +8,11 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const mem = new Map();
 globalThis.localStorage = { getItem: (k) => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: (k) => mem.delete(k) };
-const {
-  classifyFile, loadMediaPrefs, MEDIA_LIMITS, MAX_EDGE, MUSIC_MAX_S, isAnimatedImage, fitEdge, videoTooLarge, storageError,
-} = await import('../../public/js/ui/lobbyMedia.js');
 const { AudioManager, LOCAL_BGM } = await import('../../public/js/audio.js');
 const { mediaUrl } = await import('../../public/js/media.js');
 const { siteCsp } = await import('../../server/http/csp.js');
 const manifest = JSON.parse(readFileSync(path.join(ROOT, 'data', 'assets.json'), 'utf8').replace(/\r\n/g, '\n'));
 const MB = 1024 * 1024;
-const file = (name, type, size = 1000) => ({ name, type, size });
-
-describe('which files a slot takes', () => {
-  test('the backdrop: a picture or an MP4 / WebM video, by type, else by extension', () => {
-    for (const [f, kind] of [
-      [file('a.png', 'image/png'), 'image'], [file('a.jpg', 'image/jpeg'), 'image'], [file('a.webp', 'image/webp'), 'image'],
-      [file('a.gif', 'image/gif'), 'image'], [file('a.avif', 'image/avif'), 'image'], [file('b.mp4', 'video/mp4'), 'video'],
-      [file('b.webm', 'video/webm'), 'video'], [file('noType.JPEG', ''), 'image'], [file('noType.m4v', ''), 'video'],
-    ]) assert.deepEqual(classifyFile(f, 'backdrop'), { ok: true, kind }, f.name);
-    for (const f of [file('a.svg', 'image/svg+xml'), file('a.mov', 'video/quicktime'), file('a.mp3', 'audio/mpeg'), file('a.png', 'text/plain'), file('x', '')]) {
-      const r = classifyFile(f, 'backdrop');
-      assert.equal(r.ok, false, f.name);
-      // the refusal names every picture type it takes
-      for (const kind of ['PNG', 'JPG', 'WebP', 'GIF', 'AVIF', 'MP4', 'WebM']) assert.ok(r.reason.includes(kind), `${f.name}: ${kind}`);
-    }
-  });
-  test('the music: an audio type, or a known audio extension without a usable type', () => {
-    for (const f of [file('a.mp3', 'audio/mpeg'), file('a.m4a', 'audio/mp4'), file('a.ogg', 'audio/ogg'), file('a.wav', 'audio/wav'),
-      file('a.flac', 'audio/flac'), file('a.opus', ''), file('a.webm', 'video/webm'), file('a.ogg', 'application/ogg')]) {
-      assert.deepEqual(classifyFile(f, 'music'), { ok: true, kind: 'music' }, `${f.name} ${f.type}`);
-    }
-    for (const f of [file('a.png', 'image/png'), file('a.mp4', 'video/mp4'), file('a.txt', ''), file('a.mid', 'text/plain')]) {
-      assert.equal(classifyFile(f, 'music').ok, false, f.name);
-    }
-  });
-  test('the size limits (20 / 60 / 20 MB) and an empty file', () => {
-    assert.deepEqual(MEDIA_LIMITS, { image: 20 * MB, video: 60 * MB, music: 20 * MB });
-    assert.equal(classifyFile(file('a.png', 'image/png', 20 * MB), 'backdrop').ok, true);
-    assert.match(classifyFile(file('a.png', 'image/png', 20 * MB + 1), 'backdrop').reason, /20 MB/);
-    assert.equal(classifyFile(file('a.mp4', 'video/mp4', 60 * MB), 'backdrop').ok, true);
-    assert.match(classifyFile(file('a.mp4', 'video/mp4', 60 * MB + 1), 'backdrop').reason, /60 MB/);
-    assert.match(classifyFile(file('a.mp3', 'audio/mpeg', 20 * MB + 1), 'music').reason, /20 MB/);
-    for (const f of [null, file('a.png', 'image/png', 0)]) assert.equal(classifyFile(f, 'backdrop').ok, false);
-  });
-  test('the saved switches are sanitised (off by default, 暗度 0–0.8)', () => {
-    assert.deepEqual(loadMediaPrefs(null), { backdrop: false, music: false, dim: 0.35, scene: 'official' });
-    assert.deepEqual(loadMediaPrefs({ backdrop: true, music: 'yes', dim: 3, scene: 'frost' }), { backdrop: true, music: false, dim: 0.8, scene: 'frost' });
-    assert.deepEqual(loadMediaPrefs({ dim: -1, scene: 'sunny' }), { backdrop: false, music: false, dim: 0, scene: 'official' }, 'an unknown scene is the official backdrop');
-    assert.deepEqual(loadMediaPrefs({ dim: 'x' }).dim, 0.35);
-  });
-});
-
 // ---- the audio manager with a fake Web Audio ---------------------------------------------------------------------------
 /** `bufFor(ab)`: the AudioBuffer a decode makes (default 10 frames); `hold(ab)`: a decode to finish later (made.release). */
 function fakeWindow({ decodeFails = () => false, bufFor = () => ({ duration: 2, length: 10, numberOfChannels: 2 }), hold = () => false } = {}) {
@@ -286,45 +233,6 @@ describe('the buffer cache around the own track (audio.js _buffer / _trimBuffers
       assert.equal(fw.made.decoded.length, decodes);
       assert.equal(a.bufBytes.get(`${LOCAL_BGM}checked`), 800);
     } finally { f.restore(); }
-  });
-});
-
-describe('the picture / video / music guards (ui/lobbyMedia.js)', () => {
-  const bytes = (...parts) => new Uint8Array(parts.flatMap((x) => (typeof x === 'string' ? [...Buffer.from(x, 'latin1')] : x)));
-  const u32 = (n) => [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255];
-  const chunk = (type, len) => [...u32(len), ...Buffer.from(type, 'latin1'), ...new Array(len).fill(0), 0, 0, 0, 0];
-  const PNG = [0x89, ...Buffer.from('PNG\r\n\x1a\n', 'latin1')];
-  test('a picture that may move is told from its first bytes (GIF, APNG, animated WebP, AVIF sequence)', () => {
-    assert.equal(isAnimatedImage(bytes(PNG, chunk('IHDR', 13), chunk('IDAT', 20), chunk('IEND', 0))), false, 'a PNG');
-    assert.equal(isAnimatedImage(bytes(PNG, chunk('IHDR', 13), chunk('acTL', 8), chunk('fcTL', 26), chunk('IDAT', 20))), true, 'an APNG');
-    assert.equal(isAnimatedImage(bytes(PNG, chunk('IHDR', 13), chunk('IDAT', 20), chunk('acTL', 8))), false, 'acTL after IDAT is not an APNG');
-    assert.equal(isAnimatedImage(bytes('GIF89a', new Array(20).fill(0))), true, 'any GIF');
-    const webp = (fourcc, flags) => bytes('RIFF', [0, 0, 0, 0], 'WEBP', fourcc, [10, 0, 0, 0], [flags, 0, 0, 0], new Array(10).fill(0));
-    assert.equal(isAnimatedImage(webp('VP8 ', 0)), false, 'a lossy WebP');
-    assert.equal(isAnimatedImage(webp('VP8X', 0x10)), false, 'a WebP with alpha');
-    assert.equal(isAnimatedImage(webp('VP8X', 0x12)), true, 'the WebP animation flag');
-    const ftyp = (major, ...compat) => bytes(u32(16 + compat.length * 4), 'ftyp', major, [0, 0, 0, 0], ...compat, new Array(8).fill(0));
-    assert.equal(isAnimatedImage(ftyp('avif', 'mif1', 'miaf')), false, 'an AVIF image');
-    assert.equal(isAnimatedImage(ftyp('avis', 'msf1', 'avif')), true, 'an AVIF sequence');
-    assert.equal(isAnimatedImage(ftyp('msf1', 'avis')), true, 'avis among the compatible brands');
-    assert.equal(isAnimatedImage(bytes([0xff, 0xd8, 0xff, 0xe0], new Array(20).fill(0))), false, 'a JPEG');
-    for (const b of [null, undefined, new Uint8Array(3)]) assert.equal(isAnimatedImage(b), false);
-  });
-  test('the kept sizes: a picture\'s longest edge 2560 px, a video up to 1080p (#643), music up to 6 minutes', () => {
-    assert.equal(MAX_EDGE, 2560);
-    assert.equal(MUSIC_MAX_S, 6 * 60);
-    assert.deepEqual(fitEdge(4032, 3024), { w: 2560, h: 1920 }, 'a phone photo');
-    assert.deepEqual(fitEdge(3000, 10000), { w: 768, h: 2560 });
-    assert.deepEqual(fitEdge(1920, 1080), { w: 1920, h: 1080 }, 'kept as it is');
-    for (const [w, h] of [[1920, 1080], [1080, 1920], [1280, 720]]) assert.equal(videoTooLarge(w, h), false, `${w}×${h}`);
-    for (const [w, h] of [[2560, 1440], [1920, 1200], [2048, 800], [3840, 2160]]) assert.equal(videoTooLarge(w, h), true, `${w}×${h}`);
-  });
-  test('a save that fails says 存储空间不足 only for a full quota', () => {
-    assert.match(storageError({ name: 'QuotaExceededError' }), /存储空间不足/);
-    assert.match(storageError({ name: 'NS_ERROR_DOM_QUOTA_REACHED' }), /存储空间不足/);
-    for (const err of [{ name: 'InvalidStateError' }, { name: 'UnknownError' }, new Error('IndexedDB open timed out'), null]) {
-      assert.match(storageError(err), /存储不可用/);
-    }
   });
 });
 

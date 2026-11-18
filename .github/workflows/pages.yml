@@ -6,6 +6,7 @@ on:
     paths:
       - site/**
       - tools/build-site.mjs
+      - test/site.test.js
       - shared/i18n.js
       - shared/i18nPacks.js
       - server/release-version.js
@@ -32,6 +33,8 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
+      - name: Verify the static showcase
+        run: node --test test/site.test.js
       - name: Build the static showcase only
         run: node tools/build-site.mjs --out .cache/site-dist
       - uses: actions/upload-pages-artifact@v4

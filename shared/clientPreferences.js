@@ -11,6 +11,7 @@ const bool = (key, label, value, group) => ({ key, label, default: value, type: 
 const number = (key, label, value, min, max, step, group) => ({ key, label, default: value, type: 'number', min, max, step, group });
 const choice = (key, label, value, options, group) => ({ key, label, default: value, type: 'choice', options, group });
 const settings = '声音、显示与资源';
+const lobbyMediaGroup = '大厅背景与音乐';
 export const CLIENT_PREFERENCE_FIELDS = Object.freeze([
   number('settings.bgm', '背景音乐', 0.6, 0, 1, 0.01, settings),
   number('settings.sfx', '音效', 0.8, 0, 1, 0.01, settings),
@@ -49,17 +50,13 @@ export const CLIENT_PREFERENCE_FIELDS = Object.freeze([
   choice('skinRandom.scope', '皮肤随机范围', 'all', ['all', 'equipped', 'unequipped'], '外观'),
   bool('skinRandom.auto', '每局自动随机皮肤', false, '外观'),
   { key: 'skinRandom.locked', label: '皮肤锁定干员', default: {}, type: 'skinLocks', group: '外观' },
-  bool('lobbyMedia.backdrop', '使用自定义大厅背景', false, '大厅背景与音乐'),
-  bool('lobbyMedia.music', '使用自定义大厅音乐', false, '大厅背景与音乐'),
-  number('lobbyMedia.dim', '自定义背景暗度', 0.35, 0, 0.8, 0.01, '大厅背景与音乐'),
-  choice('lobbyMedia.scene', '大厅场景', 'official', ['official', 'night', 'frost', 'ember', 'calm'], '大厅背景与音乐'),
-  choice('hubBackdrop.theme', '大厅背景主题', 'night', ['night', 'frost', 'ember', 'calm', 'custom'], '大厅背景与音乐'),
-  number('hubBackdrop.dim', '大厅背景暗度（百分比）', 45, 0, 85, 1, '大厅背景与音乐'),
-  number('hubBackdrop.blur', '大厅背景模糊', 0, 0, 16, 1, '大厅背景与音乐'),
-  bool('hubBackdrop.overlay', '背景战术网格', true, '大厅背景与音乐'),
-  bool('hubBackdrop.motion', '背景动态效果', true, '大厅背景与音乐'),
-  bool('hubBackdrop.videoSound', '播放背景视频声音', false, '大厅背景与音乐'),
-  bool('hubBackdrop.videoPaused', '暂停背景视频', false, '大厅背景与音乐'),
+  choice('hubBackdrop.theme', '大厅背景主题', 'night', ['night', 'frost', 'ember', 'calm', 'custom'], lobbyMediaGroup),
+  number('hubBackdrop.dim', '大厅背景暗度（百分比）', 45, 0, 85, 1, lobbyMediaGroup),
+  number('hubBackdrop.blur', '大厅背景模糊', 0, 0, 16, 1, lobbyMediaGroup),
+  bool('hubBackdrop.overlay', '背景战术网格', true, lobbyMediaGroup),
+  bool('hubBackdrop.motion', '背景动态效果', true, lobbyMediaGroup),
+  bool('hubBackdrop.videoSound', '播放背景视频声音', false, lobbyMediaGroup),
+  bool('hubBackdrop.videoPaused', '暂停背景视频', false, lobbyMediaGroup),
 ].map(field => Object.freeze(field)));
 const clone = value => JSON.parse(JSON.stringify(value));
 const object = v => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -83,10 +80,58 @@ export function validClientPreference(field, value) {
   if (field.type === 'keys') return object(value) && Object.keys(value).length === Object.keys(field.default).length && Object.keys(field.default).every(key => Object.hasOwn(value, key) && codes.has(value[key])) && new Set(Object.values(value)).size === Object.keys(field.default).length;
   return false;
 }
+// Old full console saves include both sets of keys, even when the live fields
+// were untouched. A non-default or locked live value takes precedence.
+const legacyLobby = [
+  bool('lobbyMedia.backdrop', '使用自定义大厅背景', false, lobbyMediaGroup),
+  bool('lobbyMedia.music', '使用自定义大厅音乐', false, lobbyMediaGroup),
+  number('lobbyMedia.dim', '自定义背景暗度', 0.35, 0, 0.8, 0.01, lobbyMediaGroup),
+  choice('lobbyMedia.scene', '大厅场景', 'official', ['official', 'night', 'frost', 'ember', 'calm'], lobbyMediaGroup),
+];
+function migrateLobbyPolicy(raw) {
+  const defaults = { ...raw.defaults }, userControls = { ...raw.userControls };
+  const [backdrop, , dim, scene] = legacyLobby.map(field => field.key);
+  const theme = 'hubBackdrop.theme', darkness = 'hubBackdrop.dim';
+  const unlockedDefault = key => userControls[key] !== false && (!Object.hasOwn(defaults, key) || defaults[key] === byKey.get(key).default);
+  const migrate = (key, value, locked) => {
+    defaults[key] = value;
+    if (locked) userControls[key] = false;
+  };
+  const oldThemeLocked = userControls[backdrop] === false || userControls[scene] === false;
+  const custom = defaults[backdrop] === true;
+  const oldScene = defaults[scene] ?? 'official';
+  const changedScene = oldScene !== 'official';
+  if (unlockedDefault(theme) && (custom || changedScene || oldThemeLocked)) {
+    migrate(theme, custom ? 'custom' : changedScene ? oldScene : 'night', oldThemeLocked);
+  }
+  const oldDimLocked = userControls[dim] === false;
+  const oldDim = defaults[dim] ?? 0.35;
+  const changedDim = Object.hasOwn(defaults, dim) && (!Object.hasOwn(defaults, darkness) || oldDim !== 0.35);
+  if (unlockedDefault(darkness) && (oldDimLocked || changedDim)) {
+    migrate(darkness, Math.round(oldDim * 100), oldDimLocked);
+  }
+  // Music files and playback stay under the player's current local music controls.
+  for (const field of legacyLobby) {
+    delete defaults[field.key];
+    delete userControls[field.key];
+  }
+  return { defaults, userControls };
+}
+
 /** Partial updates preserve omitted fields. Invalid updates are atomic. */
 export function normalizeClientPreferencePolicy(raw, current = defaultClientPreferencePolicy()) {
   if (!object(raw) || Object.keys(raw).some(k => !['defaults', 'userControls'].includes(k))) return { error: '客户端设置配置格式无效' };
-  const next = clone(current);
+  for (const section of ['defaults', 'userControls']) {
+    if (!Object.hasOwn(raw, section)) continue;
+    if (!object(raw[section])) return { error: '客户端设置配置格式无效' };
+    for (const field of legacyLobby) {
+      if (!Object.hasOwn(raw[section], field.key)) continue;
+      const value = raw[section][field.key];
+      if (!(section === 'userControls' ? typeof value === 'boolean' : validClientPreference(field, value))) return { error: '客户端设置值无效：' + field.label };
+    }
+  }
+  raw = migrateLobbyPolicy(raw);
+  const next = migrateLobbyPolicy(clone(current));
   const aliases = { 'settings.terminalTheme': 'settings.uiTheme', 'settings.terminalVoice': 'settings.themeVoice' };
   for (const section of ['defaults', 'userControls']) {
     next[section] ||= {};
@@ -96,8 +141,7 @@ export function normalizeClientPreferencePolicy(raw, current = defaultClientPref
     }
     for (const field of CLIENT_PREFERENCE_FIELDS) if (!Object.hasOwn(next[section], field.key)) next[section][field.key] = section === 'defaults' ? clone(field.default) : true;
   }
-  for (const section of ['defaults', 'userControls']) if (Object.hasOwn(raw, section)) {
-    if (!object(raw[section])) return { error: '客户端设置配置格式无效' };
+  for (const section of ['defaults', 'userControls']) {
     for (const [inputKey, inputValue] of Object.entries(raw[section])) {
       const key = aliases[inputKey] || inputKey;
       if (key !== inputKey && Object.hasOwn(raw[section], key)) continue;

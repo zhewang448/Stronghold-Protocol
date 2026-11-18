@@ -114,10 +114,6 @@
 | `skinRandom.scope` | 皮肤随机范围 | `"all"` | 允许 |
 | `skinRandom.auto` | 每局自动随机皮肤 | `false` | 允许 |
 | `skinRandom.locked` | 皮肤锁定干员 | `{}` | 允许 |
-| `lobbyMedia.backdrop` | 使用自定义大厅背景 | `false` | 允许 |
-| `lobbyMedia.music` | 使用自定义大厅音乐 | `false` | 允许 |
-| `lobbyMedia.dim` | 自定义背景暗度 | `0.35` | 允许 |
-| `lobbyMedia.scene` | 大厅场景 | `"official"` | 允许 |
 | `hubBackdrop.theme` | 大厅背景主题 | `"night"` | 允许 |
 | `hubBackdrop.dim` | 大厅背景暗度（百分比） | `45` | 允许 |
 | `hubBackdrop.blur` | 大厅背景模糊 | `0` | 允许 |
@@ -125,6 +121,8 @@
 | `hubBackdrop.motion` | 背景动态效果 | `true` | 允许 |
 | `hubBackdrop.videoSound` | 播放背景视频声音 | `false` | 允许 |
 | `hubBackdrop.videoPaused` | 暂停背景视频 | `false` | 允许 |
+
+旧控制台配置中的大厅主题与暗度会迁移到 `hubBackdrop.theme` 和 `hubBackdrop.dim`。暗度从小数换算为百分比。同份配置中已改过或锁定的现行设置优先。自定义大厅音乐由玩家在大厅面板中管理。
 
 ## 取景与设置截图
 

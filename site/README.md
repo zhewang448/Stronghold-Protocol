@@ -11,7 +11,7 @@ node tools/build-site.mjs --out .cache/site-dist
 python -m http.server 8080 --directory .cache/site-dist
 ```
 
-打开 `http://localhost:8080`。产物也可放到 `/Stronghold-Protocol/` 子路径，所有页面资源使用相对链接。构建只复制明确列出的截图、三个首屏图像及静态运行文件，不打包游戏素材目录、玩家数据或开发工具。
+打开 `http://localhost:8080`。产物也可放到 `/Stronghold-Protocol/` 子路径，所有页面资源使用相对链接。构建核对图鉴中每张截图的路径和哈希，只发布引用的截图、首屏资源及静态运行文件。可重复使用上次的构建目录，旧版产物会整体替换。如果目录含清单之外的文件，请使用空目录。
 
 ## 更新内容
 

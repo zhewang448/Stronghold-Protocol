@@ -45,11 +45,12 @@ test('console client settings retain personal values through defaults, forced va
       localStorage.setItem('sp.name', 'PolicyQA'); sessionStorage.setItem('sp.entered', '1');
     });
     await user.bringToFront(); await user.goto(srv.url); await user.waitForFunction(() => window.__SP__?.store.get().connection.status === 'online');
+    await user.waitForSelector('.hub-bg');
     const effective = () => user.evaluate(async () => ({ ...(await import('/js/ui/settingsStore.js')).settingsStore.get(), fit: (await import('/js/ui/screenFit.js')).fitStore.get(), lang: document.documentElement.lang,
       random: (await import('/js/ui/skins.js')).skinRandomStore.get(), uiPlugins: (await import('/js/ui/uiPlugins.js')).uiPlugins.get().ids,
-      cosmetics: (await import('/js/content.js')).personal.get().ids, scene: (await import('/js/ui/lobbyMedia.js')).mediaStore.get().prefs.scene,
+      cosmetics: (await import('/js/content.js')).personal.get().ids, scene: document.querySelector('.hub-bg')?.dataset.scene,
       reminder: (await import('/js/ui/backupReminder.js')).reminderState().enabled, view: (await import('/js/screens/loadout.js')).loadoutViewPref() }));
-    const saved = () => user.evaluate(() => Object.fromEntries(['settings', 'screenFit', 'lang', 'skinRandom', 'ui-plugins', 'cosmetics', 'lobby.media', 'loadout.view'].map(key => [key === 'screenFit' ? 'fit' : key, localStorage.getItem('sp.pref.' + key)]).concat([['reminder', localStorage.getItem('sp.backup.reminder')]])));
+    const saved = () => user.evaluate(() => Object.fromEntries(['settings', 'screenFit', 'lang', 'skinRandom', 'ui-plugins', 'cosmetics', 'lobby.media', 'hub.backdrop', 'loadout.view'].map(key => [key === 'screenFit' ? 'fit' : key, localStorage.getItem('sp.pref.' + key)]).concat([['reminder', localStorage.getItem('sp.backup.reminder')]])));
     const baseline = await saved(); assert.equal((await effective()).bgm, 0.21);
     const waitLanguage = async want => {
       try { await user.waitForFunction(want => document.documentElement.lang === want, { polling: 100 }, want); }
@@ -64,6 +65,7 @@ test('console client settings retain personal values through defaults, forced va
     await consolePage.waitForSelector('[data-client-default="settings.bgm"]');
     t.diagnostic('client settings table visible');
     assert.equal(await consolePage.$$eval('[data-client-control]', inputs => inputs.length), CLIENT_PREFERENCE_FIELDS.length);
+    assert.equal(await consolePage.$('[data-client-control^="lobbyMedia."]'), null);
     assert.ok(await consolePage.$$eval('[data-client-control]', inputs => inputs.every(e => e.checked)));
     const setInput = async (key, value) => consolePage.$eval(`[data-client-default="${key}"]`, (e, value) => { e.value = value; e.dispatchEvent(new Event('input', { bubbles: true })); }, value);
     const save = async () => { await consolePage.bringToFront(); await consolePage.click('[data-client-preferences-save]'); await consolePage.waitForFunction(() => document.querySelector('#client-preferences-saved').textContent.includes('已保存')); };
@@ -73,8 +75,8 @@ test('console client settings retain personal values through defaults, forced va
     assert.equal((await effective()).bgm, 0.21); assert.equal((await effective()).dynamicIllustrations, 'static');
     assert.deepEqual(await saved(), baseline, 'new host defaults never overwrite existing preference bytes');
     await consolePage.select('[data-client-default="loadout.view"]', 'list');
-    await consolePage.select('[data-client-default="lobbyMedia.scene"]', 'night');
-    const keys = ['settings.bgm', 'settings.dynamicIllustrations', 'screenFit.l', 'language', 'skinRandom.scope', 'skinRandom.auto', 'skinRandom.locked', 'uiPlugins.ids', 'cosmetics.ids', 'lobbyMedia.scene', 'loadout.view', 'backupReminder.enabled'];
+    await consolePage.select('[data-client-default="hubBackdrop.theme"]', 'night');
+    const keys = ['settings.bgm', 'settings.dynamicIllustrations', 'screenFit.l', 'language', 'skinRandom.scope', 'skinRandom.auto', 'skinRandom.locked', 'uiPlugins.ids', 'cosmetics.ids', 'hubBackdrop.theme', 'loadout.view', 'backupReminder.enabled'];
     for (const key of keys) {
       const selector = `[data-client-control="${key}"]`;
       await consolePage.$eval(selector, e => e.scrollIntoView({ block: 'center' }));
@@ -93,10 +95,16 @@ test('console client settings retain personal values through defaults, forced va
     assert.deepEqual(await saved(), baseline);
     t.diagnostic('client effective values forced without storage writes');
     await user.bringToFront();
+    await user.click('.hub-bg-btn');
+    await user.waitForSelector('.bgset [data-client-preference="hubBackdrop.theme"] fieldset:disabled');
+    assert(await user.$$eval('.bgset__theme', buttons => buttons.length > 0 && buttons.every(button => button.matches(':disabled'))));
+    await user.keyboard.press('Escape');
+    await user.waitForSelector('.bgset', { hidden: true });
     await user.click('[data-testid="settings-btn"]');
     await user.waitForSelector('[data-client-preference="settings.bgm"][data-locked="true"]');
     assert.equal(await user.$eval('[data-client-preference="settings.bgm"] input', e => e.matches(':disabled')), true);
-    assert.equal(await user.$eval('[aria-label="Language / 语言"]', e => e.matches(':disabled')), true);
+    const languagesDisabled = await user.$$eval('[data-testid="lang-toggle"] button', buttons => buttons.length > 0 && buttons.every(button => button.matches(':disabled')));
+    assert.equal(languagesDisabled, true);
     await user.$eval('[data-client-preference="settings.dynamicIllustrations"]', e => e.scrollIntoView({ block: 'center' }));
     await user.screenshot({ path: path.join(output, 'client-locked-desktop.png') });
     t.diagnostic('client locked UI visible');

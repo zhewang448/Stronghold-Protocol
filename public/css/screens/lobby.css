@@ -23,11 +23,6 @@
 .lobby-right { grid-column: 1; grid-row: 2; }
 .lobby-right .diff-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .18rem; }
 .lobby-right .diff-card { padding: .18rem .2rem .16rem .28rem; gap: .1rem .14rem; }
-.lobby-right .diff-card__head { flex-wrap: wrap; gap: .06rem .08rem; }
-.lobby-right .diff-card__meta { flex-basis: 100%; margin-left: .36rem; }
-.lobby-right .diff-card__name { font-size: calc(.24 * var(--t)); }
-.lobby-right .diff-card__effects { gap: .03rem .14rem; }
-.lobby-right .diff-card__check .icon { width: .35rem; height: .35rem; padding: .06rem; }
 .lobby-right .create-box { align-items: center; margin-top: .22rem; }
 .lobby-right .create-box > .tt-anchor { width: min(7rem, 100%); }
 .lobby-right .create-box .btn--xl { height: .72rem; font-size: calc(.28 * var(--t)); }
@@ -235,8 +230,6 @@
   .lobby-mode .mode-card__points { font-size: calc(.16 * var(--t)); }
   .firepower-features { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .16rem .26rem; }
   .lobby-right .diff-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .lobby-right .diff-card__head { flex-wrap: nowrap; }
-  .lobby-right .diff-card__meta { flex-basis: auto; margin-left: auto; }
   .lobby-left { display: flex; }
   .lobby-left > .matchmaking-panel { margin-bottom: .22rem; }
 }
@@ -247,8 +240,6 @@
   .firepower-brief { padding: .16rem .2rem; }
   .firepower-features { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .lobby-right .diff-list { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .lobby-right .diff-card__head { flex-wrap: wrap; }
-  .lobby-right .diff-card__meta { flex-basis: 100%; margin-left: .36rem; }
 }
 @media (max-width: 640px) {
   .lobby-screen .lobby-body { grid-template-columns: minmax(0, 1fr); gap: .3rem; padding: .26rem .3rem .4rem; }
@@ -267,14 +258,6 @@
   .firepower-feature strong { font-size: max(calc(.17 * var(--t)), 11px); }
   .firepower-feature p { font-size: max(calc(.15 * var(--t)), 10px); }
   .mode-beta { font-size: max(calc(.13 * var(--t)), 9px); }
-  .lobby-right .diff-card__head { flex-wrap: wrap; }
-  .lobby-right .diff-card__meta { flex-basis: 100%; margin-left: .36rem; }
-  .lobby-right .diff-card__name { font-size: max(calc(.22 * var(--t)), 12px); }
-  .lobby-right .diff-card__desc { font-size: max(calc(.16 * var(--t)), 10px); line-height: 1.5; }
-  .lobby-right .diff-card__effects { display: flex; font-size: max(calc(.14 * var(--t)), 9px); }
-  .lobby-right .diff-card__check { display: none; }
-  .lobby-right .diff-card__meta { font-size: max(calc(.14 * var(--t)), 9px); }
-  .lobby-right .diff-card__meta .num { font-size: max(calc(.17 * var(--t)), 10px); }
   .lobby-right .create-box { width: 100%; }
   .lobby-right .create-box .btn--xl { font-size: max(calc(.28 * var(--t)), 16px); height: max(.72rem, 40px); }
   .matchmaking-panel { flex-wrap: wrap; }
@@ -365,60 +348,14 @@
 .diff-card:nth-child(2) { animation-delay: 40ms; }
 .diff-card:nth-child(3) { animation-delay: 80ms; }
 .diff-card:nth-child(4) { animation-delay: 120ms; }
-.diff-card__bar { position: absolute; left: 0; top: 0; bottom: 0; width: .06rem; background: var(--d-color); opacity: .45; transition: opacity var(--t-med), box-shadow var(--t-med); }
-.diff-card__head { grid-column: 1 / -1; display: flex; align-items: center; gap: .1rem; min-width: 0; }
-.diff-card__glyph { width: .28rem; height: .28rem; color: var(--d-color); filter: drop-shadow(0 0 5px var(--d-color)); filter: drop-shadow(0 0 5px color-mix(in srgb, var(--d-color) 55%, transparent)); }
-.diff-card__name { font-size: calc(.27 * var(--utility-text, var(--t))); font-weight: 900; letter-spacing: .06em; color: var(--d-color); }
-.diff-card__code { font-size: calc(.14 * var(--utility-text, var(--t))); color: var(--text-dim); letter-spacing: .1em; }
-.diff-card__meta { margin-left: auto; display: flex; align-items: center; gap: .04rem; font-size: calc(.14 * var(--utility-text, var(--t))); color: var(--text-lo); white-space: nowrap; }
-.diff-card__meta .num { color: var(--text-hi); font-weight: 700; font-size: calc(.17 * var(--utility-text, var(--t))); }
-.diff-card__hidden {
-  margin-left: .08rem;
-  padding: 0 .07rem;
-  border: 1px solid transparent; border: 1px solid color-mix(in srgb, var(--d-color) 45%, transparent);
-  color: var(--d-color); color: color-mix(in srgb, var(--d-color) 80%, #fff);
-  font-size: calc(.12 * var(--utility-text, var(--t)));
-  line-height: 1.6;
-}
-.diff-card__desc { grid-column: 1; font-size: calc(.16 * var(--utility-text, var(--t))); color: var(--text-md); }
-.diff-card__effects { grid-column: 1; display: flex; flex-wrap: wrap; gap: .04rem .2rem; font-size: calc(.14 * var(--utility-text, var(--t))); color: var(--text-lo); }
-.diff-card__effects span::before { content: '·'; margin-right: .05rem; color: var(--d-color); font-weight: 900; }
 /* battlefield pool note (config.json modes[].stages): 战场固定为 战场#01 / 战场随机（共N张） — the last item of the
    effects row (no extra card height: the lobby must not scroll at 1280×720 / 1920×1080) */
-.diff-card__effects .diff-card__stage { display: inline-flex; align-self: flex-start; align-items: center; gap: .05rem; }
-.diff-card__effects .diff-card__stage::before { content: none; }
-.diff-card__stage .icon { flex: none; width: .15rem; height: .15rem; color: var(--d-color); opacity: .85; }
-.diff-card__check {
-  grid-column: 2;
-  grid-row: 2 / span 2;
-  align-self: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: .03rem;
-  font-size: calc(.12 * var(--utility-text, var(--t)));
-  color: var(--text-dim);
-}
-.diff-card__check .icon {
-  width: .46rem;
-  height: .46rem;
-  padding: .09rem;
-  border-radius: 50%;
-  border: 2px solid var(--line-2);
-  color: transparent;
-  transition: background var(--t-med), border-color var(--t-med), color var(--t-med), transform var(--t-med) var(--ease-out);
-}
-.diff-card__check span { opacity: 0; transition: opacity var(--t-med); }
 .diff-card:hover { border-color: var(--line-3); }
 .diff-card.is-selected {
   border-color: var(--d-color); border-color: color-mix(in srgb, var(--d-color) 65%, transparent);
   background: linear-gradient(90deg, #151a18, rgba(15, 19, 17, .95) 70%); background: linear-gradient(90deg, color-mix(in srgb, var(--d-color) 15%, #151a18), rgba(15, 19, 17, .95) 70%);
   box-shadow: 0 0 .3rem transparent; box-shadow: 0 0 .3rem color-mix(in srgb, var(--d-color) 16%, transparent);
 }
-.diff-card.is-selected .diff-card__bar { opacity: 1; box-shadow: 0 0 .14rem var(--d-color); }
-.diff-card.is-selected .diff-card__check { color: var(--d-color); }
-.diff-card.is-selected .diff-card__check .icon { background: var(--d-color); border-color: var(--d-color); color: #150a04; transform: rotate(-8deg); }
-.diff-card.is-selected .diff-card__check span { opacity: 1; }
 
 /* ---- create ------------------------------------------------------------------------------------------ */
 .create-box { margin-top: .3rem; display: flex; flex-direction: column; gap: .12rem; }
@@ -816,7 +753,6 @@
 
 .matchmaking-count { display: inline-flex; gap: .035rem; color: var(--mint); font-size: max(calc(.12 * var(--t)), 11px); white-space: nowrap; align-items: baseline; }
 .mode-card .matchmaking-count { margin-top: .08rem; }
-.diff-card__head { flex-wrap: wrap; }
 
 /* Keep the deployed matchmaking controls beside the room browser. */
 .matchmaking-panel__action { flex-wrap: wrap; justify-content: flex-end; gap: .1rem; }
