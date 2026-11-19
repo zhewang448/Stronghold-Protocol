@@ -463,6 +463,8 @@ back to the procedural board. The view's field switches when the camera's kind d
 block whose `ownerSeat` is s (the blocks are the same piece; the renderer passes no seat, so the first block); the key
 light is `sub_01`'s; the pen camera is fitted to the pen rect instead of the official `enemy_camera_param`.
 
+规程「确认本局信息」的三维地图缩略图复用普通休整对应的 `sub_01` 场景区块。素材缺失或渲染失败时显示格子图，放大镜复用同一张预览。
+
 阻隔工事 (`trap_1105_accrate`, renderer `crate`; 0.3.1, GitHub #663, DESIGN §34.7): static prep crates and
 battle DeviceViews use the client's own 636-vertex / 344-triangle model and `TX_trap_1105_accrate`, extracted under
 `mesh/trap_110`, with its authored UVs. The battle prefab's identity parents, model rotation −90° about X and scale

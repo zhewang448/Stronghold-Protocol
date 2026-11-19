@@ -10,6 +10,7 @@
 // not open another context. The magnifier scales this same bitmap (stagePreview.js).
 
 import { stagePreviewCamera, stagePreviewFrame, stagePreviewSize } from './stagePreview.js';
+import { arenaField } from '../render/arenaView.js';
 
 const now = () => (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now());
 
@@ -133,6 +134,7 @@ export async function renderStageThumb(stageId, opts) {
   seedThumbAssets(assetsApi, dataApi);
   const stage = opts.stage && opts.stage.id === id ? opts.stage : dataApi.lookup?.('stages', id);
   if (!stage || stage.id !== id) return null;
+  const field = arenaField(stage, 'normal');
   const [THREE, pack, scene] = await Promise.all([
     loadThree(),
     loadBoardPack(assetsApi),
@@ -154,9 +156,9 @@ export async function renderStageThumb(stageId, opts) {
       preserveDrawingBuffer: true,
     });
     board.setArea(AREAS.normal);
-    // Same order as the match (render/app.js: setStage, then useOfficialScene → setScenePack).
-    board.setStage(stage);
+    board.setStage(field);
     board.setScenePack(id, scene);
+    if (!board.official) return null;
     board.setBattleRect(null);
     const frame = stagePreviewFrame(opts.seat);
     board.setFocus(frame);
@@ -164,7 +166,7 @@ export async function renderStageThumb(stageId, opts) {
     board.resize(size.width, size.height, 1);
     const cam = stagePreviewCamera(
       { width: size.width, height: size.height },
-      { seat: opts.seat, shop: true, config: stage.config || null },
+      { seat: opts.seat, shop: true, config: field.config || null },
     );
     const t0 = now();
     const drew = board.render(cam, 0);

@@ -29,10 +29,12 @@ describe('规程 briefing map is a 3D render of the stage', { skip: !ENABLED && 
     const puppeteer = (await import('puppeteer-core')).default;
     srv = await startServer({ port: 0, host: '127.0.0.1', quiet: true });
     base = `http://127.0.0.1:${srv.port}`;
+    const gpu = process.platform === 'darwin' ? ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist']
+      : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'];
     browser = await puppeteer.launch({
       executablePath: CHROME,
       headless: true,
-      args: ['--no-sandbox', '--no-first-run', '--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'],
+      args: ['--no-sandbox', '--no-first-run', ...gpu],
     });
     mkdirSync(OUT, { recursive: true });
   });
@@ -49,6 +51,23 @@ describe('规程 briefing map is a 3D render of the stage', { skip: !ENABLED && 
     await page.setViewport({ width: w, height: h, deviceScaleFactor: 1 });
     const problems = [];
     page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
+    // Check the pack the offscreen board actually draws. A procedural board also produces a JPEG.
+    await page.evaluateOnNewDocument(() => {
+      import(new URL('/js/render/board3d/scene.js', location.href)).then(({ BoardScene }) => {
+        const render = BoardScene.prototype.render;
+        BoardScene.prototype.render = function (camera, dt) {
+          const result = render.call(this, camera, dt);
+          if (this.stage && !this.renderer.domElement.isConnected) {
+            globalThis.__stageThumbScene = {
+              stage: this.stage.id,
+              layout: this.official?.doc.layout ?? null,
+              group: this.stage.scenePiece?.group ?? null,
+            };
+          }
+          return result;
+        };
+      });
+    });
     await page.goto(url(stage), { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForSelector('[data-layout="regulation"] .reg-preview', { timeout: 20000 });
     return { page, problems };
@@ -83,7 +102,7 @@ describe('规程 briefing map is a 3D render of the stage', { skip: !ENABLED && 
   }
 
   for (const [stage, name] of [['act3autochess_m01', 'm01-desert'], ['act3autochess_m05', 'm05-metro']]) {
-    test(`${name}: the preview becomes a non-uniform image`, { timeout: 180000 }, async () => {
+    test(`${name}: the preview draws the official player section`, { timeout: 180000 }, async () => {
       const { page, problems } = await open(stage, 1280, 720);
       const painted = await page.evaluate(() => ({
         layout: document.querySelector('[data-layout]')?.getAttribute('data-layout'),
@@ -97,6 +116,9 @@ describe('规程 briefing map is a 3D render of the stage', { skip: !ENABLED && 
         const img = document.querySelector('[data-preview="render"] img');
         return img && img.complete && img.naturalWidth >= 320 && img.naturalHeight >= 180;
       }, { timeout: 120000 });
+      assert.deepEqual(await page.evaluate(() => globalThis.__stageThumbScene), {
+        stage, layout: 'pieces', group: 'sub_01',
+      });
       const shot = await pixels(page);
       assert.ok(shot, 'the render image did not decode');
       assert.ok(shot.w >= 320 && shot.h >= 180, `buffer ${shot.w}x${shot.h}`);
