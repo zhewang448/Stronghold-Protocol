@@ -120,12 +120,12 @@ describe('9: the prep camera keeps the bench clear of the shop bar on phones in 
   test('HUD_REM mirrors the CSS it measures (bond strip bottom, shop bar top, the notched-phone rule)', () => {
     const game = read('public/css/screens/game.css');
     const shop = read('public/css/screens/game-shop.css');
-  const bonds = read('public/css/screens/bond.css');
-    // #678: clip padding is offset by margins; the 44 px arrows can still raise the band on phones.
+    const bonds = read('public/css/screens/bond.css');
+    // The scroller's margins offset its clip padding. The collapse button can still raise the band on phones.
     assert.match(bonds, /\.bslot \.bond \{ --disc: \.52rem; \}/);
-    assert.match(bonds, /\.gm__bonds \.bstrip-scroll \.bstrip \{[^}]*padding: \.08rem 0; margin: -\.08rem 0;/);
-    assert.match(bonds, /\.gm__bonds \.bstrip-scroll__arrow \{[^}]*height: 44px;/);
-  assert.equal(HUD_REM.bondStripBottom, Number(game.match(/--dock-bond-bottom:\s*([\d.]+)/)[1]), 'camera fallback matches the CSS dock boundary');
+    assert.match(game, /\.gm__bonds \.bstrip-scroll \.bstrip \{[^}]*padding: \.08rem 0; margin: -\.08rem 0;/);
+    assert.match(bonds, /\.gm__bonds \.bonds-toggle \{[^}]*min-height: 44px;/);
+    assert.equal(HUD_REM.bondStripBottom, Number(game.match(/--dock-bond-bottom:\s*([\d.]+)/)[1]), 'camera fallback matches the CSS dock boundary');
     assert.equal(HUD_REM.bondStripTop, Number(game.match(/\.gm__bonds\s*\{[^}]*?\btop:\s*([\d.]+)rem/)[1]), 'camera fallback matches the CSS bond strip top');
     assert.equal(HUD_REM.bondStripTop, Number(game.match(/--dock-bond-top:\s*([\d.]+)/)[1]));
     assert.equal(HUD_REM.bondArrowPx, 44);

@@ -960,7 +960,7 @@
 .set-toggle.is-on i { background: var(--mint-800); }
 .set-toggle.is-on i::after { transform: translateX(.22rem); background: var(--mint-400); }
 .set-cursor-size {
-  grid-column: 2 / -1; justify-self: start; max-width: 100%; min-height: max(.38rem, 44px); padding: .04rem .12rem;
+  grid-column: 2 / -1; justify-self: start; max-width: 100%; min-height: max(.38rem, 32px, calc(44px * var(--sp-ui, 1))); padding: .04rem .12rem;
   color-scheme: dark; background: var(--bg-0); border: 1px solid var(--line-2); color: var(--text-hi);
   font: inherit; font-size: max(calc(.16 * var(--t)), 13px); cursor: var(--sp-cursor-pointer, pointer);
 }

@@ -143,7 +143,9 @@ test('the theme\'s pack loads in every version: bond rings, avatar badges and (Â
   const game = read('public/js/screens/game.js');
   assert.match(game, /const themePf = usePrefabPack\(data\.get\('local'\)\?\.groups, playerSettings\.uiTheme\);/);
   assert.match(game, /const pfPack = themePf;/);
-  assert.match(game, /const pfBondOn = themePf\?\.doc\?\.prefabs\?\.\['bondicon\/bond_icon_view_item'\] \? themePf\.sprite\('bg_active'\) : '';/);
+  assert.match(game, /const bondPack = playerSettings\.uiTheme === 'ac_n_initial' \? badgeBase : themePf;/);
+  assert.match(game, /bondThemeFromPack\(bondPack\)/);
+  assert.match(game, /theme=\$\{bondTheme\}/);
   assert.match(game, /const badgePack = avatarBadgePack\(themePf, badgeBase\);/);
   assert.match(game, /const pfBanners = packBanners\(pfPack\);/);
 });

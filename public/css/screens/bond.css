@@ -261,9 +261,12 @@
   --bond-rim-shadow: #3435ff;
 }
 /* [ASSUMED] Small-screen readability floors; scrolling and the existing coarse-pointer hit area remain in use. */
-.gm__bonds--pf .bslot { width: max(.74rem, 48px); }
-.gm__bonds--pf .bslot .bond--official { --disc: max(.52rem, 36px); }
-.gm__bonds--pf .bstrip-scroll .bstrip { padding-block: max(.1rem, 8px); margin-block: calc(-1 * max(.1rem, 8px)); }
+.gm__bonds--pf .bslot { width: max(.74rem, 32px, calc(48px * var(--sp-ui, 1))); }
+.gm__bonds--pf .bslot .bond--official { --disc: max(.52rem, 32px, calc(36px * var(--sp-ui, 1))); }
+.gm__bonds--pf .bstrip-scroll .bstrip {
+  --bond-clip: max(.1rem, 8px);
+  padding-block: var(--bond-clip); margin-block: calc(-1 * var(--bond-clip));
+}
 .bond--official .bond__disc { isolation: isolate; }
 .bond--official .bond__theme-layer {
   position: absolute;
