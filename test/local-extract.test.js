@@ -28,9 +28,13 @@ function py(code) {
 
 describe('extract.py helpers (no UnityPy needed)', { skip: !PY && 'no python3' }, () => {
   test('Windows hot updates select installed current bundles, retain base dependencies and exclude stale copies', () => {
-    const out = py(`
+    const out = py(String.raw`
+import errno
+import os
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
+import bundles
 from bundles import client_bundles
 with tempfile.TemporaryDirectory() as tmp:
     data = Path(tmp) / 'Arknights_Data'
@@ -51,7 +55,6 @@ with tempfile.TemporaryDirectory() as tmp:
     for n,h in old: put(base, n, h)
     for n,h in [('ui/shared.ab','new'), ('ui/missing.ab','old'), ('ui/new.ab','new')]: put(hot, n, h)
     # Filesystem dates do not decide which release a bundle belongs to.
-    import os
     os.utime(hot/'ui/shared.ab', (1,1))
     with client_bundles(base, lambda line: None) as active:
         result = {p.relative_to(active).as_posix(): p.read_text() for p in active.rglob('*.ab')}
@@ -60,6 +63,41 @@ with tempfile.TemporaryDirectory() as tmp:
     assert not temporary.exists()
     assert (base/'ui/shared.ab').read_text() == 'old'
     assert (hot/'ui/shared.ab').read_text() == 'new'
+
+    system_temp = Path(tmp).resolve() / 'system-temp'
+    workspace = Path(tmp).resolve() / 'workspace'
+    system_temp.mkdir()
+    workspace.mkdir()
+    real_stat = Path.stat
+    def stat_with_other_temp_volume(p, *args, **kwargs):
+        info = real_stat(p, *args, **kwargs)
+        return NS(st_dev=info.st_dev + 1) if p == system_temp else info
+
+    with patch.dict(os.environ, {'TMPDIR': ''}), patch.object(bundles, 'PROJECT_ROOT', workspace), \
+         patch.object(tempfile, 'gettempdir', return_value=str(system_temp)), \
+         patch.object(Path, 'stat', stat_with_other_temp_volume):
+        with client_bundles(base, lambda line: None) as active:
+            assert active.parent.parent == workspace / '.cache'
+        assert not active.parent.exists()
+
+    with patch.dict(os.environ, {'TMPDIR': str(system_temp)}), \
+         patch.object(Path, 'symlink_to', side_effect=OSError(errno.EPERM, 'symlinks unavailable')), \
+         patch.object(os, 'link', side_effect=OSError(errno.EXDEV, 'hard links unavailable')):
+        with patch.object(bundles.shutil, 'disk_usage', return_value=NS(free=0)), \
+             patch.object(bundles.shutil, 'copy2') as copy:
+            try:
+                with client_bundles(base, lambda line: None):
+                    raise AssertionError('must refuse before any bundles are copied')
+            except OSError as error:
+                assert error.errno == errno.ENOSPC and 'TMPDIR' in str(error)
+                assert Path(error.filename).parent == system_temp and not Path(error.filename).exists()
+            copy.assert_not_called()
+        with client_bundles(base, lambda line: None) as active:
+            assert active.parent.parent == system_temp
+            assert (active / 'ui/shared.ab').read_text() == 'new'
+            assert not (active / 'ui/shared.ab').samefile(hot / 'ui/shared.ab')
+        assert not active.parent.exists()
+
     index(base, 'hot_update_list.json', '26-12-01', old)
     with client_bundles(base) as active: assert active == base.resolve()
     with client_bundles(Path(tmp)/'archive') as active: assert active == (Path(tmp)/'archive').resolve()

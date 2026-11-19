@@ -468,6 +468,11 @@ downloaded replacements or unchanged packaged dependencies; file mtimes do not s
 stale cached copies and unavailable changed bundles are excluded. The original install is never written. The
 November client is base `26-10-20-11-10-38-04170990` plus hot update `26-11-06-12-42-25-70182449`.
 
+提取 Windows 客户端时，工具优先在游戏基础包所在盘创建临时目录，依次尝试项目的 `.cache`、系统临时目录和游戏安装文件夹的上一级。
+设为可写目录的 `TMPDIR` 优先。工具会打印临时路径和链接、复制的文件数。链接失败时，先检查待复制文件的总大小和可用空间。
+若提示空间不足，把当前终端的 `TMPDIR` 设为同盘可写目录或空间充足的目录，再运行原来的提取命令。
+确认提取器已退出后，可以删除上次中断留下的 `sp-client-bundles-*` 临时目录。
+
 规程·序列Ⅰ adds 37 operator identities, two summon identities and 93 local enemy model records to the installed
 union. The union has 269 operators, 62 summons (including char/enemy-backed summons), 349 enemy identities,
 85 strategy icons, 91 item icons, 27 bond icons and 133 module type ids. The local enemy metadata now covers 101

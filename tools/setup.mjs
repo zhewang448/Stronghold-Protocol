@@ -838,7 +838,7 @@ export function fxReextractCommand(win = IS_WIN) {
   return `${py} tools/local-extract/extract.py --only fx --fx-set used`;
 }
 
-const PY_ENV = { PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8', PYTHONDONTWRITEBYTECODE: '1', PIP_DISABLE_PIP_VERSION_CHECK: '1' };
+const PY_ENV = { PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8', PYTHONUNBUFFERED: '1', PYTHONDONTWRITEBYTECODE: '1', PIP_DISABLE_PIP_VERSION_CHECK: '1' };
 
 /** Create .venv-extract and install tools/local-extract/requirements.txt (skipped when the imports already work). */
 function ensureVenv(py, log) {
@@ -1130,7 +1130,7 @@ async function main() {
       const venv = ensureVenv(scenePy, log);
       if (!venv.ok) add('warn', '各战场官方场景（可选）', `${venv.why}。3D 棋盘继续用金属地块`);
       else {
-        log(`  ${c.cyan('▶')} 下载赛季场景包（python tools/local-extract/fetch_scenes.py，约 23 MB）`);
+        log(`  ${c.cyan('▶')} 检查赛季场景包（复用本机缓存，缺失时下载，整套约 23 MB）`);
         const fr = run(venv.python, [FETCH_SCENES_PY], { env: PY_ENV });
         if (!fr.ok) add('warn', '各战场官方场景（可选）', `场景包下载未完成（退出码 ${fr.code}）。3D 棋盘继续用金属地块；稍后可重试 node tools/setup.mjs --scenes`);
         else {
