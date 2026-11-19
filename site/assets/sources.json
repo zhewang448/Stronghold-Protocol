@@ -256,5 +256,13 @@
     "sourceSha256": "5e4124357701ef9446b9703cf921cdaaa4d38c43b206d8f872e891d5989ccdff",
     "sha256": "88373919e797d01fa474174fd4e602a928b00a9aedaec4b43e5701449872c752",
     "description": "Actual fork UI, fixed snapshot, public/dev/game-mock.html?phase=BAND_DRAFT&shot=1&render=fallback, 1440x900, 2026-11-16. Fixture demonstration, not a live player match."
+  },
+  {
+    "file": "assets/screenshots/cursor-size-20261119.webp",
+    "width": 496,
+    "height": 232,
+    "source": "test/ui/cursor.e2e.test.js",
+    "sourceSha256": "0039d8c995125e04ca200a8327cceb18472d50e8f302f59ee59b92c885d9f231",
+    "sha256": "795d7be2c48468b65a3abf3b5396122b70654a730eec71efb84ddc5086102dbc"
   }
 ]

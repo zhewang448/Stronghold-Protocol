@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "stage": "visual-review",
-  "date": "2026-11-16",
-  "forkCommit": "d48eaf05234b398016f0c59c33d93ca2da5b02c9",
-  "forkRelease": "v0.4.0-extended.1",
+  "date": "2026-11-19",
+  "forkCommit": "9d0fedf36e62a33bfe30616c0346ed89c67b2f1a",
+  "forkRelease": "v0.4.0-extended.2",
   "upstreamCommit": "b6d8b2ef46ed2da69585ea437c627c5fc2b4145e",
   "upstreamRelease": "v0.4.0",
   "groups": [
@@ -74,7 +74,7 @@
         "sha256": "7742ec8b24e5b39e9a30ea18f5aa0fbe644c864df773be88b114d3ce78d91a3d"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/public/js/ui/loadoutPresetsModel.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/public/js/ui/loadoutPresetsModel.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/public/js/ui/loadoutPresetsModel.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -108,7 +108,7 @@
         "sha256": "7742ec8b24e5b39e9a30ea18f5aa0fbe644c864df773be88b114d3ce78d91a3d"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/public/js/ui/loadoutPresetsModel.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/public/js/ui/loadoutPresetsModel.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/public/js/ui/loadoutPresetsModel.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -142,7 +142,7 @@
         "sha256": "7742ec8b24e5b39e9a30ea18f5aa0fbe644c864df773be88b114d3ce78d91a3d"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/public/js/ui/loadoutPresetsModel.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/public/js/ui/loadoutPresetsModel.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/public/js/ui/loadoutPresetsModel.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration",
       "evidenceSymbols": [
@@ -181,7 +181,7 @@
         "sha256": "4d5c9a7dafc4048f5e47a6ce22f8d5137f6a78ff0b3845ecd9fe283bc7639729"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/public/js/ui/diyChoice.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/public/js/ui/diyChoice.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/public/js/ui/diyChoice.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -216,7 +216,7 @@
         "sha256": "48389aa232031f998802188575c0146c5bb849798dbb483abc6435c84755a002"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/server/match/PlayerState.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/server/match/PlayerState.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/server/match/PlayerState.js",
       "upstreamSourceExists": true,
       "visualEvidence": "related-interface-with-explicit-boundary",
       "imageSupportsExactState": false
@@ -252,7 +252,7 @@
         "description": "Actual fork UI, fixed snapshot, public/dev/game-mock.html?phase=BAND_DRAFT&shot=1&render=fallback, 1440x900, 2026-11-16. Fixture demonstration, not a live player match."
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/public/js/ui/stageMiniMap.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/public/js/ui/stageMiniMap.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/public/js/ui/stageMiniMap.js",
       "upstreamSourceExists": false,
       "comparisonPicture": {
         "file": "assets/screenshots/upstream-band_draft.webp",
@@ -296,7 +296,7 @@
         "sha256": "b969c2c9569cecf18a0770c1d0ac1c4376fd3c0d407b10874f317f3425e3d652"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/server/match/layerForecast.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/server/match/layerForecast.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/server/match/layerForecast.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -330,7 +330,7 @@
         "sha256": "6e65e5362279b440285ffba24999d18d190361abe30fd5ac8691d53db8bd7eb4"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/public/js/ui/gameLogic/shop.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/public/js/ui/gameLogic/shop.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/public/js/ui/gameLogic/shop.js",
       "upstreamSourceExists": true,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -364,7 +364,7 @@
         "sha256": "b100634174fb00084301fea38230abadc8ee2d5f9c5549df31e8ddc95c9c3ebb"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/public/js/render/units.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/public/js/render/units.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/public/js/render/units.js",
       "upstreamSourceExists": true,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -398,7 +398,7 @@
         "sha256": "d286e4b7450626448c6b02dc74fd4324afcf6b52c58bee88c6bfc8fdc14bf3ef"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/public/js/ui/teamFlyout.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/public/js/ui/teamFlyout.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/public/js/ui/teamFlyout.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration",
       "evidenceSymbols": [
@@ -437,7 +437,7 @@
         "sha256": "63e80545d6531996e65cdb321f7c1215cda4bf364ddd12e505fc3ea5607074e0"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/shared/clientPreferences.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/shared/clientPreferences.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/shared/clientPreferences.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -471,7 +471,7 @@
         "sha256": "9bb3070580081fc72e2f654fb161862e0b2eaf01fe4f252fabc92b17ceea77db"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/shared/clientPreferences.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/shared/clientPreferences.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/shared/clientPreferences.js",
       "upstreamSourceExists": false,
       "visualEvidence": "related-interface-with-explicit-boundary",
       "imageSupportsExactState": false
@@ -506,7 +506,7 @@
         "sha256": "3e5bfa01feb3da97ca79d3c78c9b548806f48668e0be3f423a57595f279d7ebc"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/shared/clientPreferences.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/shared/clientPreferences.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/shared/clientPreferences.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -540,7 +540,7 @@
         "sha256": "e40db352d9818d8c898075a5af738322ede5bf16379500f37a22dffe6c8382ae"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/public/js/screens/room.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/public/js/screens/room.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/public/js/screens/room.js",
       "upstreamSourceExists": true,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -574,7 +574,7 @@
         "sha256": "a3c0a3edc63e183b879064c91c384f59cb7558c32e7327955c2db4adefda8ba0"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/public/js/ui/namecards.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/public/js/ui/namecards.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/public/js/ui/namecards.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -608,7 +608,7 @@
         "sha256": "28330219160c85972277d15faf5f3d76e99f7853af65f4fcbd8ff0ce678d8c56"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/shared/protocol.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/shared/protocol.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/shared/protocol.js",
       "upstreamSourceExists": true,
       "visualEvidence": "related-interface-with-explicit-boundary",
       "imageSupportsExactState": false
@@ -643,41 +643,41 @@
         "sha256": "7742ec8b24e5b39e9a30ea18f5aa0fbe644c864df773be88b114d3ce78d91a3d"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/public/js/ui/loadoutModel.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/public/js/ui/loadoutModel.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/public/js/ui/loadoutModel.js",
       "upstreamSourceExists": true,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
     {
       "group": "appearance",
       "id": "native-cursor",
-      "title": "方舟鼠标，有大小预览和操作姿态",
-      "benefit": "支持点击、输入、禁用和干员抓取状态；大小可调，触屏和缺素材时回退系统指针。",
-      "upstream": "上游使用原生操作指针；本库适配方舟主题指针及预览设置。",
-      "entry": "设置 → 界面与操作 → 鼠标指针",
-      "default": "方舟 / 96 px；保留已有选择",
-      "scope": "32–128 px；截图展示设置预览",
-      "image": "cursor-settings.webp",
+      "title": "骷髅手光标，大小可以自己调",
+      "benefit": "开启官方鼠标手动画后，可以随窗口自动缩放，或固定为 32–128 px。文字输入、拖动与缩放仍用系统指针。",
+      "upstream": "此页对照的上游 v0.4.0 快照早于 #948。第 83 轮接入骷髅手动画，本库在此基础上沿用旧尺寸偏好。",
+      "entry": "设置 → 界面与操作 → 骷髅手指光标",
+      "default": "系统指针。开启后默认使用自动尺寸。",
+      "scope": "32–128 px，共七档固定尺寸。截图展示开启后的设置。",
+      "image": "cursor-size-20261119.webp",
       "code": "public/js/ui/cursor.js",
       "doc": "docs/CURSOR.md",
-      "origin": "DoingStone 参考与本库适配",
-      "imageUse": "功能实拍 · 2026-11-06",
+      "origin": "上游 PR #948 与本库的尺寸适配",
+      "imageUse": "Edge 实拍 · 2026-11-19 · 已开启骷髅手指光标，大小为自动",
       "audience": "player",
       "audiences": [
         "player"
       ],
-      "imageSource": "docs/img/features/cursor-settings.webp",
-      "imageSha256": "7b876e4b6f932553c7053c92a2b936bd13d1c3ab730d1aec54721a95a72f6208",
+      "imageSource": "site/assets/screenshots/cursor-size-20261119.webp",
+      "imageSha256": "795d7be2c48468b65a3abf3b5396122b70654a730eec71efb84ddc5086102dbc",
       "releaseStatus": "已发布能力；画面与源码细节按标注",
       "picture": {
-        "file": "assets/screenshots/cursor-settings.webp",
-        "width": 576,
-        "height": 810,
-        "source": "docs/img/features/cursor-settings.webp",
-        "sourceSha256": "7b876e4b6f932553c7053c92a2b936bd13d1c3ab730d1aec54721a95a72f6208",
-        "sha256": "36e2cc9a16e28193007e68d67ca1929e99cf449ef6660a588eea168317382f37"
+        "file": "assets/screenshots/cursor-size-20261119.webp",
+        "width": 496,
+        "height": 232,
+        "source": "test/ui/cursor.e2e.test.js",
+        "sourceSha256": "0039d8c995125e04ca200a8327cceb18472d50e8f302f59ee59b92c885d9f231",
+        "sha256": "795d7be2c48468b65a3abf3b5396122b70654a730eec71efb84ddc5086102dbc"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/public/js/ui/cursor.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/public/js/ui/cursor.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/public/js/ui/cursor.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -711,7 +711,7 @@
         "sha256": "72d1313d0cd5de3a1789c6d73e40bc8590557ef487d378891f4d850d69da6e9e"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/public/js/ui/entryFilmButton.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/public/js/ui/entryFilmButton.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/public/js/ui/entryFilmButton.js",
       "upstreamSourceExists": false,
       "visualEvidence": "related-interface-with-explicit-boundary",
       "imageSupportsExactState": false
@@ -746,7 +746,7 @@
         "sha256": "e40db352d9818d8c898075a5af738322ede5bf16379500f37a22dffe6c8382ae"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/public/js/ui/seatArt.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/public/js/ui/seatArt.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/public/js/ui/seatArt.js",
       "upstreamSourceExists": true,
       "visualEvidence": "related-interface-with-explicit-boundary",
       "imageSupportsExactState": false,
@@ -787,7 +787,7 @@
         "sha256": "9573deec34862b35ae4e1210206f9a4c7a1aca54912b34c8e7287e015165d05e"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/shared/playerCapacity.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/shared/playerCapacity.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/shared/playerCapacity.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -822,7 +822,7 @@
         "sha256": "48389aa232031f998802188575c0146c5bb849798dbb483abc6435c84755a002"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/server/match/PlayerState.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/server/match/PlayerState.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/server/match/PlayerState.js",
       "upstreamSourceExists": true,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -857,7 +857,7 @@
         "sha256": "48389aa232031f998802188575c0146c5bb849798dbb483abc6435c84755a002"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/server/lobby.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/server/lobby.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/server/lobby.js",
       "upstreamSourceExists": true,
       "visualEvidence": "related-interface-with-explicit-boundary",
       "imageSupportsExactState": false
@@ -893,7 +893,7 @@
         "sha256": "48389aa232031f998802188575c0146c5bb849798dbb483abc6435c84755a002"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/server/lobby.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/server/lobby.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/server/lobby.js",
       "upstreamSourceExists": true,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -927,7 +927,7 @@
         "sha256": "4c2e89f67289717229e6dc17e09b54d4c54e6387241fc2aa70db9c2ba95c625d"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/server/lobby.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/server/lobby.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/server/lobby.js",
       "upstreamSourceExists": true,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -961,7 +961,7 @@
         "sha256": "836dd9e73f56dff8aa4e67e652195a16160fd3831558a59b1da0dcd797be0bf3"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/server/chat.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/server/chat.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/server/chat.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -995,7 +995,7 @@
         "sha256": "4c9a041352ab4a3def7216960e6dd06cbed6ca55a7d376896b0fd76edb62c502"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/public/css/devices.css",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/public/css/devices.css",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/public/css/devices.css",
       "upstreamSourceExists": true,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -1029,7 +1029,7 @@
         "sha256": "9bb3070580081fc72e2f654fb161862e0b2eaf01fe4f252fabc92b17ceea77db"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/server/training.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/server/training.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/server/training.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -1063,7 +1063,7 @@
         "sha256": "9bb3070580081fc72e2f654fb161862e0b2eaf01fe4f252fabc92b17ceea77db"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/server/training.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/server/training.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/server/training.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -1097,7 +1097,7 @@
         "sha256": "57cd6bb5ac9e7113d92bf77e481039fa4eb6596b52c2aac971ee14d819688f74"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/server/training.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/server/training.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/server/training.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -1131,7 +1131,7 @@
         "sha256": "57cd6bb5ac9e7113d92bf77e481039fa4eb6596b52c2aac971ee14d819688f74"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/server/training.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/server/training.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/server/training.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -1165,7 +1165,7 @@
         "sha256": "b35cb24ca8d30ddc90db1d3a6e97030778014782543fdfa19b8ae4414e54c474"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/public/js/ui/roundHistory.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/public/js/ui/roundHistory.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/public/js/ui/roundHistory.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -1199,7 +1199,7 @@
         "sha256": "055af5294047d00367a74cd24ec28e3fe0320b82dc1cf1daef1d71a570ddbf8e"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/server/replay-store.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/server/replay-store.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/server/replay-store.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -1233,7 +1233,7 @@
         "sha256": "adddff659f3ed998accdaf6b5d8490485c6f580dbc205d4f1005a89bd3310390"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/public/js/ui/personalData.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/public/js/ui/personalData.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/public/js/ui/personalData.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -1267,7 +1267,7 @@
         "sha256": "adddff659f3ed998accdaf6b5d8490485c6f580dbc205d4f1005a89bd3310390"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/public/js/ui/personalData.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/public/js/ui/personalData.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/public/js/ui/personalData.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -1301,7 +1301,7 @@
         "sha256": "14d28210b02903ad2a6645c51aa6bc0d75a8636526f7a621e86b55e133e52366"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/public/js/ui/personalData.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/public/js/ui/personalData.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/public/js/ui/personalData.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -1335,7 +1335,7 @@
         "sha256": "050aee984bf5d8ac7e160693b940f3e16cb807ff40c57c4b5765e2b076a01b0f"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/launcher/StrongholdProtocolLauncher.csproj",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/launcher/StrongholdProtocolLauncher.csproj",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/launcher/StrongholdProtocolLauncher.csproj",
       "upstreamSourceExists": false,
       "visualEvidence": "related-interface-with-explicit-boundary",
       "imageSupportsExactState": false
@@ -1370,7 +1370,7 @@
         "sha256": "eb5cc173e9fed536d02f48352bd7f22a2a0b6b5641b643b5c2829fa3dbca6985"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/server/admin.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/server/admin.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/server/admin.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -1404,7 +1404,7 @@
         "sha256": "94fa5b25ecc60210a5917be4a20eb68152e3311c8882c72c7ffd5aa0a1bb4f14"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/shared/clientPreferences.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/shared/clientPreferences.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/shared/clientPreferences.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -1438,7 +1438,7 @@
         "sha256": "142a3c5b5f230f0f037c234020d586074735d2ee624d4a1446136e7a30635044"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/server/admin.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/server/admin.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/server/admin.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -1472,7 +1472,7 @@
         "sha256": "eb5cc173e9fed536d02f48352bd7f22a2a0b6b5641b643b5c2829fa3dbca6985"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/server/admin-wall.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/server/admin-wall.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/server/admin-wall.js",
       "upstreamSourceExists": false,
       "visualEvidence": "related-interface-with-explicit-boundary",
       "imageSupportsExactState": false
@@ -1507,7 +1507,7 @@
         "sha256": "443120c52d24d65bd9ae0359895d49ebb71b7f0ac98709baf15f5bd4c842ff78"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/public/js/ui/resourcePanel.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/public/js/ui/resourcePanel.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/public/js/ui/resourcePanel.js",
       "upstreamSourceExists": false,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -1541,7 +1541,7 @@
         "sha256": "050aee984bf5d8ac7e160693b940f3e16cb807ff40c57c4b5765e2b076a01b0f"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/server/update.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/server/update.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/server/update.js",
       "upstreamSourceExists": true,
       "visualEvidence": "dated-interface-or-component-demonstration"
     },
@@ -1575,7 +1575,7 @@
         "sha256": "050aee984bf5d8ac7e160693b940f3e16cb807ff40c57c4b5765e2b076a01b0f"
       },
       "upstreamSource": "https://github.com/sganggs/Stronghold-Protocol/blob/b6d8b2ef46ed2da69585ea437c627c5fc2b4145e/server/recovery.js",
-      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/d48eaf05234b398016f0c59c33d93ca2da5b02c9/server/recovery.js",
+      "forkSource": "https://github.com/zhewang448/Stronghold-Protocol/blob/9d0fedf36e62a33bfe30616c0346ed89c67b2f1a/server/recovery.js",
       "upstreamSourceExists": false,
       "visualEvidence": "related-interface-with-explicit-boundary",
       "imageSupportsExactState": false
@@ -1586,5 +1586,11 @@
     "确定性战斗模拟、官方数据与技能实现",
     "基础换肤、触控、断线重连及本机结算记录",
     "插件体系、Forge 导入与插件工作台"
+  ],
+  "releaseHighlights": [
+    "规程 v5 战场场景用于休整与赛前地图预览。",
+    "恢复三套官方主题的盟约图标，临时层数合计使用金色显示。",
+    "骷髅手光标支持自动与 32–128 px 固定尺寸，战中可选查看队友。",
+    "Windows 场景提取优先在游戏磁盘准备临时文件。"
   ]
 }
