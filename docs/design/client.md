@@ -13,7 +13,7 @@ Host-console refresh keeps existing interaction and scroll containers, unfinishe
 
 ### 骷髅手指光标
 
-设置 → 界面与操作可启用上游 #948 的骷髅手动画。应用沿用 `settings.cursorTheme` 中已有的系统／方舟选择和服主策略，新用户默认关闭。比例随视口宽度调整，强制高对比度时回退系统指针。见 [光标说明](../CURSOR.md)。
+设置 → 界面与操作可启用上游 #948 的骷髅手动画，新用户默认关闭。`settings.cursorSize` 默认自动，可选择 32–128 px 的固定长边尺寸，光标热点按相同比例定位。浏览器保存玩家的尺寸，服主策略可设置默认值或锁定。强制高对比度时使用系统指针。见 [光标说明](../CURSOR.md)。
 
 Resting operators in the hand use 90% body scale about their feet and a downward visual offset corresponding to
 0.15 tile toward the front of their existing pad (UI tuning, 2026-11-17). Shadows follow; head markers and equipped-item

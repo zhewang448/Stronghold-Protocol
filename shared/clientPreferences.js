@@ -6,6 +6,7 @@ import { SKIN_LIMITS, isCharId } from './protocol.js';
 import { UI_LIMITS } from './plugins/ui.js';
 import { isPluginId } from './plugins/manifest.js';
 import { migrateThemePreferences, normalizeUiTheme } from './themePreferences.js';
+import { CURSOR_SIZES, DEFAULT_CURSOR_SIZE } from './cursor.js';
 const bool = (key, label, value, group) => ({ key, label, default: value, type: 'boolean', group });
 const number = (key, label, value, min, max, step, group) => ({ key, label, default: value, type: 'number', min, max, step, group });
 const choice = (key, label, value, options, group) => ({ key, label, default: value, type: 'choice', options, group });
@@ -36,6 +37,7 @@ export const CLIENT_PREFERENCE_FIELDS = Object.freeze([
   bool('settings.themeVoice', '对局主题语音', false, settings),
   bool('settings.themeMotion', '主题动画', true, settings),
   choice('settings.cursorTheme', '骷髅手指光标', 'system', ['system', 'arknights'], settings),
+  choice('settings.cursorSize', '鼠标大小', DEFAULT_CURSOR_SIZE, [DEFAULT_CURSOR_SIZE, ...CURSOR_SIZES], settings),
   bool('settings.watchDuringBattle', '作战中查看队友', false, settings),
   { key: 'settings.preloadVoiceLang', label: '预载语音语言', default: ['cn', 'jp'], type: 'voiceLanguages', group: settings },
   { key: 'settings.keys', label: '快捷键', type: 'keys', default: { buy: 'KeyW', refresh: 'KeyR', freeze: 'KeyF', levelUp: 'KeyD', retreat: 'KeyQ', sell: 'KeyX', ready: 'Space' }, group: '界面、语言与操作' },
@@ -134,7 +136,6 @@ export function normalizeClientPreferencePolicy(raw, current = defaultClientPref
   const aliases = { 'settings.terminalTheme': 'settings.uiTheme', 'settings.terminalVoice': 'settings.themeVoice' };
   for (const section of ['defaults', 'userControls']) {
     next[section] ||= {};
-    delete next[section]['settings.cursorSize'];
     for (const [old, key] of Object.entries(aliases)) {
       if (Object.hasOwn(next[section], old) && !Object.hasOwn(next[section], key)) next[section][key] = section === 'defaults' && key === 'settings.uiTheme' ? normalizeUiTheme(next[section][old]) : next[section][old];
       delete next[section][old];
@@ -143,8 +144,6 @@ export function normalizeClientPreferencePolicy(raw, current = defaultClientPref
   }
   for (const section of ['defaults', 'userControls']) {
     for (const [inputKey, inputValue] of Object.entries(raw[section])) {
-      // Older server policies may still include the retired fixed-size slider.
-      if (inputKey === 'settings.cursorSize') continue;
       const key = aliases[inputKey] || inputKey;
       if (key !== inputKey && Object.hasOwn(raw[section], key)) continue;
       const value = section === 'defaults' && inputKey === 'settings.terminalTheme' ? normalizeUiTheme(inputValue) : inputValue;

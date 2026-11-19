@@ -1,5 +1,6 @@
 // One non-interactive, DPR-aware canvas. Animation never replaces a native cursor image.
 import { data, localAsset } from '../data.js';
+import { DEFAULT_CURSOR_SIZE, MAX_CURSOR_SIZE, normalizeCursorSize } from '../../../shared/cursor.js';
 
 // Calibrated from equal-resolution official/local screenshots (110x127 vs 122x142).
 const VISUAL_SCALE = 0.9;
@@ -10,6 +11,8 @@ const BLANK = 'url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.o
 const NATIVE_HOSTS = new Set(['CANVAS', 'VIDEO', 'IFRAME', 'IMG', 'INPUT']);
 
 let enabled = false, generation = 0, source = null, active = null, owner = null, detach = null;
+/** @type {number|'auto'} */
+let cursorSize = DEFAULT_CURSOR_SIZE;
 let canvas = null, context = null, geometry = null, lastFrame = -1, lastPosition = '';
 let contextLost = false;
 let point = null, mousePresent = false, dragging = false, nativeHidden = false;
@@ -79,8 +82,12 @@ function ensureCanvas() {
 }
 function size() {
   const { w, h, meta } = active;
-  const scale = meta.extractVersion === 2
-    ? Math.min(meta.defaultScale * VISUAL_SCALE * (owner.win.innerWidth || meta.referenceWidth) / meta.referenceWidth, 128 / Math.max(w, h)) : 1;
+  const longest = Math.max(w, h);
+  let scale = 1;
+  if (cursorSize !== DEFAULT_CURSOR_SIZE) scale = cursorSize / longest;
+  else if (meta.extractVersion === 2) {
+    scale = Math.min(meta.defaultScale * VISUAL_SCALE * (owner.win.innerWidth || meta.referenceWidth) / meta.referenceWidth, MAX_CURSOR_SIZE / longest);
+  }
   const density = Math.max(1, Math.min(4, owner.win.devicePixelRatio || 1));
   const width = Math.max(1, Math.round(w * scale)), height = Math.max(1, Math.round(h * scale));
   if (geometry?.width === width && geometry.height === height && geometry.density === density) return;
@@ -250,7 +257,11 @@ function refresh() {
   image.src = url;
 }
 
-export function applyCursor(value) {
+/** @param {boolean} value @param {number|'auto'} [preferredSize] */
+export function applyCursor(value, preferredSize) {
+  const nextSize = normalizeCursorSize(preferredSize);
+  const resized = cursorSize !== nextSize;
+  cursorSize = nextSize;
   enabled = value === true;
   if (enabled) bind();
   else {
@@ -258,7 +269,10 @@ export function applyCursor(value) {
     suspend(); detach?.(); removeCanvas(); owner = null; dragging = false;
   }
   refresh();
-  if (enabled) data.load('local').catch(() => {});
+  if (enabled) {
+    data.load('local').catch(() => {});
+    if (resized) { geometry = null; schedule(); }
+  }
 }
 
 data.subscribe(name => { if (name === 'local') refresh(); });

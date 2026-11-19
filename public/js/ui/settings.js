@@ -70,6 +70,7 @@ import { PreloadSection } from './preloadSection.js';
 import { ResourceRow } from './resourcePanel.js';
 import { unsupportedReason } from '../resources/index.js';
 import { applyCursor } from './cursor.js';
+import { CURSOR_SIZES, DEFAULT_CURSOR_SIZE } from '../../../shared/cursor.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
@@ -95,7 +96,8 @@ bindThemeSettings({
 
 const cursorContrast = globalThis.matchMedia?.('(forced-colors: active)');
 function syncCursorPreference() {
-  applyCursor(settingsStore.get().cursorTheme === 'arknights' && !cursorContrast?.matches);
+  const { cursorTheme, cursorSize } = settingsStore.get();
+  applyCursor(cursorTheme === 'arknights' && !cursorContrast?.matches, cursorSize);
 }
 
 settingsStore.subscribe((s) => {
@@ -610,6 +612,16 @@ export function SettingsModal({ open, onClose }) {
       <${Toggle} setting="settings.cursorTheme" label=${t('骷髅手指光标')} micro="PRTS CURSOR" value=${s.cursorTheme === 'arknights'} testId="arknights-cursor"
         onChange=${(v) => updateSettings({ cursorTheme: v ? 'arknights' : 'system' })} />
       <p class="set-hint">${t('使用明日方舟的骷髅手指光标；文字输入、拖动和缩放仍保留系统光标。')}</p>
+      ${s.cursorTheme === 'arknights' ? html`<${ClientPreference} name="settings.cursorSize"><label class="set-row">
+        <span class="set-row__label">${t('鼠标大小')}</span>
+        <select class="set-cursor-size" data-testid="cursor-size" value=${String(s.cursorSize)} onChange=${e => {
+          const size = e.currentTarget.value;
+          updateSettings({ cursorSize: size === DEFAULT_CURSOR_SIZE ? DEFAULT_CURSOR_SIZE : Number(size) });
+        }}>
+          <option value=${DEFAULT_CURSOR_SIZE}>${t('自动')}</option>
+          ${CURSOR_SIZES.map(size => html`<option key=${size} value=${String(size)}>${size} px</option>`)}
+        </select>
+      </label><//>` : null}
       <${ScreenFitSection} />
       <${ClientPreference} name="settings.keys"><${HotkeySection} keys=${s.keys} touchUi=${touchUi} /><//>
       </section>

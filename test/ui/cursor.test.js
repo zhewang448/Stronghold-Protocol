@@ -105,17 +105,37 @@ function fixture(t) {
   });
 }
 
-test('saved and server-imposed cursor choices use the upstream opt-in', () => {
+test('cursor choices retain saved size steps and respect host defaults', () => {
   assert.equal(DEFAULT_SETTINGS.cursorTheme, 'system');
   assert.equal(sanitizeSettings({}).cursorTheme, 'system');
-  assert.equal(sanitizeSettings({ cursorTheme: 'arknights', cursorSize: 96 }).cursorTheme, 'arknights');
+  assert.equal(sanitizeSettings({}).cursorSize, 'auto');
+  assert.equal(sanitizeSettings({ cursorTheme: 'arknights', cursorSize: 96 }).cursorSize, 96);
+  assert.equal(sanitizeSettings({ cursorSize: 200 }).cursorSize, 'auto');
   assert.equal(sanitizeSettings({ arknightsCursor: true }).cursorTheme, 'arknights');
   assert.equal(sanitizeSettings({ cursorTheme: 'system', arknightsCursor: true }).cursorTheme, 'system');
   const policy = normalizeClientPreferencePolicy({ defaults: { 'settings.cursorTheme': 'arknights', 'settings.cursorSize': 128 },
     userControls: { 'settings.cursorTheme': false, 'settings.cursorSize': false } });
   assert.equal(policy.config.defaults['settings.cursorTheme'], 'arknights');
   assert.equal(policy.config.userControls['settings.cursorTheme'], false);
-  assert.equal(Object.hasOwn(policy.config.defaults, 'settings.cursorSize'), false);
+  assert.equal(policy.config.defaults['settings.cursorSize'], 128);
+  assert.equal(policy.config.userControls['settings.cursorSize'], false);
+  assert.ok(normalizeClientPreferencePolicy({ defaults: { 'settings.cursorSize': 33 } }).error);
+});
+
+test('fixed sizes apply at the same click point and can switch back to viewport scaling', async t => {
+  const f = fixture(t); f.manifest = manifest(META);
+  applyCursor(true, 32); await f.load(); f.pointer('pointermove'); f.step(0);
+  const canvas = f.canvases[0];
+  assert.deepEqual([canvas.width, canvas.height, canvas.style.transform], [28, 32, 'translate3d(96px, 196px, 0)']);
+  applyCursor(true, 128); f.step(1);
+  assert.deepEqual([canvas.width, canvas.height, canvas.style.transform], [112, 128, 'translate3d(85px, 184px, 0)']);
+  f.win.innerWidth = 1280;
+  f.win.dispatchEvent(new Event('resize')); f.step(2);
+  assert.deepEqual([canvas.width, canvas.height], [112, 128]);
+  applyCursor(true, 'auto'); f.step(3);
+  assert.deepEqual([canvas.width, canvas.height], [60, 68]);
+  assert.equal(f.images.length, 1);
+  assert.equal(f.canvases.length, 1);
 });
 
 test('late manifests, CDN assets and decode failures retain native fallback', async t => {

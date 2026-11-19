@@ -57,10 +57,13 @@ test('desktop canvas hand opt-in, rapid clicks, semantic cursors and native fall
     const enabled = () => page.$eval('[data-testid="arknights-cursor"]', e => e.getAttribute('aria-checked'));
     await page.goto(server.url, { waitUntil: 'domcontentloaded' });
     await openSettings();
+    const sizeSelector = '[data-testid="cursor-size"]';
     assert.equal(await enabled(), 'false');
+    assert.equal(await page.$(sizeSelector), null);
     assert.equal(await page.evaluate(() => document.documentElement.style.getPropertyValue('--sp-cursor-pointer')), '');
     await page.click('[data-testid="arknights-cursor"]');
     assert.equal(await enabled(), 'true');
+    assert.equal(await page.$eval(sizeSelector, e => e.value), 'auto');
     const pointAtProbe = async () => {
       const point = await page.evaluate(() => {
         let target = document.querySelector('#cursor-press-probe');
@@ -127,8 +130,31 @@ test('desktop canvas hand opt-in, rapid clicks, semantic cursors and native fall
       native: document.documentElement.style.getPropertyValue('--sp-cursor-pointer'),
     }));
     assert.equal(evidence.ariaHidden, 'true'); assert.equal(evidence.inert, true); assert.equal(evidence.pointerEvents, 'none');
+    const expectHeight = height => page.waitForFunction(h =>
+      parseFloat(document.querySelector('.sp-cursor-canvas')?.style.height) === h, {}, height);
+    await page.select(sizeSelector, '32');
+    await expectHeight(32);
+    await saveCursor('cursor-32px.png');
+    await page.focus(sizeSelector);
+    await page.keyboard.press('End');
+    await expectHeight(128);
+    await saveCursor('cursor-128px.png');
+    await page.evaluate(async () => {
+      const { setClientPreferencePolicy } = await import('/js/clientPreferences.js');
+      setClientPreferencePolicy({ defaults: { 'settings.cursorSize': 64 }, userControls: { 'settings.cursorSize': false } });
+    });
+    await expectHeight(64);
+    assert.equal(await page.$eval(sizeSelector, e => e.matches(':disabled')), true);
+    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('sp.pref.settings')).cursorSize), 128);
+    await page.evaluate(async () => (await import('/js/clientPreferences.js')).setClientPreferencePolicy(null));
+    await expectHeight(128);
+    assert.equal(await page.$eval(sizeSelector, e => e.value), '128');
     await page.reload({ waitUntil: 'domcontentloaded' });
     await openSettings(); assert.equal(await enabled(), 'true'); await pointAtProbe();
+    assert.equal(await page.$eval(sizeSelector, e => e.value), '128');
+    await expectHeight(128);
+    await page.select(sizeSelector, 'auto');
+    await expectHeight(102);
     await page.click('[data-testid="arknights-cursor"]');
     assert.equal(await enabled(), 'false');
     assert.equal(await page.$eval('[data-testid="arknights-cursor"]', e => getComputedStyle(e).cursor), 'pointer');
