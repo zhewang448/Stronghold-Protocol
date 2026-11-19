@@ -80,7 +80,7 @@ export const NET_DEFAULTS = Object.freeze({
  * room.proposeVersion (DESIGN §35.23) stays host-proposed: an accepted proposal by a lone human switches the room's
  * version — every page then downloads that version's data.
  */
-export const HEAVY_TYPES = new Set(['match.queue', 'room.list', 'g.watch', 'room.loadout', 'room.ownership', 'room.diy', 'room.spectate', 'room.setPlugins', 'room.skins', 'room.card', 'room.avatar', 'room.rerollSetup', 'room.proposeVersion', 'room.resetSettings', 'state.resync']);
+export const HEAVY_TYPES = new Set(['match.queue', 'room.list', 'g.watch', 'room.loadout', 'room.ownership', 'room.diy', 'room.spectate', 'room.setPlugins', 'plugins.preview', 'room.skins', 'room.card', 'room.avatar', 'room.rerollSetup', 'room.proposeVersion', 'room.resetSettings', 'state.resync']);
 
 /** Close codes (see header). */
 export const CLOSE = Object.freeze({ REPLACED: 4001, HELLO_TIMEOUT: 4002, POLICY: 1008, SHUTDOWN: 1001 });
@@ -726,9 +726,9 @@ export class Network {
       if (msg.t === 'b.progress' && !validRid(rid)) return;
       this.reply(conn, errorMsg(isErrCode(res.error) ? res.error : ERR.INTERNAL, rid, res.detail));
     } else if (validRid(rid)) {
-      const payload = res && typeof res === 'object' ? { ...res } : {};
+      const payload = res && typeof res === 'object' ? { ...(res.reply || res) } : {};
       delete payload.ok;
-      this.reply(conn, { t: 'ok', rid, ...payload });
+      this.reply(conn, { ...payload, t: 'ok', rid });
     }
   }
 

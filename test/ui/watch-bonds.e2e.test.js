@@ -146,6 +146,15 @@ async function place(c, chessId) {
   await c.page.waitForFunction((n0) => (globalThis.__SP__.store.get().match.private?.board || []).length > n0, { timeout: 8000 }, n0);
 }
 
+async function startCoopRoom(host, guest) {
+  await guest.click('.rs-go:not(:disabled)', '准备就绪', { timeout: 30000 });
+  await guest.page.waitForFunction(() => {
+    const s = globalThis.__SP__.store.get();
+    return !!s.room?.seats?.find(x => x && x.playerId === s.me.playerId)?.ready;
+  });
+  await host.click('.rs-go:not(:disabled)', '开始模拟', { timeout: 20000 });
+}
+
 /** Two humans in a co-op room with `bots` AI seats: the host on a 1280×720 desktop, the guest on the user's phone
  *  (756×366 CSS px, touch), through the briefing and the band draft. */
 async function coopMatch(P, base, { bots = 1, prefix }) {
@@ -164,16 +173,7 @@ async function coopMatch(P, base, { bots = 1, prefix }) {
   await guest.page.waitForFunction(() => !!globalThis.__SP__ && !!document.querySelector('.screen'), { timeout: 30000 });
   await guest.enter('阿米娅');
   await guest.waitFor((s) => s.room?.code === room.code, 'guest joined');
-  const guestReady = () => guest.page.evaluate(() => {
-    const s = globalThis.__SP__.store.get();
-    return !!s.room?.seats?.find((x) => x && x.playerId === s.me.playerId)?.ready;
-  });
-  for (let i = 0; i < 6 && !(await guestReady()); i++) {
-    await guest.click('.room-bar__right button', '准备就绪', { optional: true, timeout: 3000 });
-    await sleep(600);
-  }
-  assert.ok(await guestReady(), 'guest ready');
-  await host.click('.room-bar__right button', '开始模拟', { timeout: 20000 });
+  await startCoopRoom(host, guest);
   for (const c of [host, guest]) await c.waitFor((s) => s.phase === 'INFO_CHECK', 'briefing', 30000);
   for (const c of [host, guest]) await c.click('.brief__foot .btn--primary', '准备就绪');
   for (const c of [host, guest]) await c.waitFor((s) => s.phase !== 'INFO_CHECK', 'band draft', 40000);
@@ -249,16 +249,7 @@ describe('DESIGN §20.15 — the bond strip shows the watched teammate\'s bonds 
       await guest.open(`?room=${room.code}`);
       await guest.enter('阿米娅');
       await guest.waitFor((s) => s.room?.code === room.code, 'guest joined');
-      const guestReady = () => guest.page.evaluate(() => {
-        const s = globalThis.__SP__.store.get();
-        return !!s.room?.seats?.find((x) => x && x.playerId === s.me.playerId)?.ready;
-      });
-      for (let i = 0; i < 6 && !(await guestReady()); i++) {
-        await guest.click('.room-bar__right button', '准备就绪', { optional: true, timeout: 3000 });
-        await sleep(600);
-      }
-      assert.ok(await guestReady(), 'guest ready');
-      await host.click('.room-bar__right button', '开始模拟', { timeout: 20000 });
+      await startCoopRoom(host, guest);
       for (const c of [host, guest]) await c.waitFor((s) => s.phase === 'INFO_CHECK', 'briefing', 30000);
       for (const c of [host, guest]) await c.click('.brief__foot .btn--primary', '准备就绪');
       for (const c of [host, guest]) await c.waitFor((s) => s.phase !== 'INFO_CHECK', 'band draft', 40000);

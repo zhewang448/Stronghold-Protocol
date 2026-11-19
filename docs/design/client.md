@@ -11,17 +11,16 @@ Host-console refresh keeps existing interaction and scroll containers, unfinishe
 
 ## 9. Client rendering contract (public/js/render)
 
-### 可选网页方舟鼠标（2026-11-05）
+### 骷髅手指光标
 
-设置 → 界面与操作的 `settings.cursorTheme` 为 `system` 或 `arknights`（默认），只影响本机。
-后者使用原生 CSS 图片指针，按真实干员拖拽状态切换抓取形态；无软件跟随层。
-2026-11-06 按用户实测放大默认指针至 96 px，新增 `settings.cursorSize`，支持 32–128 px、每档 16 px，
-附实际大小预览，即时应用并保存。旧偏好无尺寸字段使用 96 px；每档独立素材及同比热点，加载乱序不覆盖新选择。
-同日按抓握图偏下的实测反馈，将 grab / grabbing 的 96 px 热点设为 28,68 并同比缩放；
-其他形态热点保持原值。只移动光标图形，不改变指针坐标或拖放判定，属于 [ASSUMED] 视觉对齐。
-缺素材、触屏及强制高对比度回退到系统指针，减少动画停用点击姿态切换。
-可选第三方素材只写入被忽略的 `public/assets/`，来源、安装与适配边界见 [鼠标说明](../CURSOR.md)。
-第一版的 75 ms 按压姿态为 [ASSUMED] 网页适配，不宣称逐帧复刻当前官方 PC 端。
+设置 → 界面与操作可启用上游 #948 的骷髅手动画。应用沿用 `settings.cursorTheme` 中已有的系统／方舟选择和服主策略，新用户默认关闭。比例随视口宽度调整，强制高对比度时回退系统指针。见 [光标说明](../CURSOR.md)。
+
+Resting operators in the hand use 90% body scale about their feet and a downward visual offset corresponding to
+0.15 tile toward the front of their existing pad (UI tuning, 2026-11-17). Shadows follow; head markers and equipped-item
+icons follow the adjusted head height at their original sizes. Own and scouted prep views share this presentation.
+Dragging / deployment restores normal presentation. Tile geometry, logical coordinates, tile picking, loose equipment,
+temporary reserves, summons and battle operators keep their existing behaviour.
+
 Normal healing ranges use cyan-blue battlefield highlights; damaging ranges keep orange. Placement previews and
 inspected operators / healing summons resolve the same loadout record (dmgType heal or attackKind heal).
 The solid fill, Pixi stripes and SVG stripes share that choice, preserving highlight groups and orientation.
@@ -32,12 +31,14 @@ the exact RGB values are this UI's palette, not extracted official constants.
 
 **Match transition cues.** A round start has one `RoundPopup` (round, income and spectator state). Entering rest,
 ordinary combat or an Improv draft adds no central phase banner; the top bar still identifies the phase. A shared
-draft reaching the viewer's unpicked turn plays one `轮到你选` cue and its sound — in solo simulation too (decision 7
-of 2026-10-22, kept on 2026-11-14, history §37.225). Spectators and personal 教鞭 choices do not play that cue. `screens/game.js` owns the cue, using the installed theme's
+multiplayer draft reaching the viewer's unpicked turn plays one `轮到你选` cue and its sound. Solo simulation,
+spectators and personal 教鞭 choices do not play that cue (official solo recording in PR #946, history §37.230,
+revising the solo rule retained in §37.225). `screens/game.js` owns the cue, using the installed theme's
 existing banner or the default disc, never both; the choice overlay keeps its persistent turn status and countdown.
 A queued or visible cue expires when that turn ends, its card is picked or the phase changes, and loading theme art
 does not replay a consumed turn. The round plate may finish before the cue; it never causes a second round plate.
-Source: player report and confirmed acceptance criteria, 2026-11-14; no gameplay or simulation changes.
+Source: player report and confirmed acceptance criteria, 2026-11-14; [official solo recording](https://github.com/sganggs/Stronghold-Protocol/pull/946#issuecomment-6881541711),
+2026-11-15 (round 3, about 36.5 s); no gameplay or simulation changes.
 
 Match-information bond entries (#915, history §37.98) open the existing `BondPopup` directly: the in-game chips,
 briefing discs and strategy information discs share its effects, member list and ban marks. `MatchBondDialog` shares
@@ -446,6 +447,22 @@ must cover the removed renderer's visibility (the same group or the always-visib
 and separately switched groups remain. Prefer non-collapsed lightmap UVs, then base visibility, then static baking,
 then the lower renderer id. Existing extracted scenes require re-extraction; mesh format version stays 1.
 
+规程 arena (DESIGN §37.266): a 规程 level is one 36×55 arena — four player blocks (`sub_01`, 7×20), the 联防 board
+(`sub_02`, 6×21) and two boss fields with their pens (`sub_03`, 13×21) — that the sim keeps composing into 盟约's 19×21
+stage (`tools/versions/layouts.mjs composeRegulationStage`). The build also writes the arena itself (`stages.json`
+`arena`, DATA §12; `regulationArena`), and extractor version 5 writes the three prefabs whole, one group each
+(`regulation_scenes.py`, scene.json `layout: 'pieces'`). The client draws the one piece a view shows
+(`render/arenaView.js arenaField`): the prep, normal and pen cameras a player block (hand row 7, equipment row 8, the road
+rows 9–12 cols 0–10 — the sim's cells, tile for tile — and its preview pen **beside the road**, rows 8–12 cols 12–18),
+联防 the `sub_02` board (rows 8–13), the boss, hidden and Final Assault prep cameras a boss field (rows 0–12, its pen
+rows 7–11 cols 7–13). Outside the piece the grid is void; the arena devices standing on the piece move with it and keep
+the stats of the stage's device of the same key; `config.enemy_place_rect` becomes the piece's pen rect, so
+`render/pen.js` lays the preview out there and the pen camera fits it. `board3d/scene.js` draws only that piece's group,
+shifted to its rows; a pieces scene with the composed stage, or a stage that names a piece with an older cut scene, falls
+back to the procedural board. The view's field switches when the camera's kind does. **[ASSUMED]** seat s draws the
+block whose `ownerSeat` is s (the blocks are the same piece; the renderer passes no seat, so the first block); the key
+light is `sub_01`'s; the pen camera is fitted to the pen rect instead of the official `enemy_camera_param`.
+
 阻隔工事 (`trap_1105_accrate`, renderer `crate`; 0.3.1, GitHub #663, DESIGN §34.7): static prep crates and
 battle DeviceViews use the client's own 636-vertex / 344-triangle model and `TX_trap_1105_accrate`, extracted under
 `mesh/trap_110`, with its authored UVs. The battle prefab's identity parents, model rotation −90° about X and scale
@@ -608,6 +625,14 @@ welcome never reaches the store or flushes queued game actions. Nickname persist
 refused recovery can return to the previous identity and nickname. It does not identify players by name or IP.
 Without BroadcastChannel it refuses shared recovery. Server restart / expiry clears
 obsolete metadata on the next welcome. A spectator never registers a recoverable player seat.
+
+The title and match fullscreen control (`FullscreenButton`) uses the detected native Fullscreen API when the
+browser has it. On iOS/iPadOS without element fullscreen, the same button opens translated Safari Home Screen
+steps (Share → Add to Home Screen, including “Open as Web App” when that switch is shown). iPhone copy says to
+turn the phone sideways; iPad copy, including iPadOS desktop mode, is titled for iPad and does not say to turn
+a phone sideways. iOS Chrome and Firefox see the “open in Safari” step. An already standalone window without
+native fullscreen hides the control. Wake lock, the rotate hint and the `beforeinstallprompt` install button
+are unchanged. [ASSUMED] reusing the fullscreen control as the installation-guidance entry (issue #413).
 
 `manifest.json` enables browser installation. The maintainer's revised decision of 2026-10-10 is to
 **沿用 0.2.x 的薄荷绿城堡并精修**: `public/icons/app.svg` keeps the existing three-battlement rook, inset tower
@@ -1086,12 +1111,11 @@ The four-star Theresa mote ring follows the game clock (including pause and spee
 Spine display coordinates, and is recreated on model swaps. Its S2 radius of 2 tiles is [ASSUMED] from outside_radius;
 the hidden five-star orbit is unchanged (PR #576).
 
-The active-bond strip shows every entry in a horizontal scroller, with keyboard focus, touch panning and translated
-arrow controls. Watched owners, harmony counts, morph members and disabled bonds retain their existing behavior (PR #678).
-The strip's .08rem clip padding has matching negative margins to preserve the discs' and names' original height.
-Prep and Final Assault prep reserve the arrows' 44 px floor and any taller measured bounds (including native scrollbars),
-relative to the field host and safe-area insets. The minimum band remains while collapsed; desktop keeps the official
-camera and original 2.16rem band when the strip already fits (§35.110).
+The active-bond strip scrolls with the keyboard, touch, mouse drag or wheel. A fading edge signals more entries
+(§37.201). The strip's .08rem clip padding has matching negative margins to preserve the discs' and names' height.
+Prep and Final Assault prep keep space for the HUD relative to the field host and safe-area insets.
+
+从局内顶部盟约列表打开的卡片左右居中，宽度随视口调整。成员区沿用原有缩略图和库存网格。点击卡片外部或再次点击同一盟约图标可以关闭。
 
 Outside presses dismiss match detail cards, bond popups and the selected-piece underframe (PR #792, §35.93).
 The detail card and bond popup retain selection while used, so pointerdown cannot move a card before its click.
@@ -1425,6 +1449,12 @@ slots refuse characters/summons. The shop checks capacity in the offered card's 
 pending frame. The HUD, Ready reason and row label use private `stashCount`, with the auto-refill/expiry rule;
 the stash itself is not drawn. Boss prep retains the same bench transform (row 8 → boss row 1, mirrored on the right).
 Covenant rooms with the independent equipment-row choice off retain the mixed hand and visible temporary row.
+
+顶部盟约卡片左右外侧提供切换箭头，按顶部列表的显示顺序循环浏览上一／下一个盟约；只有一个盟约时不显示箭头。点击箭头保持卡片打开，继续显示当前观看对象的盟约。
+
+卡片在普通层数旁以金色显示「+临时层数」，顶部盟约栏则以金色显示两者合计。本人战斗结束后保留临时加值，联防原样继承，下一次进入休整期转换后恢复普通层数的显示。临时层数与普通层数分别传递，按盟约所属玩家读取。不能叠层的盟约继续隐藏数字。
+
+本库盟约卡沿用原有成员与预计叠层布局。未激活条目保留人数进度，激活条目显示阶段。库存继续按本人及同组共享卡池范围显示。
 
 
 ### 规程迁移补充（2026-11-09）

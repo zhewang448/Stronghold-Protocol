@@ -8,7 +8,6 @@ import { clamp, isObj } from './shared.js';
 import { normalizeFrameRate } from '../../frameRate.js';
 import { normalizePreloadVoiceLang } from '../../resources/common.js';
 import { DEFAULT_HOTKEYS, sanitizeHotkeys } from './shortcuts.js';
-import { normalizeCursorSize, DEFAULT_CURSOR_SIZE } from '../../../../shared/cursor.js';
 
 
 // ---- settings ------------------------------------------------------------------------------------------------------
@@ -38,6 +37,8 @@ export const TEXT_SIZES = Object.freeze(['sm', 'md', 'lg', 'xl']);
  *  bondTimers: selected-unit timed bond readouts (#746), off by default. [ASSUMED] Convenience HUD absent from
  *  the official game; maintainer approved 2026-10-18. Stored with the other preferences in sp.pref.settings.
  *  combatMetrics: 设置「作战统计」 (PR #618), on by default in this extension; saved false is retained.
+ *  watchDuringBattle: 设置「作战中查看队友」 (PR #971), off by default: while the own battle still runs, a teammate row
+ *  may open that field (or the other boss group) — a second simulation in this page (battle/observe.js observeTarget).
  *  deploymentZoom: 设置「部署时镜头缩放」 — picking up a piece on the own prep board folds the shop and zooms
  *  (GitHub #602, PR #646). Default off in this extension. An explicit saved deploymentZoom boolean wins; otherwise
  *  prepDeployFold === true migrates to on. prepDeployFold stays a synchronized alias for old preferences.
@@ -49,7 +50,7 @@ export const TEXT_SIZES = Object.freeze(['sm', 'md', 'lg', 'xl']);
  *  deploySnap: 设置「部署时按格子吸附」, default on here (owner decision, 2026-11-06). Stardust 7f39464's toggle
  *  is default off; this port keeps the current snapped preview by default. Only the dragged model changes, never its drop tile.
  */
-export const DEFAULT_SETTINGS = Object.freeze({ bgm: 0.6, sfx: 0.8, voice: 0.8, voiceLang: 'cn', voiceNative: false, voiceOverrides: Object.freeze({}), muted: false, officialBattleHud: true, shopPortraitFocus: false, damageNumbers: true, officialDamageNumbers: false, ammoEnergyCount: false, fullscreenWakeLock: false, bondTimers: false, combatMetrics: true, chatBubbles: true, deploymentZoom: false, prepDeployFold: false, fpsLimit: 0, showFps: true, preload: false, preloadOptional: false, preloadDynamic: false, preloadVoiceLang: Object.freeze(['cn', 'jp']), quality: 'high', officialFx: 'auto', otherSkins: true, deploySnap: true, dynamicIllustrations: 'auto', upstreamReleaseNotes: true, extensionReleaseNotes: true, textSize: 'sm', uiTheme: '', themeVoice: false, themeMotion: true, cursorTheme: 'arknights', cursorSize: DEFAULT_CURSOR_SIZE, keys: DEFAULT_HOTKEYS });
+export const DEFAULT_SETTINGS = Object.freeze({ bgm: 0.6, sfx: 0.8, voice: 0.8, voiceLang: 'cn', voiceNative: false, voiceOverrides: Object.freeze({}), muted: false, officialBattleHud: true, shopPortraitFocus: false, damageNumbers: true, officialDamageNumbers: false, ammoEnergyCount: false, fullscreenWakeLock: false, bondTimers: false, combatMetrics: true, watchDuringBattle: false, chatBubbles: true, deploymentZoom: false, prepDeployFold: false, fpsLimit: 0, showFps: true, preload: false, preloadOptional: false, preloadDynamic: false, preloadVoiceLang: Object.freeze(['cn', 'jp']), quality: 'high', officialFx: 'auto', otherSkins: true, deploySnap: true, dynamicIllustrations: 'auto', upstreamReleaseNotes: true, extensionReleaseNotes: true, textSize: 'sm', uiTheme: '', themeVoice: false, themeMotion: true, cursorTheme: 'system', keys: DEFAULT_HOTKEYS });
 const QUALITIES = ['high', 'medium', 'low'];
 /** The values of 设置「官方特效」 (render/vfx/tier.js OFFICIAL_FX). Display order in the dialog is low / medium / high. */
 export const OFFICIAL_FX_MODES = Object.freeze(['auto', 'off', 'lite', 'full']);
@@ -68,7 +69,7 @@ function ammoEnergyCountOf(r) {
 /**
  * Sanitize persisted settings. Retired keys `ammoCount` and `mysticEnergy` are read here and never returned.
  * @param {any} raw
- * @returns {{ bgm: number, sfx: number, voice: number, voiceLang: 'cn'|'jp'|'en'|'kr', voiceNative: boolean, voiceOverrides: Record<string, string>, muted: boolean, damageNumbers: boolean, officialDamageNumbers: boolean, ammoEnergyCount: boolean, fullscreenWakeLock: boolean, bondTimers: boolean, combatMetrics: boolean, prepDeployFold: boolean, quality: 'high'|'medium'|'low', officialFx: 'auto'|'off'|'lite'|'full', otherSkins: boolean, upstreamReleaseNotes: boolean, extensionReleaseNotes: boolean,
+ * @returns {{ bgm: number, sfx: number, voice: number, voiceLang: 'cn'|'jp'|'en'|'kr', voiceNative: boolean, voiceOverrides: Record<string, string>, muted: boolean, damageNumbers: boolean, officialDamageNumbers: boolean, ammoEnergyCount: boolean, fullscreenWakeLock: boolean, bondTimers: boolean, combatMetrics: boolean, watchDuringBattle: boolean, prepDeployFold: boolean, quality: 'high'|'medium'|'low', officialFx: 'auto'|'off'|'lite'|'full', otherSkins: boolean, upstreamReleaseNotes: boolean, extensionReleaseNotes: boolean,
  *   textSize: 'sm'|'md'|'lg'|'xl', uiTheme: string, themeVoice: boolean, themeMotion: boolean, keys: Record<'buy'|'refresh'|'freeze'|'levelUp'|'retreat'|'sell'|'ready', string> }}
  */
 export function sanitizeSettings(raw) {
@@ -89,6 +90,7 @@ export function sanitizeSettings(raw) {
     ammoEnergyCount: ammoEnergyCountOf(r),
     bondTimers: r.bondTimers === true,
     combatMetrics: typeof r.combatMetrics === 'boolean' ? r.combatMetrics : DEFAULT_SETTINGS.combatMetrics,
+    watchDuringBattle: r.watchDuringBattle === true,
     chatBubbles: typeof r.chatBubbles === 'boolean' ? r.chatBubbles : true,
     deploySnap: typeof r.deploySnap === 'boolean' ? r.deploySnap : true,
     deploymentZoom: typeof r.deploymentZoom === 'boolean' ? r.deploymentZoom : r.prepDeployFold === true,
@@ -111,8 +113,8 @@ export function sanitizeSettings(raw) {
     uiTheme: normalizeUiTheme(r.uiTheme),
     themeVoice: r.themeVoice === true,
     themeMotion: r.themeMotion !== false,
-    cursorTheme: r.cursorTheme === 'system' || r.cursorTheme === 'arknights' ? r.cursorTheme : DEFAULT_SETTINGS.cursorTheme,
-    cursorSize: normalizeCursorSize(r.cursorSize),
+    cursorTheme: r.cursorTheme === 'system' || r.cursorTheme === 'arknights' ? r.cursorTheme
+      : r.arknightsCursor === true ? 'arknights' : DEFAULT_SETTINGS.cursorTheme,
     keys: sanitizeHotkeys(r.keys),
   };
 }

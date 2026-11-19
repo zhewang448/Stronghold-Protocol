@@ -86,11 +86,14 @@ function ResultCurve({ values, onSeek }) {
 }
 function Summary({ value, doc, live, stale }) {
   const remain = value.bossHpLeft ?? value.targetHpLeft, maximum = value.bossHpMax ?? value.targetHpMax;
+  const temporary = Object.entries(value.tempLayers ?? {});
   return html`<div class="trp-summary"><div class="trp-state" role="status"><span class=${`trp-state-dot${live ? ' is-live' : ''}`}></span>${stale ? t('配置已变更，待重新试算') : reportStatus(value, doc, live)}</div>
     <dl class="trp-primary-metrics" data-testid="training-result"><div><dt>${t('有效总伤害')}</dt><dd><${Amount} value=${value.damage} /></dd></div><div><dt>${t('全程平均 DPS')}</dt><dd><${Amount} value=${value.dps} /></dd></div></dl>
     <dl class="trp-secondary-metrics"><div><dt>${t('有效治疗')}</dt><dd><${Amount} value=${value.healing} /></dd></div><div><dt>HPS</dt><dd><${Amount} value=${value.hps || 0} /></dd></div>
       <div><dt>${t('总承伤')}</dt><dd><${Amount} value=${value.taken || 0} /></dd></div><div><dt>${t('作战用时')}</dt><dd>${number(value.seconds)} <small>/ ${number(value.testSeconds || doc.environment.seconds)}s</small></dd></div>
-      <div><dt>${t('击杀 / 目标')}</dt><dd>${value.killed} / ${value.total}</dd></div><div><dt>${t('漏怪数')}</dt><dd>${doc.mode === 'team' ? value.leaks : '—'}</dd></div></dl>
+      <div><dt>${t('击杀 / 目标')}</dt><dd>${value.killed} / ${value.total}</dd></div><div><dt>${t('漏怪数')}</dt><dd>${doc.mode === 'team' ? value.leaks : '—'}</dd></div>
+      ${temporary.map(([id, layers]) => html`<div key=${id}><dt>${data.lookup('bonds', id)?.name ?? id} · ${t('临时盟约层数')}</dt><dd>+${number(layers)}</dd></div>`)}
+    </dl>
     ${maximum > 0 ? html`<div class="trp-target"><div><span>${value.bossHpMax ? t('领袖剩余生命') : t('木桩剩余生命')}</span><b>${number(Math.max(0, remain) / maximum * 100, { percent: true })}</b></div>
       <progress max=${maximum} value=${Math.max(0, remain)} aria-label=${value.bossHpMax ? t('领袖剩余生命') : t('木桩剩余生命')}></progress><small>${number(remain, { compact: false })} / ${number(maximum, { compact: false })}</small></div>` : null}
   </div>`;

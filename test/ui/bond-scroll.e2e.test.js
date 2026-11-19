@@ -45,6 +45,12 @@ test('all bonds remain reachable by mouse drag, wheel, keyboard and native scrol
         // a short press still opens the disc under it
         await page.$eval('.bstrip', el => { el.scrollLeft = 0; });
         await page.click('.bslot:first-child .bond'); await page.waitForSelector('.bpop');
+        const first = await page.$eval('.bslot:first-child', el => el.dataset.bond);
+        const second = await page.$eval('.bslot:nth-child(2)', el => el.dataset.bond);
+        await page.click('.bpop-nav__arrow--next');
+        await page.waitForFunction(id => document.querySelector('.bslot.is-open')?.dataset.bond === id, {}, second);
+        await page.click('.bpop-nav__arrow--prev');
+        await page.waitForFunction(id => document.querySelector('.bslot.is-open')?.dataset.bond === id, {}, first);
         await page.click('.bpop__close');
         // the wheel scrolls it sideways
         await page.mouse.move(box.x + box.w / 2, y);
@@ -55,7 +61,8 @@ test('all bonds remain reachable by mouse drag, wheel, keyboard and native scrol
       await page.waitForFunction(() => !document.querySelector('.bstrip-scroll').classList.contains('is-r'));
       const last = '.bslot:last-child .bond';
       await page.click(last); await page.waitForSelector('.bpop');
-      await page.click('.bpop__close');
+      await page.click(last);
+      await page.waitForSelector('.bpop', { hidden: true });
       // Reset native scroll separately; only ArrowRight below is a keyboard assertion.
       await page.$eval('.bstrip', el => { el.scrollLeft = 0; });
       await page.waitForFunction(() => !document.querySelector('.bstrip-scroll').classList.contains('is-l'));

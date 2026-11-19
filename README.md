@@ -41,7 +41,6 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 | [社区贡献 · DoraCat（@DuolaCCCCat）](https://github.com/DuolaCCCCat) | 感谢 **DoraCat（DuolaCCCCat）** 提出库存显示、皮肤特效、玩家头像与自定义立绘方案，提交相关 Issue、PR 及验收反馈；本库按现有房间、卡池与同步流程适配，具体来源见 [NOTICE.md](NOTICE.md) |
 | [原始社区 UI · isomerpoi/Stronghold-Protocol](https://github.com/isomerpoi/Stronghold-Protocol) | 本库大厅、同盟等待室、物资调配、对局 HUD 与结算界面的原始社区实现来源；感谢 **isomerpoi（雨千代chiyo）** 的界面设计与实现 |
 | [UI 后续适配参考 · xinhai-ai/Stronghold-Protocol](https://github.com/xinhai-ai/Stronghold-Protocol) | 本库交流布局、快捷键、资源展示、公告 Markdown 和手机界面的后续适配参考；感谢 **xinhai-ai 及参考站贡献者**的公开实现，移植范围见 [源码对照文档](docs/REFERENCE-UI-REVIEW.md) |
-| [方舟鼠标参考 · DoingStone/Arknights-Mouse](https://github.com/DoingStone/Arknights-Mouse) | 感谢 **DoingStone 及项目贡献者**的鼠标容器与姿态实现；本库适配为网页原生指针、大小预览及干员抓取形态，固定参考 `e1249037`。代码许可 MIT，角色美术不属于该 MIT 授权；[安装与适配边界](docs/CURSOR.md)、[第三方声明](THIRD-PARTY-NOTICES.md) |
 | [参考站前端归档 · stronghold-ui-site-archive（私有）](https://github.com/zhewang448/stronghold-ui-site-archive) | 保存参考站公开前端快照、来源和哈希，供后续跟进 UI 变化；需仓库访问权限，更新方法见 [源码对照文档](docs/REFERENCE-UI-REVIEW.md#后续跟进与私有归档) |
 | [Stronghold-Protocol-Forge-Mods](https://github.com/XiaMo233M/Stronghold-Protocol-Forge-Mods) | Forge 工坊包与成品索引；配套下方 Forge 宿主使用 |
 | [Stronghold-Protocol-Forge](https://github.com/XiaMo233M/Stronghold-Protocol-Forge) | Forge-Mods 对应的游戏宿主与 MOD API |
@@ -150,7 +149,7 @@ winget install Cloudflare.cloudflared
 | **还原战场状态条** | 默认开启损伤圆环、脚下生命/技力条和真实过载分段；一个开关切回原显示，缺素材仍能显示程序圆环 |
 | **策略小地图与预计叠层** | 策略左栏查看实际地图；休整期盟约盘查看本人确定性预计加层及来源，部署调整后更新 |
 | **可选商店人像突出** | 默认关闭；开启后放大、提亮干员人像并调整文字渐变，卡片尺寸与装备卡保持原样 |
-| **默认方舟鼠标** | 默认 96 px，可调 32–128 px；设置页有实际大小预览，支持可点击、文字、禁用及干员抓取形态，保留已有个人选择 |
+| **骷髅手指光标** | 设置中可开启官方鼠标手和点击动画。新用户默认关闭，继承已有的系统／方舟选择 |
 
 [查看完整特色图鉴、操作步骤、默认值及兼容范围 →](docs/FORK-FEATURES.md)
 
@@ -167,7 +166,7 @@ winget install Cloudflare.cloudflared
 | [数据迁移](#个人数据备份与域名迁移) | 恢复码与文件导入 / 导出，覆盖本机配置、战绩、调配、皮肤、背景和音乐；旧域名授权传输 |
 | [干员与外观](#联动干员皮肤与组队海报) | 联动自选干员、可选皮肤与动态立绘、可搜索的组队海报、自定义头像/立绘、各三个本机图片预设及名片底图 |
 | [调配与预设](#命名调配预设) | 最多 20 个命名方案；分版本、字段和持有范围应用，支持随机皮肤与锁定表、候选编队和导入预览 |
-| [手机与个性化](#手机适配与个性化) | 手机横屏 HUD、可拖动聊天与标点、小屏统计和触控适配；默认方舟鼠标、自定义背景、音乐、字号及 FPS 显示 |
+| [手机与个性化](#手机适配与个性化) | 手机横屏 HUD、可拖动聊天与标点、小屏统计和触控适配；骷髅手指光标、自定义背景、音乐、字号及 FPS 显示 |
 | [素材与加载](#素材与加载管理) | 统一入口与唯一下载按钮；按浏览器能力预载或兼容下载，本地素材与缓存 ZIP 导入 / 导出 |
 | [插件与测试工具](#插件与测试工具) | 沿用上游插件工作台与 Forge 导入；本库控制台提供开发者模式、6 个模拟工具和 30 个场景入口 |
 | [开服与维护](#开服更新与恢复) | 一键开服、公网隧道、重启恢复、签名增量更新与完整包回退；提供启动保护、更新验证和备份管理 |

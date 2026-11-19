@@ -64,6 +64,7 @@ test('the example pack imports whole: every key it writes is used, nothing refus
 
 test('the example Spine: a 3.8 skeleton with Idle / Happy / Talk, every attachment a region of its atlas page', () => {
   const skel = JSON.parse(readFileSync(join(DEMO, 'character/neon.json'), 'utf8'));
+  // either line ending: .gitattributes keeps atlases LF, but an author's own pack may come from Windows (pixi-spine reads both)
   const atlas = readFileSync(join(DEMO, 'character/neon.atlas'), 'utf8').split(/\r?\n/);
   assert.match(skel.skeleton.spine, /^3\.8\./);
   assert.deepEqual(Object.keys(skel.animations).sort(), ['Happy', 'Idle', 'Talk']);

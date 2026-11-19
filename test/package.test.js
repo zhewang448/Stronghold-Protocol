@@ -292,19 +292,21 @@ test('dry-run on a temporary checkout: the full and the lite file lists, the sum
   }
 });
 
-test('full packages include known installed cursor images; lite packages and unrelated cursor files stay excluded', () => {
+test('full packages carry the optional official cursor atlas and lite packages keep the system fallback', () => {
   const {dir, put}=fakeCheckout();
   try {
-    const prefix='public/assets/cursor/arknights-e1249037/';
-    put(prefix+'96/normal.png',PNG);put(prefix+'32/grab.png',PNG);put(prefix+'normal.png',PNG);
-    put(prefix+'provenance.json','{"source":"pinned"}');put(prefix+'private-note.txt','not a cursor');
+    const atlas='/assets/local/ui/cursor/prts_hand.png';
+    const legacy='public/assets/cursor/arknights-e1249037/96/normal.png';
+    put('public'+atlas,PNG);
+    put('data/local-assets.json',JSON.stringify({ groups: { 'ui/cursor': { prts_hand: { path: atlas, extractVersion: 2 } } } }));
+    put(legacy,PNG);
     const full=plan(dir,{allowDirty:true,env:ENV,scan:false,measure:false});
-    assert.deepEqual(full.art.filter(file=>file.startsWith(prefix)),[
-      prefix+'32/grab.png',prefix+'96/normal.png',prefix+'normal.png',prefix+'provenance.json',
-    ]);
+    assert.ok(full.art.includes('public'+atlas));
+    assert.ok(full.art.includes('data/local-assets.json'));
+    assert.ok(!full.art.includes(legacy));
     assert.equal(plan(dir,{lite:true,allowDirty:true,env:ENV,scan:false,measure:false}).art.length,0);
-    const shipped=selectTracked(['tools/install-cursors.mjs','docs/CURSOR.md','docs/FORK-FEATURES.md']).keep;
-    assert.deepEqual(shipped,['docs/CURSOR.md','docs/FORK-FEATURES.md','tools/install-cursors.mjs']);
+    const shipped=selectTracked(['tools/local-extract/cursor.py','docs/CURSOR.md','docs/FORK-FEATURES.md']).keep;
+    assert.deepEqual(shipped,['docs/CURSOR.md','docs/FORK-FEATURES.md','tools/local-extract/cursor.py']);
   } finally { fs.rmSync(dir,{recursive:true,force:true}); }
 });
 

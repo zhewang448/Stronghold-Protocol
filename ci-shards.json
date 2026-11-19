@@ -1005,7 +1005,6 @@
     "test/ui/community-layout.e2e.test.js": 1,
     "test/ui/console-launcher-update.e2e.test.js": 800,
     "test/ui/cosmetics-lazy.test.js": 15,
-    "test/ui/cursor-size.test.js": 800,
     "test/ui/cursor.e2e.test.js": 800,
     "test/ui/custom-illust.e2e.test.js": 800,
     "test/ui/custom-room-code.e2e.test.js": 800,

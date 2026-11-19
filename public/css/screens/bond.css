@@ -1,0 +1,204 @@
+/* Shared BondDisc appearance, in-match bond strip and detail card. */
+
+/* Shared bond glyphs and detail/info chips; original rule order retained. */
+.bglyph { display: inline-grid; place-items: center; width: .24rem; height: .24rem; flex: none; }
+.bglyph img { width: 100%; height: 100%; object-fit: contain; filter: brightness(0) invert(.86) sepia(.4) hue-rotate(110deg) saturate(2.5); }
+.bglyph__txt { font-weight: 900; font-size: calc(.15 * var(--t)); color: var(--mint-400); }
+.dbonds { display: flex; flex-wrap: wrap; gap: .08rem; }
+.dbond { display: inline-flex; align-items: center; gap: .05rem; padding: .03rem .1rem .03rem .05rem; font-size: calc(.15 * var(--t)); background: rgba(78, 216, 175, .08); border: 1px solid var(--mint-800); color: var(--mint-400); }
+/* the unit's bonds in the header's right column, right under name / class (user playtest #2 item 9): icon, name,
+   count / next threshold, tier pips — visible as soon as the card opens */
+.dbonds--top { gap: .05rem; margin-top: .06rem; }
+.dhead__info .dbonds--top .dbond { font-size: calc(.14 * var(--t)); padding: .02rem .07rem .02rem .03rem; }
+.dhead__info .dbond__icon { width: .24rem; height: .24rem; }
+.dbonds--top .dbond { gap: .06rem; padding: .03rem .08rem .03rem .04rem; font: inherit; font-size: calc(.15 * var(--t)); color: var(--text-md);
+  background: rgba(255, 255, 255, .03); border: 1px solid var(--line-2); cursor: var(--sp-cursor-default, default); }
+.dbonds--top button.dbond { cursor: var(--sp-cursor-pointer, pointer); }
+.dbonds--top button.dbond:hover { border-color: var(--mint-500); color: #fff; }
+.dbonds--top .dbond.is-active { color: var(--mint-400); background: rgba(78, 216, 175, .1); border-color: var(--mint-700); }
+.dbonds--top .dbond.is-core .dbond__name { font-weight: 700; }
+.dbond__icon { width: .26rem; height: .26rem; }
+.dbond:not(.is-active) .dbond__icon img { filter: brightness(0) invert(.6); }
+.dbond__count { font-size: calc(.15 * var(--t)); color: #fff; }
+.dbond__count small { font-size: calc(.11 * var(--t)); color: var(--text-dim); }
+.dbond__count.is-max { color: var(--gold-2); }
+.dbond__tiers { display: inline-flex; gap: 2px; margin-left: .02rem; }
+.dbond__tiers i { width: .05rem; height: .12rem; background: rgba(255, 255, 255, .16); transform: skewX(-18deg); }
+.dbond__tiers i.on { background: var(--mint-400); box-shadow: 0 0 .04rem rgba(78, 216, 175, .8); }
+/* a bond the mode never activates (标准: 10 of 23 — gameLogic modeOffBonds) */
+.dbonds--top .dbond.is-off { border-style: dashed; border-color: rgba(255, 255, 255, .16); background: transparent; color: var(--text-dim); }
+.dbond.is-off .dbond__name { text-decoration: line-through; text-decoration-color: rgba(255, 84, 84, .6); }
+.dbond.is-off .dbond__icon img { filter: grayscale(1) brightness(.5); }
+.dbond__off { font-size: calc(.12 * var(--t)); color: var(--text-dim); white-space: nowrap; }
+.dbonds--top .dbond.is-granted { border-style: dashed; }
+.dbond__iso { font-size: calc(.11 * var(--t)); font-weight: 700; color: var(--gold-2); }
+.ibonds { display: flex; flex-wrap: wrap; gap: .06rem; }
+.ibond { display: inline-flex; align-items: center; gap: .05rem; padding: .03rem .08rem .03rem .04rem; font-size: calc(.14 * var(--t)); border: 1px solid var(--line-2); color: var(--text-md); }
+.ibond.is-off { color: var(--text-dim); background: rgba(255, 255, 255, .02); text-decoration: line-through; text-decoration-color: rgba(255, 84, 84, .6); }
+.ibond.is-off .bglyph img { filter: grayscale(1) brightness(.5); }
+.ibond__ban { display: inline-flex; align-items: center; gap: .02rem; font-size: calc(.12 * var(--t)); padding: 0 .05rem; background: var(--red); color: #fff; text-decoration: none; }
+.ibond__ban .icon { width: .12rem; height: .12rem; }
+
+/* #746: optional selected-unit bond timers; labels wrap at narrow widths and large text sizes. */
+.dbond-times__row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .08rem .2rem; margin: .1rem 0; font-size: calc(.24 * var(--t)); }
+.dbond-times__row > span { min-width: 0; overflow-wrap: anywhere; }
+
+/* ---- bond disc ------------------------------------------------------------------------------------ */
+.bond {
+  --disc: .56rem;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .05rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+.bond__disc { position: relative; width: var(--disc); height: var(--disc); display: grid; place-items: center; }
+.bond__core {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+.bond__icon { width: 66%; height: 66%; object-fit: contain; filter: brightness(0) invert(.82); pointer-events: none; }
+.bond__glyph { font-weight: 900; font-size: calc(var(--disc) * .42); line-height: 1; color: #cfd6d3; }
+.bond__count {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--disc) * -.1);
+  transform: translateX(-50%);
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: calc(var(--disc) * .32);
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 0 3px #000, 0 1px 2px #000, 0 0 6px #000;
+  font-variant-numeric: tabular-nums;
+}
+.bond__name { font-size: calc(var(--disc) * .27); color: var(--text-md); text-shadow: 0 1px 2px #000; white-space: nowrap; }
+.bond.is-active .bond__name { color: var(--text-hi); }
+.bond.is-disabled .bond__disc::before,
+.bond.is-disabled .bond__core { filter: grayscale(1) brightness(.55); }
+.bond.is-disabled .bond__name { color: var(--text-dim); }
+.bond__ban {
+  position: absolute;
+  top: calc(var(--disc) * -.12);
+  right: calc(var(--disc) * -.12);
+  width: calc(var(--disc) * .36);
+  height: calc(var(--disc) * .36);
+  display: grid;
+  place-items: center;
+  background: #d32a1b;
+  color: #fff;
+  border: 1px solid #ff7a6b;
+  box-shadow: 0 0 4px rgba(0, 0, 0, .6);
+}
+.bond__ban .icon { width: 80%; height: 80%; }
+.bond.is-frozen { opacity: .5; }
+.bond.is-clickable { cursor: var(--sp-cursor-pointer, pointer); }
+.bond--sm { --disc: .42rem; }
+.bond--lg { --disc: .76rem; }
+
+/* Extracted from game.css; original rule order retained. */
+/* Only the bond discs (and the +N chip) take the pointer: the strip's box spans the width under the top bar, where the
+   top board row's units stand (row 12 at 16:9 / 21:9 / 720p / phones, the boss field's row 5 in a boss prep) — it used
+   to swallow the taps and drags on them (review of user playtest #2 item 8: every own unit reachable). */
+.gm__bonds > *, .gm__bonds .bstrip { pointer-events: none; }
+.gm__bonds .bslot, .gm__bonds .bstrip__more { pointer-events: auto; }
+.gm__bond-list { min-width: 0; flex: 1; }
+/* The hidden list leaves no hit area over the board; only this compact tab can reopen it (GitHub #142). */
+/* A bare arrow (the owner's request after 0.2.0: the boxed 「收起」 tab looked heavy): transparent, half-visible until
+   hovered or focused; the 44 × 44 touch target stays (an invisible hit area), the name is the aria-label. */
+.gm__bonds .bonds-toggle { pointer-events: auto; flex: none; display: inline-flex; align-items: center; justify-content: center;
+  min-width: 44px; min-height: 44px; padding: 0; color: var(--text-hi); background: transparent; border: 0; cursor: var(--sp-cursor-pointer, pointer);
+  opacity: .55; transition: opacity var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out); line-height: 1; }
+.bonds-toggle .icon { width: max(.22rem, 18px); height: max(.22rem, 18px); filter: drop-shadow(0 0 2px rgba(0, 0, 0, .85)); }
+.bonds-toggle[aria-expanded="false"] { opacity: .8; }
+.bonds-toggle:hover, .bonds-toggle:focus-visible { opacity: 1; color: var(--mint-500); }
+.bonds-toggle:focus-visible { outline: 2px solid var(--mint-500); outline-offset: -4px; }
+.bstrip { display: flex; align-items: flex-start; gap: .1rem; flex-wrap: nowrap; }
+.bstrip.is-frozen .bslot { opacity: .5; filter: saturate(.4); }
+.bstrip--empty { display: inline-flex; align-items: center; gap: .12rem; padding: .08rem .16rem; font-size: .15rem; color: var(--text-dim); background: rgba(8, 11, 10, .6); border: 1px dashed var(--line-2); }
+/* a watched teammate's bonds (DESIGN §20.15): an amber "👁 name" pill in front of the discs, amber rings. Horizontal at
+   every width with a pixel floor (a vertical .12rem name was ~6-8 px per glyph on desktop / tablet, ~5 px on phones
+   where 1rem is clamped at 40 px); centred on the discs, clear of the team panel below */
+.bstrip__owner { align-self: center; flex: none; display: inline-flex; flex-direction: row; align-items: center; gap: max(.04rem, calc(3px * var(--sp-ui, 1)));
+  padding: max(.03rem, calc(2px * var(--sp-ui, 1))) max(.06rem, calc(4px * var(--sp-ui, 1))); border: 1px solid rgba(246, 163, 41, .5); background: rgba(40, 26, 6, .7); }
+.bstrip__owner .micro { color: var(--amber); font-size: max(.15rem, 10px); letter-spacing: .04em; max-width: max(1.3rem, calc(72px * var(--sp-ui, 1)));
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.bstrip__eye { color: var(--amber); font-size: max(.17rem, 11px); flex: none; }
+.bstrip--empty .bstrip__owner .micro { max-width: max(1.6rem, calc(80px * var(--sp-ui, 1))); }
+.bstrip--empty.is-other { border-color: rgba(246, 163, 41, .5); }
+@media (max-width: 767px) {
+  .bstrip__owner .micro { font-size: max(.12rem, 9px); }
+  .bstrip__eye { font-size: max(.15rem, 10px); }}
+.bstrip.is-other .bond__core { box-shadow: 0 0 0 1px rgba(246, 163, 41, .45); }
+.bstrip__more { align-self: center; font-size: .16rem; color: var(--text-lo); padding: .04rem .08rem; border: 1px solid var(--line-2); background: rgba(8, 11, 10, .7); }
+.bslot { position: relative; display: flex; flex-direction: column; align-items: center; width: .74rem; padding-top: .18rem; }
+.bslot .bond { --disc: .52rem; }
+.bslot .bond__name { font-size: .14rem; font-weight: 500; text-shadow: 0 1px 3px #000, 0 0 6px #000; }
+.bslot.is-open .bond__core { box-shadow: 0 0 0 2px var(--mint-400), 0 0 .2rem rgba(23, 249, 183, .6); }
+/* a bond the mode never activates, with members (the server's `off` entry): the briefing's grey ✕ disc, the chips'
+   struck name, 本局禁用 under it instead of the count */
+.bslot.is-off .bond__name { color: var(--text-dim); text-decoration: line-through; text-decoration-color: rgba(255, 84, 84, .6); }
+.bslot.is-off .bslot__off {
+  position: static; margin-top: .02rem; font-size: .11rem; font-weight: 500; color: var(--text-dim); white-space: nowrap;
+  background: rgba(8, 11, 10, .85); border: 1px dashed rgba(255, 255, 255, .25);
+}
+
+/* Keep every bond reachable without shrinking its disc or extending over the right HUD. */
+.bstrip-scroll { display: flex; align-items: center; min-width: 0; gap: .04rem; }
+/* Let the padding protect rings/counts from clipping without lowering the discs and names into the board. */
+.gm__bonds .bstrip-scroll .bstrip { min-width: 0; overflow-x: auto; overflow-y: hidden; padding: .08rem 0; margin: -.08rem 0;
+  pointer-events: auto; touch-action: pan-x; scrollbar-width: thin; }
+.bstrip-scroll .bslot { flex: none; }
+.gm.is-pen .gm__bonds .bstrip-scroll *, .gm.has-sp .gm__bonds .bstrip-scroll * { pointer-events: none; }
+
+.gm__bond-list > .tt-anchor { display: block; max-width: 100%; }
+
+/* Stage sprite above each bond disc; stack counts stay on the disc. */
+.bslot__stage {
+  position: absolute; top: calc(.18rem + .26rem - var(--bond-frame-size) * (0.5 - var(--bond-rim-top))); left: 50%; transform: translate(-50%, -50%);
+  display: flex; justify-content: center; height: .24rem; color: #fff; font-size: .18rem;
+  pointer-events: none;
+}
+.bslot__stage-sprite { position: relative; display: block; width: var(--stage-width); height: .24rem; }
+.bslot__stage-left, .bslot__stage-right { position: absolute; top: 0; height: .24rem; overflow: hidden; }
+.bslot__stage-left { left: 0; width: var(--stage-left); }
+.bslot__stage-right { left: var(--stage-left); width: .05rem; }
+.bslot__stage-sprite img { position: absolute; top: 0; width: .24rem; max-width: none; height: .24rem; }
+.bslot__stage-left img { left: 0; }
+.bslot__stage-right img { left: -.19rem; }
+
+/* Extracted from game-panels.css; original rule order retained. */
+.bslot.has-temp-layers .bond__count, .bpop__facts .bpop__temporary, .team__fly-temp-bond .bond__count { color: var(--gold-2); }
+
+/* Keep navigation outside the scrolling card and clear of the viewport edges. */
+.bpop.bpop--center {
+  left: 50%; translate: -50% 0; max-width: calc(100% - .28rem);
+}
+.bpop-nav {
+  --bond-nav-width: max(.6rem, 32px, calc(44px * var(--sp-ui, 1)));
+  position: absolute; top: 2.1rem; left: 50%; translate: -50% 0; z-index: 10;
+  width: 5.4rem; max-width: calc(100% - 2 * (var(--bond-nav-width) + .14rem));
+  max-height: calc(100% - 2.4rem); display: grid; grid-template-columns: minmax(0, 1fr); pointer-events: none;
+}
+.bpop-nav > .bpop {
+  position: relative; inset: auto; translate: none; width: 100%; max-width: 100%;
+  max-height: 100%; min-height: 0; min-width: 0; pointer-events: auto;
+}
+.bpop-nav__arrow {
+  position: absolute; top: 50%; translate: 0 -50%; width: var(--bond-nav-width); height: max(.9rem, var(--bond-nav-width));
+  display: grid; place-items: center; padding: 0; border: 0; background: transparent;
+  color: var(--text-hi); cursor: var(--sp-cursor-pointer, pointer); pointer-events: auto; filter: drop-shadow(0 2px 3px #000);
+}
+.bpop-nav__arrow--prev { right: calc(100% + .06rem); }
+.bpop-nav__arrow--next { left: calc(100% + .06rem); }
+.bpop-nav__image { width: 100%; height: 100%; object-fit: contain; opacity: .85; }
+.bpop-nav__arrow--prev .bpop-nav__image { transform: scaleX(-1); }
+.bpop-nav__arrow:hover .bpop-nav__image { opacity: 1; }
+.bpop-nav__arrow:focus-visible { outline: 2px solid var(--mint-400); outline-offset: 2px; }

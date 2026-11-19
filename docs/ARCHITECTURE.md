@@ -13,9 +13,8 @@ making one, in Chinese). The [settlement usage guide](../server/sim/AGENTS.md) g
 
 ## 1. What runs where
 
-The optional native browser cursor lives in `public/js/ui/cursor.js` and `public/css/cursor.css`,
-installed by settings and fed by the game screen's existing drag state. `tools/install-cursors.mjs`
-prepares local third-party art; it is not a simulation dependency. See [CURSOR.md](CURSOR.md).
+The optional PRTS cursor uses the Canvas overlay in `public/js/ui/cursor.js`. Settings apply the local cursor preference.
+`tools/local-extract/cursor.py` extracts its optional atlas from the installed Windows client. See [CURSOR.md](CURSOR.md).
 
 AI strategy selection is documented in [BOT_STRATEGIES](BOT_STRATEGIES.md): `botStrategyContract.js` defines
 the five hooks, `botStrategies.js` registers legacy/ioleta/adaptive/ioleta-adaptive, and `botIoletaPolicy.js` holds opt-in procurement heuristics.

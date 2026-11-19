@@ -63,6 +63,9 @@ export function finishReplayField(m, f) {
     const boss = f.kind === 'boss' || f.kind === 'hidden';
     const synthetic = f.replayForced || f.result.synthetic || !f.resultSource;
     entry.result = jsonClone(f.result);
+    const temporaryBonds = new Set(Object.values(f.result.perPlayer || {}).flatMap(p => Object.keys(p.tempLayerGains || {})));
+    for (const p of f.spec?.players || []) for (const id of Object.keys(p.tempLayers || {})) temporaryBonds.add(id);
+    if (temporaryBonds.size) entry.bondNames = Object.fromEntries([...temporaryBonds].map(id => [id, m.gd.bond(id)?.name ?? id]));
     entry.source = f.replayForced ? 'synthetic' : boss ? 'boss-credited' : synthetic ? 'synthetic' : f.resultSource;
     entry.digest = resultDigest(entry.result);
     entry.playable = !boss && !synthetic;

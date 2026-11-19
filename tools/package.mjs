@@ -98,7 +98,6 @@ import { rewriteManifest } from '../server/http/assetViews.js';
 import { mergeLocalManifests, planFromManifests } from '../public/js/assetPack.js';
 import { writePackIndex } from './packs.mjs';
 import { RELEASE_TAG } from '../server/release-version.js';
-import { CURSOR_SIZES } from '../shared/cursor.js';
 import { TERMINAL_THEME, validTerminalManifest } from './legacy-terminal-theme.mjs';
 import { compareReleaseTags } from '../server/release-update.js';
 import { OFFICIAL_PACK_EXT, OFFICIAL_PACK_LIMITS, THEME_LIMITS, officialThemeById } from '../shared/uiTheme.js';
@@ -139,7 +138,7 @@ export const PLAYER_SCRIPTS = ['scripts/install-service-windows.ps1', 'scripts/l
   'scripts/start-tunnel.bat', 'scripts/start-tunnel.mjs', 'scripts/stop-server.bat', 'scripts/free-port.mjs',
   'scripts/host-runtime.mjs', 'scripts/recover-release.mjs'];
 /** The tools a player runs (npm run setup / doctor / assets, the postinstall) and the ones setup starts. */
-export const PLAYER_TOOLS = ['tools/build-resource-manifest.mjs', 'tools/crop-board-atlas.mjs', 'tools/doctor.mjs', 'tools/fetch-assets.mjs', 'tools/install-skins.mjs', 'tools/install-cursors.mjs', 'tools/install-dynamic-illustrations.mjs', 'tools/cache-dynamic-illustrations.mjs', 'tools/install-new-operators.mjs', 'tools/update-dynamic-catalogue.mjs', 'tools/prepare-operator-audio.mjs', 'tools/build-seat-art.mjs', 'tools/install-seat-art.mjs', 'tools/setup.mjs', 'tools/vendor.mjs', 'tools/fetch-stats-assets.mjs', 'tools/plugin.mjs', 'tools/theme-template.mjs'];
+export const PLAYER_TOOLS = ['tools/build-resource-manifest.mjs', 'tools/crop-board-atlas.mjs', 'tools/doctor.mjs', 'tools/fetch-assets.mjs', 'tools/install-skins.mjs', 'tools/install-dynamic-illustrations.mjs', 'tools/cache-dynamic-illustrations.mjs', 'tools/install-new-operators.mjs', 'tools/update-dynamic-catalogue.mjs', 'tools/prepare-operator-audio.mjs', 'tools/build-seat-art.mjs', 'tools/install-seat-art.mjs', 'tools/setup.mjs', 'tools/vendor.mjs', 'tools/fetch-stats-assets.mjs', 'tools/plugin.mjs', 'tools/theme-template.mjs'];
 /** Whole tool directories: fetch-assets' modules, the local-client extraction setup runs. */
 export const PLAYER_TOOL_DIRS = ['tools/assets/', 'tools/local-extract/'];
 /** Whole runtime directories (their tracked files). */
@@ -414,13 +413,6 @@ export function artPlan(root, { lite = false, jpVoice = FULL_ZIP_JP_VOICE, optio
   for (const f of listTree(root, 'public/fonts')) files.add(f);
   // Native cursor URLs are fixed in CSS/JS rather than data/assets.json. Ship only the installer's known outputs;
   // never sweep arbitrary files from the optional cursor folder into a public archive.
-  const cursorRoot = 'public/assets/cursor/arknights-e1249037/';
-  const cursorRoles = ['normal', 'pointer', 'pressed', 'pointer-pressed', 'grab', 'grabbing', 'text', 'disabled'];
-  for (const rel of ['provenance.json', ...cursorRoles.map(role => role + '.png'),
-    ...CURSOR_SIZES.flatMap(size => cursorRoles.map(role => `${size}/${role}.png`))]) {
-    const file = cursorRoot + rel;
-    if (isFile(path.join(root, file))) files.add(file);
-  }
   // Optional terminal art is installed outside the general asset manifests. Ship its validated inventory only.
   const themeRoot = `public/assets/terminal-themes/${TERMINAL_THEME}/`;
   const themeFile = themeRoot + 'manifest.json';

@@ -36,6 +36,10 @@ export class InPageSimHost {
     return { get snap() { return b.snapshot(); }, get ev() { return b.drainEvents() || []; }, state: b, ticks, slices };
   }
   progress() { return { ...this.sim.spec.battleProgress(this.battle), damage: battleDamage(this.battle) }; }
+  // Battle-local snapshot includes non-settling boss/unite layers too.
+  tempLayersSnapshot() {
+    return this.battle?.tempLayersSnapshot() || {};
+  }
   uniteLeft() { return this.sim.spec.uniteLeft(this.battle); }
   compactResult(options) {
     const s = this.sim.spec;
@@ -131,6 +135,10 @@ export class WorkerSimHost {
     return this;
   }
   async step(n, opts) { return this.accept(await this.rpc('step', [n, opts])); }
+  tempLayersSnapshot() {
+    if (this.stopped) return {};
+    return Object.fromEntries(Object.entries(this.packet?.tempLayersSnapshot || {}).map(([pid, own]) => [pid, { ...own }]));
+  }
   progress() { return this.packet.progress; }
   uniteLeft() { return this.packet.left; }
   compactResult() { return this.packet.result; }

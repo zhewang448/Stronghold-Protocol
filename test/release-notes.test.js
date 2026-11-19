@@ -38,7 +38,8 @@ test('installed history covers both complete source documents and permanent entr
     assert.equal(history[source].length, headings.length);
     assert.ok(history[source].every(r => r.title && r.entries.length));
   }
-  assert.equal(history.upstream[0].version, '0.4.0');
+  assert.equal(history.upstream[0].title, 'Unreleased');
+  assert.equal(history.upstream.find(row => row.version)?.version, '0.4.0');
   assert.equal(history.upstream.at(-1).version, '0.1.0');
   for (const screen of ['title', 'lobby']) assert.match(fs.readFileSync(new URL('../public/js/screens/' + screen + '.js', import.meta.url), 'utf8'), /ReleaseHistoryButton/);
 });

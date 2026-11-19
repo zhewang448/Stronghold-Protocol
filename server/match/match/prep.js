@@ -31,7 +31,11 @@ export class MatchPrep {
       // about to start. releaseDeferred is this call only: a scroll's equipDirect must still see the mark.
       ps.checkItemMerges({ releaseDeferred: true });
       ps.recompute();
-      this.dispatch(ps, 'onPrepStart', { round: this.round });
+      try {
+        this.dispatch(ps, 'onPrepStart', { round: this.round });
+      } finally {
+        delete ps.tempLayers;
+      }
       ps.recompute();
     }
     // solo / single-human matches: untimed (soloUntimed); co-op: the round's prepTime, as the local console's 休整期

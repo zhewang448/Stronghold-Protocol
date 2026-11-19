@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { html, Icon, BondDisc } from './components.js';
 import { UnitThumb, BandIcon, RichText } from './gameComponents.js';
-import { sortBonds, nextThreshold, bondTier } from './gameLogic.js';
-import { bondEffectRecord } from './bondEffect.js';
+import { sortBonds, nextThreshold } from './gameLogic.js';
+import { bondDisplay } from './bondStrip.js';
 import { bondIconUrl } from './assetUrls.js';
 import { data } from '../data.js';
 import { t } from '../../../shared/i18n.js';
@@ -27,16 +27,14 @@ export function flyOpRec(unit, lookup = (id) => data.lookup('chess', id)) {
 function FlyBonds({ bonds, ownerId, onBond, layersDisabled }) {
   const manifest = data.get('assets');
   return sortBonds(bonds, (id) => data.lookup('bonds', id))
-    .filter((bond) => !bond.off && (bond.active || bond.count > 0 || bond.layers > 0))
+    .filter((bond) => !bond.off && (bond.active || bond.count > 0 || bond.layers > 0 || bond.tempLayers > 0))
     .map((bond) => {
-      const base = data.lookup('bonds', bond.bondId);
-      const rec = bondEffectRecord(base, data.lookup('effects', bond.effectId || base?.effectId), bond.layers ?? 0);
-      const thresholds = bond.effectId ? rec?.thresholds || [] : bond.thresholds?.length ? bond.thresholds : rec?.thresholds || [];
+      const { record: rec, thresholds, tier, total, tempLayers } = bondDisplay(bond.bondId, bond);
       const next = nextThreshold(bond.count ?? 0, thresholds);
       const name = rec?.name || bond.bondId;
       const title = `${name} ${bond.count ?? 0}/${next ?? thresholds.at(-1) ?? '-'}${bond.harmony > 0 ? t('（含调和 +{harmony}）', { harmony: bond.harmony }) : ''}`;
       return html`<${BondDisc} key=${bond.bondId} name=${name} icon=${bondIconUrl(manifest, bond.bondId)}
-        layers=${rec?.noStack ? undefined : bond.layers ?? 0} tier=${bond.effectId ? bondTier(bond.count ?? 0, thresholds, rec?.maxCount) : bond.tier ?? 0}
+        layers=${rec?.noStack ? undefined : total} tier=${tier} class=${tempLayers > 0 ? 'team__fly-temp-bond' : undefined}
         maxTier=${Math.max(1, thresholds.length)} active=${!!bond.active} size="sm" showName=${false}
         layersDisabled=${layersDisabled} title=${title} onClick=${onBond ? () => onBond(bond.bondId, ownerId) : undefined} />`;
     });
@@ -67,7 +65,7 @@ function BandPopup({ band, onClose }) {
   </div>`;
 }
 
-export function TeamFlyout({ panelRef, players, myId = null, phaseKey = null, viewKey = null, openRequest = 0, layersDisabled = false, onBond = null, onOp = null }) {
+export function TeamFlyout({ panelRef, players, myId = null, phaseKey = null, viewKey = null, openRequest = 0, layersDisabled = false, bondsForPlayer = null, onBond = null, onOp = null }) {
   const [open, setOpen] = useState(false), [present, setPresent] = useState(false), [layout, setLayout] = useState(null), [band, setBand] = useState(null);
   const toggle = useRef(null), scroll = useRef(null), drag = useRef(null), dragged = useRef(false);
   const hoverTimer = useRef(0), hover = useRef({ inside: false, pinned: false, blocked: false });
@@ -223,7 +221,7 @@ export function TeamFlyout({ panelRef, players, myId = null, phaseKey = null, vi
         onClickCapture=${(event) => { if (dragged.current) { dragged.current = false; event.preventDefault(); event.stopPropagation(); } }}>
         ${(layout.rows || []).filter((row) => byId.has(row.id)).map((row) => {
           const player = byId.get(row.id), empty = player.hidden || player.alive === false;
-          const bonds = !empty && Array.isArray(player.bonds) ? player.bonds : [];
+          const bonds = empty ? [] : bondsForPlayer?.(player.playerId) ?? player.bonds ?? [];
           const ops = !empty && Array.isArray(player.boardOps) ? player.boardOps.filter((unit) => unit && typeof unit.id === 'string') : [];
           const strategy = !empty && player.bandId ? data.lookup('bands', player.bandId) : null;
           return html`<section key=${row.id} class="team__fly-row" data-player-id=${row.id} aria-label=${player.name}

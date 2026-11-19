@@ -26,6 +26,10 @@ function stop() {
 
 function showDetails(f) {
   const pp = Object.entries(f.result?.perPlayer || {});
+  const temporary = (f.spec.players || []).flatMap(({ playerId, tempLayers }) => {
+    const layers = Object.entries((f.kind === 'unite' ? tempLayers : f.result?.perPlayer?.[playerId]?.tempLayerGains) ?? {});
+    return layers.map(([id, n]) => `<li>${esc(nameOf(playerId))} · ${esc(f.bondNames?.[id] ?? id)} +${number(n)}</li>`);
+  });
   const formations = (f.lineup || f.spec.players).map((p) => `<h3>${esc(nameOf(p.playerId))} · 上场阵容</h3>
     <div class="xscroll"><table><thead><tr><th scope="col">单位</th><th scope="col">位置 / 朝向</th><th scope="col">技能 / 模组</th><th scope="col">潜能 / 练度</th><th scope="col">装备</th></tr></thead>
     <tbody>${p.units.map((u) => `<tr><th scope="row">${esc(u.name || u.chessId || u.tokenId)}${u.standIn ? '（补位）' : ''}${u.diy ? `（自选 ${esc(u.diy.charId)}）` : ''}</th>
@@ -34,6 +38,7 @@ function showDetails(f) {
   $('details').innerHTML = `<h3>已采纳结果 · ${esc(sourceName[f.source] || '尚无结果')}</h3>
     <p class="meta">战斗时长 ${number(f.result?.time)} 秒 · ${f.result?.reason === 'cleared' ? '已清场' : esc(f.result?.reason || '未完成')}</p>
     <ul>${pp.map(([pid, p]) => `<li>${esc(nameOf(pid))}：击杀 ${number(p.killed)} / ${number(p.total)}，漏怪 ${(p.leaked || []).filter((e) => e.counted !== false).length}，伤害 ${number(p.damageDealt)}，领袖伤害 ${number(p.bossDamage)}${p.perfect ? '，完美作战' : ''}</li>`).join('')}</ul>
+    ${temporary.length ? `<h3>临时盟约层数${f.kind === 'unite' ? '（联防继承）' : ''}</h3><ul>${temporary.join('')}</ul>` : ''}
     ${formations}<h3>敌人（按实际出场计划）</h3><ul class="enemy-list">${(f.enemies || f.spec.spawns).map((e) => `<li>${esc(e.name || e.enemyKey)} × ${e.count || 1} · ${number(e.time)} 秒${e.boss ? ' · 领袖' : ''}</li>`).join('') || '<li>没有敌人</li>'}</ul>
     <details><summary>完整战斗输入与结果</summary><p class="meta">包含盟约、效果、技能、模组及联防携带状态。</p><pre class="xscroll"></pre></details>`;
   $('details').querySelector('pre').textContent = JSON.stringify({ spec: f.spec, result: f.result }, null, 2);

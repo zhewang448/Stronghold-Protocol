@@ -123,7 +123,7 @@ describe('phases', () => {
     assert.notEqual(cue({ ...pub, round: 5 }), first, 'the next round gets a distinct key');
     assert.equal(cue(pub, { ...sp, turnPid: 'p2' }), null, 'another seat is not cued');
     assert.equal(cue(pub, { ...sp, pickOf: new Map([['p1', 0]]) }), null, 'a picked seat is not cued');
-    assert.equal(cue(pub, sp, { solo: true }), first, 'solo is cued too (decision 7, kept by the owner on 2026-11-14)');
+    assert.equal(cue(pub, sp, { solo: true }), null, 'solo simulation has no turn cue (official recording in PR #946)');
     assert.equal(cue(pub, sp, { alive: false }), null, 'an eliminated seat has no cue');
     assert.equal(cue(pub, sp, { spectator: true }), null, 'a spectator has no cue');
     assert.equal(cue(pub, sp, { personal: true }), null, 'personal 教鞭 choices have no cue');
@@ -823,6 +823,9 @@ describe('keyboard & settings', () => {
     for (const v of ['off', 'lite', 'full', 'auto']) assert.equal(sanitizeSettings({ officialFx: v }).officialFx, v);
     assert.equal(sanitizeSettings({ officialFx: 'ultra' }).officialFx, 'auto');
     assert.equal(sanitizeSettings({ combatMetrics: 'yes' }).combatMetrics, true, 'a non-boolean uses the default');
+    assert.equal(DEFAULT_SETTINGS.watchDuringBattle, false, '作战中查看队友 (PR #971) is off by default');
+    assert.equal(sanitizeSettings({ watchDuringBattle: true }).watchDuringBattle, true);
+    assert.equal(sanitizeSettings({ watchDuringBattle: 'yes' }).watchDuringBattle, false, 'a non-boolean stays off');
     assert.equal(sanitizeSettings({ voiceLang: 'jp' }).voiceLang, 'jp');
     assert.equal(sanitizeSettings({ voiceLang: 'en' }).voiceLang, 'en');
     assert.equal(sanitizeSettings({ voiceLang: 'kr' }).voiceLang, 'kr');

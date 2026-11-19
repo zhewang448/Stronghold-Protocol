@@ -6,6 +6,8 @@
 
 维护主线 origin/main，基础版本上游 v0.4.0，固定开发线及发布前增量见 UPSTREAM-DEV-20261115 与 UPSTREAM-V0.4.0-20261115。来源和兼容边界见 [规程迁移记录](UPSTREAM-REGULATION-20261109.md)及[本次增量适配](UPSTREAM-DEV-20261112.md)。
 
+第 83 轮候选在 `codex/upstream-round-83` 跟进固定提交 `c2b4ca01`。大厅插件预选、分组观战、临时盟约层数、v5 场景和 #948 光标的适配边界见 [0.4.0 历史](history/0.4.0.md#上游开发线第-83-轮2026-11-19未发布)及[逐场 golden 记录](UPSTREAM-ROUND83-GOLDEN-MOVES.md)。
+
 ## 2. 当前版本
 
 当前版本为 `v0.4.0-extended.1`，基础游戏 0.4.0，Windows 启动器 1.4.1。

@@ -43,6 +43,7 @@ export function createTrainingReport(battle, compiled) {
       bossHpLeft: result.bossHpLeft ?? null, bossHpMax: compiled.spec.boss?.poolMax ?? null,
       targetHpMax: max ? max * count : null,
       targetHpLeft: max ? targets.length ? targets.reduce((n, u) => n + Math.max(0, u.hp), 0) : max * count : null,
+      tempLayers: battle.tempLayersSnapshot()[compiled.spec.players[0]?.playerId] ?? {},
       series, version: compiled.version, cs: compiled.cs };
   };
   return { sample, read, stop: meter.stop };

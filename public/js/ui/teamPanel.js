@@ -127,7 +127,7 @@ export function rowLpTip(lp, cap = 10) {
  *   badges: how the 完美连胜 / 领袖伤害 badges are drawn (ui/avatarBadges.js); null draws the CSS stand-ins
  */
 export function TeamPanel({ pub, myId, watching, bubbles, emotes = [], emoteNow = Date.now(), emoteTtl = 3000,
-  onWatch, compact = false, observe = null, self: selfLive = null, cap = 10, uniteLocal = null, spMarks = null, onBond = null, onOp = null, layersDisabled = false, viewKey = null, badges = null }) {
+  onWatch, compact = false, observe = null, self: selfLive = null, cap = 10, uniteLocal = null, spMarks = null, onBond = null, onOp = null, layersDisabled = false, bondsForPlayer = null, viewKey = null, badges = null }) {
   const [openPid, setOpenPid] = useState(null);
   const [flyoutRequest, setFlyoutRequest] = useState(0);
   const panelRef = useRef(null);
@@ -256,6 +256,6 @@ export function TeamPanel({ pub, myId, watching, bubbles, emotes = [], emoteNow 
     </div>` : null}
     <${TeamFlyout} panelRef=${panelRef} players=${players} myId=${myId} phaseKey=${phaseKey}
       openRequest=${flyoutRequest} viewKey=${`${watching || ''}:${viewKey || ''}`}
-      onBond=${onBond} onOp=${onOp} layersDisabled=${layersDisabled} />
+      onBond=${onBond} onOp=${onOp} layersDisabled=${layersDisabled} bondsForPlayer=${bondsForPlayer} />
   </aside>`;
 }

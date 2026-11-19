@@ -513,6 +513,9 @@ const target = (v) => {
   return false;
 };
 
+const isPluginSelection = (v) => isList(v, 32, (p) => isPlain(p) && isPluginId(p.id)
+  && (p.settings === undefined || isMap(p.settings, 32, (k) => isStr(k, 32), isScalar)));
+
 /** @type {Record<string, Record<string, ((v:any)=>boolean) | string[]> & { $optional?: string[] }>} */
 export const C2S = {
   // session & lobby
@@ -536,7 +539,7 @@ export const C2S = {
   'room.proposeVersion': { version: isVersionId },
   'room.versionVote': { voteId: (v) => isInt(v, 1, 2 ** 31), agree: isBool },
   'room.cancelVersionVote': { voteId: (v) => isInt(v, 1, 2 ** 31) },
-  'room.create': { mode: (v) => v === 'solo' || v === 'coop', difficulty: (v) => DIFFICULTIES.includes(v), code: (v) => typeof v === 'string' && new RegExp(`^[A-Za-z0-9]{${ROOM_CODE_LEN}}$`).test(v), capacity: (v) => ROOM_CAPACITIES.includes(v), test: (v) => v === true, version: isVersionId, soloUnlimited: (v) => typeof v === 'boolean', modeId: isId, private: isBool, $optional: ['difficulty', 'code', 'capacity', 'test', 'version', 'soloUnlimited', 'modeId', 'private'] },
+  'room.create': { mode: (v) => v === 'solo' || v === 'coop', difficulty: (v) => DIFFICULTIES.includes(v), code: (v) => typeof v === 'string' && new RegExp(`^[A-Za-z0-9]{${ROOM_CODE_LEN}}$`).test(v), capacity: (v) => ROOM_CAPACITIES.includes(v), test: (v) => v === true, version: isVersionId, soloUnlimited: (v) => typeof v === 'boolean', modeId: isId, private: isBool, plugins: isPluginSelection, $optional: ['difficulty', 'code', 'capacity', 'test', 'version', 'soloUnlimited', 'modeId', 'private', 'plugins'] },
   // Read-only directory replies in the existing rid-correlated ok envelope, not a second S2C event.
   'room.list': {},
   'match.queue': { mode: v => v === 'coop', difficulty: v => DIFFICULTIES.includes(v), version: isVersionId, anyVersion: isBool, anyDifficulty: isBool, random: v => v === false, fillBots: v => v === false, $optional: ['version', 'anyVersion', 'anyDifficulty', 'random', 'fillBots'] },
@@ -600,8 +603,9 @@ export const C2S = {
   // and sorts it: shared/plugins/order.js); [] = the original content. Cosmetic plugins (art: the room's visual set,
   // `vs`) and, from P1c (DESIGN §32.6), content plugins (gameplay: the room's content set, a `cs` of its own); `settings`
   // is for the classes that have settings (a cosmetic plugin has none, so it is ignored). room.state.content names the set
-  'room.setPlugins': { plugins: (v) => isList(v, 32, (p) => isPlain(p) && isPluginId(p.id)
-    && (p.settings === undefined || isMap(p.settings, 32, (k) => isStr(k, 32), isScalar))) },
+  'room.setPlugins': { plugins: isPluginSelection },
+  // Resolve a room plugin set for the lobby before creating a room (`plugins` omitted = server policy defaults).
+  'plugins.preview': { version: isVersionId, plugins: isPluginSelection, $optional: ['version', 'plugins'] },
   // the room's mode (DESIGN §32.6, P1c; host, before the match — like a difficulty change it un-readies the others): an
   // official mode of the room's type (the one of a difficulty: it sets the difficulty) or a mode a plugin of the room's
   // content set provides (room.state.content.modes; room.state.content.modeId while it is chosen)

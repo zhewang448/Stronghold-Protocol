@@ -46,11 +46,11 @@ export function forecastSourceName(src) {
 import { cloneElement } from '../../vendor/preact.module.js';
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { html, BondDisc, Icon, MicroLabel, Tooltip } from './components.js';
-import { RichText, UnitThumb, BondGlyph, GIcon } from './gameComponents.js';
+import { RichText, UnitThumb, BondGlyph, GIcon, Sprite } from './gameComponents.js';
 import { sortBonds, bondMembers, nextThreshold, bondTier, harmonyMembers, HARMONY_BOND, memberHeadCount, briefingBondTip, diyGetter, diyRecordFor, memberStandIn, standInForText } from './gameLogic.js';
 import { formatBondEffect } from './richText.js';
 import { bondEffectRecord } from './bondEffect.js';
-import { bondIconUrl } from './assetUrls.js';
+import { bondIconUrl, uiUrl } from './assetUrls.js';
 import { data } from '../data.js';
 import { t, tc, tParts, tName } from '../../../shared/i18n.js';
 
@@ -165,13 +165,49 @@ function BondScroller({ count, children }) {
   </div>`;
 }
 
+/** Use the original III sprite; crop out five-pixel stroke periods for I and II. */
+function BondStage({ tier }) {
+  const [badSrc, setBadSrc] = useState(null);
+  if (!(tier > 0)) return null;
+  const numeral = ['Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ', 'Ⅵ'][tier - 1] || tier;
+  const label = t('阶段 {tier}', { tier: numeral });
+  const src = uiUrl(data.get('assets'), 'hudBondItem/bond_level_3');
+  if (tier > 3 || !src || badSrc === src) return html`<span class="bslot__stage" role="img" aria-label=${label}>${numeral}</span>`;
+  const left = tier === 1 ? .09 : tier === 2 ? .14 : .24;
+  return html`<span class="bslot__stage" role="img" aria-label=${label} title=${label}>
+    <span class="bslot__stage-sprite" style=${`--stage-left: ${left}rem; --stage-width: ${tier === 3 ? .24 : left + .05}rem`} aria-hidden="true">
+      <span class="bslot__stage-left"><img src=${src} alt="" draggable=${false} onError=${() => setBadSrc(src)} /></span>
+      ${tier < 3 ? html`<span class="bslot__stage-right"><img src=${src} alt="" draggable=${false} onError=${() => setBadSrc(src)} /></span>` : null}
+    </span>
+  </span>`;
+}
+
+export function bondDisplay(bondId, entry) {
+  const base = data.lookup('bonds', bondId);
+  const count = entry?.count ?? 0;
+  const layers = entry?.layers ?? 0;
+  const tempLayers = entry?.tempLayers ?? 0;
+  const total = layers + tempLayers;
+  const effectId = entry?.effectId;
+  const record = bondEffectRecord(base, data.lookup('effects', effectId || base?.effectId), total);
+  const thresholds = !effectId && Array.isArray(entry?.thresholds) && entry.thresholds.length
+    ? entry.thresholds : record?.thresholds || [];
+  const tier = !effectId && entry?.tier != null ? entry.tier : bondTier(count, thresholds, record?.maxCount);
+  return { record, count, thresholds, tier, layers, tempLayers, total };
+}
+
+/** Share the visible order with the popup's previous and next buttons. @param {any[]} bonds */
+export function visibleStripBonds(bonds) {
+  return sortBonds(bonds, (id) => data.lookup('bonds', id))
+    .filter(b => b.off ? b.count > 0 : b.active || b.count > 0 || b.layers > 0 || b.tempLayers > 0);
+}
+
 /**
  * @param {{ bonds: any[], layersDisabled?: boolean, onOpen:(bondId:string)=>void, openId?: string|null,
- *   owner?: string|null }} props — owner: the watched teammate's name (null = your own bonds)
+ *   owner?: string|null, forecast?: any }} props — owner: the watched teammate's name (null = your own bonds)
  */
-export function BondStrip({ bonds, layersDisabled = false, onOpen, openId = null, owner = null , forecast = null }) {
-  const sorted = sortBonds(bonds, (id) => data.lookup('bonds', id))
-    .filter((b) => b.off ? b.count > 0 : b.active || b.count > 0 || b.layers > 0);
+export function BondStrip({ bonds, layersDisabled = false, onOpen, openId = null, owner = null, forecast = null }) {
+  const sorted = visibleStripBonds(bonds);
   if (!sorted.length) {
     return html`<div class=${cx('bstrip', 'bstrip--empty', owner && 'is-other')} data-owner=${owner || null}>
       ${owner ? html`<${OwnerTag} owner=${owner} />` : html`<${MicroLabel}>BONDS</${MicroLabel}>`}<span>${owner ? t('{owner} 尚未激活盟约', { owner }) : t('部署干员以激活盟约')}</span></div>`;
@@ -182,9 +218,7 @@ export function BondStrip({ bonds, layersDisabled = false, onOpen, openId = null
       aria-label=${owner ? t('{owner} 的盟约', { owner }) : t('我的盟约')} data-owner=${owner || null}>
     ${owner ? html`<${OwnerTag} owner=${owner} />` : null}
     ${shown.map((b) => {
-      const base = data.lookup('bonds', b.bondId);
-      const rec = bondEffectRecord(base, data.lookup('effects', b.effectId || base?.effectId), b.layers ?? 0);
-      const th = b.effectId ? rec?.thresholds || [] : Array.isArray(b.thresholds) && b.thresholds.length ? b.thresholds : rec?.thresholds || [];
+      const { record: rec, count, thresholds: th, tier, tempLayers, total } = bondDisplay(b.bondId, b);
       if (b.off) {
         // a bond the mode never activates, with members: the briefing's grey ✕ disc, no stack count, 本局禁用 under it
         const name = rec?.name || b.bondId;
@@ -196,15 +230,15 @@ export function BondStrip({ bonds, layersDisabled = false, onOpen, openId = null
           <span class="bslot__count bslot__off">${t('本局禁用')}</span>
         </div>`;
       }
-      const next = nextThreshold(b.count ?? 0, th);
-      const tier = b.effectId ? bondTier(b.count ?? 0, th, rec?.maxCount) : b.tier ?? 0;
+      const next = nextThreshold(count, th);
       return html`<div key=${b.bondId} role="listitem" data-bond=${b.bondId} data-harmony=${b.harmony > 0 ? b.harmony : null}
-          class=${cx('bslot', b.active && 'is-active', openId === b.bondId && 'is-open')}>
-        <${BondDisc} name=${rec?.name || b.bondId} icon=${bondIconUrl(m, b.bondId)} layers=${rec?.noStack ? undefined : b.layers ?? 0}
+          class=${cx('bslot', b.active && 'is-active', tempLayers > 0 && 'has-temp-layers', openId === b.bondId && 'is-open')}>
+        <${BondDisc} name=${rec?.name || b.bondId} icon=${bondIconUrl(m, b.bondId)} layers=${rec?.noStack ? undefined : total}
           tier=${tier} maxTier=${Math.max(1, th.length)} active=${!!b.active} size="sm" showName=${true}
           layersDisabled=${layersDisabled} onClick=${() => onOpen(b.bondId)}
           title=${`${rec?.name || b.bondId} ${b.count ?? 0}/${next ?? th[th.length - 1] ?? '-'}${b.harmony > 0 ? t('（含调和 +{harmony}）', { harmony: b.harmony }) : ''}`} />
         <span class=${cx('bslot__count', 'num', next == null && 'is-max')}>${b.count ?? 0}<small>/${next ?? th[th.length - 1] ?? '-'}</small></span>
+        <${BondStage} tier=${b.active ? tier : 0} />
         ${!layersDisabled && !owner && forecast?.bonds?.[b.bondId]?.n > 0 ? html`<span class="bslot__forecast num">+${forecast.bonds[b.bondId].n}</span>` : null}
       </div>`;
     })}
@@ -231,17 +265,13 @@ export function BondStrip({ bonds, layersDisabled = false, onOpen, openId = null
  *   An add-on stays on `off`.
  *   `entry.harmony` (the server's bond views: the +1 调和 added to `count`): 在场 n（含调和 +1） and the 调和 row
  */
-export function BondPopup({ bondId, entry, priv, stock = null, banned = [], onClose, onMember, place = null, over = false, beside = null, owner = null, ownerId, off = false, coreAbsent = false, modal = false, forecast = null, morphMode = 'official' }) {
-  const base = data.lookup('bonds', bondId);
-  const b = bondEffectRecord(base, data.lookup('effects', entry?.effectId || base?.effectId), entry?.layers ?? 0);
+export function BondPopup({ bondId, entry, priv, stock = null, banned = [], onClose, onMember, place = null, over = false, beside = null, owner = null, ownerId, off = false, coreAbsent = false, modal = false, forecast = null, morphMode = 'official', onPrevious = null, onNext = null }) {
+  const { record: b, count, layers, tempLayers, total, thresholds: th, tier: reachedTier } = bondDisplay(bondId, entry);
   if (!b) return null;
   // A greyed regulation core must not use `off`: that sentence is the opposite of "its operators cannot appear".
   // [ASSUMED] the card still shows 当前效果, 在场 and 成员; only the note changes. No official card settles the rest.
   const modeOff = !!off && !coreAbsent;
-  const count = entry?.count ?? 0;
-  const layers = entry?.layers ?? 0;
-  const th = entry?.effectId ? b.thresholds || [] : Array.isArray(entry?.thresholds) && entry.thresholds.length ? entry.thresholds : b.thresholds || [];
-  const tier = modeOff ? 0 : entry?.effectId ? bondTier(count, th, b.maxCount) : entry?.tier ?? bondTier(count, th, b.maxCount);
+  const tier = modeOff ? 0 : reachedTier;
   const active = !modeOff && (entry ? !!entry.active : tier > 0);
   // (自选 pieces are their operators: the own ones by m.private.diy, a watched teammate's by the pick its unit carries)
   const dd = { chess: data.get('chess'), backups: data.get('backups') };
@@ -264,7 +294,7 @@ export function BondPopup({ bondId, entry, priv, stock = null, banned = [], onCl
   const harmonyName = data.lookup('bonds', HARMONY_BOND)?.name || tName('调和');
   const harmonyText = harmonyBy.length ? t('{names} 在场：核心盟约激活人数 +{harmony}', { names: harmonyBy.map((x) => x.name), harmony })
     : t('{harmonyName}已激活：核心盟约激活人数 +{harmony}', { harmonyName, harmony });
-  return html`<div class=${cx('bpop', 'brackets', `bpop--${at}`, over && 'is-over', owner && 'is-other')} data-place=${at} data-owner=${owner || null}
+  const card = html`<div class=${cx('bpop', 'brackets', `bpop--${at}`, over && 'is-over', owner && 'is-other')} data-place=${at} data-owner=${owner || null}
       role="dialog" aria-modal=${modal || undefined} aria-label=${owner ? t('{owner} 的盟约：{name}', { owner, name: b.name }) : t('盟约：{name}', { name: b.name })}>
     <button type="button" class="bpop__close" aria-label=${t('关闭')} onClick=${onClose}><${Icon} name="close" /></button>
     <header class="bpop__head">
@@ -275,7 +305,7 @@ export function BondPopup({ bondId, entry, priv, stock = null, banned = [], onCl
         <h3 class="bpop__name">${b.name}</h3>
         <div class="bpop__facts">
           ${modeOff ? null : html`<span>${t('在场')} <b class="num">${count}</b>${next != null ? html`<small class="num">/${next}</small>` : null}${countsHand ? html`<small>${t('（含整备区）')}</small>` : null}${harmony ? html`<small class="bpop__hnote" data-harmony=${harmony}>${t('（含{harmonyName} +{harmony}）', { harmonyName, harmony })}</small>` : null}</span>`}
-          ${b.noStack ? html`<span>${t('层数不显示')}</span>` : html`<span>${t('层数')} <b class="num t-mint">${layers}</b></span>`}
+          ${b.noStack ? html`<span>${t('层数不显示')}</span>` : html`<span class="bpop__layers">${t('层数')} <b class="num t-mint">${layers}</b>${tempLayers > 0 ? html` <b class="bpop__temporary num">+${tempLayers}</b>` : null}</span>`}
           <span class=${active ? 't-mint' : 't-lo'}>${active ? (th.length > 1 ? t('已激活 · {tier} 阶', { tier }) : t('已激活')) : modeOff ? t('本局禁用') : t('未激活')}</span>
         </div>
       </div>
@@ -291,8 +321,8 @@ export function BondPopup({ bondId, entry, priv, stock = null, banned = [], onCl
       ${th.map((n, i) => html`<span key=${i} class=${cx('bpop__tier', i < tier && 'is-on')}><b class="num">${n}</b><small>${b.maxCount != null ? t('名及以下') : tc('bond-threshold', '名')}</small></span>`)}
     </div>
     ${hasNow ? html`<section class="bpop__sec bpop__sec--now">
-      <h4><span class="sw-sec__name"><i>[</i> ${t('当前效果')} <i>]</i></span> ${b.noStack ? null : html`<small class="num">${t('（{layers} 层）', { layers })}</small>`}</h4>
-      <${RichText} as="p" text=${formatBondEffect(b, layers)} class="bpop__desc" />
+      <h4><span class="sw-sec__name"><i>[</i> ${t('当前效果')} <i>]</i></span> ${b.noStack ? null : html`<small class="num">${t('（{layers} 层）', { layers: total })}</small>`}</h4>
+      <${RichText} as="p" text=${formatBondEffect(b, total)} class="bpop__desc" />
     </section>` : null}
     <section class="bpop__sec">
       <h4><span class="sw-sec__name"><i>[</i> ${t('盟约效果')} <i>]</i></span></h4>
@@ -328,5 +358,11 @@ export function BondPopup({ bondId, entry, priv, stock = null, banned = [], onCl
         })}
       </div>
     </section>
+  </div>`;
+  if (!onPrevious && !onNext) return card;
+  return html`<div class="bpop-nav">
+    <button type="button" class="bpop-nav__arrow bpop-nav__arrow--prev" aria-label=${t('上一个盟约')} disabled=${!onPrevious} onClick=${onPrevious}><${Sprite} k="bondDetail/arrow" class="bpop-nav__image" fallback=${html`<${Icon} name="chevronRight" class="bpop-nav__image" />`} /></button>
+    ${card}
+    <button type="button" class="bpop-nav__arrow bpop-nav__arrow--next" aria-label=${t('下一个盟约')} disabled=${!onNext} onClick=${onNext}><${Sprite} k="bondDetail/arrow" class="bpop-nav__image" fallback=${html`<${Icon} name="chevronRight" class="bpop-nav__image" />`} /></button>
   </div>`;
 }

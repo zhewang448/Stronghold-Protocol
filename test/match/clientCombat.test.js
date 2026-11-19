@@ -168,6 +168,22 @@ test('validation: implausible client results are rejected and replaced by the se
   assert.equal(specBounds(spec).bountyCoins, 6);
 });
 
+test('temporary layers require a source in the player’s field and are frozen in Unite', () => {
+  const gd = {
+    chess: () => ({ garrisonIds: ['start'] }),
+    garrison: () => ({ bb: { bond_add_as_tmp: 1, bond_add_count: 4 } }),
+    bond: () => ({}),
+  };
+  const spec = buildBattleSpec({ battleId: 'temporary', fieldId: 'n:p', kind: 'normal', round: 3, stageId: 's', timeLimit: 10,
+    players: [{ playerId: 'p', units: [{ uid: 1, kind: 'chess', chessId: 'chess_start', row: 9, col: 3 }] }], spawns: [] });
+  const player = { killed: 0, total: 0, perfect: true, leaked: [], tempLayerGains: { yanShip: 4 } };
+  const result = { reason: 'cleared', time: 1, perPlayer: { p: player } };
+  const check = field => validateClientResult(field, result, { gd });
+  assert.deepEqual(check(spec).result.perPlayer.p.tempLayerGains, { yanShip: 4 });
+  assert.equal(check({ ...spec, players: [{ playerId: 'p', units: [] }] }).reason, 'temp layers');
+  assert.equal(check({ ...spec, kind: 'unite' }).reason, 'layers disabled');
+});
+
 test('takeover: an authority that disconnects mid-combat loses its field; the server re-simulates it; reconnect gets a display replica', () => {
   const h = makeMatch({ mode: 'coop', humans: 2, seed: 9105, captureFrames: false, clientCombat: true, perPlayer: { p_1: { mute: true } } });
   h.autoHumans();
@@ -230,7 +246,9 @@ test('observing: no watching while the own battle runs; after it ends a teammate
   for (const pid of ['p_0', 'p_1', 'p_2']) m.handle(pid, { t: 'g.ready', ready: true });
   h.run(() => m.phase === PHASE.COMBAT);
   // p_1 still fights: it may not look elsewhere
-  assert.deepEqual(m.handle('p_1', { t: 'g.watch', fieldId: 'n:p_2' }), { error: 'WRONG_PHASE', detail: 'own battle running' });
+  assert.deepEqual(m.handle('p_1', { t: 'g.watch', fieldId: 'n:p_2' }), { ok: true });
+  assert.equal(h.lastTo('p_1','b.start').authoritative,false);
+  assert.equal(fields(h).find(f=>f.fieldId==='n:p_1').authority,'p_1');
   h.run(() => fields(h).find((f) => f.fieldId === 'n:p_0').done);
   const target = fields(h).find((f) => f.fieldId === 'n:p_2');
   assert.equal(target.live, true);
@@ -241,7 +259,9 @@ test('observing: no watching while the own battle runs; after it ends a teammate
   assert.equal(st.watch, true);
   assert.equal(st.authoritative, false);
   assert.ok(st.elapsed > 0, 'the replica fast-forwards to the field clock');
-  assert.deepEqual(st.spec, target.spec);
+  // a teammate's spec minus the players' funds (Match._spectatorSpec — every watcher outside the field, PR #971 at merge)
+  assert.deepEqual(st.spec, m._spectatorSpec(target));
+  assert.ok(st.spec.players.every((p) => !p.contentInfo || !Object.hasOwn(p.contentInfo, 'funds')));
   assert.equal(m.watchers.get('p_0'), 'n:p_2');
   // back to the own (finished) field
   assert.deepEqual(m.handle('p_0', { t: 'g.watch', fieldId: 'n:p_0' }), { ok: true });
@@ -358,8 +378,12 @@ test('联防 under client-side combat: helpers\' reported end state (HP%, SP) ca
   const carried = f.spec.players[0].units.find((u) => u.uid === unit.uid);
   const reported = m.lastResults.get('p_1').unitsEnd.find((u) => u.uid === unit.uid);
   assert.deepEqual(carried.carryState, { hpPct: reported.hpPct, sp: reported.sp });
-  const got = h.sent.filter(([, x]) => x.t === 'b.start' && x.fieldId === 'u').map(([pid, x]) => `${pid}:${x.authoritative ? 'A' : x.watch ? 'w' : 'r'}`).sort();
+  const uStarts = h.sent.filter(([, x]) => x.t === 'b.start' && x.fieldId === 'u');
+  const first = new Map();
+  for (const [pid, x] of uStarts) if (!first.has(pid)) first.set(pid, x);
+  const got = [...first].map(([pid, x]) => `${pid}:${x.authoritative ? 'A' : x.watch ? 'w' : 'r'}`).sort();
   assert.deepEqual(got, ['p_0:w', 'p_1:A', 'p_2:r']);
+  assert.ok(!uStarts.some(([pid, x]) => x.watch && pid !== 'p_0'), 'no watch start for the field\'s own players');
   h.drive(() => m.phase === PHASE.SETTLE);
   assert.ok(f.result && f.resultSource === 'client');
   m.dispose();

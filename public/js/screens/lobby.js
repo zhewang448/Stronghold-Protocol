@@ -1,7 +1,7 @@
 import { RegulationBackdrop } from '../ui/regulationBackdrop.js';
 import { VersionSwitch } from '../ui/versionPicker.js';
 import { EntryFilmButton } from '../ui/entryFilmButton.js';
-import { lobbyVersion, versionLabel, shownVersion, offeredDifficulties, soloTimedOf, setLobbyVersion, fallbackDifficulty, serverDefaultVersion, ladderModes, ladderPick, seasonOf } from '../versions.js';
+import { lobbyVersion, versionLabel, shownVersion, offeredDifficulties, soloTimedOf, setLobbyVersion, fallbackDifficulty, serverDefaultVersion, ladderModes, ladderPick, seasonOf, DEFAULT_VERSION, versionContentStatus } from '../versions.js';
 import { LobbyMusicButton } from '../ui/lobbyMusic.js';
 import { AccountMeChip } from '../ui/accounts.js';
 import { OnlinePlayersButton, PresenceSelector } from '../ui/social.js';
@@ -60,7 +60,8 @@ import { data, getConfig, getMode, getStage, localAsset, useData } from '../data
 import { t, tc, N_ } from '../../../shared/i18n.js';
 import { C2S as SERVER_C2S } from '../../../shared/protocol.js';
 import { NoticesButton } from '../ui/notices.js';
-
+import { LobbyPluginTag } from '../ui/pluginTag.js';
+import { activeLobbyPlugins, contentSet, lobbyPreview, retryContentSet } from '../content.js';
 
 /** Official mode texts (activity_table act2autochess.modeDataDict), fallback when config.json is absent. */
 export const MODE_TEXT = {
@@ -966,7 +967,15 @@ export function LobbyScreen() {
   const [, queueTick] = useState(0);
   useEffect(() => { if (!isSearching) return undefined; const id = setInterval(() => queueTick(n => n + 1), 1000); return () => clearInterval(id); }, [isSearching]);
   const queueElapsed = Math.max(0, Math.floor((net.serverNow() - (mm?.startedAt || net.serverNow())) / 1000));
-  const ladder = roomMode === 'solo' && !randomMode ? ladderModes(getConfig(), 'solo') : null;
+  const preview = useStore((s) => s, Object.is, lobbyPreview);
+  const previewCs = (!preview.version || preview.version === selectedVersion) && preview.content?.vanilla === false ? preview.content.cs : null;
+  const previewFailed = preview.status === 'failed' && (!preview.version || preview.version === selectedVersion);
+  const activeState = useStore((c) => (selectedVersion !== DEFAULT_VERSION
+    ? versionContentStatus(c, selectedVersion, previewCs)
+    : (previewCs ? (c.kind === 'plugins' && c.cs === previewCs ? c.status : 'loading') : 'ready')), Object.is, contentSet);
+  const versionFailed = activeState === 'failed' || (previewFailed && !previewCs);
+  const versionLoading = !versionFailed && activeState !== 'ready';
+  const ladder = roomMode === 'solo' && !randomMode && !versionLoading && !versionFailed ? ladderModes(getConfig(), 'solo') : null;
   const shownMode = ladder ? ladderPick(ladder, ladderMode, difficulty) : null;
 
   const pickLadderMode = (id) => { setLadderMode(id); savePref('lobby.ladderMode', id); };
@@ -1005,7 +1014,11 @@ export function LobbyScreen() {
       toast(t('同盟密钥为 {ROOM_CODE_LEN} 位字母或数字', { ROOM_CODE_LEN }), 'warn');
       return;
     }
+    if (previewCs && versionFailed) { retryContentSet(); return false; }
+    if (previewCs && versionLoading) return false;
+    const lobbyRoomPlugins = activeLobbyPlugins(selectedVersion);
     return run('create', () => net.request('room.create', {
+      ...(lobbyRoomPlugins !== undefined ? { plugins: lobbyRoomPlugins } : {}),
       mode: roomMode, difficulty, ...(roomMode === 'solo' && shownMode ? { modeId: shownMode } : {}), ...(Array.isArray(store.get().versions) ? { version: selectedVersion } : {}), ...(roomMode === 'solo' ? { soloUnlimited } : {}), ...(testMode && asTest ? { test: true } : {}),
       ...(roomMode === 'coop' && customCode ? { code: customCode } : {}),
       ...(CAN_FIREPOWER ? { random: randomMode, ...(randomMode ? { variant } : {}) } : {}),
@@ -1129,6 +1142,7 @@ export function LobbyScreen() {
       </div>
       <div class="topbar__right">
         <${OnlinePlayersButton} /><${PresenceSelector} />
+        <${LobbyPluginTag} />
         <${ResumeMatchButton} />
         <${AccountMeChip} player=${me} onStats=${openStats} />
 

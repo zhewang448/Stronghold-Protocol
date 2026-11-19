@@ -114,7 +114,8 @@ export class MatchReports {
       if (bossLike) { this._checkFinalEnd(); this._broadcastPool(false); }
     };
     if (bossLike) accept(result);
-    else this._verifyResult(f, result, accept);
+    // 临时盟约层数 enter the next 联防 as battle inputs. Verify any balances a normal field reports before using them.
+    else this._verifyResult(f, result, accept, Object.values(result.perPlayer).some(p => Object.keys(p.tempLayerGains ?? {}).length > 0));
     return OK;
   }
 
@@ -127,9 +128,9 @@ export class MatchReports {
    * SP_VERIFY: re-simulate in headless slices. 'all' waits before accepting (the server wins on a mismatch);
    * 'sample' accepts immediately and only logs differences for ~1 battle in 8, even after the field's phase ends.
    */
-  _verifyResult(f, result, accept) {
-    if (this.verifyMode === 'off') { accept(result); return; }
-    const required = this.verifyMode === 'all';
+  _verifyResult(f, result, accept, verifyTemporaryLayers = false) {
+    const required = verifyTemporaryLayers || this.verifyMode === 'all';
+    if (this.verifyMode === 'off' && !required) { accept(result); return; }
     const start = () => {
       const job = new HeadlessJob(this._specBattle(f.spec), { players: f.players, onError: (e) => this.reportError('verify', e) });
       if (required) {

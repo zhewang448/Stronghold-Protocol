@@ -21,7 +21,7 @@ import { OperatorImage, Img, BondGlyph } from '../ui/gameComponents.js';
 import { profIconUrl, subProfIconUrl, bondIconUrl, skillRecordIconUrl, moduleTypeIconUrl } from '../ui/assetUrls.js';
 import { data } from '../data.js';
 import { MODULE_NONE, PROF_NAME, skillLabel, moduleBadge, quickSkillTags, opsOf, chessOptions } from '../ui/loadoutModel.js';
-import { diyPositions, diySlotList, pickChoices, pickOptions, slotRecord, defaultPick } from '../ui/diyModel.js';
+import { diyPositions, pickChoices, pickOptions, slotRecord, defaultPick } from '../ui/diyModel.js';
 import { OperatorVoice } from '../ui/operatorVoice.js';
 // 皮肤 (docs/SKINS.md): the same self-contained section the 干员调配 detail draws, keyed by the operator being picked
 
@@ -425,7 +425,7 @@ export function DiyPanel(props) {
 }
 
 /** The tab's view (no hooks: the tests draw it): `picking` = the slot being filled, or null. */
-export function DiyPanelView({ m, picks, legal, kitted, onSet, picking, onPicking: setPicking, ops = {}, onOps = null }) {
+export function DiyPanelView({ m, picks, legal, kitted, onSet, picking, onPicking: setPicking, ops = {}, onOps = null, pluginControl = null }) {
   const slots = diyPositions(diyData()).filter(s => !data.get('config')?.diyBringLimits || !s.bench);
   const slot = picking ? slots.find((s) => s.slotId === picking) : null;
   const tiers = [...new Set(slots.map((s) => s.tier))];
@@ -440,6 +440,7 @@ export function DiyPanelView({ m, picks, legal, kitted, onSet, picking, onPickin
   return html`<main class="diy" data-testid="diy">
     <div class="own__bar">
       <p class="own__lead">${lead}</p>
+      ${pluginControl ? html`<div class="diy__plug">${pluginControl}</div>` : null}
     </div>
     <div class="diy__body">
       ${tiers.map((tier) => html`<section key=${tier} class="own-tier diy-tier" data-tier=${tier} aria-label=${t('{tier}阶', { tier })}>

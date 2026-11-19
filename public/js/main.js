@@ -68,6 +68,7 @@ import { StatsHost, useStatsOpen } from './screens/stats.js';
 import { PersonalDataHost, hasPersonalDataMigration } from './ui/personalDataPanel.js';
 import { RecoveryHost, bootDomainGate } from './ui/domainRecovery.js';
 import { markGameEntry } from './ui/domainRecoveryModel.js';
+import { LobbyPluginHost } from './ui/pluginTag.js';
 import { installRehearsal } from './battle/rehearsal.js';
 import { recordResult, installStatsRecorder } from './ui/stats.js';
 import { installSettingsViews, loadoutStore, installLoadoutSync, installOwnershipSync, installDiySync, installSkinsSync, installCardSync, installCardArtSync, installAvatarSync } from './ui/loadoutSync.js';
@@ -82,7 +83,7 @@ import { PING_KEEP } from '../../shared/constants.js';
 import { isSharedAvatar } from '../../shared/avatar.js';
 import { recordError, installTrafficMeter } from './diag.js';
 import { validPing } from './ui/fieldPings.js';
-import { installContent, installContentSet } from './content.js';
+import { installContent, installContentSet, installLobbyPlugins } from './content.js';
 import { cosmetics } from './cosmetics.js';
 
 import { sanitizeVersions, lobbyVersion, roomVersion, isDefaultVersion, matchFrameVersion, musicSeason } from './versions.js';
@@ -433,6 +434,7 @@ function App() {
     <${UiHosts} />
     <${GuideHost} />
     <${LoadoutHost} />
+    <${LobbyPluginHost} />
     <${StatsHost} />
     <${VoteOverOverlays} />
     <${PersonalDataHost} />
@@ -509,12 +511,18 @@ async function boot() {
   const syncPreload = (s) => { if (!unsupportedReason()) void syncResources(s.preload, s.preloadOptional, s.preloadVoiceLang, s.preloadDynamic); };
   settingsStore.subscribe(syncPreload); syncPreload(settingsStore.get());
   installStatsRecorder(store); // follows the match on screen, so a 放弃模拟 can be recorded (ui/stats.js)
+  // Register content-set sync before the pref syncs so room.contentReady is always sent before room.loadout / room.diy
+  // when entering a room whose modded/version content set is already ready from lobby preview.
+  installContent({ toast });
+  installContentSet({ toast });
+  installLobbyPlugins({ net, toast });
+  // the loadout / 干员持有 / 自选 settings by operator, shown for the data on screen (DESIGN §35.23; a v1 store migrates)
   installSettingsViews();
   installLoadoutSync({ net });
   installSkinsSync({ net });
   installAutoSkinRandom(store);
   installBondPlanSync({ net });
-installNamecardSync({ net });
+  installNamecardSync({ net });
   installOwnershipSync({ net });
   installDiySync({ net });
   installCardSync({ net });
@@ -523,10 +531,6 @@ installNamecardSync({ net });
   installIllustSync({ net });
   // 干员皮肤 (docs/SKINS.md): keeps the server's copy of this browser's chosen appearances current (room.skins), from
   // ui/skins.js' own store — its 皮肤 section is rendered by screens/loadout.js.
-  // the room's cosmetic plugins and the player's own over the art manifest (content.js; nothing is fetched without them)
-  installContent({ toast });
-  // a room with gameplay plugins: its content set downloaded, checked and shown (content.js — DESIGN §32.6)
-  installContentSet({ toast });
   // A bot prep's layout rehearsal the server offers this host's browser (DESIGN §14, SP_BOT_REHEARSAL=host on the
   // server): a same-origin module Worker simulates the candidates off the main thread and answers with its pick; a
   // browser that cannot run one answers `error` and the server rehearses itself. Nothing happens while the server

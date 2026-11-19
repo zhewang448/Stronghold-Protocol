@@ -1,5 +1,9 @@
 # Golden results
 
+The round 83 adoption (2026-11-19) changes 138 of the same 1,267 scenarios across five versions. See the
+[scenario list](../../docs/UPSTREAM-ROUND83-GOLDEN-MOVES.md) for each changed result, with the observed fields
+and the gameplay changes affecting that family.
+
 The 2026-11-09 migration adds `act3autochess-v3_1/`: 257 regulation scenarios; the existing four versions retain
 all 1,010 results. The regulation mode resolution moves only `solo-FUNNY-1` and `solo-FUNNY-2` from the 9-round fast
 mode to the 14-round level-1 mode when no modeId is given. Sources and every difference from the pinned upstream

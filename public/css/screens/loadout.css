@@ -99,7 +99,7 @@
 .lo-frow { display: flex; align-items: center; gap: .12rem; flex-wrap: wrap; min-width: 0; }
 .lo-version-filter { border-top: 1px solid var(--line); padding-top: 8px; min-width: 0; }
 .lo-version-filter__choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; margin-top: 8px; }
-.lo-version-filter__choices label { display: flex; align-items: center; gap: 8px; min-height: 44px; color: var(--text-md); font-size: max(calc(.15 * var(--t)), 12px); cursor: pointer; }
+.lo-version-filter__choices label { display: flex; align-items: center; gap: 8px; min-height: 44px; color: var(--text-md); font-size: max(calc(.15 * var(--t)), 12px); cursor: var(--sp-cursor-pointer, pointer); }
 .lo-version-filter__choices input { flex: none; width: 18px; height: 18px; accent-color: var(--mint-500); }
 .lo-version-filter__hint { margin: 6px 0; color: var(--text-md); font-size: max(calc(.14 * var(--t)), 12px); line-height: 1.5; }
 .lo-version-filter .lo-select { max-width: 100%; }
@@ -110,7 +110,7 @@
   display: inline-flex; align-items: center; justify-content: center; gap: .05rem;
   min-width: max(.46rem, 26px); height: max(.4rem, 24px); padding: 0 .12rem;
   font: inherit; font-size: max(.15rem, 11px); font-weight: 700; color: var(--text-lo);
-  background: rgba(255, 255, 255, .03); border: 1px solid var(--line); cursor: pointer;
+  background: rgba(255, 255, 255, .03); border: 1px solid var(--line); cursor: var(--sp-cursor-pointer, pointer);
   clip-path: polygon(.07rem 0, 100% 0, calc(100% - .07rem) 100%, 0 100%);
   transition: color var(--t-fast), background var(--t-fast), border-color var(--t-fast);
   touch-action: manipulation;
@@ -134,7 +134,7 @@
 .lo-select { display: inline-flex; align-items: center; gap: .06rem; height: max(.4rem, 24px); padding-left: .1rem; border: 1px solid var(--line); background: rgba(0, 0, 0, .35); }
 .lo-select__k { font-size: max(.13rem, 10px); color: var(--text-dim); letter-spacing: .06em; }
 .lo-select select {
-  height: 100%; min-width: 1.6rem; padding: 0 .26rem 0 .06rem; border: 0; outline: none; cursor: pointer;
+  height: 100%; min-width: 1.6rem; padding: 0 .26rem 0 .06rem; border: 0; outline: none; cursor: var(--sp-cursor-pointer, pointer);
   font: inherit; font-size: max(.15rem, 11px); color: var(--text-hi);
   background: transparent url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%234ed8af' d='M7 9l5 6 5-6z'/></svg>") no-repeat right .04rem center / .2rem .2rem;
   -webkit-appearance: none; appearance: none;
@@ -149,7 +149,7 @@
 
 .lo-toggle {
   display: inline-flex; align-items: center; gap: .07rem; height: max(.4rem, 24px); padding: 0 .12rem;
-  font: inherit; font-size: max(.15rem, 11px); color: var(--text-lo); background: transparent; border: 1px solid transparent; cursor: pointer;
+  font: inherit; font-size: max(.15rem, 11px); color: var(--text-lo); background: transparent; border: 1px solid transparent; cursor: var(--sp-cursor-pointer, pointer);
   touch-action: manipulation;
 }
 .lo-toggle__box { display: grid; place-items: center; width: max(.2rem, 14px); height: max(.2rem, 14px); border: 1px solid var(--line-3); }
@@ -187,7 +187,7 @@
   background: rgba(255, 255, 255, .025); border: 1px solid var(--line); border-left: 3px solid var(--tc);
   /* the whole row picks its operator (RosterRow onRowClick) — the pointer says so, and `touch-action` keeps a tap from
      waiting on the double-tap delay; the row's own controls keep their cursor (`.lo-select select`, `.lo-q`) */
-  cursor: pointer; touch-action: manipulation;
+  cursor: var(--sp-cursor-pointer, pointer); touch-action: manipulation;
   transition: background var(--t-fast), border-color var(--t-fast);
 }
 .lo-card--t1 { --tc: var(--tier-1); } .lo-card--t2 { --tc: var(--tier-2); } .lo-card--t3 { --tc: var(--tier-3); }
@@ -195,7 +195,7 @@
 .lo .lo-card:hover { background: rgba(255, 255, 255, .045); border-color: var(--line-3); border-left-color: var(--tc); }
 .lo .lo-card.is-sel { background: linear-gradient(90deg, rgba(78, 216, 175, .1), rgba(78, 216, 175, .02) 60%); border-color: var(--mint-700); border-left-color: var(--tc); box-shadow: 0 0 0 1px var(--mint-500) inset; }
 .lo-card button:focus-visible, .lo-card select:focus-visible { outline: 2px solid var(--mint-400); outline-offset: 1px; }
-.lo-card__pick { display: flex; align-items: center; gap: max(.1rem, calc(6px * var(--sp-ui, 1))); min-width: 0; padding: 0; font: inherit; color: inherit; text-align: left; background: none; border: 0; cursor: pointer; touch-action: manipulation; }
+.lo-card__pick { display: flex; align-items: center; gap: max(.1rem, calc(6px * var(--sp-ui, 1))); min-width: 0; padding: 0; font: inherit; color: inherit; text-align: left; background: none; border: 0; cursor: var(--sp-cursor-pointer, pointer); touch-action: manipulation; }
 .lo-card__art { position: relative; flex: none; width: var(--art); height: var(--art); overflow: hidden; background: #1b201e; border: 1px solid var(--line-2); }
 .lo-card__art > img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .lo-card__glyph { display: grid; place-items: center; width: 100%; height: 100%; font-size: max(.24rem, 16px); font-weight: 900; color: var(--text-dim); }
@@ -215,7 +215,7 @@
 .lo-card__mods { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
 .lo-q {
   position: relative; flex: none; display: grid; place-items: center; width: var(--q); height: var(--q); padding: 0;
-  font: inherit; color: var(--text-lo); background: none; border: 0; cursor: pointer; touch-action: manipulation;
+  font: inherit; color: var(--text-lo); background: none; border: 0; cursor: var(--sp-cursor-pointer, pointer); touch-action: manipulation;
 }
 .lo-q--empty { border: 1px dashed rgba(255, 255, 255, .07); }
 .lo-q:not(.is-on):not(.lo-q--empty) { opacity: .62; }
@@ -317,17 +317,17 @@
 .lo-seg { margin-left: auto; display: inline-flex; border: 1px solid var(--line-2); }
 .lo-seg button {
   height: max(.32rem, 22px); padding: 0 .12rem; font: inherit; font-size: max(.13rem, 10px); color: var(--text-lo);
-  background: transparent; border: 0; cursor: pointer; touch-action: manipulation;
+  background: transparent; border: 0; cursor: var(--sp-cursor-pointer, pointer); touch-action: manipulation;
 }
 .lo-seg button + button { border-left: 1px solid var(--line-2); }
 .lo-seg button.is-on { color: var(--text-on-mint); background: var(--mint-500); }
-.lo-seg button:disabled { opacity: .4; cursor: default; }
+.lo-seg button:disabled { opacity: .4; cursor: var(--sp-cursor-default, default); }
 
 /* skills */
 .lo-skills { display: flex; flex-direction: column; gap: .07rem; }
 .lo-skill {
   position: relative; display: flex; align-items: flex-start; gap: .14rem; width: 100%; padding: .1rem .12rem .1rem .16rem;
-  font: inherit; color: var(--text-md); text-align: left; cursor: pointer;
+  font: inherit; color: var(--text-md); text-align: left; cursor: var(--sp-cursor-pointer, pointer);
   background: rgba(255, 255, 255, .025); border: 1px solid var(--line);
   transition: background var(--t-fast), border-color var(--t-fast);
   touch-action: manipulation;
@@ -362,7 +362,7 @@
 .lo-mods { display: flex; flex-wrap: wrap; gap: .08rem; }
 .lo-mod {
   position: relative; flex: 1 1 1.9rem; min-width: 1.7rem; max-width: 3.2rem; display: flex; align-items: center; gap: .1rem; padding: .08rem .12rem .08rem .08rem;
-  font: inherit; color: var(--text-md); text-align: left; cursor: pointer;
+  font: inherit; color: var(--text-md); text-align: left; cursor: var(--sp-cursor-pointer, pointer);
   background: rgba(255, 255, 255, .025); border: 1px solid var(--line);
   transition: background var(--t-fast), border-color var(--t-fast); touch-action: manipulation;
 }
@@ -411,7 +411,7 @@
 .lo-tabs { display: flex; align-items: stretch; gap: .04rem; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 .lo-tab {
   display: inline-flex; align-items: center; gap: .08rem; padding: .02rem .16rem; font: inherit; font-size: max(.24rem, 13px); font-weight: 900;
-  letter-spacing: .12em; line-height: 1.2; color: var(--text-lo); background: transparent; border: 0; border-bottom: 2px solid transparent; cursor: pointer;
+  letter-spacing: .12em; line-height: 1.2; color: var(--text-lo); background: transparent; border: 0; border-bottom: 2px solid transparent; cursor: var(--sp-cursor-pointer, pointer);
   touch-action: manipulation; white-space: nowrap;
 }
 .lo-tab .lo-top__icon { width: max(.24rem, 14px); height: max(.24rem, 14px); }
@@ -430,7 +430,7 @@
 .own-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(max(4.4rem, 32px, calc(270px * var(--sp-ui, 1))), 1fr)); gap: .08rem; }
 .own-card {
   display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto; align-items: center; gap: .08rem; min-width: 0;
-  padding: .07rem .1rem .07rem .07rem; font: inherit; color: var(--text-hi); text-align: left; cursor: pointer; touch-action: manipulation;
+  padding: .07rem .1rem .07rem .07rem; font: inherit; color: var(--text-hi); text-align: left; cursor: var(--sp-cursor-pointer, pointer); touch-action: manipulation;
   background: rgba(255, 255, 255, .03); border: 1px solid var(--line); border-left: 3px solid var(--tc, var(--line-3));
   transition: background var(--t-fast), border-color var(--t-fast);
 }
@@ -464,6 +464,8 @@
 
 /* ---- 自选编队 (screens/diy.js): four DIY slots by tier, the slot picker (operator list + skill / module) --------------- */
 .diy { position: relative; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: .12rem; padding: .16rem .3rem .2rem; }
+.diy .own__bar { flex-wrap: wrap; gap: .1rem .2rem; }
+.diy__plug { flex: none; display: flex; align-items: center; }
 .diy__body { flex: 1 1 auto; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; display: flex; flex-direction: column; gap: .18rem; padding: 0 .06rem .2rem 0;
   scrollbar-width: thin; scrollbar-color: var(--line-3) transparent; }
 .diy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(max(5.2rem, 32px, calc(300px * var(--sp-ui, 1))), 1fr)); gap: .1rem; }
@@ -475,7 +477,7 @@
 .diy-slot.is-empty { display: flex; flex-direction: column; padding: 0; border-style: dashed; border-left-style: solid; }
 .diy-slot__fill {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .05rem; width: 100%; min-height: max(1.3rem, 32px, calc(84px * var(--sp-ui, 1)));
-  padding: .1rem; font: inherit; color: var(--text-md); background: none; border: 0; cursor: pointer; touch-action: manipulation;
+  padding: .1rem; font: inherit; color: var(--text-md); background: none; border: 0; cursor: var(--sp-cursor-pointer, pointer); touch-action: manipulation;
 }
 .diy-slot__fill:hover { background: rgba(255, 255, 255, .05); color: var(--text-hi); }
 .diy-slot__fill b { font-size: max(calc(.16 * var(--t)), 11px); }
@@ -523,7 +525,7 @@
 .diy-pick__backrow { display: flex; align-items: center; gap: .06rem; }
 .diy-pick__note { flex: 1; min-width: 0; font-size: max(calc(.12 * var(--t)), 9px); color: var(--text-lo); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* the picker's one close button: it rides the filter row, just right of the search box (the detail pane carries none) */
-.diy-pick__x { display: grid; place-items: center; width: max(.4rem, 28px); height: max(.4rem, 28px); color: var(--text-md); background: none; border: 1px solid var(--line-2); cursor: pointer; }
+.diy-pick__x { display: grid; place-items: center; width: max(.4rem, 28px); height: max(.4rem, 28px); color: var(--text-md); background: none; border: 1px solid var(--line-2); cursor: var(--sp-cursor-pointer, pointer); }
 /* The picker's two columns mirror the roster's `.lo-body` through the same shared variables: the list takes whatever is
    left, the detail is `--lo-detail-w`. A `1.2fr / 1fr` split made the detail a SHARE of the window instead — wider than
    干员调配's on a large screen, narrower on a small one — so the shared `.lo-dhead` wrapped differently here. */
@@ -604,7 +606,7 @@
   .lo-body.is-detail .lo-detail-wrap { display: flex; }
   .lo-detail-back {
     display: inline-flex; align-self: flex-start; align-items: center; gap: .04rem; margin-bottom: .08rem; padding: .04rem .12rem .04rem .04rem;
-    font: inherit; font-size: max(calc(.15 * var(--t)), 11px); color: var(--mint-400); background: transparent; border: 1px solid var(--mint-800); cursor: pointer;
+    font: inherit; font-size: max(calc(.15 * var(--t)), 11px); color: var(--mint-400); background: transparent; border: 1px solid var(--mint-800); cursor: var(--sp-cursor-pointer, pointer);
   }
   .lo-detail-back .icon { width: .2rem; height: .2rem; }
   /* the 自选编队 picker's own body (screens/diy.js): the same pattern over `.diy-pick__col` / its `.lo-detail-wrap` */
@@ -666,7 +668,7 @@
 .lo-voice { display: flex; flex-wrap: wrap; align-items: center; gap: .12rem; padding: .14rem 0; font-size: calc(.18 * var(--t)); }
 .lo-voice > small { flex-basis: 100%; color: var(--text-dim); font-size: calc(.15 * var(--t)); }
 .lo-voice .lo-select { min-width: 1.6rem; max-width: 100%; }
-.lo-voice__preview { height: max(.4rem, 24px); padding: 0 .12rem; font: inherit; font-size: max(.15rem, 11px); color: var(--mint-400); background: transparent; border: 1px solid var(--line-2); cursor: pointer; }
+.lo-voice__preview { height: max(.4rem, 24px); padding: 0 .12rem; font: inherit; font-size: max(.15rem, 11px); color: var(--mint-400); background: transparent; border: 1px solid var(--line-2); cursor: var(--sp-cursor-pointer, pointer); }
 .lo-voice__preview:hover, .lo-voice__preview:focus-visible { border-color: var(--mint-700); }
 
 /* ---- 干员皮肤 (docs/SKINS.md, ui/skinPicker.js) -------------------------------------------------------------------
@@ -688,7 +690,7 @@
 .lo-skins { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .1rem; align-items: start; }
 .lo-skin {
   position: relative; min-width: 0; display: flex; flex-direction: column; gap: .04rem; padding: .06rem;
-  font: inherit; color: var(--text-md); text-align: left; cursor: pointer;
+  font: inherit; color: var(--text-md); text-align: left; cursor: var(--sp-cursor-pointer, pointer);
   background: rgba(255, 255, 255, .025); border: 1px solid var(--line);
   transition: background var(--t-fast), border-color var(--t-fast); touch-action: manipulation;
 }
@@ -755,7 +757,7 @@
 .lo-header-layout { flex: none; position: relative; z-index: 6; }
 .lp-toolbar { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .lp-selector { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 200px; min-width: 0; min-height: 44px;
-  padding: 8px 12px; border: 1px solid var(--line-2); background: var(--bg-1, #141a17); color: var(--text-hi); font: inherit; font-size: max(calc(.15 * var(--t)), 12px); cursor: pointer; }
+  padding: 8px 12px; border: 1px solid var(--line-2); background: var(--bg-1, #141a17); color: var(--text-hi); font: inherit; font-size: max(calc(.15 * var(--t)), 12px); cursor: var(--sp-cursor-pointer, pointer); }
 .lp-selector > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lp-selector .icon { flex: none; width: 16px; height: 16px; transform: rotate(90deg); }
 .lp-toolbar .btn { min-height: 44px; flex: none; }
@@ -793,16 +795,16 @@
 @media (max-width: 420px) { .lp-scope-versions { grid-template-columns: 1fr; } }
 .lp-parts, .lp-versions { margin: 16px 0; padding: 8px 0; border: 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 16px; }
 .lp-parts legend, .lp-versions legend { padding: 0 8px 0 0; font-weight: 700; }
-.lp-parts label, .lp-versions label, .lp-check { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; }
+.lp-parts label, .lp-versions label, .lp-check { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: var(--sp-cursor-pointer, pointer); }
 .lp-versions small, .lp-choice small { display: block; color: var(--text-md); font-size: max(calc(.15 * var(--t)), 12px); margin-top: 4px; }
 .lp-hint { color: var(--text-md); line-height: 1.6; font-size: max(calc(.15 * var(--t)), 12px); }
-.lp-textbtn { background: none; color: var(--mint-400); border: 0; font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.lp-textbtn { background: none; color: var(--mint-400); border: 0; font: inherit; cursor: var(--sp-cursor-pointer, pointer); text-decoration: underline; text-underline-offset: 3px; }
 .lp-picker { display: flex; flex-direction: column; max-height: min(50vh, 420px); overflow-y: auto; scrollbar-color: var(--mint-700) var(--bg-0); }
-.lp-choice { flex: none; padding: 12px; text-align: left; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--text-hi); font: inherit; cursor: pointer; overflow-wrap: anywhere; }
+.lp-choice { flex: none; padding: 12px; text-align: left; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--text-hi); font: inherit; cursor: var(--sp-cursor-pointer, pointer); overflow-wrap: anywhere; }
 .lp-choice:hover, .lp-manager nav button:hover, .lp-manager nav button.is-on { background: rgba(78, 216, 175, .1); }
 .lp-manager { display: grid; grid-template-columns: minmax(160px, 1fr) minmax(0, 2fr); gap: 20px; min-height: 200px; }
 .lp-manager nav { display: flex; flex-direction: column; max-height: 350px; overflow-y: auto; border-right: 1px solid var(--line); padding-right: 12px; }
-.lp-manager nav button { flex: none; text-align: left; background: none; color: var(--text-hi); border: 0; font: inherit; padding: 8px; cursor: pointer; overflow-wrap: anywhere; }
+.lp-manager nav button { flex: none; text-align: left; background: none; color: var(--text-hi); border: 0; font: inherit; padding: 8px; cursor: var(--sp-cursor-pointer, pointer); overflow-wrap: anywhere; }
 .lp-selected-name { overflow-wrap: anywhere; margin: 0 0 12px; font-size: max(calc(.2 * var(--t)), 16px); }
 .lp-manage-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
 .lp-error { color: #ffb4b4; background: #351c21; padding: 12px; line-height: 1.5; }
@@ -814,7 +816,7 @@
 }
 @media (max-width: 420px) { .lp-parts, .lp-versions { grid-template-columns: 1fr; } }
 .lo-info { display: grid; place-items: center; width: max(.5rem, 32px); height: max(.5rem, 32px); padding: 0; color: var(--text-hi);
-  background: rgba(255, 255, 255, .06); border: 1px solid var(--line-2); cursor: pointer; }
+  background: rgba(255, 255, 255, .06); border: 1px solid var(--line-2); cursor: var(--sp-cursor-pointer, pointer); }
 .lo-info:hover { border-color: var(--mint-500); color: var(--mint-400); }
 .lo-info .icon { width: 56%; height: 56%; }
 /* never wider than the centre column (§35.51: centred in it at its own width, it ran under ⓘ and 已同步 at 1280–1440 px in
@@ -822,7 +824,7 @@
 .lo-top__note { margin: 0; max-width: min(8.4rem, 100%); font-size: max(calc(.15 * var(--t)), 10px); color: var(--text-lo); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lo-tbtn { position: relative; display: inline-flex; align-items: center; gap: .06rem; height: max(.4rem, 28px); padding: 0 max(.14rem, calc(8px * var(--sp-ui, 1)));
   font: inherit; font-size: max(calc(.15 * var(--t)), 11px); font-weight: 700; color: var(--text-md); background: rgba(255, 255, 255, .04);
-  border: 1px solid var(--line-2); cursor: pointer; white-space: nowrap; }
+  border: 1px solid var(--line-2); cursor: var(--sp-cursor-pointer, pointer); white-space: nowrap; }
 .lo-tbtn:hover, .lo-tbtn.is-on { color: var(--text-hi); border-color: var(--mint-700); }
 .lo-tbtn .icon { width: max(.18rem, 12px); height: max(.18rem, 12px); }
 /* the list view's way in: the end of its filter row (the top bar has no room left on a narrow phone in English) */
@@ -838,13 +840,13 @@
 .lo-pop__row .lo-tbtn { margin-left: auto; }
 .lo-pop--menu { display: flex; flex-direction: column; min-width: max(2.4rem, 32px, calc(150px * var(--sp-ui, 1))); padding: .06rem; }
 .lo-pop--menu button { display: flex; align-items: center; gap: .1rem; height: max(.44rem, 32px); padding: 0 .14rem; font: inherit; font-size: max(calc(.16 * var(--t)), 12px);
-  color: var(--text-md); background: none; border: 0; text-align: left; cursor: pointer; }
+  color: var(--text-md); background: none; border: 0; text-align: left; cursor: var(--sp-cursor-pointer, pointer); }
 .lo-pop--menu button:hover:not(:disabled) { color: var(--text-hi); background: rgba(78, 216, 175, .1); }
-.lo-pop--menu button:disabled { opacity: .4; cursor: default; }
+.lo-pop--menu button:disabled { opacity: .4; cursor: var(--sp-cursor-default, default); }
 .lo-pop--menu button.is-danger:hover:not(:disabled) { color: var(--red-premium); background: rgba(255, 84, 84, .1); }
 .lo-pop--menu .icon { width: max(.18rem, 12px); height: max(.18rem, 12px); }
 /* 干员持有 and 快速配置: two big blocks at the right */
-.lo-assist, .lo-quickbtn { display: inline-flex; align-items: stretch; height: max(.7rem, 32px, calc(40px * var(--sp-ui, 1))); padding: 0; font: inherit; border: 0; cursor: pointer; text-align: left; }
+.lo-assist, .lo-quickbtn { display: inline-flex; align-items: stretch; height: max(.7rem, 32px, calc(40px * var(--sp-ui, 1))); padding: 0; font: inherit; border: 0; cursor: var(--sp-cursor-pointer, pointer); text-align: left; }
 .lo-assist__txt, .lo-quickbtn__txt { display: flex; flex-direction: column; justify-content: center; padding: 0 max(.14rem, calc(8px * var(--sp-ui, 1))); line-height: 1.1; }
 .lo-assist__icon, .lo-quickbtn__icon { display: grid; place-items: center; width: max(.62rem, 32px, calc(34px * var(--sp-ui, 1))); }
 .lo-assist__icon .icon, .lo-quickbtn__icon .icon { width: 58%; height: 58%; }
@@ -855,14 +857,14 @@
 .lo-assist__icon { margin: .06rem .06rem .06rem 0; color: var(--mint-400); background: #0b1d18; }
 .lo-quickbtn { color: #111614; background: #eef1ef; }
 .lo-quickbtn:hover:not(:disabled) { background: #fff; }
-.lo-quickbtn:disabled { opacity: .45; cursor: default; }
+.lo-quickbtn:disabled { opacity: .45; cursor: var(--sp-cursor-default, default); }
 .lo-quickbtn__txt > span { font-size: max(calc(.2 * var(--t)), 13px); font-weight: 900; letter-spacing: .04em; }
 .lo-quickbtn__txt small { font-family: var(--font-display); font-size: max(calc(.09 * var(--t)), 7px); letter-spacing: .14em; color: #8b938f; }
 .lo-quickbtn__icon { margin: .06rem .06rem .06rem 0; color: #eef1ef; background: #1a1f1d; }
 .lo-qbar__k { font-size: max(calc(.15 * var(--t)), 11px); color: var(--text-lo); white-space: nowrap; }
 .lo-qseg { display: inline-flex; padding: 3px; background: rgba(0, 0, 0, .45); border: 1px solid var(--line-2); border-radius: 999px; }
 .lo-qseg button { height: max(.4rem, 28px); padding: 0 max(.2rem, calc(12px * var(--sp-ui, 1))); font: inherit; font-size: max(calc(.16 * var(--t)), 12px); font-weight: 800; color: var(--text-md);
-  background: none; border: 0; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+  background: none; border: 0; border-radius: 999px; cursor: var(--sp-cursor-pointer, pointer); white-space: nowrap; }
 .lo-qseg button.is-on { color: #111614; background: #eef1ef; }
 
 /* ---- the deck ---- */
@@ -894,7 +896,7 @@
 .lo-op__card { position: relative; width: var(--opw); min-height: 0; display: grid; grid-template-columns: var(--rail) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) auto auto; column-gap: max(.05rem, calc(3px * var(--sp-ui, 1))); padding: max(.06rem, calc(3px * var(--sp-ui, 1))) max(.06rem, calc(3px * var(--sp-ui, 1))) max(.07rem, calc(4px * var(--sp-ui, 1)));
   background: linear-gradient(180deg, rgba(44, 50, 48, .94), rgba(24, 28, 27, .96)); border: 1px solid rgba(255, 255, 255, .08);
-  box-shadow: 0 .05rem .16rem rgba(0, 0, 0, .45); transition: border-color var(--t-fast), box-shadow var(--t-fast); cursor: pointer; }
+  box-shadow: 0 .05rem .16rem rgba(0, 0, 0, .45); transition: border-color var(--t-fast), box-shadow var(--t-fast); cursor: var(--sp-cursor-pointer, pointer); }
 .lo-op:hover .lo-op__card { border-color: rgba(255, 255, 255, .22); }
 .lo-op.is-sel .lo-op__card { border-color: var(--mint-400); box-shadow: 0 0 0 1px var(--mint-400), 0 0 .18rem rgba(89, 244, 202, .3); }
 .lo-op__rail { grid-row: 1 / 3; grid-column: 1; display: flex; flex-direction: column; align-items: center; gap: max(.08rem, calc(4px * var(--sp-ui, 1))); padding-top: 2px; }
@@ -911,7 +913,7 @@
 .lo-op__lvrow.is-elite .lo-op__phase { opacity: 1; color: var(--gold-2); }
 .lo-op__lvrow.is-elite img.lo-op__phase { filter: brightness(0) saturate(100%) invert(85%) sepia(70%) saturate(655%) hue-rotate(350deg); }
 .lo-op__mark { width: max(.12rem, 8px); height: max(.12rem, 8px); margin-top: auto; background: var(--mint-400); transform: rotate(45deg); box-shadow: 0 0 6px rgba(89, 244, 202, .6); }
-.lo-op__pick { grid-row: 1; grid-column: 2; position: relative; display: block; min-height: 0; padding: 0; overflow: hidden; cursor: pointer;
+.lo-op__pick { grid-row: 1; grid-column: 2; position: relative; display: block; min-height: 0; padding: 0; overflow: hidden; cursor: var(--sp-cursor-pointer, pointer);
   background: linear-gradient(180deg, #d7dbd9, #aeb4b1 70%, #8d9390); border: 1px solid rgba(240, 244, 242, .55); }
 .lo-op__art { position: absolute; inset: 0 0 max(.42rem, calc(22px * var(--sp-ui, 1))) 0; display: block; overflow: hidden; }
 .lo-op__art img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 6%; display: block; }
@@ -947,7 +949,7 @@
 .lo-op__none { margin: auto 0; font-size: max(calc(.12 * var(--t)), 9px); color: var(--text-dim); writing-mode: vertical-rl; letter-spacing: .2em; }
 /* 甄选干员 (自选编队) closing tiers 5 / 6 */
 .lo-op--diy { flex-direction: column; align-items: center; justify-content: center; gap: max(.08rem, calc(4px * var(--sp-ui, 1))); width: var(--opw); padding: .1rem; font: inherit; color: var(--text-hi);
-  cursor: pointer; background: linear-gradient(180deg, rgba(150, 160, 156, .2), rgba(80, 88, 85, .14)); border: 1px solid rgba(255, 255, 255, .16); }
+  cursor: var(--sp-cursor-pointer, pointer); background: linear-gradient(180deg, rgba(150, 160, 156, .2), rgba(80, 88, 85, .14)); border: 1px solid rgba(255, 255, 255, .16); }
 .lo-op--diy:hover { border-color: var(--tc); background: linear-gradient(180deg, rgba(170, 180, 176, .26), rgba(90, 98, 95, .18)); }
 .lo-diy__frame { position: relative; display: grid; place-items: center; width: 74%; aspect-ratio: 1 / 1.25; color: rgba(255, 255, 255, .78);
   border-left: 2px solid rgba(255, 255, 255, .5); border-right: 2px solid rgba(255, 255, 255, .5); }
@@ -964,7 +966,7 @@
   animation: lo-drawer-slide 320ms cubic-bezier(.16, .84, .3, 1) backwards; }
 @keyframes lo-drawer-slide { from { transform: translateX(-.6rem); opacity: 0; } }
 .lo-drawer__close { flex: none; display: flex; align-items: center; gap: .06rem; height: max(.42rem, 30px); padding: 0 .16rem; font: inherit;
-  font-size: max(calc(.15 * var(--t)), 11px); font-weight: 700; color: var(--text-md); background: #161b19; border: 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+  font-size: max(calc(.15 * var(--t)), 11px); font-weight: 700; color: var(--text-md); background: #161b19; border: 0; border-bottom: 1px solid var(--line); cursor: var(--sp-cursor-pointer, pointer); }
 .lo-drawer__close:hover { color: var(--mint-400); }
 .lo-drawer__close .icon { width: max(.18rem, 12px); height: max(.18rem, 12px); }
 .lo-drawer .lo-detail { flex: 1 1 auto; min-height: 0; border: 0; box-shadow: none; }
@@ -976,18 +978,18 @@
    this scroller's edge at .14rem) */
 .lo-bbar__tiers { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: .04rem; overflow-x: auto; scrollbar-width: none; padding-top: max(.24rem, calc(17px * var(--sp-ui, 1))); }
 .lo-bbar__tier { position: relative; flex: none; display: inline-flex; align-items: center; gap: .05rem; height: max(.42rem, 28px); padding: 0 max(.16rem, calc(8px * var(--sp-ui, 1))); font: inherit;
-  font-size: max(calc(.15 * var(--t)), 11px); color: var(--text-lo); background: none; border: 0; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; }
+  font-size: max(calc(.15 * var(--t)), 11px); color: var(--text-lo); background: none; border: 0; border-bottom: 2px solid transparent; cursor: var(--sp-cursor-pointer, pointer); white-space: nowrap; }
 .lo-bbar__tier + .lo-bbar__tier::before { content: ""; position: absolute; left: 0; top: 25%; bottom: 25%; width: 1px; background: var(--line); }
 .lo-bbar__tier:hover:not(:disabled) { color: var(--text-hi); }
 .lo-bbar__tier.is-on { color: var(--text-hi); border-bottom-color: var(--mint-500); }
-.lo-bbar__tier:disabled { opacity: .35; cursor: default; }
+.lo-bbar__tier:disabled { opacity: .35; cursor: var(--sp-cursor-default, default); }
 .lo-bbar__roman { display: grid; place-items: center; min-width: max(.3rem, 18px); height: max(.26rem, 16px); padding: 0 2px; font-size: max(calc(.13 * var(--t)), 9px); font-weight: 800;
   border: 1px solid currentColor; border-radius: 3px; }
 .lo-bbar__diy { position: absolute; left: 50%; top: max(-.2rem, calc(-14px * var(--sp-ui, 1))); transform: translateX(-50%); display: inline-flex; align-items: center; gap: 1px; padding: 0 4px;
   font-size: max(calc(.12 * var(--t)), 9px); color: var(--text-md); background: rgba(255, 255, 255, .1); border-radius: 999px; }
 .lo-bbar__diy .icon { width: max(.13rem, 9px); height: max(.13rem, 9px); }
 .lo-confirm { flex: none; display: inline-flex; align-items: center; gap: .1rem; height: max(.6rem, 32px, calc(38px * var(--sp-ui, 1))); padding: 0 max(.24rem, calc(14px * var(--sp-ui, 1))); font: inherit;
-  font-size: max(calc(.2 * var(--t)), 13px); font-weight: 900; color: #111614; background: #eef1ef; border: 0; cursor: pointer; }
+  font-size: max(calc(.2 * var(--t)), 13px); font-weight: 900; color: #111614; background: #eef1ef; border: 0; cursor: var(--sp-cursor-pointer, pointer); }
 .lo-confirm .icon { width: max(.26rem, 16px); height: max(.26rem, 16px); padding: 2px; color: #eef1ef; background: #1a1f1d; }
 .lo-confirm:hover { background: #fff; }
 /* the match's loadout is locked: said in the bar, which every width and 快速配置 keep on screen */
@@ -1055,7 +1057,7 @@
 /* ---- 道具: the equipment codex ---- */
 .lo-igrid { display: grid; grid-auto-flow: column; grid-template-rows: repeat(3, minmax(0, 1fr)); grid-auto-columns: var(--itw); gap: .14rem .16rem; min-height: 0; }
 .lo-item { position: relative; display: grid; grid-template-columns: min(1.45rem, 40%) minmax(0, 1fr); align-items: start; gap: .14rem; min-height: 0; padding: .14rem .12rem .1rem .2rem; font: inherit;
-  color: var(--text-hi); text-align: left; cursor: pointer; overflow: hidden;
+  color: var(--text-hi); text-align: left; cursor: var(--sp-cursor-pointer, pointer); overflow: hidden;
   background: linear-gradient(180deg, rgba(48, 54, 52, .9), rgba(28, 32, 31, .94)); border: 1px solid rgba(255, 255, 255, .08); }
 .lo-item::before { content: ''; position: absolute; left: .05rem; top: .1rem; bottom: .1rem; width: 3px; background: rgba(255, 255, 255, .7); }
 .lo-item:hover { border-color: rgba(255, 255, 255, .26); }
@@ -1078,7 +1080,7 @@
   padding: .28rem .34rem .2rem; background: radial-gradient(120% 90% at 20% 0%, #2a2f2d, #151918 60%, #101312); border: 2px solid rgba(232, 236, 234, .7);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, .6), 0 .2rem .6rem rgba(0, 0, 0, .7); }
 .lo-idetail__close { position: absolute; right: .1rem; top: .1rem; display: grid; place-items: center; width: max(.46rem, 30px); height: max(.46rem, 30px); padding: 0;
-  color: var(--text-hi); background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .4); cursor: pointer; }
+  color: var(--text-hi); background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .4); cursor: var(--sp-cursor-pointer, pointer); }
 .lo-idetail__close .icon { width: 60%; height: 60%; }
 .lo-idetail__head { display: flex; align-items: center; gap: .12rem; padding-right: .6rem; }
 .lo-idetail__head h3 { margin: 0; font-size: max(calc(.3 * var(--t)), 17px); font-weight: 900; letter-spacing: .06em; }
@@ -1095,14 +1097,14 @@
 .lo-idetail__flavor { margin: .1rem 0 0; font-size: max(calc(.14 * var(--t)), 10px); line-height: 1.6; font-style: italic; color: var(--text-lo); white-space: pre-line; }
 .lo-idetail__foot { margin-top: .16rem; text-align: right; font-size: max(calc(.12 * var(--t)), 9px); color: var(--text-dim); letter-spacing: .1em; }
 .lo-idetail__nav { flex: none; display: grid; place-items: center; width: max(.6rem, 32px, calc(36px * var(--sp-ui, 1))); height: max(.9rem, 32px, calc(52px * var(--sp-ui, 1))); padding: 0; color: rgba(240, 244, 242, .85);
-  background: none; border: 0; cursor: pointer; }
+  background: none; border: 0; cursor: var(--sp-cursor-pointer, pointer); }
 .lo-idetail__nav:hover { color: #fff; }
 .lo-idetail__nav .icon { width: 100%; height: 100%; }
 
 
 .lo-bbar__seg { flex: none; display: inline-flex; padding: 3px; background: rgba(0, 0, 0, .5); border: 1px solid var(--line-2); border-radius: 999px; }
 .lo-bbar__seg button { display: inline-flex; align-items: center; gap: .08rem; height: max(.46rem, 30px); padding: 0 max(.26rem, calc(14px * var(--sp-ui, 1))); font: inherit;
-  font-size: max(calc(.18 * var(--t)), 12px); font-weight: 800; color: var(--text-md); background: none; border: 0; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+  font-size: max(calc(.18 * var(--t)), 12px); font-weight: 800; color: var(--text-md); background: none; border: 0; border-radius: 999px; cursor: var(--sp-cursor-pointer, pointer); white-space: nowrap; }
 .lo-bbar__seg button .icon { width: max(.22rem, 14px); height: max(.22rem, 14px); padding: 2px; border-radius: 4px; color: #062019; background: var(--mint-500); }
 .lo-bbar__seg button.is-on { color: #111614; background: #eef1ef; }
 
@@ -1115,7 +1117,7 @@
 .lo-skin-random__scope:focus-visible, .lo-skin-lock:focus-visible { outline: 2px solid var(--mint-500); outline-offset: 2px; }
 .lo-sec--skin .lo-sec__head { flex-wrap: wrap; }
 .lo-skin-lock { min-height: 32px; margin-left: auto; padding: 4px 10px; font: inherit; font-size: max(calc(.14 * var(--t)), 12px);
-  color: var(--text-md); background: var(--bg-2); border: 1px solid var(--line-2); cursor: pointer; }
+  color: var(--text-md); background: var(--bg-2); border: 1px solid var(--line-2); cursor: var(--sp-cursor-pointer, pointer); }
 .lo-skin-lock:hover { color: var(--text-hi); border-color: var(--mint-500); }
 .lo-skin-lock.is-on { color: var(--mint-400); border-color: var(--mint-700); }
 .lo-export { min-width: 0; margin: 0 0 12px; padding: 12px; border: 1px solid var(--line-2); color: var(--text-hi); }
@@ -1124,9 +1126,9 @@
 .lo-export__format select { min-height: 44px; max-width: 100%; padding: 6px 10px; font: inherit; color: var(--text-hi);
   background: var(--bg-2); border: 1px solid var(--line-2); color-scheme: dark; }
 .lo-export__parts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 16px; margin-bottom: 12px; }
-.lo-export__parts label { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; }
+.lo-export__parts label { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: var(--sp-cursor-pointer, pointer); }
 .lo-export__parts input { width: 18px; height: 18px; flex: none; accent-color: var(--mint-500); }
-.lo-export__parts .is-disabled { color: var(--text-lo); cursor: default; }
+.lo-export__parts .is-disabled { color: var(--text-lo); cursor: var(--sp-cursor-default, default); }
 .lo-export__parts input:focus-visible, .lo-export__format select:focus-visible { outline: 2px solid var(--mint-500); outline-offset: 3px; }
 .lo-export__warning { margin: 8px 0 0; color: var(--gold); line-height: 1.6; }
 @media (max-width: 700px) {

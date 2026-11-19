@@ -77,7 +77,7 @@ test('plan (local-tools): a collab operator voiced only in its LINKAGE dub (no C
   assert.equal(skadi.voice.char_263_skadi.start.alts[0].rel, 'audio/voice/cn/char_263_skadi/cn_019.mp3');
 });
 
-test('data/assets.json: the five-version union has matching CN / JP battle slots; stand-ins and summons have neither', () => {
+test('data/assets.json: the five-version union aligns CN / JP battle slots except documented missing dubs', () => {
   const m = readJson('data/assets.json');
   const cn = m.audio.voice;
   const jp = m.audio.voiceJp;
@@ -85,14 +85,19 @@ test('data/assets.json: the five-version union has matching CN / JP battle slots
   assert.deepEqual(Object.keys(jp).sort(), Object.keys(cn).sort(), 'the same operators');
   assert.equal(m.stats.voiceJpChars, Object.keys(jp).length);
   assert.equal(m.stats.voiceChars, Object.keys(cn).length);
-  assert.equal(Object.keys(jp).length, 255);
+  assert.equal(Object.keys(jp).length, 256);
   // the JP tree is the Chinese one with the folder swapped: same slots, same lines in the same order, same file names
   const normalized = JSON.parse(JSON.stringify(cn).replaceAll('/assets/audio/voice/cn/', '/assets/audio/voice/jp/'));
+  // The v0.4.0-extended.1 Alga voice addition (1e1ad597) shipped two result lines in Chinese only.
+  for (const slot of ['resultThree', 'resultTwo']) {
+    assert.ok(normalized.char_4245_alga[slot]);
+    delete normalized.char_4245_alga[slot];
+  }
   assert.deepEqual(normalized, jp);
   const lines = [];
   const walk = (x) => { if (typeof x === 'string') lines.push(x); else if (Array.isArray(x)) x.forEach(walk); else if (x && typeof x === 'object') Object.values(x).forEach(walk); };
   walk(jp);
-  assert.equal(lines.length, 3568);
+  assert.equal(lines.length, 3580);
   for (const u of lines) assert.match(u, /^\/assets\/audio\/voice\/jp\/char_[^/]+\/cn_\d+\.mp3$/);
   // no voice: the 17 stand-ins of data/backups.json (预备干员 / 原型干员), the mode's 盟约·辅助干员, every summon
   const backups = readJson('data/backups.json');

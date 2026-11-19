@@ -124,7 +124,7 @@ test('the game screen hands the mode-disabled set to the shop bar, the detail ca
 test('the bond popup closes on outside presses, while its own region and toggle triggers handle themselves', () => {
   const src = read('public/js/screens/game.js');
   assert.match(src, /const screen = hudElRef\.current\?\.parentElement/);
-  assert.match(src, /if \(!live\.current\.bondOpen \|\| e\.target\?\.closest\?\.\('\.bpop, \.bslot, \.dbond, \.ibond'\)\) return;\s+setBondOpen\(null\)/);
+  assert.match(src, /if \(!live\.current\.bondOpen \|\| e\.target\?\.closest\?\.\('\.bpop, \.bpop-nav__arrow, \.bslot, \.dbond, \.ibond'\)\) return;\s+setBondOpen\(null\)/);
   assert.match(src, /screen\.addEventListener\('pointerdown', onDown, true\)/);
   assert.match(src, /screen\.removeEventListener\('pointerdown', onDown, true\)/);
 });
@@ -152,6 +152,7 @@ test('hidden-layer bonds show activation and tiers without a stack badge or laye
     const entry = { bondId, active: true, count: 2, tier: 1, layers: 99 };
     const pop = BondPopup({ bondId, entry, priv: { board: [], hand: [] }, onClose() {} });
     assert.match(textOf(pop), /层数不显示/);
+    assert.ok(![...walk(pop)].some(v => hasClass(v, 'bpop__layers')), 'non-stacking bonds omit the numeric layer label');
     assert.doesNotMatch(textOf(pop), /99|99 层/);
     const strip = BondStrip({ bonds: [entry], onOpen() {} });
     const disc = [...walk(strip)].find((v) => v.props?.name === DATA.bonds[bondId].name);
@@ -163,4 +164,32 @@ test('hidden-layer bonds show activation and tiers without a stack badge or laye
   const disc = [...walk(BondStrip({ bonds: [{ bondId: 'yanShip', active: true, layers: 12 }], onOpen() {} }))]
     .find((v) => v.props?.name === DATA.bonds.yanShip.name);
   assert.equal(disc.props.layers, 12, 'stacking bonds keep their badge');
+});
+
+
+test('bond navigation keeps the card and invokes only the requested direction', () => {
+  const calls = [];
+  const props = { bondId: 'arcaneShip', priv: { board: [], hand: [] }, onClose: () => calls.push('close') };
+  const popup = BondPopup({ ...props, place: 'center', onPrevious: () => calls.push('previous'), onNext: () => calls.push('next') });
+  const nodes = [...walk(popup)];
+  const arrows = nodes.filter(v => hasClass(v, 'bpop-nav__arrow'));
+  assert.equal(arrows.length, 2);
+  assert.ok(nodes.some(v => hasClass(v, 'bpop')));
+  arrows[0].props.onClick();
+  arrows[1].props.onClick();
+  assert.deepEqual(calls, ['previous', 'next']);
+  assert.equal([...walk(BondPopup(props))].filter(v => hasClass(v, 'bpop-nav__arrow')).length, 0);
+});
+
+
+test('the strip stage and popup tiers follow activation, independently of permanent and temporary layers', () => {
+  const props = { bondId: 'arcaneShip', priv: { board: [], hand: [] } };
+  for (const tier of [1, 2, 3]) {
+    const entry = { bondId: props.bondId, active: true, tier, count: tier * 2, thresholds: [2, 4, 6], layers: 99, tempLayers: 7 };
+    const strip = BondStrip({ bonds: [entry], onOpen() {} });
+    assert.equal([...walk(strip)].find(v => v.type?.name === 'BondStage')?.props.tier, tier);
+    const popup = BondPopup({ ...props, entry });
+    assert.match(textOf(popup), new RegExp(`已激活 · ${tier} 阶`));
+    assert.equal([...walk(popup)].filter(v => hasClass(v, 'bpop__tier') && hasClass(v, 'is-on')).length, tier);
+  }
 });

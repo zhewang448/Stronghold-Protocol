@@ -38,6 +38,30 @@ import { diyTokenOwner, diyRecordOf } from '../../shared/diy.js';
 import { battleDamage } from '../../shared/battleDamage.js';
 import { requiresTraitLayerAuthority } from './operatorTraits.js';
 
+/** 规程 temporary layers a client result may report per bond when game data is unavailable. */
+const TEMP_LAYERS_PER_KO = 8;
+const TEMP_LAYERS_FLAT = 200;
+
+function temporaryLayerSources(input, gd) {
+  const units = [...(input.units ?? []), ...(input.bench ?? [])];
+  let start = 0, supplement = 0;
+  for (const u of units) {
+    if (!u || u.kind === 'token') continue;
+    const base = gd.chess?.(u.chessId);
+    const rec = u.standIn === true ? gd.standIn?.(u.chessId) : u.diy && base?.isDiy ? diyRecordOf(base, u.diy, gd.raw) : base;
+    for (const gid of rec?.garrisonIds ?? []) {
+      const g = gd.garrison?.(gid);
+      if (Number(g?.bb?.bond_add_as_tmp) !== 1) continue;
+      const count = Math.max(0, Number(g.bb?.bond_add_count) || 0);
+      start += count * (g.bbStr?.bond_add_type === 'by_charlevel' ? Math.max(1, rec.tier ?? 6) : 1);
+    }
+    for (const item of u.items ?? []) {
+      supplement += Math.max(0, Number(gd.item?.(item)?.params?.temp_stack_count_max) || 0);
+    }
+  }
+  // Equipped supplements can be borrowed by other operators during battle.
+  return { flat: start + supplement * units.length, ursus: input.bonds?.ursusShip?.active === true };
+}
 
 export const MAX_TICKS_PER_INTERVAL = 8;
 export const INTERVAL_MS = 1000 / 30;
@@ -725,7 +749,8 @@ export function specBounds(spec, gd = null) {
       defIds.add(reserve.chessId);
       if (gd) for (const id of summonsOf(gd, reserve.chessId)) defIds.add(id);
     }
-    players.set(p.playerId, { chess, all, names, defIds, bonds, startLayers, layerAllow, commandChests });
+    const temporary = gd ? temporaryLayerSources(withReserves, gd) : null;
+    players.set(p.playerId, { chess, all, names, defIds, bonds, startLayers, layerAllow, commandChests, temporary });
   }
   const round = Number(spec && spec.round) || 0;
   return {
@@ -895,14 +920,18 @@ export function validateClientResult(spec, raw, { gd = null } = {}) {
         if (n > 0) layerGains[bondId] = n;
       }
       // 规程 temporary layers: not the permanent allowance, and not required to be a bond the player started with.
-      // The bond must exist. A positive amount is refused when the field disabled layer gains (联防 / boss).
+      // The bond must exist. Unite carries a frozen input ledger and cannot report fresh temporary gains.
       const tempLayerGains = {};
       if (p.tempLayerGains && typeof p.tempLayerGains === 'object') {
         for (const [bondId, rawN] of Object.entries(p.tempLayerGains)) {
-          const n = Math.floor(Number(rawN));
-          if (!finiteIn(n, 0, 1e4)) return bad('temp layers');
-          if (n > 0 && spec.flags && spec.flags.layerGainsEnabled === false) return bad('layers disabled');
           if (gd && typeof gd.bond === 'function' && !gd.bond(bondId)) return bad('temp bond');
+          // [ASSUMED] use the spec's enemy allowance for 乌萨斯 because some kills are excluded from the score.
+          const bound = own.temporary
+            ? own.temporary.flat + (bondId === 'ursusShip' && own.temporary.ursus ? B.maxTotal * TEMP_LAYERS_PER_KO : 0)
+            : p.killed * TEMP_LAYERS_PER_KO + TEMP_LAYERS_FLAT;
+          const n = Math.floor(Number(rawN));
+          if (!finiteIn(n, 0, Math.min(1e4, bound))) return bad('temp layers');
+          if (n > 0 && spec.kind === 'unite') return bad('layers disabled');
           if (n > 0) tempLayerGains[bondId] = n;
         }
       }

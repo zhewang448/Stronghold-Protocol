@@ -82,6 +82,7 @@ import { transferPayload, parseTransfer, transferParts, restrictTransferScope } 
 import { VERSIONS } from '../../../shared/versions.js';
 import { pageVersion } from '../content.js';
 import { reducedMotion } from '../ui/device.js';
+import { LobbyPluginTag } from '../ui/pluginTag.js';
 
 export { openLoadout, closeLoadout };
 
@@ -1178,7 +1179,8 @@ function LoadoutScreen({ st }) {
       : html`<p class=${cx('lo-note', locked && 'is-locked')}><${Icon} name="info" />${locked ? lockedText : fromText}</p>`}
     ${!ready ? html`<div class="lo-loading"><${Spinner} size="sm" />${t('正在载入干员数据（打开页面后仅载入一次）…')}</div>`
       : lost.length ? html`<${DataMissing} files=${lost} />` : tab === 'diy'
-      ? html`${!candidatesSupported ? html`<p role="status">${t('当前服务器不支持四候选；候补保存在本机，本局仅同步每阶前两名。')}</p>` : null}<${DiyPanel} m=${m} picks=${st.diy || {}} legal=${diyLegal} kitted=${st.diyKitted} onSet=${setDiySlot} ops=${st.ops} onOps=${setOpsOf} />`
+      ? html`${!candidatesSupported ? html`<p role="status">${t('当前服务器不支持四候选；候补保存在本机，本局仅同步每阶前两名。')}</p>` : null}<${DiyPanel} m=${m} picks=${st.diy || {}} legal=${diyLegal} kitted=${st.diyKitted} onSet=${setDiySlot} ops=${st.ops} onOps=${setOpsOf}
+        pluginControl=${st.from === 'lobby' ? html`<${LobbyPluginTag} testId="diy-plugin-tag" onOpenDiy=${false} />` : null} />`
       : tab === 'ownership'
       ? html`<${OwnershipPanel} m=${m} roster=${ownRoster} notOwned=${st.notOwned} onToggle=${toggleOwned} />`
       : deck ? html`<main class="lo-deckwrap">
