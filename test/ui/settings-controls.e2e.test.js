@@ -104,6 +104,7 @@ describe('settings control hit areas and feedback', { skip: process.env.SP_E2E !
           e.dataset.controlSwitch = String(i);
           return { id: i, label: e.getAttribute('aria-label') };
         }));
+        assert.ok(switches.some(control => control.label === '作战中查看队友'));
         for (const control of switches) {
           step = `switch ${control.label}`;
           const selector = `[data-control-switch="${control.id}"]`;

@@ -26,8 +26,18 @@ test('all bonds remain reachable by mouse drag, wheel, keyboard and native scrol
         return bonds.length;
       });
       await page.waitForFunction(n => document.querySelectorAll('.bslot').length === n, {}, count);
-      const bounds = await page.$eval('.bstrip', el => ({ width: el.clientWidth, all: el.scrollWidth }));
+      const disc = await page.$eval('.bslot', slot => ({
+        ring: slot.querySelectorAll('.bond__ring circle').length,
+        plate: getComputedStyle(slot.querySelector('.bond__core')).backgroundImage,
+        badgePosition: getComputedStyle(slot.querySelector('.bslot__count')).position,
+      }));
+      assert.ok(disc.ring > 0 && disc.plate !== 'none');
+      assert.equal(disc.badgePosition, 'absolute');
+      const bounds = await page.$eval('.bstrip', el => ({
+        width: el.clientWidth, all: el.scrollWidth, scrollbar: getComputedStyle(el).scrollbarWidth,
+      }));
       assert.ok(bounds.all > bounds.width);
+      assert.equal(bounds.scrollbar, 'none');
       assert.equal(await page.$('.bstrip-scroll__arrow'), null, 'no arrow buttons');
       assert.deepEqual(await page.$eval('.bstrip-scroll', el => [el.classList.contains('is-l'), el.classList.contains('is-r')]), [false, true], 'the right edge fades');
       if (!touch) {

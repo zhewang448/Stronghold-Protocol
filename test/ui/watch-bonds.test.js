@@ -507,7 +507,7 @@ test('temporary layers render separately in the card, as a gold total in the str
 });
 
 test('disabled bond discs grey both the inner plate and the outer ring', () => {
-  assert.match(read('public/css/screens/bond.css'), /\.bond\.is-disabled \.bond__disc::before,\s*\.bond\.is-disabled \.bond__core\s*\{\s*filter: grayscale\(1\) brightness\(\.55\)/);
+  assert.match(read('public/css/screens/bond.css'), /\.bond\.is-disabled \.bond__ring,\s*\.bond\.is-disabled \.bond__core\s*\{\s*filter: grayscale\(1\) brightness\(\.55\)/);
 });
 
 test('temporary display anchors permanent base to the battle and follows only the field on screen', () => {

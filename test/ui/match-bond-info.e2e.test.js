@@ -58,6 +58,11 @@ for (const [engine, executablePath] of [
       assert.ok(rect.overflow <= 1 && rect.closeVisible, JSON.stringify(rect));
     };
     await page.click('[data-testid="check-player"]');
+    const fonts = await page.$eval(chip, el => ({
+      label: parseFloat(getComputedStyle(el).fontSize),
+      badge: parseFloat(getComputedStyle(el.querySelector('.ibond__ban')).fontSize),
+    }));
+    assert.ok(fonts.label >= 12 && fonts.badge >= 11, JSON.stringify(fonts));
     await showCard(chip);
     await checkSize('game-desktop');
     await page.keyboard.press('Tab');

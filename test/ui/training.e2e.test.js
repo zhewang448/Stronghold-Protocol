@@ -41,6 +41,13 @@ test('native training: zero-time prep, icon equipment/skills, live A/B, seeking 
   const preference = await page.evaluate(() => localStorage.getItem('sp.pref.loadout'));
   await selectOperator(page, '能天使', 'chess_char_3_01_a');
   await page.waitForFunction(() => globalThis.__TRAINING__.views.A?.pieceArt(1)?.shown?.endsWith('.skel'));
+  await page.$$eval('.tf-inspector summary', summaries => summaries.find(e => e.textContent === '干员资料与数值').click());
+  const chip = await page.$eval('.tf-inspector .dbond', e => {
+    const css = getComputedStyle(e);
+    return { flex: css.display.endsWith('flex'), border: css.borderTopStyle };
+  });
+  assert.deepEqual(chip, { flex: true, border: 'solid' });
+  await page.$$eval('.tf-inspector summary', summaries => summaries.find(e => e.textContent === '干员资料与数值').click());
   assert.equal(await page.evaluate(() => globalThis.__TRAINING__.phase), 'prep');
   assert.equal(await page.evaluate(() => Object.keys(globalThis.__TRAINING__.packets).length), 0);
   await page.click('[data-testid="training-equip-0"]');

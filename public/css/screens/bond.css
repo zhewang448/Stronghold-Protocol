@@ -1,9 +1,15 @@
 /* Shared BondDisc appearance, in-match bond strip and detail card. */
 
-/* Shared bond glyphs and detail/info chips; original rule order retained. */
+/* Shared bond glyphs and detail chips. */
 .bglyph { display: inline-grid; place-items: center; width: .24rem; height: .24rem; flex: none; }
 .bglyph img { width: 100%; height: 100%; object-fit: contain; filter: brightness(0) invert(.86) sepia(.4) hue-rotate(110deg) saturate(2.5); }
 .bglyph__txt { font-weight: 900; font-size: calc(.15 * var(--t)); color: var(--mint-400); }
+.bglyph--mask {
+  background-color: currentColor;
+  -webkit-mask-size: contain; mask-size: contain;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-position: center; mask-position: center;
+}
 .dbonds { display: flex; flex-wrap: wrap; gap: .08rem; }
 .dbond { display: inline-flex; align-items: center; gap: .05rem; padding: .03rem .1rem .03rem .05rem; font-size: calc(.15 * var(--t)); background: rgba(78, 216, 175, .08); border: 1px solid var(--mint-800); color: var(--mint-400); }
 /* the unit's bonds in the header's right column, right under name / class (user playtest #2 item 9): icon, name,
@@ -32,12 +38,6 @@
 .dbond__off { font-size: calc(.12 * var(--t)); color: var(--text-dim); white-space: nowrap; }
 .dbonds--top .dbond.is-granted { border-style: dashed; }
 .dbond__iso { font-size: calc(.11 * var(--t)); font-weight: 700; color: var(--gold-2); }
-.ibonds { display: flex; flex-wrap: wrap; gap: .06rem; }
-.ibond { display: inline-flex; align-items: center; gap: .05rem; padding: .03rem .08rem .03rem .04rem; font-size: calc(.14 * var(--t)); border: 1px solid var(--line-2); color: var(--text-md); }
-.ibond.is-off { color: var(--text-dim); background: rgba(255, 255, 255, .02); text-decoration: line-through; text-decoration-color: rgba(255, 84, 84, .6); }
-.ibond.is-off .bglyph img { filter: grayscale(1) brightness(.5); }
-.ibond__ban { display: inline-flex; align-items: center; gap: .02rem; font-size: calc(.12 * var(--t)); padding: 0 .05rem; background: var(--red); color: #fff; text-decoration: none; }
-.ibond__ban .icon { width: .12rem; height: .12rem; }
 
 /* #746: optional selected-unit bond timers; labels wrap at narrow widths and large text sizes. */
 .dbond-times__row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .08rem .2rem; margin: .1rem 0; font-size: calc(.24 * var(--t)); }
@@ -57,15 +57,33 @@
   font: inherit;
 }
 .bond__disc { position: relative; width: var(--disc); height: var(--disc); display: grid; place-items: center; }
+.bond__ring {
+  position: absolute;
+  inset: calc(var(--disc) * -.1);
+  width: calc(var(--disc) * 1.2);
+  height: calc(var(--disc) * 1.2);
+  overflow: visible;
+}
+.bond__ring circle { fill: none; stroke-width: 5; stroke: rgba(255, 255, 255, .13); transition: stroke var(--t-med); }
+.bond__ring circle.on { stroke: var(--mint-400); filter: drop-shadow(0 0 2px rgba(23, 249, 183, .8)); }
 .bond__core {
   width: 100%;
   height: 100%;
   border-radius: 50%;
   display: grid;
   place-items: center;
+  background: radial-gradient(circle at 50% 30%, #46524d, #1d2421 72%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1), inset 0 -3px 6px rgba(0, 0, 0, .5), 0 2px 6px rgba(0, 0, 0, .55);
+  transition: transform var(--t-fast) var(--ease-out), box-shadow var(--t-med), background var(--t-med);
 }
 .bond__icon { width: 66%; height: 66%; object-fit: contain; filter: brightness(0) invert(.82); pointer-events: none; }
 .bond__glyph { font-weight: 900; font-size: calc(var(--disc) * .42); line-height: 1; color: #cfd6d3; }
+.bond.is-active .bond__core {
+  background: radial-gradient(circle at 50% 28%, #b6ffea, var(--mint-500) 52%, #16906e 100%);
+  box-shadow: 0 0 .16rem rgba(23, 249, 183, .5), inset 0 0 0 1px rgba(255, 255, 255, .45), inset 0 -4px 8px rgba(0, 60, 40, .45);
+}
+.bond.is-active .bond__icon { filter: brightness(0) opacity(.85); }
+.bond.is-active .bond__glyph { color: #06221a; }
 .bond__count {
   position: absolute;
   left: 50%;
@@ -81,7 +99,7 @@
 }
 .bond__name { font-size: calc(var(--disc) * .27); color: var(--text-md); text-shadow: 0 1px 2px #000; white-space: nowrap; }
 .bond.is-active .bond__name { color: var(--text-hi); }
-.bond.is-disabled .bond__disc::before,
+.bond.is-disabled .bond__ring,
 .bond.is-disabled .bond__core { filter: grayscale(1) brightness(.55); }
 .bond.is-disabled .bond__name { color: var(--text-dim); }
 .bond__ban {
@@ -98,8 +116,22 @@
   box-shadow: 0 0 4px rgba(0, 0, 0, .6);
 }
 .bond__ban .icon { width: 80%; height: 80%; }
+/* a corner mark in the ✕'s place (BondDisc `tag`): the briefing's official 阵容不完整 fold (ui/outer img_bond_banned,
+   ui/matchInfo.js BondLackTag), ≈ .54 of the ring, centred on the disc box's top-right corner (recording BV13LWM6BEvY
+   0:12); without the art a dark fold with a person glyph */
+.bond__tag {
+  position: absolute; top: calc(var(--disc) * -.27); right: calc(var(--disc) * -.27);
+  width: calc(var(--disc) * .54); height: calc(var(--disc) * .54); pointer-events: none;
+  background: var(--tag) center / 100% 100% no-repeat;
+}
+.bond__tag.is-plain {
+  display: grid; place-items: start end; color: #e3e7e6;
+  background: linear-gradient(225deg, rgba(18, 22, 21, .94) 50%, transparent 50%);
+}
+.bond__tag.is-plain .icon { width: 46%; height: 46%; margin: 6% 6% 0 0; }
 .bond.is-frozen { opacity: .5; }
 .bond.is-clickable { cursor: var(--sp-cursor-pointer, pointer); }
+.bond.is-clickable:hover .bond__core { transform: scale(1.07); }
 .bond--sm { --disc: .42rem; }
 .bond--lg { --disc: .76rem; }
 
@@ -141,6 +173,13 @@
 .bslot { position: relative; display: flex; flex-direction: column; align-items: center; width: .74rem; padding-top: .18rem; }
 .bslot .bond { --disc: .52rem; }
 .bslot .bond__name { font-size: .14rem; font-weight: 500; text-shadow: 0 1px 3px #000, 0 0 6px #000; }
+.bslot__count {
+  position: absolute; top: .14rem; right: .02rem; font-size: .13rem; font-weight: 700; color: var(--text-hi);
+  background: rgba(8, 11, 10, .92); border: 1px solid var(--line-2); padding: 0 .04rem; line-height: 1.35;
+}
+.bslot__count small { color: var(--text-dim); font-size: .11rem; }
+.bslot__count.is-max { border-color: var(--mint-700); color: var(--mint-400); }
+.bslot.is-active .bslot__count { border-color: var(--mint-700); }
 .bslot.is-open .bond__core { box-shadow: 0 0 0 2px var(--mint-400), 0 0 .2rem rgba(23, 249, 183, .6); }
 /* a bond the mode never activates, with members (the server's `off` entry): the briefing's grey ✕ disc, the chips'
    struck name, 本局禁用 under it instead of the count */
@@ -150,19 +189,9 @@
   background: rgba(8, 11, 10, .85); border: 1px dashed rgba(255, 255, 255, .25);
 }
 
-/* Keep every bond reachable without shrinking its disc or extending over the right HUD. */
-.bstrip-scroll { display: flex; align-items: center; min-width: 0; gap: .04rem; }
-/* Let the padding protect rings/counts from clipping without lowering the discs and names into the board. */
-.gm__bonds .bstrip-scroll .bstrip { min-width: 0; overflow-x: auto; overflow-y: hidden; padding: .08rem 0; margin: -.08rem 0;
-  pointer-events: auto; touch-action: pan-x; scrollbar-width: thin; }
-.bstrip-scroll .bslot { flex: none; }
-.gm.is-pen .gm__bonds .bstrip-scroll *, .gm.has-sp .gm__bonds .bstrip-scroll * { pointer-events: none; }
-
-.gm__bond-list > .tt-anchor { display: block; max-width: 100%; }
-
 /* Stage sprite above each bond disc; stack counts stay on the disc. */
 .bslot__stage {
-  position: absolute; top: calc(.18rem + .26rem - var(--bond-frame-size) * (0.5 - var(--bond-rim-top))); left: 50%; transform: translate(-50%, -50%);
+  position: absolute; top: .06rem; left: 50%; transform: translate(-50%, -50%);
   display: flex; justify-content: center; height: .24rem; color: #fff; font-size: .18rem;
   pointer-events: none;
 }
