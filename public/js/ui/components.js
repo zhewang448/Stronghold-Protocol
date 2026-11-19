@@ -19,6 +19,7 @@ import { t } from '../../../shared/i18n.js';
 import { serverNow } from '../store.js';
 import { data, useData, localAsset } from '../data.js';
 import { uiUrl } from './assetUrls.js';
+import { bondRimKey, useBondRim } from './bondTheme.js';
 import { PixBot } from './pixbots.js';
 import { playerSeatColor } from './playerSeries.js';
 import { LiveArt } from './dynamicIllustration.js';
@@ -221,19 +222,33 @@ export function TierChip({ tier, golden = false, size = 'md', class: cls, overla
  * Bond disc: round glyph disc with segmented tier ring, stack count and name.
  * @param {{ name?: string, icon?: string, count?: number, layers?: number, tier?: number, maxTier?: number,
  *   active?: boolean, disabled?: boolean, layersDisabled?: boolean, size?: 'sm'|'md'|'lg', showName?: boolean,
- *   onClick?: Function, class?: string, title?: string, cross?: boolean, tag?: any }} props
+ *   onClick?: Function, class?: string, title?: string, cross?: boolean, tag?: any,
+ *   theme?: ReturnType<typeof import('./bondTheme.js').bondThemeFromPack> }} props
  *   cross: the red ✕ corner (default: when disabled); tag: a corner mark drawn in its place, on the disc's box (the
  *   briefing's official 阵容不完整 corner, ui/matchInfo.js BondLackTag)
  */
 export function BondDisc({
   name = '', icon, count, layers, tier = 0, maxTier = 3, active = false, disabled = false, layersDisabled = false,
-  size = 'md', showName = true, onClick, class: cls, title, cross = disabled, tag = null,
+  size = 'md', showName = true, onClick, class: cls, title, cross = disabled, tag = null, theme = null,
 }) {
   // Remember which URL failed (a per-URL flag can't race a reset effect).
   const [badSrc, setBadSrc] = useState(null);
   const imgOk = !!icon && badSrc !== icon;
   const n = Math.max(1, Math.min(8, maxTier | 0 || 3));
   const filled = Math.max(0, Math.min(n, tier | 0));
+  const lit = active && !disabled;
+  const frameKey = theme ? bondRimKey(n, lit ? Math.max(1, filled) : 0) : null;
+  const rim = useBondRim(frameKey ? uiUrl(data.get('assets'), frameKey) : null);
+  const themeStyle = theme ? {
+    '--bond-root-size': String(theme.rootWidth), '--bond-icon-ratio': String(theme.iconRatio),
+    '--bond-back-width': String(theme.backWidth), '--bond-back-height': String(theme.backHeight),
+    '--bond-back': `url("${lit ? theme.active : theme.inactive}")`,
+    '--bond-total-color': theme.totalColor,
+    ...(rim ? {
+      '--bond-rim-width': String(rim.w), '--bond-rim-height': String(rim.h),
+      '--bond-rim-lit': `url("${rim.lit}")`, '--bond-rim-track': `url("${rim.track}")`,
+    } : {}),
+  } : null;
   const R = 46;
   const C = 2 * Math.PI * R;
   const gap = n > 1 ? 5 : 0;
@@ -242,19 +257,28 @@ export function BondDisc({
   const glyph = (name || '?').trim().charAt(0) || '?';
   const Tag = onClick ? 'button' : 'div';
   return html`<${Tag} type=${onClick ? 'button' : undefined}
-      class=${cx('bond', `bond--${size}`, active && 'is-active', disabled && 'is-disabled', layersDisabled && 'is-frozen', onClick && 'is-clickable', cls)}
-      onClick=${onClick} title=${title || name}>
+      class=${cx('bond', `bond--${size}`, active && 'is-active', disabled && 'is-disabled', layersDisabled && 'is-frozen',
+        onClick && 'is-clickable', theme && 'bond--official', rim && 'has-native-rim', cls)}
+      data-theme=${theme?.id || undefined} style=${themeStyle} onClick=${onClick} title=${title || name}>
     <span class="bond__disc">
+      ${theme ? html`<span class="bond__theme-layer bond__theme-back" aria-hidden="true"></span>` : null}
       <svg class="bond__ring" viewBox="-50 -50 100 100" aria-hidden="true">
         ${Array.from({ length: n }, (_, i) => html`<circle key=${i} r=${R}
           class=${i < filled ? 'on' : 'off'} stroke-dasharray=${`${seg} ${C - seg}`}
           stroke-dashoffset=${-(i * C) / n - gap / 2} transform="rotate(-90)" />`)}
       </svg>
-      <span class="bond__core">
+      ${rim ? html`
+        <span class="bond__theme-layer bond__theme-track" aria-hidden="true"></span>
+        ${lit ? html`<span class="bond__theme-layer bond__theme-halo" aria-hidden="true"></span>
+          <span class="bond__theme-layer bond__theme-edge" aria-hidden="true"></span>
+          <span class="bond__theme-layer bond__theme-rim" aria-hidden="true"></span>` : null}
+      ` : null}
+      <span class=${cx('bond__core', theme && imgOk && 'has-icon')} style=${theme && imgOk ? { '--bond-icon': `url("${icon}")` } : null}>
         ${imgOk
           ? html`<img class="bond__icon" src=${icon} alt="" draggable=${false} onError=${() => setBadSrc(icon)} />`
           : html`<span class="bond__glyph">${glyph}</span>`}
       </span>
+      ${theme && lit && filled ? html`<span class="bond__tier" role="img" aria-label=${t('阶段 {tier}', { tier: roman(filled) })}>${roman(filled)}</span>` : null}
       ${stack != null ? html`<span class="bond__count">${stack}</span>` : null}
       ${cross ? html`<span class="bond__ban" aria-label=${t('禁用')}><${Icon} name="close" /></span>` : null}
       ${tag}

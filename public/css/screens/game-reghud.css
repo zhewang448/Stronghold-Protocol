@@ -488,10 +488,3 @@
 .mpop.mpop--pf { gap: 0; }
 .pf__spine { position: absolute; inset: 0; display: block; pointer-events: none; }
 .pf__spine canvas { display: block; }
-
-/* 规程 bond discs with the pack's own rings (bondicon/bond_icon_view_item: bg_active / bg_inactive, 75 units on the
-   58-unit disc); the active glyph is light on the pack's disc, as the theme previews show */
-.gm__bonds--pf .bond__core { background: var(--pf-bond-off) center / 129% 129% no-repeat; box-shadow: none; }
-.gm__bonds--pf .bond.is-active .bond__core { background: var(--pf-bond-on) center / 129% 129% no-repeat; box-shadow: none; }
-.gm__bonds--pf .bond.is-active .bond__icon { filter: brightness(0) invert(1); }
-.gm__bonds--pf .bond.is-active .bond__glyph { color: #fff; }

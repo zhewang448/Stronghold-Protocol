@@ -92,6 +92,7 @@ import { useGameData, GIcon } from '../ui/gameComponents.js';
 import { useFieldView } from '../ui/fieldHost.js';
 import { TopBar, liveLp, ownLeaks, uniteRemaining, tempInfo, tempReadyReason } from '../ui/hud.js';
 import { BondStrip, BondPopup, visibleStripBonds } from '../ui/bondStrip.js';
+import { bondThemeFromPack } from '../ui/bondTheme.js';
 import { TeamPanel } from '../ui/teamPanel.js';
 import { ShopBar } from '../ui/shopBar.js';
 import { regLook } from '../ui/regHud.js';
@@ -332,10 +333,9 @@ function MatchScreen() {
   const badgeBase = usePrefabPack(hasAvatarBadges(themePf) ? null : data.get('local')?.groups, 'ac_n_initial', { includeDefault: true });
   const badgePack = avatarBadgePack(themePf, badgeBase);
   const teamBadges = useMemo(() => ({ pack: badgePack, still: pfStill }), [badgePack, pfStill]);
-  // the pack's bond_icon_view_item rings (img_active / img_inactive, 75 units on a 58-unit disc) behind the bond discs
-  const pfBondOn = themePf?.doc?.prefabs?.['bondicon/bond_icon_view_item'] ? themePf.sprite('bg_active') : '';
-  const pfBondOff = pfBondOn ? themePf.sprite('bg_inactive') : '';
-  const pfBondRings = pfBondOn && pfBondOff ? { '--pf-bond-on': `url("${pfBondOn}")`, '--pf-bond-off': `url("${pfBondOff}")` } : null;
+  // The selected initial terminal shares the already loaded pack for its discs and avatar badges.
+  const bondPack = playerSettings.uiTheme === 'ac_n_initial' ? badgeBase : themePf;
+  const bondTheme = useMemo(() => bondThemeFromPack(bondPack), [bondPack]);
   // gameplay plugins (DESIGN §32.6): the HUD corner's MOD mark — re-rendered only when the room's content changes
   const modRoom = useStore((s) => (s.room?.content?.vanilla === false ? s.room : null), (a, b) => (a?.content ?? null) === (b?.content ?? null));
   // the room's spectator seats for the top bar's 观战席 capsule (ui/hud.js SpectatorPill; GitHub #120): room.state keeps coming
@@ -2139,7 +2139,7 @@ function MatchScreen() {
         spectators=${specFacts.list} myId=${myId} isHost=${specFacts.isHost} onRemoveSpectator=${removeSpectator} onUniteSkipVote=${actions.uniteSkipVote} room=${modRoom}
         held=${hudIn === 'wait'} />
 
-      <div class=${cx('gm__bonds', pfBondRings && 'gm__bonds--pf')} style=${pfBondRings || null}>
+      <div class=${cx('gm__bonds', bondTheme && 'gm__bonds--pf')}>
         <button type="button" class="bonds-toggle" aria-expanded=${!bondsCollapsed} aria-controls="match-bond-strip"
           aria-label=${bondsCollapsed ? t('展开盟约') : t('收起盟约')} title=${bondsCollapsed ? t('展开盟约') : t('收起盟约')}
           onKeyDown=${(e) => {
@@ -2152,7 +2152,7 @@ function MatchScreen() {
           }}><${Icon} name=${bondsCollapsed ? 'chevronRight' : 'chevronLeft'} /></button>
         <div id="match-bond-strip" class="gm__bond-list" hidden=${bondsCollapsed}>
           <${BondStrip} bonds=${stripBonds} layersDisabled=${layersDisabled} openId=${bondPop && bondPop.ownerId === strip.ownerId ? bondPop.bondId : null}
-            owner=${strip.name} forecast=${showPrep && strip.self ? priv?.layerForecast : null} onOpen=${(id) => openBond(id, strip.ownerId, 'strip')} />
+            owner=${strip.name} theme=${bondTheme} forecast=${showPrep && strip.self ? priv?.layerForecast : null} onOpen=${(id) => openBond(id, strip.ownerId, 'strip')} />
         </div>
       </div>
 

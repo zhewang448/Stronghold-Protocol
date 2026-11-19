@@ -4,8 +4,8 @@
 //
 // Asserted: with 可露希尔 selected in a 规程 match, the top bar band, the countdown and the ready button are the pack's
 // prefabs (the round and LP show where `_roundText` / `_playerHpText` point, the countdown is the bitmap font, the ready
-// face sits on the countdown and still toggles); 主题动画 off leaves no running prefab animation; the default theme
-// and 盟约 keep the hand-made top bar.
+// face sits on the countdown and still toggles); 主题动画 off leaves no running prefab animation. Official bond rims
+// are independent of the top-bar choice.
 
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -93,11 +93,19 @@ describe('规程 official prefab HUD (headless Chrome)', { skip: !ENABLED && 'se
     const { page, context, problems } = await open({ version: 'regulation' });
     try {
       await page.waitForSelector('.gtop__band--pf .pf__n', { timeout: 20000 });
-      const rings = await page.evaluate(() => {
-        const el = document.querySelector('.gm__bonds--pf');
-        return el ? getComputedStyle(el).getPropertyValue('--pf-bond-on').includes('bg_active') : false;
+      await page.waitForSelector('.gm__bonds--pf .bond.is-active.has-native-rim .bond__theme-rim');
+      const layers = await page.$eval('.gm__bonds--pf .bond.is-active.has-native-rim', el => {
+        const back = el.querySelector('.bond__theme-back');
+        const rim = el.querySelector('.bond__theme-rim');
+        return {
+          back: getComputedStyle(back).backgroundImage,
+          mask: getComputedStyle(rim).maskImage,
+          fallback: getComputedStyle(el.querySelector('.bond__ring')).visibility,
+        };
       });
-      assert.ok(rings, 'the bond strip carries the pack\'s bg_active ring');
+      assert.match(layers.back, /bg_active/);
+      assert.match(layers.mask, /data:image\/png/);
+      assert.equal(layers.fallback, 'hidden');
       await page.evaluate(async () => {
         const M = globalThis.__MOCK__;
         M.mutate((s) => { s.pub.round = 4; s.priv.funds = 13; }); M.pushPublic();
@@ -130,13 +138,20 @@ describe('规程 official prefab HUD (headless Chrome)', { skip: !ENABLED && 'se
     }
   });
 
-  test('the default theme and 盟约 keep the hand-made top bar', { timeout: 120000 }, async () => {
-    for (const [theme, version] of [['', 'regulation'], ['ac_s_closur', '']]) {
+  test('official bond discs follow the selected theme in both seasons', { timeout: 120000 }, async () => {
+    for (const [theme, version, prefabTop] of [
+      ['', 'regulation', false], ['ac_n_initial', 'regulation', false], ['ac_n_iron', '', true],
+    ]) {
       const { page, context } = await open({ theme, version });
       try {
         await page.waitForSelector('.gtop__band', { timeout: 20000 });
-        const pf = await page.evaluate(() => !!document.querySelector('.gtop__band--pf, .readybtn--pf, .gtop__clock--pf'));
-        assert.equal(pf, false, `${theme || 'default'} / ${version || '盟约'}`);
+        const pf = await page.evaluate(() => !!document.querySelector('.gtop__band--pf'));
+        assert.equal(pf, prefabTop, `${theme || 'default'} / ${version || '盟约'}`);
+        if (theme) {
+          await page.waitForSelector(`.bond--official[data-theme="${theme}"].has-native-rim`);
+        } else {
+          assert.equal(await page.$('.gm__bonds .bond--official'), null);
+        }
       } finally {
         await context.close();
       }

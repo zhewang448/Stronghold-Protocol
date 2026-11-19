@@ -231,3 +231,93 @@
 .bpop-nav__arrow--prev .bpop-nav__image { transform: scaleX(-1); }
 .bpop-nav__arrow:hover .bpop-nav__image { opacity: 1; }
 .bpop-nav__arrow:focus-visible { outline: 2px solid var(--mint-400); outline-offset: 2px; }
+
+/* Approved official bond previews: separate native background, total/actual alpha and 36/58 icon layers.
+   [ASSUMED] The centre matte and CSS glows approximate the Unity material. The official screenshot confirms that
+   the layer count overlaps the lower disc; the stage sits over its top and the name immediately below it. */
+.bond.bond--official {
+  --bond-ring-color: var(--sp-c-skin-dark, var(--mint-400));
+  --bond-icon-active: var(--sp-c-bond-icon, #fff);
+  --bond-track-color: var(--bond-total-color, #535353cc);
+  --bond-halo-color: #fff;
+  --bond-halo-shadow: var(--sp-c-skin-light, var(--mint-400));
+  --bond-highlight: #fff;
+  --bond-rim-highlight: #fff;
+  --bond-rim-shadow: var(--bond-ring-color);
+  --bond-layer-font: max(12px, calc(var(--disc) * 15 / 58), calc(.1345 * var(--t)));
+  --bond-name-font: max(10px, calc(var(--disc) * 12 / 58), calc(.1076 * var(--t)));
+  --bond-name-top: max(calc(var(--disc) * 54 / 58), calc(var(--disc) * 39 / 58 + var(--bond-layer-font)));
+  position: relative;
+  gap: 0;
+  min-height: 44px;
+  padding-bottom: max(0px, calc(var(--bond-name-top) + var(--bond-name-font) * 1.2 - var(--disc)));
+}
+.bond.bond--official[data-theme="ac_s_closur"] {
+  --bond-track-color: #74777d;
+  --bond-halo-color: #f2faff;
+  --bond-halo-shadow: #e7f3ff;
+  --bond-highlight: #f6ffff;
+  --bond-rim-highlight: #d8efff;
+  --bond-rim-shadow: #3435ff;
+}
+/* [ASSUMED] Small-screen readability floors; scrolling and the existing coarse-pointer hit area remain in use. */
+.gm__bonds--pf .bslot { width: max(.74rem, 48px); }
+.gm__bonds--pf .bslot .bond--official { --disc: max(.52rem, 36px); }
+.gm__bonds--pf .bstrip-scroll .bstrip { padding-block: max(.1rem, 8px); margin-block: calc(-1 * max(.1rem, 8px)); }
+.bond--official .bond__disc { isolation: isolate; }
+.bond--official .bond__theme-layer {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: calc(var(--disc) * var(--bond-rim-width) / var(--bond-root-size));
+  height: calc(var(--disc) * var(--bond-rim-height) / var(--bond-root-size));
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.bond--official .bond__theme-back {
+  width: calc(var(--disc) * var(--bond-back-width) / var(--bond-root-size));
+  height: calc(var(--disc) * var(--bond-back-height) / var(--bond-root-size));
+  background: var(--bond-back) center / contain no-repeat;
+  clip-path: circle(28.5% at 50% 50%);
+}
+.bond--official .bond__theme-track { background: var(--bond-track-color); opacity: .72; -webkit-mask: var(--bond-rim-track) center / contain no-repeat; mask: var(--bond-rim-track) center / contain no-repeat; }
+.bond--official .bond__theme-halo,
+.bond--official .bond__theme-edge,
+.bond--official .bond__theme-rim { -webkit-mask: var(--bond-rim-lit) center / contain no-repeat; mask: var(--bond-rim-lit) center / contain no-repeat; }
+.bond--official .bond__theme-halo { background: var(--bond-halo-color); filter: blur(calc(var(--disc) * 2 / 58)) drop-shadow(0 0 calc(var(--disc) * 2.7 / 58) var(--bond-halo-shadow)); opacity: .8; }
+.bond--official .bond__theme-edge { background: var(--bond-highlight); filter: blur(calc(var(--disc) * .8 / 58)); opacity: .92; }
+.bond--official .bond__theme-rim { background: var(--bond-ring-color); filter: drop-shadow(0 0 1px var(--bond-rim-highlight)) drop-shadow(0 0 3px var(--bond-rim-shadow)); }
+.bond--official.has-native-rim .bond__ring { visibility: hidden; }
+.bond--official .bond__ring circle.on { stroke: var(--bond-ring-color); filter: drop-shadow(0 0 2px var(--bond-ring-color)); }
+.gm .bond.bond--official .bond__core { position: relative; background: none; box-shadow: none; transform: none; }
+.bond--official .bond__icon { width: calc(var(--bond-icon-ratio) * 100%); height: calc(var(--bond-icon-ratio) * 100%); opacity: 0; }
+.bond--official .bond__core.has-icon::after {
+  content: ''; position: absolute; inset: 0; margin: auto;
+  width: calc(var(--bond-icon-ratio) * 100%); height: calc(var(--bond-icon-ratio) * 100%);
+  background: #5b6068;
+  -webkit-mask: var(--bond-icon) center / contain no-repeat;
+  mask: var(--bond-icon) center / contain no-repeat;
+  pointer-events: none;
+}
+.bond--official.is-active:not(.is-disabled) .bond__core.has-icon::after { background-color: var(--bond-icon-active); }
+.gm .bond--official .bond__glyph { color: #5b6068; }
+.gm .bond--official.is-active:not(.is-disabled) .bond__glyph { color: var(--bond-icon-active); }
+.bond--official .bond__tier {
+  position: absolute; top: calc(var(--disc) * -1 / 58); left: 50%; transform: translateX(-50%); z-index: 1;
+  color: #fff; font: 500 var(--bond-layer-font)/1 var(--font-num); white-space: nowrap;
+  text-shadow: 0 1px 2px #101b39, 0 0 2px #101b39; pointer-events: none;
+}
+.bond--official .bond__count {
+  top: calc(var(--disc) * 39 / 58); bottom: auto; left: 50%; width: max-content;
+  margin: 0; padding: 0; transform: translateX(-50%);
+  font: 500 var(--bond-layer-font)/1 var(--font-num); text-align: center; white-space: nowrap;
+}
+.gm .bond--official .bond__name {
+  position: absolute; top: var(--bond-name-top); left: 50%; width: max-content;
+  margin: 0; padding: 0; transform: translateX(-50%);
+  font-size: var(--bond-name-font); line-height: 1.2; text-align: center; white-space: nowrap;
+}
+.bond--official.is-disabled .bond__disc { filter: grayscale(1) brightness(.55); }
+.bond--official.is-disabled .bond__core { filter: none; }
+.gm__bonds--pf .bslot__count:not(.bslot__off) { display: none; }
+.gm__bonds--pf .bslot__off { margin-top: .04rem; }
+.gm__bonds--pf .bslot.is-open .bond--official { filter: brightness(1.08); }

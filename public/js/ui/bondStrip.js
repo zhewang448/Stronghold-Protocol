@@ -204,9 +204,10 @@ export function visibleStripBonds(bonds) {
 
 /**
  * @param {{ bonds: any[], layersDisabled?: boolean, onOpen:(bondId:string)=>void, openId?: string|null,
- *   owner?: string|null, forecast?: any }} props — owner: the watched teammate's name (null = your own bonds)
+ *   owner?: string|null, forecast?: any, theme?: ReturnType<typeof import('./bondTheme.js').bondThemeFromPack> }} props
+ *   owner: the watched teammate's name (null = your own bonds)
  */
-export function BondStrip({ bonds, layersDisabled = false, onOpen, openId = null, owner = null, forecast = null }) {
+export function BondStrip({ bonds, layersDisabled = false, onOpen, openId = null, owner = null, forecast = null, theme = null }) {
   const sorted = visibleStripBonds(bonds);
   if (!sorted.length) {
     return html`<div class=${cx('bstrip', 'bstrip--empty', owner && 'is-other')} data-owner=${owner || null}>
@@ -225,7 +226,7 @@ export function BondStrip({ bonds, layersDisabled = false, onOpen, openId = null
         return html`<div key=${b.bondId} role="listitem" data-bond=${b.bondId} data-off="1"
             class=${cx('bslot', 'is-off', openId === b.bondId && 'is-open')}>
           <${BondDisc} name=${name} icon=${bondIconUrl(m, b.bondId)} tier=${0} maxTier=${Math.max(1, th.length)} active=${false}
-            disabled=${true} size="sm" showName=${true} layersDisabled=${layersDisabled} onClick=${() => onOpen(b.bondId)}
+            disabled=${true} size="sm" showName=${true} theme=${theme} layersDisabled=${layersDisabled} onClick=${() => onOpen(b.bondId)}
             title=${t('{tip} · {n} 名成员', { tip: briefingBondTip(name, 'off'), n: b.count ?? 0 })} />
           <span class="bslot__count bslot__off">${t('本局禁用')}</span>
         </div>`;
@@ -234,11 +235,11 @@ export function BondStrip({ bonds, layersDisabled = false, onOpen, openId = null
       return html`<div key=${b.bondId} role="listitem" data-bond=${b.bondId} data-harmony=${b.harmony > 0 ? b.harmony : null}
           class=${cx('bslot', b.active && 'is-active', tempLayers > 0 && 'has-temp-layers', openId === b.bondId && 'is-open')}>
         <${BondDisc} name=${rec?.name || b.bondId} icon=${bondIconUrl(m, b.bondId)} layers=${rec?.noStack ? undefined : total}
-          tier=${tier} maxTier=${Math.max(1, th.length)} active=${!!b.active} size="sm" showName=${true}
+          tier=${tier} maxTier=${Math.max(1, th.length)} active=${!!b.active} size="sm" showName=${true} theme=${theme}
           layersDisabled=${layersDisabled} onClick=${() => onOpen(b.bondId)}
           title=${`${rec?.name || b.bondId} ${b.count ?? 0}/${next ?? th[th.length - 1] ?? '-'}${b.harmony > 0 ? t('（含调和 +{harmony}）', { harmony: b.harmony }) : ''}`} />
         <span class=${cx('bslot__count', 'num', next == null && 'is-max')}>${b.count ?? 0}<small>/${next ?? th[th.length - 1] ?? '-'}</small></span>
-        <${BondStage} tier=${b.active ? tier : 0} />
+        ${theme ? null : html`<${BondStage} tier=${b.active ? tier : 0} />`}
         ${!layersDisabled && !owner && forecast?.bonds?.[b.bondId]?.n > 0 ? html`<span class="bslot__forecast num">+${forecast.bonds[b.bondId].n}</span>` : null}
       </div>`;
     })}
