@@ -1,6 +1,6 @@
 # 卫戍协议：盟约 · Stronghold Protocol: Alliance
 
-![扩展版本](https://img.shields.io/badge/version-0.4.0--extended.1-blue)
+![扩展版本](https://img.shields.io/badge/version-0.4.0--extended.2-blue)
 ![上游基础版本](https://img.shields.io/badge/version-0.4.0-2ea44f)
 ![许可](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
 
@@ -17,7 +17,7 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 [本库改进图鉴](https://zhewang448.github.io/Stronghold-Protocol/) · [下载正式版](https://github.com/zhewang448/Stronghold-Protocol/releases/latest) · [开始运行](#开始运行) · [特色图鉴](docs/FORK-FEATURES.md) · [本库特色详解](#本库特色详解) · [和朋友一起玩](#和朋友一起玩) · [更新记录](docs/LOCAL-CHANGELOG.md) · [反馈问题](https://github.com/zhewang448/Stronghold-Protocol/issues)
 
-> 当前版本为 **`v0.4.0-extended.1`**，基础游戏 0.4.0。**2026-11-15 更新**：官方主题与开局界面、主动观看开场、三列队友速查、可选独立装备区，以及新盟约预选／名片和立绘恢复修复。附启动器 1.4.1，详细内容与升级方式见[发布说明](docs/RELEASE-V0.4.0-EXTENDED.1.md)。
+> 当前版本为 **`v0.4.0-extended.2`**，基础游戏 0.4.0。**2026-11-19 更新**同步上游第 83 轮，恢复三套官方主题的盟约图标，更新规程地图和赛前材质，支持骷髅手光标调节大小，并修复 Windows 跨盘提取。附启动器 1.4.1。 [发布说明](docs/RELEASE-V0.4.0-EXTENDED.2.md)
 >
 > 非官方、非商业同人项目，与《明日方舟》官方无隶属或授权关系。游戏素材与数据的权利归原权利人；代码、素材及截图的许可边界见 [NOTICE.md](NOTICE.md)。
 
@@ -64,7 +64,7 @@ Windows 服主从同版本 Release 下载 StrongholdProtocolLauncher-v1.4.1-win-
 
 ### 下载整合包
 
-从[本库 Releases](https://github.com/zhewang448/Stronghold-Protocol/releases)选择附件，解压到新目录。**v0.4.0-extended.1 的基础安装由 lite 程序包＋common/local/fx 三组素材分包组成，动态立绘另为可选的 dynamic-art.zip**。新安装默认不下载动画；头像、竖图和静态立绘保留。推荐启动器自动组装；手动安装将四个基础 ZIP 的同名文件夹合并，需要动画时再合并第五个 dynamic ZIP。本版增量包直接适用于 v0.3.3-extended.15，更早版本可先升级至该版或重新安装。下表的单体 assets.zip 适用于仍提供它的较早版本：
+**v0.4.0-extended.2 的基础安装由 lite 程序包和 common、local、fx 三组素材分包组成，动态立绘使用可选的 dynamic-art.zip。** 推荐用启动器自动组装。手动安装时合并四个基础 ZIP 的同名文件夹，需要动态立绘时再合并 dynamic ZIP。本版增量包直接适用于 v0.4.0-extended.1。更早版本可在支持增量链的控制台升级，或用启动器重新安装。 [本库 Releases](https://github.com/zhewang448/Stronghold-Protocol/releases)
 
 | 附件 | 适合的情况 |
 | --- | --- |
@@ -149,7 +149,7 @@ winget install Cloudflare.cloudflared
 | **还原战场状态条** | 默认开启损伤圆环、脚下生命/技力条和真实过载分段；一个开关切回原显示，缺素材仍能显示程序圆环 |
 | **策略小地图与预计叠层** | 策略左栏查看实际地图；休整期盟约盘查看本人确定性预计加层及来源，部署调整后更新 |
 | **可选商店人像突出** | 默认关闭；开启后放大、提亮干员人像并调整文字渐变，卡片尺寸与装备卡保持原样 |
-| **骷髅手指光标** | 设置中可开启官方鼠标手和点击动画。新用户默认关闭，继承已有的系统／方舟选择 |
+| **骷髅手指光标** | 在设置中开启官方鼠标手和点击动画，选择自动或 32–128 px 固定尺寸。新用户默认关闭，保留已有选择 |
 
 [查看完整特色图鉴、操作步骤、默认值及兼容范围 →](docs/FORK-FEATURES.md)
 
