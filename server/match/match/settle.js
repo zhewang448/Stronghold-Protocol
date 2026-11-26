@@ -4,11 +4,11 @@ import { normalLeakHistory } from '../leak-history.js';
 // view carries) and RESULT (finish: m.result to every human still here, onEnd).
 // Installed on Match.prototype by server/match/Match.js (a method container: never instantiated; `this` is the match).
 
-import { PHASE, ERR, layerGainRoom } from '../../../shared/constants.js';
+import { PHASE, ERR } from '../../../shared/constants.js';
 import { uniteSurvivors, plannedUniteSurvivors } from '../unite.js';
 import { buildResult } from '../results.js';
 import { recordRound } from '../history.js';
-import { FLOW_TICKER_PRIORITY, DELAYS, OK, fail, applyTempLayers } from './common.js';
+import { FLOW_TICKER_PRIORITY, DELAYS, OK, fail, applyTempLayers, commitBattleLayerGains } from './common.js';
 import { msg } from '../../../shared/i18n.js';
 import { onSettle, resetRoundCounters } from '../botEmotes.js';
 import { creditedKillsOf } from '../../sim/spec.js';
@@ -80,13 +80,8 @@ export class MatchSettle {
           if (up) layerSources.push(up.layerGains);
         }
       }
-      for (const source of layerSources) for (const [bondId, n] of Object.entries(source || {})) {
-        if (!this.gd.bond(bondId) || !(n > 0)) continue;
-        const before = ps.layers[bondId] || 0;
-        const add = layerGainRoom(before, Math.floor(n));
-        if (!(add > 0)) continue;
-        ps.layers[bondId] = before + add;
-        this.dispatch(ps, 'onLayers', { bondId, from: before, to: ps.layers[bondId], reason: 'battle' });
+      for (const source of layerSources) {
+        commitBattleLayerGains(this.gd, ps, source, (p, ev, ctx) => this.dispatch(p, ev, ctx));
       }
       this._charDamageTickers(ps, r);
       // Preserve the own-battle pool through SETTLE. Conversion runs when the next prep actually opens.

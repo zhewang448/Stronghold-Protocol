@@ -7,6 +7,7 @@
 import { unitStatsEntry } from '../../../shared/protocol.js';
 import { PHASE, ERR, EMOTE_IDS, EMOTE_COOLDOWN_MS, EMOTE_BARRAGE_COUNT_MAX, PING_KINDS, PING_COOLDOWN_MS, GEO } from '../../../shared/constants.js';
 import { deriveSeed } from '../../sim/rng.js';
+import { bossLayerGainsEnabled } from '../finalAssault.js';
 import { OK, fail } from './common.js';
 import { onHumanEmote } from '../botEmotes.js';
 import { takeBarrageBudget } from '../barrage.js';
@@ -177,7 +178,7 @@ export class MatchIntents {
     const b = this.newBattle({
       seed: deriveSeed(this.seed, `preview:${this.round}:${ps.seat}`), kind: 'normal', modeId: this.modeId, round: this.round,
       stageId: this.stageId, rect: { ...GEO.NORMAL_RECT }, timeLimit: 60, players, spawns: [], routes: this.wave ? this.wave.routes : [],
-      sharedBoss: null, flags: { layerGainsEnabled: !bossRound, ...this.gd.dp }, fieldId: `n:${ps.playerId}`, recordEvents: false,
+      sharedBoss: null, flags: { layerGainsEnabled: !bossRound || bossLayerGainsEnabled(this.gd), ...this.gd.dp }, fieldId: `n:${ps.playerId}`, recordEvents: false,
     });
     try {
       if (typeof b.start === 'function') b.start();
