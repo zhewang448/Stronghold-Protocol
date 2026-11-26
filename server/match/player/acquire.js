@@ -240,6 +240,8 @@ export class PlayerAcquire {
     if (!list.length) return null;
     const offer = { tier: t, source, label: typeof label === 'string' && label ? label : null, slots: list.slice(0, MAX_OFFER_SLOTS).map((id) => ({ kind: 'chess', id, price: ro.price, sold: false })) };
     if (Number.isInteger(picks) && picks > 1) offer.picks = Math.min(picks, offer.slots.length);
+    // Only the 合成晋级 reward expires at the next deadline where it could be picked.
+    if (source === 'merge') offer.due = this._tempDueNow();
     this.offers.push(offer);
     this.dirty();
     return offer;

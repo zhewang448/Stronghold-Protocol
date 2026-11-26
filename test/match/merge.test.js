@@ -137,18 +137,13 @@ test('merge from two board copies with a full hand (a gained copy; a purchase is
   m.dispose();
 });
 
-test('a promotion offer left unpicked stays queued into the next round and can be taken there (2026-10-15)', () => {
+test('an unpicked promotion offer and its cards expire together before the next prep', () => {
   const { h, m, ps } = prep(25);
-  ps.pushRewardOffer('merge');
-  const offer = ps.offers[0];
-  const pick = offer.slots[0].id;
+  assert.ok(ps.pushRewardOffer('merge'));
   assert.deepEqual(m.handle('p_0', { t: 'g.ready', ready: true }), { ok: true });
   h.drive(() => m.phase === PHASE.PREP && m.round === 2);
-  assert.equal(ps.offers.length, 1, 'still queued in the next prep');
-  assert.equal(ps.offers[0], offer, 'the same offer, the same cards');
-  assert.deepEqual(m.handle('p_0', { t: 'g.reward', idx: 0 }), { ok: true });
   assert.equal(ps.offers.length, 0);
-  assert.ok([...ps.hand, ...ps.temp].some((p) => p && p.id === pick), 'the picked operator arrived');
+  assert.equal(m.handle('p_0', { t: 'g.reward', idx: 0 }).error, ERR.BAD_TARGET);
   checkInvariants(m);
   m.dispose();
 });
@@ -172,7 +167,7 @@ test('merge whose copies are not deployed (temp) with a full hand overflows the 
   m.dispose();
 });
 
-test('displayed operator rewards survive stock exhaustion, respect a full hand and stay queued past the prep end', () => {
+test('displayed operator rewards survive stock exhaustion, respect a full hand and expire at the prep end', () => {
   const { h, m, ps } = prep(24);
   ps.pushRewardOffer('merge');
   const offer = ps.offers[0];
@@ -191,8 +186,7 @@ test('displayed operator rewards survive stock exhaustion, respect a full hand a
   assert.deepEqual(m.handle('p_0', { t: 'g.ready', ready: true }), { ok: true });
   h.sched.runNext();
   h.sched.runNext();
-  // a queued offer lasts until picked (the maintainer's decision of 2026-10-15): the prep end keeps it for the next prep
-  assert.equal(ps.offers.length, 1, 'the offer stays after the prep end');
+  assert.equal(ps.offers.length, 0, 'the promotion offer expires at the prep end');
   checkInvariants(m);
   m.dispose();
 });
@@ -410,10 +404,8 @@ test('a merge completed during SETTLE (突变细胞) keeps its reward offer for 
     assert.equal([...ps.hand, ...ps.temp].filter((p) => p && p.id === CELL).length, 1, `${label}: the cell came back`);
     assert.ok(ps.temp.every((p) => !p || p.id === CELL), `${label}: nothing else waits in temp`);
     checkInvariants(m);
-    // it stays queued through the round like any other offer (kept until picked, 2026-10-15)
-    const queued = ps.offers.length;
     h.drive(() => m.phase === PHASE.COMBAT && m.round === 2);
-    assert.equal(ps.offers.length, queued);
+    assert.equal(ps.offers.filter(offer => offer.source === 'merge').length, 0);
     m.dispose();
   }
 });
@@ -524,5 +516,23 @@ test('equipment: a consume-on-equip item on a full carrier replaces the picked i
     assert.deepEqual(m.handle('p_0', { t: 'g.destroy', uid: it.uid }), { ok: true });
   }
   checkInvariants(m);
+  m.dispose();
+});
+
+test('promotion deadlines allow late rewards the following prep and leave other offers queued', () => {
+  const { h, m, ps } = prep();
+  const current = ps.pushRewardOffer('merge');
+  const strategy = ps.pushRewardOffer('command');
+  assert.equal(current.due, ps.prepsEnded);
+  assert.equal(strategy.due, undefined);
+  ps.ready = true;
+  const late = ps.pushRewardOffer('merge');
+  assert.equal(late.due, ps.prepsEnded + 1);
+  ps.endPrep();
+  assert.deepEqual(ps.offers, [strategy, late]);
+  h.sched.runNext();
+  ps.ready = false;
+  ps.endPrep();
+  assert.deepEqual(ps.offers, [strategy]);
   m.dispose();
 });

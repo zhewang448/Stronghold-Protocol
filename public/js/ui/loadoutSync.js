@@ -1,3 +1,4 @@
+import { CARD_ROSTER, parseCardRoster } from '../../../shared/cardRoster.js';
 // Operator loadout + ownership + 自选编队 + 干员皮肤 state and server sync (DESIGN §16; 干员持有 — 0.2.0 补位; 自选编队 —
 // 0.2.0 DIY; 干员皮肤 — docs/SKINS.md).
 //
@@ -6,8 +7,8 @@
 // `diyKitted` = the operators the server lets a DIY slot field, from every `welcome`) and the overlay's screen state
 // (open / origin / tab / selection / filters). `installLoadoutSync()` / `installOwnershipSync()` / `installDiySync()` /
 // `installSkinsSync()` / `installCardSync()` (called once by main.js) keep the server's copies current — one sync engine
-// (installPrefSync), five settings (the fifth, room.card — the 名片干员 of ui/seatArt.js —, is described at
-// installCardSync): after every `welcome` (new or resumed
+// (installPrefSync), five settings (the fifth, room.card — the 名片干员 of ui/seatArt.js, any official period's operator
+// since #877 —, is described at installCardSync): after every `welcome` (new or resumed
 // session — the server keeps them on the session and on the seat, so joining a room needs no resend) and after every
 // edit (debounced; a pending edit goes out at once when the overlay closes), they send `room.loadout { entries, ops }`
 // (sanitised against the loaded data/chess.json: ui/loadoutModel.js sanitizeEntries — a stale entry is dropped, never
@@ -49,7 +50,7 @@ import { OWNERSHIP_PREF, parseStoredOwnership, parseStoredOwnershipChars, toStor
   notOwnedView, rebaseChars } from './ownershipModel.js';
 import { parseStoredDiy, toStoredDiy, cleanPicks, sanitizeDiyPicks, diyPrefKey } from './diyModel.js';
 import { skinsStore, SKINS_KEY, SKINS_SYNC_KEY, parseStoredSkins } from './skins.js';
-import { cardStore, CARD_KEY, CARD_SKIN_KEY, CARD_SYNC_KEY, cardOperators } from './seatArt.js';
+import { cardStore, CARD_KEY, CARD_SKIN_KEY, CARD_SYNC_KEY, cardOperators, rosterOperators } from './seatArt.js';
 import { cardArtStore } from './cardArtModel.js';
 import { isCardArtKey, normalizeCardArt } from '../../../shared/cardArt.js';
 import { needsContent, serverDefaultVersion } from '../versions.js';
@@ -703,18 +704,20 @@ export function installOwnershipSync({ net, timers, target = loadoutStore, notif
  * at once (`Match.setSkins`, any phase: a skin is cosmetic and public) instead of storing it for the next one, so the
  * one refusal that can still arrive is 'locked' — a build whose server predates the message.
  *
- * The server keeps only the operators of the data the room plays (server/lobby.js skins: operatorCharIds), on the
- * session too, so the map goes filtered to the operators of the data on screen (the same set): a content change that
- * changes the kept set (a 第一期-only operator's skin on joining or switching to a 第一期 room, a plugin operator's)
- * changes the payload and is sent; one that does not spends no heavy-message budget (`seatBound: false`). Without the data
- * (it failed to load) the map goes whole and the server filters it.
+ * The server keeps only the operators of the data the room plays and of the cross-period 名片 roster (server/lobby.js
+ * skins: operatorCharIds ∪ the roster, #877 / DESIGN §37.325 — a card of another period wears its outfit for the room;
+ * a match still takes only its own operators', server/lobby.js seatSettings), on the session too, so the map goes
+ * filtered to the same set on screen (skinOperatorIds): a content change that changes the kept set (a plugin operator's
+ * skin on joining or leaving its room) changes the payload and is sent; one that does not spends no heavy-message
+ * budget (`seatBound: false`). Without the room's data (it failed to load) the map goes whole and the server filters it;
+ * without the roster, filtered to the room's data alone.
  * @param {{ net: any, timers?: { setTimeout: Function, clearTimeout: Function }, target?: ReturnType<typeof createStore>,
  *   notify?: (text: string) => void, operatorsReady?: () => Promise<Set<string>|null> }} deps
  */
 export function installSkinsSync({ net, timers, target = skinsStore, notify, content = appContentSet, app = store, gate = null, operatorsReady } = {}) {
   const operators = operatorsReady || (async () => {
-    const [chess, backups] = await Promise.all([data.load('chess'), data.load('backups')]);
-    return chess == null || backups == null ? null : operatorCharIds({ chess: data.getRaw('chess'), backups: data.getRaw('backups') });
+    const [chess, backups] = await Promise.all([data.load('chess'), data.load('backups'), data.load(CARD_ROSTER)]);
+    return chess == null || backups == null ? null : skinOperatorIds({ chess: data.getRaw('chess'), backups: data.getRaw('backups') }, data.getRaw(CARD_ROSTER));
   });
   return installPrefSync({
     net, timers, target, notify, content, app, gate, seatBound: false, key: SKINS_KEY, stateKey: SKINS_SYNC_KEY, msgType: 'room.skins', field: 'skins', tag: 'skins',
@@ -726,6 +729,21 @@ export function installSkinsSync({ net, timers, target = skinsStore, notify, con
       return ids ? Object.fromEntries(Object.entries(all).filter(([id]) => ids.has(id))) : all;
     },
   });
+}
+
+/**
+ * The operators whose outfits the server keeps for the room (server/lobby.js skins, #877 / DESIGN §37.325): those of the
+ * room's data (shared/protocol.js operatorCharIds) and those of the cross-period 名片 roster (data/card-roster.json,
+ * shared/cardRoster.js) — the room's alone without a roster. A new set: the cached one of operatorCharIds is never changed.
+ * @param {{ chess: any, backups: any }} raw the room's data as downloaded
+ * @param {unknown} rosterJson data/card-roster.json as loaded, or null
+ * @returns {Set<string>}
+ */
+export function skinOperatorIds(raw, rosterJson) {
+  const ids = new Set(operatorCharIds(raw));
+  const roster = parseCardRoster(rosterJson);
+  if (roster) for (const id of roster.ids) ids.add(id);
+  return ids;
 }
 
 /**
@@ -760,7 +778,9 @@ export function installCardSync({ net, timers, target = cardStore, getChessReady
       if (await ready() == null) return null;
       const catalogue = getChessReady ? null : await data.load('seat-art');
       const assets = getChessReady ? data.get('assets') : await data.load('assets');
-      const record = cardOperators(list(), catalogue, assets, data.get('skins')).find(c => c.charId === want);
+      const local = cardOperators(list(), catalogue, assets, data.get('skins'));
+      const record = local.find(c => c.charId === want) || (!getChessReady
+        ? rosterOperators(await data.load(CARD_ROSTER), local, assets, data.get('skins')).find(c => c.charId === want) : null);
       const skin = target.get()[CARD_SKIN_KEY] || '';
       return { charId: record ? want : '', ...(skin ? { skinId: record?.choices?.some(s => s.id === skin) ? skin : '' } : {}) };
     },

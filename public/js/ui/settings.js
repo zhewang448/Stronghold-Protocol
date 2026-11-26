@@ -1,3 +1,4 @@
+import { SettingsBrowser } from './settingsBrowser.js';
 // Player settings (BGM/SFX/voice volume, the voice dub 语音语言, mute, damage numbers, the optional 弹药数量 under an ammo
 // skill's bar — not in the official HUD, off by default, PR #552 —, the 作战统计 panel — on by default in this extension,
 // PR #618 —, render quality, 文字大小, the
@@ -38,7 +39,7 @@ import { sanitizeSettings, HOTKEY_ACTIONS, DEFAULT_HOTKEYS, hotkeyLabel, rebindH
 import { audio } from '../audio.js';
 import { openGuide } from './guide.js';
 import { detectFeatures, isIOS } from './device.js';
-import { LangToggle, machineTranslationNote } from './lang.js';
+import { LangToggle, machineTranslationNote, communityTranslationNote } from './lang.js';
 import { t, tc, tParts, N_ } from '../../../shared/i18n.js';
 import { errorCount, currentBattle, diagnosticsText } from '../diag.js';
 import { copyText } from './clipboard.js';
@@ -184,9 +185,10 @@ const HOTKEY_NAMES = { buy: N_('购买鼠标指向的商品'), refresh: N_('刷�
  * attached keyboard still uses it).
  * @param {{ keys: Record<string, string>, touchUi: boolean }} props
  */
-function HotkeySection({ keys, touchUi }) {
+function HotkeySection({ keys, touchUi, active = true }) {
   const editable = useStore(s => s.config.userControls['settings.keys'] !== false, Object.is, clientPreferencePolicy);
   const [waiting, setWaiting] = useState(null); // the action waiting for its new key
+  useEffect(() => { if (!active) setWaiting(null); }, [active]);
   const [note, setNote] = useState(null);       // { text, warn }: the result line
   // a layout effect: the key listener is on as soon as the key shows that it waits (an Esc right after the click must
   // end the wait, never reach the dialog's own Esc)
@@ -483,18 +485,28 @@ function StorageSection() {
 /** The result screen's button plate. A missing sprite falls back to the same CSS wash. */
 /** A settings block title in the S.W.E.E.P. section-caption shape. `children` are the row's actions. */
 function SetHead({ id, title, micro, icon = null, children }) {
-  return html`<div class="set-keys__head sw-sec__head">
-    ${icon ? html`<span class="sw-sec__glyph" aria-hidden="true"><${Icon} name=${icon} /></span>` : null}
-    <span class="set-row__label sw-sec__name" id=${id || undefined}><i>[</i> ${title} <i>]</i>${micro ? html`<${MicroLabel}>${micro}<//>` : null}</span>
+  return html`<div class="set-keys__head">
+    ${icon ? html`<span class="settings-block-icon" aria-hidden="true"><${Icon} name=${icon} /></span>` : null}
+    <span class="set-row__label" id=${id || undefined}>${title}${micro ? html`<${MicroLabel}>${micro}<//>` : null}</span>
     ${children || null}
   </div>`;
 }
+
+const SETTINGS_CATEGORIES = [
+  { id: 'interface', label: N_('界面'), micro: 'INTERFACE' },
+  { id: 'audio', label: N_('声音'), micro: 'AUDIO' },
+  { id: 'battle', label: N_('战斗显示'), micro: 'BATTLE' },
+  { id: 'controls', label: N_('操作'), micro: 'CONTROLS' },
+  { id: 'appearance', label: N_('外观'), micro: 'APPEARANCE' },
+  { id: 'resources', label: N_('资源与反馈'), micro: 'RESOURCES' },
+];
 
 export function SettingsModal({ open, onClose }) {
   const s = useSettings();
   const [tested, setTested] = useState(false);
   const [touchUi] = useState(() => detectFeatures().coarse && !detectFeatures().fine);
-  const mtNote = machineTranslationNote(); // a pack marked as machine translation says so under the switch
+  const mtNote = machineTranslationNote();
+  const gameTextNote = communityTranslationNote(); // a pack marked as machine translation says so under the switch
   const [fxOk, setFxOk] = useState(false);  // effects extracted from the local client: the 官方特效 row shows
   // only while it is open (the title page keeps the modal mounted, closed), and from the effects' own file list: the
   // asset store (assets.js) is not loaded before a match (test/ui/plugins.e2e.test.js). A Phase 1a extraction (0.3.0
@@ -508,19 +520,16 @@ export function SettingsModal({ open, onClose }) {
     return () => { live = false; off(); };
   }, [open]);
   const fxTier = resolveOfficialFx(s.officialFx, true);
-  return html`<${Modal} open=${open} onClose=${onClose} title=${t('设置')} micro="SETTINGS" width="7.4rem" class="settings-modal setdlg"
-                        actions=${html`<${Button} variant="secondary" icon="book" class="set-guide" onClick=${() => openGuide(0)}>${t('玩法说明')}<//>
-                        <${Button} variant="primary" icon="check" onClick=${onClose}>${t('完成')}<//>`}>
-    <div class="set-list">
-      <section class="set-group" aria-labelledby="settings-general"><h3 id="settings-general">${t('常规与声音')}</h3>
-      <div class="set-row">
+  const entries = [
+    { id: 'language', category: 'interface', render: () => html`<div class="set-row">
         <span class="set-row__label">${t('语言')}<${MicroLabel}>LANGUAGE<//></span>
         <${LangToggle} class="set-lang" />
       </div>
       ${mtNote ? html`<p class="set-hint set-lang-note" data-testid="lang-mt-note">${mtNote}</p>` : null}
-      <${Slider} setting="settings.bgm" label=${t('背景音乐')} micro="BGM" icon="play" value=${s.bgm} onInput=${(v) => updateSettings({ bgm: v })} />
-      <${Slider} setting="settings.voice" label=${t('干员语音')} micro="VOICE" icon="mic" value=${s.voice} onInput=${(v) => updateSettings({ voice: v })} />
-      <div class="set-row">
+      ${gameTextNote ? html`<p class="set-hint set-lang-note">${gameTextNote}</p>` : null}` },
+    { id: 'bgm', category: 'audio', render: () => html`<${Slider} setting="settings.bgm" label=${t('背景音乐')} micro="BGM" icon="play" value=${s.bgm} onInput=${(v) => updateSettings({ bgm: v })} />` },
+    { id: 'voice', category: 'audio', render: () => html`<${Slider} setting="settings.voice" label=${t('干员语音')} micro="VOICE" icon="mic" value=${s.voice} onInput=${(v) => updateSettings({ voice: v })} />` },
+    { id: 'voiceLanguage', category: 'audio', render: () => html`<div class="set-row">
         <span class="set-row__label">${t('语音语言')}<${MicroLabel}>VOICE LANGUAGE<//></span>
         <div class="set-voice">
           <${ClientPreference} name="settings.voiceLang"><div class="set-seg" role="radiogroup" aria-label=${t('语音语言')} data-testid="voice-lang">
@@ -530,44 +539,38 @@ export function SettingsModal({ open, onClose }) {
           <${ClientPreference} name="settings.voiceNative"><button type="button" class=${s.voiceNative ? 'set-native is-on' : 'set-native'} data-testid="voice-native" aria-pressed=${s.voiceNative ? 'true' : 'false'}
             title=${t('有本土语言配音时使用')} onClick=${() => updateSettings({ voiceNative: !s.voiceNative })}>${tc('voice-lang', '本土语言')}</button><//>
         </div>
-      </div>
-      <${Slider} setting="settings.sfx" label=${t('音效')} micro="SFX" icon="signal" value=${s.sfx}
-                 onInput=${(v) => { updateSettings({ sfx: v }); if (!tested) { setTested(true); setTimeout(() => setTested(false), 400); audio.sfx('click'); } }} />
-      <${Toggle} setting="settings.muted" label=${t('静音')} micro="MUTE" value=${s.muted} onChange=${(v) => updateSettings({ muted: v })} />
-      </section>
-      <section class="set-group" aria-labelledby="settings-notices"><h3 id="settings-notices">${t('交流与更新')}</h3>
-      <${Toggle} setting="settings.chatBubbles" label=${t('显示消息提示气泡')} micro="CHAT PREVIEWS" value=${s.chatBubbles} onChange=${(v) => updateSettings({ chatBubbles: v })} />
-      <div data-testid="release-notes-settings">
+      </div>` },
+    { id: 'sfx', category: 'audio', render: () => html`<${Slider} setting="settings.sfx" label=${t('音效')} micro="SFX" icon="signal" value=${s.sfx}
+                 onInput=${(v) => { updateSettings({ sfx: v }); if (!tested) { setTested(true); setTimeout(() => setTested(false), 400); audio.sfx('click'); } }} />` },
+    { id: 'muted', category: 'audio', render: () => html`<${Toggle} setting="settings.muted" label=${t('静音')} micro="MUTE" value=${s.muted} onChange=${(v) => updateSettings({ muted: v })} />` },
+    { id: 'chatBubbles', category: 'interface', render: () => html`<${Toggle} setting="settings.chatBubbles" label=${t('显示消息提示气泡')} micro="CHAT PREVIEWS" value=${s.chatBubbles} onChange=${(v) => updateSettings({ chatBubbles: v })} />` },
+    { id: 'upstreamReleaseNotes', category: 'interface', render: () => html`<div data-testid="release-notes-settings">
         <${ReleaseHistoryButton} variant="secondary" />
         <${Toggle} setting="settings.upstreamReleaseNotes" label=${t('显示上游更新内容')} micro="UPSTREAM UPDATES" value=${s.upstreamReleaseNotes} onChange=${(v) => updateSettings({ upstreamReleaseNotes: v })} />
         <${Toggle} setting="settings.extensionReleaseNotes" label=${t('显示扩展更新内容')} micro="EXTENSION UPDATES" value=${s.extensionReleaseNotes} onChange=${(v) => updateSettings({ extensionReleaseNotes: v })} />
         <p class="set-hint">${t('上游与扩展版本更新时分别提醒；同时更新时并排显示。关闭某一项不会影响另一项。')}</p>
-      </div>
-      </section>
-      <section class="set-group" aria-labelledby="settings-battle"><h3 id="settings-battle">${t('战斗显示')}</h3>
-      <${Toggle} setting="settings.officialBattleHud" label=${t('还原战场状态条')} micro="BATTLE HUD" value=${s.officialBattleHud} onChange=${(v) => updateSettings({ officialBattleHud: v })} />
-      <p class="set-hint">${t('使用脚下血条、圆形损伤环和过载分段条；关闭恢复原显示。')}</p>
-      <${Toggle} setting="settings.shopPortraitFocus" label=${t('突出商店人像')} micro="SHOP PORTRAITS" value=${s.shopPortraitFocus} onChange=${(v) => updateSettings({ shopPortraitFocus: v })} />
-      <p class="set-hint">${t('放大并提亮商店与晋升奖励的人像，保持卡片和文字尺寸。')}</p>
-      <${Toggle} setting="settings.damageNumbers" label=${t('显示伤害数字')} micro="DAMAGE NUMBERS" value=${s.damageNumbers} onChange=${(v) => updateSettings({ damageNumbers: v })} />
-      <${Toggle} setting="settings.officialDamageNumbers" label=${t('官方伤害数字')} micro="OFFICIAL NUMBERS" value=${s.officialDamageNumbers} onChange=${(v) => updateSettings({ officialDamageNumbers: v })} />
-      <p class="set-hint">${t('只显示达到官方暴击条件的红色数字。关闭时仍显示每一次命中。')}</p>
-      <${Toggle} setting="settings.ammoEnergyCount" label=${t('显示弹药与能量数量')} micro="AMMO & ENERGY" value=${s.ammoEnergyCount} onChange=${(v) => updateSettings({ ammoEnergyCount: v })} />
-      <p class="set-hint">${t('弹药类技能开启时，在弹药条下方显示剩余弹药 / 总弹药数（如 13/14）；秘术师的血条下方显示储存的攻击能量 / 上限（如 2/3）。官方界面没有这些数字。')}</p>
-      <${Toggle} setting="settings.bondTimers" label=${t('盟约效果剩余时间')} micro="BOND TIMERS" value=${s.bondTimers} onChange=${(v) => updateSettings({ bondTimers: v })} />
-      <p class="set-hint">${t('在选中单位的详情中显示叙拉古、萨尔贡效果的剩余时间；萨尔贡显示层数与下一层到期时间。官方界面没有这些数字。')}</p>
-      <${Toggle} setting="settings.combatMetrics" label=${t('作战统计')} micro="COMBAT STATS" value=${s.combatMetrics} onChange=${(v) => updateSettings({ combatMetrics: v })} />
-      <p class="set-hint">${t('打开后，对局左下角可以查看自己干员的伤害、治疗和 DPS / HPS。官方界面没有这个窗口。改变玩法的插件对局在 Worker 里演算，统计不到，按钮不显示。')}</p>
-      <${Toggle} setting="settings.watchDuringBattle" label=${t('作战中查看队友')} micro="WATCH IN BATTLE" value=${s.watchDuringBattle}
+      </div>` },
+    { id: 'officialBattleHud', category: 'battle', render: () => html`<${Toggle} setting="settings.officialBattleHud" label=${t('还原战场状态条')} micro="BATTLE HUD" value=${s.officialBattleHud} onChange=${(v) => updateSettings({ officialBattleHud: v })} />
+      <p class="set-hint">${t('使用脚下血条、圆形损伤环和过载分段条；关闭恢复原显示。')}</p>` },
+    { id: 'shopPortraitFocus', category: 'battle', render: () => html`<${Toggle} setting="settings.shopPortraitFocus" label=${t('突出商店人像')} micro="SHOP PORTRAITS" value=${s.shopPortraitFocus} onChange=${(v) => updateSettings({ shopPortraitFocus: v })} />
+      <p class="set-hint">${t('放大并提亮商店与晋升奖励的人像，保持卡片和文字尺寸。')}</p>` },
+    { id: 'damageNumbers', category: 'battle', render: () => html`<${Toggle} setting="settings.damageNumbers" label=${t('显示伤害数字')} micro="DAMAGE NUMBERS" value=${s.damageNumbers} onChange=${(v) => updateSettings({ damageNumbers: v })} />` },
+    { id: 'officialDamageNumbers', category: 'battle', render: () => html`<${Toggle} setting="settings.officialDamageNumbers" label=${t('官方伤害数字')} micro="OFFICIAL NUMBERS" value=${s.officialDamageNumbers} onChange=${(v) => updateSettings({ officialDamageNumbers: v })} />
+      <p class="set-hint">${t('只显示达到官方暴击条件的红色数字。关闭时仍显示每一次命中。')}</p>` },
+    { id: 'ammoEnergyCount', category: 'battle', render: () => html`<${Toggle} setting="settings.ammoEnergyCount" label=${t('显示弹药与能量数量')} micro="AMMO & ENERGY" value=${s.ammoEnergyCount} onChange=${(v) => updateSettings({ ammoEnergyCount: v })} />
+      <p class="set-hint">${t('弹药类技能开启时，在弹药条下方显示剩余弹药 / 总弹药数（如 13/14）；秘术师的血条下方显示储存的攻击能量 / 上限（如 2/3）。官方界面没有这些数字。')}</p>` },
+    { id: 'bondTimers', category: 'battle', render: () => html`<${Toggle} setting="settings.bondTimers" label=${t('盟约效果剩余时间')} micro="BOND TIMERS" value=${s.bondTimers} onChange=${(v) => updateSettings({ bondTimers: v })} />
+      <p class="set-hint">${t('在选中单位的详情中显示叙拉古、萨尔贡效果的剩余时间；萨尔贡显示层数与下一层到期时间。官方界面没有这些数字。')}</p>` },
+    { id: 'combatMetrics', category: 'battle', render: () => html`<${Toggle} setting="settings.combatMetrics" label=${t('作战统计')} micro="COMBAT STATS" value=${s.combatMetrics} onChange=${(v) => updateSettings({ combatMetrics: v })} />
+      <p class="set-hint">${t('打开后，对局左下角可以查看自己干员的伤害、治疗和 DPS / HPS。官方界面没有这个窗口。改变玩法的插件对局在 Worker 里演算，统计不到，按钮不显示。')}</p>` },
+    { id: 'watchDuringBattle', category: 'battle', render: () => html`<${Toggle} setting="settings.watchDuringBattle" label=${t('作战中查看队友')} micro="WATCH IN BATTLE" value=${s.watchDuringBattle}
         onChange=${v => updateSettings({ watchDuringBattle: v })} />
-      <p class="set-hint">${t('打开后，自己的作战还没结束时也能点队友前往查看，最终攻势和隐秘核心里也能看另一组。查看时本机要多演算一场战斗，较慢的设备可能卡顿。')}</p>
-      <${Toggle} setting="settings.deploymentZoom" label=${t('部署时镜头缩放')} micro="DEPLOYMENT ZOOM" value=${s.deploymentZoom} onChange=${(v) => updateSettings({ deploymentZoom: v })} />
-      <div data-testid="deploy-snap-setting"><${Toggle} setting="settings.deploySnap" label=${t('部署时按格子吸附')} micro="SNAP TO TILE" value=${s.deploySnap} onChange=${v => updateSettings({ deploySnap: v })} /></div>
+      <p class="set-hint">${t('打开后，自己的作战还没结束时也能点队友前往查看，最终攻势和隐秘核心里也能看另一组。查看时本机要多演算一场战斗，较慢的设备可能卡顿。')}</p>` },
+    { id: 'deploymentZoom', category: 'battle', render: () => html`<${Toggle} setting="settings.deploymentZoom" label=${t('部署时镜头缩放')} micro="DEPLOYMENT ZOOM" value=${s.deploymentZoom} onChange=${(v) => updateSettings({ deploymentZoom: v })} />` },
+    { id: 'deploySnap', category: 'battle', render: () => html`<div data-testid="deploy-snap-setting"><${Toggle} setting="settings.deploySnap" label=${t('部署时按格子吸附')} micro="SNAP TO TILE" value=${s.deploySnap} onChange=${v => updateSettings({ deploySnap: v })} /></div>
       <p class="set-hint">${t('关闭后，拖动中的干员自由跟随指针；松开时仍放入指针下的合法格子。')}</p>
-      <p class="set-hint">${t('拖起干员、装备或召唤物，以及放下后选择朝向时，临时收起商店并放大棋盘。关闭后，拿起时既不改变商店的收起状态，也不缩放镜头。')}</p>
-      </section>
-      <section class="set-group" aria-labelledby="settings-display"><h3 id="settings-display">${t('画面与性能')}</h3>
-      <${Toggle} setting="settings.fullscreenWakeLock" label=${t('全屏时保持屏幕常亮')} micro="SCREEN WAKE LOCK" value=${s.fullscreenWakeLock} onChange=${(v) => updateSettings({ fullscreenWakeLock: v })} />
+      <p class="set-hint">${t('拖起干员、装备或召唤物，以及放下后选择朝向时，临时收起商店并放大棋盘。关闭后，拿起时既不改变商店的收起状态，也不缩放镜头。')}</p>` },
+    { id: 'fullscreenWakeLock', category: 'controls', render: () => html`<${Toggle} setting="settings.fullscreenWakeLock" label=${t('全屏时保持屏幕常亮')} micro="SCREEN WAKE LOCK" value=${s.fullscreenWakeLock} onChange=${(v) => updateSettings({ fullscreenWakeLock: v })} />
       <p class="set-hint" data-testid="wake-lock-hint">${tParts(isIOS()
         ? N_('全屏期间始终保持屏幕常亮（{support}）；iOS低电量模式下可能不生效。')
         : N_('全屏期间始终保持屏幕常亮（{support}）。'), {
@@ -575,47 +578,45 @@ export function SettingsModal({ open, onClose }) {
           text=${t('需要 HTTPS 或可信的本地地址（如 localhost），浏览器支持 Screen Wake Lock API，且页面保持在前台。系统设置仍可能限制生效。')}>
           <button type="button" class="set-hint__help" aria-describedby="wake-lock-requirements">${t('需要环境支持')}<${Icon} name="info" /></button>
         <//>`,
-      })}</p>
-      <${ClientPreference} name="settings.quality"><div class="set-row">
+      })}</p>` },
+    { id: 'quality', category: 'interface', render: () => html`<${ClientPreference} name="settings.quality"><div class="set-row">
         <span class="set-row__label">${t('画面质量')}<${MicroLabel}>QUALITY<//></span>
         <div class="set-seg" role="radiogroup">
           ${QUALITY.map(([id, label]) => html`<button key=${id} type="button" role="radio" aria-checked=${s.quality === id ? 'true' : 'false'}
             class=${s.quality === id ? 'is-on' : ''} onClick=${() => updateSettings({ quality: id })}>${t(label)}</button>`)}
         </div>
-      </div><//>
-      ${fxOk ? html`<${ClientPreference} name="settings.officialFx"><div class="set-row" data-testid="official-fx">
+      </div><//>` },
+    { id: 'officialFx', category: 'interface', render: () => html`${fxOk ? html`<${ClientPreference} name="settings.officialFx"><div class="set-row" data-testid="official-fx">
         <span class="set-row__label">${t('官方特效')}<${MicroLabel}>OFFICIAL FX<//></span>
         <div class="set-seg" role="radiogroup" aria-label=${t('官方特效')}>
           ${OFFICIAL_FX.map(([id, label]) => html`<button key=${id} type="button" role="radio" aria-checked=${fxTier === id ? 'true' : 'false'}
             class=${fxTier === id ? 'is-on' : ''} onClick=${() => updateSettings({ officialFx: id })}>${t(label)}</button>`)}
         </div>
       </div><//>
-      <p class="set-hint">${t('使用服主从自己的游戏客户端提取的官方战斗特效（普攻、弹道、命中、状态、阵亡、部署，干员、召唤物和敌人的技能与天赋，以及秘术师储存的能量），连到这台服务器的玩家看到的都是服主提取的这一份；提取里没有的或对战中没有时机的（如只在游戏内部条件下触发的天赋效果）仍为本作的特效。精简：半分辨率贴图、粒子减半，适合手机。只在 3D 棋盘上显示。')}</p>` : null}
-      <${ClientPreference} name="settings.textSize"><div class="set-row">
+      <p class="set-hint">${t('使用服主从自己的游戏客户端提取的官方战斗特效（普攻、弹道、命中、状态、阵亡、部署，干员、召唤物和敌人的技能与天赋，以及秘术师储存的能量），连到这台服务器的玩家看到的都是服主提取的这一份；提取里没有的或对战中没有时机的（如只在游戏内部条件下触发的天赋效果）仍为本作的特效。精简：半分辨率贴图、粒子减半，适合手机。只在 3D 棋盘上显示。')}</p>` : null}` },
+    { id: 'textSize', category: 'interface', render: () => html`<${ClientPreference} name="settings.textSize"><div class="set-row">
         <span class="set-row__label">${t('文字大小')}<${MicroLabel}>TEXT SIZE<//></span>
         <div class="set-seg set-textsize" role="radiogroup" aria-label=${t('文字大小')} data-testid="text-size">
           ${TEXT_SCALES.map(([id, label]) => html`<button key=${id} type="button" role="radio" aria-checked=${s.textSize === id ? 'true' : 'false'}
             class=${s.textSize === id ? 'is-on' : ''} onClick=${() => updateSettings({ textSize: id })}>${t(label)}</button>`)}
         </div>
       </div><//>
-      <p class="set-hint set-textsize-note">${t('调整界面文字大小，棋盘保持原比例。')}</p>
-      <${ClientPreference} name="settings.fpsLimit"><div class="set-row set-row--fps">
+      <p class="set-hint set-textsize-note">${t('调整界面文字大小，棋盘保持原比例。')}</p>` },
+    { id: 'fpsLimit', category: 'interface', render: () => html`<${ClientPreference} name="settings.fpsLimit"><div class="set-row set-row--fps">
         <span class="set-row__label">${t('帧率上限')}<${MicroLabel}>FPS LIMIT<//></span>
         <div class="set-seg set-seg--fps" role="radiogroup" aria-label=${t('帧率上限')} data-testid="fps-limit">
           ${FRAME_RATES.map((fps) => html`<button key=${fps} type="button" role="radio" aria-checked=${s.fpsLimit === fps ? 'true' : 'false'}
             class=${s.fpsLimit === fps ? 'is-on' : ''} onClick=${() => updateSettings({ fpsLimit: fps })}>${fps || t('不限')}</button>`)}
         </div>
-      </div><//>
-      <${Toggle} setting="settings.dynamicIllustrations" label=${t('动态立绘')} micro="LIVE ILLUSTRATIONS" value=${s.dynamicIllustrations !== 'static'} onChange=${v => updateSettings({ dynamicIllustrations: v ? 'auto' : 'static' })} />
-      <p class="set-hint">${t('有素材时自动播放，仅影响本机。减少动画、离屏或页面在后台时暂停；关闭后显示静态立绘。')}</p>
-      <${Toggle} setting="settings.showFps" label=${t('显示帧率')} micro="SHOW FPS" value=${s.showFps} onChange=${(v) => updateSettings({ showFps: v })} />
-      <p class="set-hint">${t('在对局延迟旁显示实际渲染帧率。')}</p>
-      </section>
-      <section class="set-group" aria-labelledby="settings-controls"><h3 id="settings-controls">${t('界面与操作')}</h3>
-      <${Toggle} setting="settings.cursorTheme" label=${t('骷髅手指光标')} micro="PRTS CURSOR" value=${s.cursorTheme === 'arknights'} testId="arknights-cursor"
+      </div><//>` },
+    { id: 'dynamicIllustrations', category: 'interface', render: () => html`<${Toggle} setting="settings.dynamicIllustrations" label=${t('动态立绘')} micro="LIVE ILLUSTRATIONS" value=${s.dynamicIllustrations !== 'static'} onChange=${v => updateSettings({ dynamicIllustrations: v ? 'auto' : 'static' })} />
+      <p class="set-hint">${t('有素材时自动播放，仅影响本机。减少动画、离屏或页面在后台时暂停；关闭后显示静态立绘。')}</p>` },
+    { id: 'showFps', category: 'interface', render: () => html`<${Toggle} setting="settings.showFps" label=${t('显示帧率')} micro="SHOW FPS" value=${s.showFps} onChange=${(v) => updateSettings({ showFps: v })} />
+      <p class="set-hint">${t('在对局延迟旁显示实际渲染帧率。')}</p>` },
+    { id: 'cursorTheme', category: 'controls', render: () => html`<${Toggle} setting="settings.cursorTheme" label=${t('骷髅手指光标')} micro="PRTS CURSOR" value=${s.cursorTheme === 'arknights'} testId="arknights-cursor"
         onChange=${(v) => updateSettings({ cursorTheme: v ? 'arknights' : 'system' })} />
-      <p class="set-hint">${t('使用明日方舟的骷髅手指光标；文字输入、拖动和缩放仍保留系统光标。')}</p>
-      ${s.cursorTheme === 'arknights' ? html`<${ClientPreference} name="settings.cursorSize"><label class="set-row">
+      <p class="set-hint">${t('使用明日方舟的骷髅手指光标；文字输入、拖动和缩放仍保留系统光标。')}</p>` },
+    { id: 'cursorSize', category: 'controls', render: () => html`${s.cursorTheme === 'arknights' ? html`<${ClientPreference} name="settings.cursorSize"><label class="set-row">
         <span class="set-row__label">${t('鼠标大小')}</span>
         <select class="set-cursor-size" data-testid="cursor-size" value=${String(s.cursorSize)} onChange=${e => {
           const size = e.currentTarget.value;
@@ -624,25 +625,24 @@ export function SettingsModal({ open, onClose }) {
           <option value=${DEFAULT_CURSOR_SIZE}>${t('自动')}</option>
           ${CURSOR_SIZES.map(size => html`<option key=${size} value=${String(size)}>${size} px</option>`)}
         </select>
-      </label><//>` : null}
-      <${ScreenFitSection} />
-      <${ClientPreference} name="settings.keys"><${HotkeySection} keys=${s.keys} touchUi=${touchUi} /><//>
-      </section>
-      <section class="set-group" aria-labelledby="settings-appearance"><h3 id="settings-appearance">${t('外观')}</h3>
-      <${ClientPreference} name="settings.uiTheme"><${ThemeSection} activeId=${s.uiTheme || ''} /><//>
-      <${Toggle} setting="settings.themeMotion" label=${t('主题动画')} micro="THEME MOTION" value=${s.themeMotion} onChange=${(v) => updateSettings({ themeMotion: v })} />
-      <${Toggle} setting="settings.themeVoice" label=${t('对局主题语音')} micro="THEME VOICE" value=${s.themeVoice} onChange=${(v) => updateSettings({ themeVoice: v })} />
-      <p class="set-hint" data-testid="theme-motion-hint">${t('规程里乌萨斯齐心团、可露希尔主题界面的循环动画（倒计时与按钮的闪光等）。关闭后只显示静态画面，适合配置较低的设备；系统开启“减少动态效果”时也不播放。')}</p>
-      <${CosmeticSection} />
-      <${ClientPreference} name="uiPlugins.ids"><${UiPluginSection} /><//>
-      </section>
-      <section class="set-group" aria-labelledby="settings-data"><h3 id="settings-data">${t('资源与诊断')}</h3>
-      <${StorageSection} />
-      <${DiagSection} />
-      ${unsupportedReason() ? html`<${PreloadSection} />` : html`<${ResourceRow} enabled=${s.preload} />`}
-      <p class="set-hint">${touchUi ? t('触屏操作：点击单位选中（撤退 / 出售）· 长按单位或卡牌查看详情 · 拖动部署后滑动选择朝向') : t('右键查看详情')}</p>
-      </section>
-    </div>
+      </label><//>` : null}` },
+    { id: 'controls2', category: 'controls', render: () => html`<${ScreenFitSection} />` },
+    { id: 'keys', category: 'controls', render: (active) => html`<${ClientPreference} name="settings.keys"><${HotkeySection} active=${active} keys=${s.keys} touchUi=${touchUi} /><//>` },
+    { id: 'theme', category: 'appearance', render: () => html`<${ClientPreference} name="settings.uiTheme"><${ThemeSection} activeId=${s.uiTheme || ''} /><//>` },
+    { id: 'themeMotion', category: 'appearance', render: () => html`<${Toggle} setting="settings.themeMotion" label=${t('主题动画')} micro="THEME MOTION" value=${s.themeMotion} onChange=${(v) => updateSettings({ themeMotion: v })} />` },
+    { id: 'themeVoice', category: 'appearance', render: () => html`<${Toggle} setting="settings.themeVoice" label=${t('对局主题语音')} micro="THEME VOICE" value=${s.themeVoice} onChange=${(v) => updateSettings({ themeVoice: v })} />
+      <p class="set-hint" data-testid="theme-motion-hint">${t('规程里乌萨斯齐心团、可露希尔主题界面的循环动画（倒计时与按钮的闪光等）。关闭后只显示静态画面，适合配置较低的设备；系统开启“减少动态效果”时也不播放。')}</p>` },
+    { id: 'appearance3', category: 'appearance', render: () => html`<${CosmeticSection} />` },
+    { id: 'appearance4', category: 'appearance', render: () => html`<${ClientPreference} name="uiPlugins.ids"><${UiPluginSection} /><//>` },
+    { id: 'data0', category: 'resources', render: () => html`<${StorageSection} />` },
+    { id: 'data1', category: 'resources', render: () => html`<${DiagSection} />` },
+    { id: 'data2', category: 'resources', render: () => html`${unsupportedReason() ? html`<${PreloadSection} />` : html`<${ResourceRow} enabled=${s.preload} />`}
+      <p class="set-hint">${touchUi ? t('触屏操作：点击单位选中（撤退 / 出售）· 长按单位或卡牌查看详情 · 拖动部署后滑动选择朝向') : t('右键查看详情')}</p>` },
+  ];
+  return html`<${Modal} open=${open} onClose=${onClose} title=${t('设置')} micro="SETTINGS" width="10rem" class="settings-modal setdlg"
+                        actions=${html`<${Button} variant="secondary" icon="book" class="set-guide" onClick=${() => openGuide(0)}>${t('玩法说明')}<//>
+                        <${Button} variant="primary" icon="check" onClick=${onClose}>${t('完成')}<//>`}>
+    <${SettingsBrowser} categories=${SETTINGS_CATEGORIES} entries=${entries} />
   <//>`;
 }
 

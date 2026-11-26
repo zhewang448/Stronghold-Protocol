@@ -139,9 +139,9 @@ export function ThemeSection({ activeId = '' }) {
 
   const usingBuiltin = !activeId || !themePack(activeId);
   return html`<section class="theme-page" aria-labelledby="theme-page-title" data-testid="ui-theme-page">
-    <div class="set-keys__head sw-sec__head">
-      <span class="sw-sec__glyph" aria-hidden="true"><${Icon} name="edit" /></span>
-      <span class="set-row__label sw-sec__name" id="theme-page-title"><i>[</i> ${t('界面主题')} <i>]</i><${MicroLabel}>UI THEME<//></span>
+    <div class="set-keys__head">
+      <span class="settings-block-icon" aria-hidden="true"><${Icon} name="edit" /></span>
+      <span class="set-row__label" id="theme-page-title">${t('界面主题')}<${MicroLabel}>UI THEME<//></span>
       <span class="theme-page__actions">
         <${Button} variant="ghost" size="sm" disabled=${busy || !editable} onClick=${() => zipRef.current?.click()}>${t('导入主题包')}<//>
         <${Button} variant="ghost" size="sm" disabled=${busy || !editable} onClick=${() => dirRef.current?.click()}>${t('导入文件夹')}<//>

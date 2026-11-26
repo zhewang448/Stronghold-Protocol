@@ -796,3 +796,4 @@
 @media (max-width: 900px), (max-height: 520px) {
   .rs--solo .rs-opts { left: 0; }
 }
+.cardpick__group { grid-column: 1 / -1; margin-top: .06rem; color: var(--text-hi); font-size: var(--fs-body); }

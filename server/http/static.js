@@ -29,6 +29,13 @@ import { routeResourcePacks } from '../../shared/resourcePackRoutes.js';
 //                cached for good — for this server's vanilla `cs` (its first 16 hex digits) and, from P1c (DESIGN §32.6),
 //                a content set with gameplay plugins a room uses or used lately (server/plugins/contentSets.js: the same
 //                shape with `vanilla: false`, its plugins, settings and modes)
+//     /cs/<cs16>/index.json, /cs/<cs16>/bounds/official.json of an official version this server enables (DESIGN §35.23,
+//                server/versions.js file): its manifest (`version`, data URLs under /data/versions/<slug>/; optional
+//                `i18n` not part of `cs` — served no-cache with ETag so a later overlay is picked up) and its
+//                official-bounds snapshot (immutable)
+//     /data/versions/<slug>/<file>.json → another official version's data — only an enabled version's directory
+//                (versions.servedDirs(); the real path decides, in any spelling); `?v=` immutable like /data/. Every other
+//                path under data/versions/ is a 404, as before M1
 //     /cs/<cs16>/data/<file>.json, /cs/<cs16>/i18n/<lang>.json → a data or translation file that content set changed,
 //                its served bytes from memory (cached for good; every other file of the set is named by its plain
 //                /data/…?v=<8 hex> URL in the manifest)
@@ -223,10 +230,13 @@ export function createStaticHandler({ publicDir, dataDir, sharedDir, simDir = pa
         // a content set with gameplay plugins (DESIGN §32.6, server/plugins/contentSets.js): its manifest and its patched
         // data files — a URL naming its content, so cached for good; 404 for a set this server does not keep
         const m = CS_FILE.exec(decoded);
-        const safe = m && !m[2].split('/').some(s => s === '' || s === '.' || s === '..' || s.startsWith('.'));
-        const f = safe ? (versions?.file(m[1], m[2]) || contents?.file(m[1], m[2]) || null) : null;
+        const safe = !!m && !m[2].split('/').some((s) => s === '' || s === '.' || s === '..' || s.startsWith('.'));
+        const versionFile = safe && m && versions ? versions.file(m[1], m[2]) : null;
+        const f = versionFile || (safe && m && contents ? contents.file(m[1], m[2]) : null);
         if (!f) { sendError(req, res, 404, '页面不存在 · Not found', decoded.length <= 200 ? decoded : ''); return; }
-        await serveBuffer(req, res, { body: f.body, hash: `cs-${m[1]}-${(f.sha256 || 'index').slice(0, 8)}`, type: f.type || MIME['.json'], cacheControl: IMMUTABLE_JSON, key: `cs:${decoded}`, cache: gzipCache });
+        // version index lists i18n overlays outside cs — no-cache + ETag; bounds and plugin-set files stay immutable
+        const cacheControl = versionFile && m[2] === 'index.json' ? 'no-cache' : IMMUTABLE_JSON;
+        await serveBuffer(req, res, { body: f.body, hash: `cs-${m[1]}-${(f.sha256 || 'index').slice(0, 8)}`, type: f.type || MIME['.json'], cacheControl, key: `cs:${decoded}`, cache: gzipCache });
         return;
       }
       const body = Buffer.from(JSON.stringify(c.index));

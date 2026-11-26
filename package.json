@@ -27,6 +27,7 @@
     "dev": "node --watch server/index.js",
     "test": "node tools/test-run.mjs",
     "test:guards": "node --test test/ci.test.js test/ci-shards.test.js test/test-run.test.js",
+    "build:roster": "node tools/build-card-roster.mjs",
     "golden": "node tools/golden.mjs",
     "golden:update": "node tools/golden.mjs --update",
     "vendor": "node tools/vendor.mjs",

@@ -1,5 +1,5 @@
 import { MatchEnemies } from '../ui/matchEnemies.js';
-import { cardOperators, seatOperator, seatCardSkin, seatArtSrc } from '../ui/seatArt.js';
+import { cardOperators, cardContext, rosterOperators, seatOperator, seatCardSkin, seatArtSrc } from '../ui/seatArt.js';
 import { chessPortraitUrl } from '../ui/assetUrls.js';
 import { skinsStore } from '../ui/skins.js';
 import { settingsStore } from '../ui/settingsStore.js';
@@ -35,7 +35,7 @@ import { actions, act, draftRequestScope } from '../ui/gameActions.js';
 import { normalizeDraft, sortedPlayers, pregameStepCount, pregameStepIndex } from '../ui/gameLogic.js';
 import { useStore, shallowEqual } from '../store.js';
 import { BondPlanDialog, BondPlanBadge, bondPlanStore, loadBondPlanData } from '../ui/bondPlan.js';
-import { data } from '../data.js';
+import { data, useData } from '../data.js';
 import { audio } from '../audio.js';
 import { TURN_BANNER_LATE_MS, TurnBanner } from '../ui/turnBanner.js';
 import { preloadBootArt, onBootArt } from '../ui/protocolBoot.js';
@@ -55,7 +55,8 @@ function DraftPortrait({ player, players, myId }) {
   const otherSkins = useStore(s => s.otherSkins !== false, Object.is, settingsStore);
   const [failed, setFailed] = useState([]);
   const list = cardOperators(data.list('chess'), data.get('seat-art'), data.get('assets'), data.get('skins'));
-  const context = { pool: list, byChar: new Map(list.map(op => [op.charId, op])) };
+  useData('card-roster');
+  const context = cardContext(list, rosterOperators(data.get('card-roster'), list, data.get('assets'), data.get('skins')));
   if (customIllust && !failed.includes(customIllust)) return html`<${CardArtImage} frameKey=${player.playerId === myId ? 'custom' : 'custom:' + player.playerId}
     src=${customIllust} custom=${true} class="dorder__art" onError=${() => setFailed(old => [...old, customIllust])} />`;
   const op = seatOperator(player, context, { myId, myCard: player.card });

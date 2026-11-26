@@ -47,6 +47,7 @@ import { cloneElement } from '../../vendor/preact.module.js';
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { html, BondDisc, Icon, MicroLabel, Tooltip } from './components.js';
 import { RichText, UnitThumb, BondGlyph, GIcon, Sprite } from './gameComponents.js';
+import { bondStage } from './gameLogic/bonds.js';
 import { sortBonds, bondMembers, nextThreshold, bondTier, harmonyMembers, HARMONY_BOND, memberHeadCount, briefingBondTip, diyGetter, diyRecordFor, memberStandIn, standInForText } from './gameLogic.js';
 import { formatBondEffect } from './richText.js';
 import { bondEffectRecord } from './bondEffect.js';
@@ -193,7 +194,10 @@ export function bondDisplay(bondId, entry) {
   const thresholds = !effectId && Array.isArray(entry?.thresholds) && entry.thresholds.length
     ? entry.thresholds : record?.thresholds || [];
   const tier = !effectId && entry?.tier != null ? entry.tier : bondTier(count, thresholds, record?.maxCount);
-  return { record, count, thresholds, tier, layers, tempLayers, total };
+  const regulation = data.get('config')?.version?.family === 'regulation';
+  const stage = regulation ? bondStage({ ...entry, count, tier, layers, tempLayers }, record) : tier;
+  return { record, count, thresholds, tier, layers, tempLayers, total, stage,
+    countCap: regulation ? thresholds[0] : nextThreshold(count, thresholds) };
 }
 
 /** Share the visible order with the popup's previous and next buttons. @param {any[]} bonds */
@@ -219,7 +223,7 @@ export function BondStrip({ bonds, layersDisabled = false, onOpen, openId = null
       aria-label=${owner ? t('{owner} 的盟约', { owner }) : t('我的盟约')} data-owner=${owner || null}>
     ${owner ? html`<${OwnerTag} owner=${owner} />` : null}
     ${shown.map((b) => {
-      const { record: rec, count, thresholds: th, tier, tempLayers, total } = bondDisplay(b.bondId, b);
+      const { record: rec, count, thresholds: th, tier, tempLayers, total, stage, countCap } = bondDisplay(b.bondId, b);
       if (b.off) {
         // a bond the mode never activates, with members: the briefing's grey ✕ disc, no stack count, 本局禁用 under it
         const name = rec?.name || b.bondId;
@@ -235,11 +239,11 @@ export function BondStrip({ bonds, layersDisabled = false, onOpen, openId = null
       return html`<div key=${b.bondId} role="listitem" data-bond=${b.bondId} data-harmony=${b.harmony > 0 ? b.harmony : null}
           class=${cx('bslot', b.active && 'is-active', tempLayers > 0 && 'has-temp-layers', openId === b.bondId && 'is-open')}>
         <${BondDisc} name=${rec?.name || b.bondId} icon=${bondIconUrl(m, b.bondId)} layers=${rec?.noStack ? undefined : total}
-          tier=${tier} maxTier=${Math.max(1, th.length)} active=${!!b.active} size="sm" showName=${true} theme=${theme}
+          tier=${tier} stage=${stage} maxTier=${Math.max(1, th.length)} active=${!!b.active} size="sm" showName=${true} theme=${theme}
           layersDisabled=${layersDisabled} onClick=${() => onOpen(b.bondId)}
-          title=${`${rec?.name || b.bondId} ${b.count ?? 0}/${next ?? th[th.length - 1] ?? '-'}${b.harmony > 0 ? t('（含调和 +{harmony}）', { harmony: b.harmony }) : ''}`} />
-        <span class=${cx('bslot__count', 'num', next == null && 'is-max')}>${b.count ?? 0}<small>/${next ?? th[th.length - 1] ?? '-'}</small></span>
-        ${theme ? null : html`<${BondStage} tier=${b.active ? tier : 0} />`}
+          title=${`${rec?.name || b.bondId} ${b.count ?? 0}/${countCap ?? th[th.length - 1] ?? '-'}${b.harmony > 0 ? t('（含调和 +{harmony}）', { harmony: b.harmony }) : ''}`} />
+        <span class=${cx('bslot__count', 'num', next == null && 'is-max')}>${b.count ?? 0}<small>/${countCap ?? th[th.length - 1] ?? '-'}</small></span>
+        ${theme ? null : html`<${BondStage} tier=${b.active ? stage : 0} />`}
         ${!layersDisabled && !owner && forecast?.bonds?.[b.bondId]?.n > 0 ? html`<span class="bslot__forecast num">+${forecast.bonds[b.bondId].n}</span>` : null}
       </div>`;
     })}
@@ -267,7 +271,7 @@ export function BondStrip({ bonds, layersDisabled = false, onOpen, openId = null
  *   `entry.harmony` (the server's bond views: the +1 调和 added to `count`): 在场 n（含调和 +1） and the 调和 row
  */
 export function BondPopup({ bondId, entry, priv, stock = null, banned = [], onClose, onMember, place = null, over = false, beside = null, owner = null, ownerId, off = false, coreAbsent = false, modal = false, forecast = null, morphMode = 'official', onPrevious = null, onNext = null }) {
-  const { record: b, count, layers, tempLayers, total, thresholds: th, tier: reachedTier } = bondDisplay(bondId, entry);
+  const { record: b, count, layers, tempLayers, total, thresholds: th, tier: reachedTier, stage, countCap } = bondDisplay(bondId, entry);
   if (!b) return null;
   // A greyed regulation core must not use `off`: that sentence is the opposite of "its operators cannot appear".
   // [ASSUMED] the card still shows 当前效果, 在场 and 成员; only the note changes. No official card settles the rest.
@@ -283,7 +287,6 @@ export function BondPopup({ bondId, entry, priv, stock = null, banned = [], onCl
   const rawChess = (id) => data.lookup('chess', id);
   const siOf = (mb) => (mb.diy || mb.rec ? null : memberStandIn(priv, rawChess(mb.id), data.get('backups'), rawChess));
   const countsHand = entry?.countsHand ?? b.countsHand;
-  const next = nextThreshold(count, th);
   const hasNow = !modeOff && !!(b.effectDescRaw || b.effectDesc);
   const at = place || (beside === 'left' ? 'beside' : 'left');
   // 调和's +1 in this count (the server's word), and the 调和 operators on that board who give it
@@ -305,9 +308,9 @@ export function BondPopup({ bondId, entry, priv, stock = null, banned = [], onCl
         ${owner ? html`<span class="bpop__owner"><${GIcon} name="eye" />${tParts('{owner} 的盟约', { owner: html`<b>${owner}</b>` })}</span>` : null}
         <h3 class="bpop__name">${b.name}</h3>
         <div class="bpop__facts">
-          ${modeOff ? null : html`<span>${t('在场')} <b class="num">${count}</b>${next != null ? html`<small class="num">/${next}</small>` : null}${countsHand ? html`<small>${t('（含整备区）')}</small>` : null}${harmony ? html`<small class="bpop__hnote" data-harmony=${harmony}>${t('（含{harmonyName} +{harmony}）', { harmonyName, harmony })}</small>` : null}</span>`}
+          ${modeOff ? null : html`<span>${t('在场')} <b class="num">${count}</b>${countCap != null ? html`<small class="num">/${countCap}</small>` : null}${countsHand ? html`<small>${t('（含整备区）')}</small>` : null}${harmony ? html`<small class="bpop__hnote" data-harmony=${harmony}>${t('（含{harmonyName} +{harmony}）', { harmonyName, harmony })}</small>` : null}</span>`}
           ${b.noStack ? html`<span>${t('层数不显示')}</span>` : html`<span class="bpop__layers">${t('层数')} <b class="num t-mint">${layers}</b>${tempLayers > 0 ? html` <b class="bpop__temporary num">+${tempLayers}</b>` : null}</span>`}
-          <span class=${active ? 't-mint' : 't-lo'}>${active ? (th.length > 1 ? t('已激活 · {tier} 阶', { tier }) : t('已激活')) : modeOff ? t('本局禁用') : t('未激活')}</span>
+          <span class=${active ? 't-mint' : 't-lo'}>${active ? ((data.get('config')?.version?.family === 'regulation' ? stage > 0 : th.length > 1) ? t('已激活 · {tier} 阶', { tier: stage }) : t('已激活')) : modeOff ? t('本局禁用') : t('未激活')}</span>
         </div>
       </div>
     </header>

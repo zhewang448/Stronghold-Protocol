@@ -87,8 +87,10 @@
 //     exactly what the server accepts.
 //   * 干员皮肤 (docs/SKINS.md): room.skins { skins } — `{ [charId]: skinId }`, the appearance each operator wears — is
 //     a plain map of charIds to skinIds, at most SKIN_LIMITS.entries (256 [ASSUMED]); a bad shape is BAD_MSG and does
-//     not clear the stored choice. A charId the room's content does not have is dropped (shared/protocol.js
-//     checkSkinSelection). An unknown skinId can do nothing worse than fail to resolve in the client's spineEntry.
+//     not clear the stored choice. A charId neither the room's content nor the cross-period 名片干员 roster has is
+//     dropped (shared/protocol.js checkSkinSelection; the roster since DESIGN §37.325, so a seat card of another period
+//     wears its outfit — a match start keeps only the room's operators, seatSettings). An unknown skinId can do nothing
+//     worse than fail to resolve in the client's spineEntry.
 //     Stored on the session and the seat. Unlike
 //     the settings above there is NO phase gate: a match receives seats[].skins when it starts AND takes a later change
 //     at once (match.setSkins, any phase), because the choice is public — a teammate sees your model — and cosmetic.
@@ -179,6 +181,7 @@ import { isStateKind } from '../shared/stateDelta.js';
 import { resetStateDelta } from './stateTransport.js';
 import { RoomChat, cleanChatText, getChatSettings } from './chat.js';
 
+import { CARD_ROSTER, cardEntries, parseCardRoster } from '../shared/cardRoster.js';
 import { getData as defaultGetData, lookup } from './data.js';
 import { Match as DefaultMatch } from './match/Match.js';
 import { GameData } from './match/gamedata.js';
@@ -953,7 +956,7 @@ export class Lobby {
     return OK;
   }
 
-  create(session, { mode, difficulty, code: requestedCode, capacity, test, version: askedVersion, soloUnlimited, modeId: askedMode, private: isPrivate, plugins } = {}) {
+  create(session, { mode, difficulty, code: requestedCode, capacity, test, version: askedVersion, soloUnlimited, modeId: askedMode, private: isPrivate, plugins, aiPicksLast } = {}) {
     const creation = getRoomCreation().defaults;
     difficulty = roomHostCanChange('difficulty') && difficulty != null ? difficulty : creation.difficulty;
     capacity = roomHostCanChange('capacity') && capacity != null ? capacity : creation.capacity;
@@ -989,6 +992,7 @@ export class Lobby {
     if (!code && this.opts.roomCode) return fail(ERR.ROOM_CODE_TAKEN);
     if (!code) return fail(ERR.INTERNAL, 'no room code available');
     const room = new Room(code, mode, difficulty, this.now(), capacity, version);
+    if (room.mode === 'coop' && typeof aiPicksLast === 'boolean' && roomHostCanChange('aiPicksLast')) room.aiPicksLast = aiPicksLast;
     if (this.laddered(version, mode)) {
       room.modeId = this.ladderMode(version, mode, difficulty, roomHostCanChange('difficulty') ? askedMode ?? null : null);
       const selected = this.versionModes(version, mode).find((entry) => entry.id === room.modeId);
@@ -1453,6 +1457,9 @@ export class Lobby {
       for (const s of room.seats) if (s && !s.isBot && s.playerId !== room.hostId) s.ready = false;
       // another content set: every page loads and checks it again (room.contentReady)
       if ((before?.cs ?? null) !== (content?.cs ?? null)) for (const s of [...room.seats, ...room.spectators]) if (s && !s.isBot)  { s.content = null; s.consentCs = null; }
+      // 名片干员 (header, DESIGN §37.326): a card the room's new content lacks (a plugin operator of the set it left) is
+      // taken off the seat; the session keeps it, as humanSeat leaves it off a room without that operator
+      for (const s of room.seats) if (s && !s.isBot && s.card && !this.cardAllowed(room, s.card)) { s.card = null; s.cardSkin = null; }
       this.log.info(`[lobby] ${room.code} plugins: ${content?.plugins?.length ? content.plugins.map((p) => `${p.id}@${p.version}`).join(', ') : 'none'}${room.modded ? ` (content ${content.cs.slice(0, 8)})` : ''}`);
     }
     this.broadcastState(room);
@@ -1811,8 +1818,12 @@ export class Lobby {
    */
   skins(session, { skins }) {
     const room = this.roomOf(session);
-    const ids = operatorCharIds(this.dataFor(room));
-    const kept = freezeSkins(skins, (id) => ids.has(id));
+    // the operators of the room's content, and every 名片干员 of the cross-period roster (DESIGN §37.325: a seat card of
+    // another period wears its outfit; a match start still keeps only the room's, seatSettings) — the room's data is read
+    // only for an id the roster lacks
+    const official = this.officialCardIds();
+    let ids = null;
+    const kept = freezeSkins(skins, (id) => official.has(id) || (ids ??= operatorCharIds(this.dataFor(room))).has(id));
     if (!kept) return fail(ERR.BAD_MSG, 'bad skin selection');
     const changed = JSON.stringify(session.skins || {}) !== JSON.stringify(kept);
     session.skins = kept;
@@ -2386,15 +2397,24 @@ export class Lobby {
     return OK;
   }
 
+  officialCardIds() {
+    return parseCardRoster(defaultGetData()[CARD_ROSTER])?.ids ?? new Set();
+  }
+
+  cardAllowed(room, charId) {
+    const data = this.dataFor(room);
+    return this.officialCardIds().has(charId) || Object.hasOwn(data['seat-art']?.chars || {}, charId)
+      || cardEntries(data.chess, data.backups).has(charId);
+  }
+
   /** Seat posters are cosmetic and never change battle outfits or loadouts. */
   card(session, { charId, skinId = '' }) {
     const room = this.roomOf(session);
     const data = this.dataFor(room);
     const all = data['seat-art']?.chars || {};
-    const fallback = Object.values(data.chess || {}).some(c => c.charId === charId && !c.isDiy && c.visible !== false);
     const installed = this.safeData().assets?.chars?.[charId]?.skins?.[skinId] || data.assets?.chars?.[charId]?.skins?.[skinId];
     const knownSkin = all[charId]?.choices?.some(s => s.id === skinId) || installed && (installed.portrait || installed.portraitE2 || installed.illust);
-    if (charId && (!(Object.hasOwn(all, charId) || fallback) || skinId && !knownSkin)) return fail(ERR.BAD_MSG, 'unknown operator or skin');
+    if (charId && (!this.cardAllowed(room, charId) || skinId && !knownSkin)) return fail(ERR.BAD_MSG, 'unknown operator or skin');
     if (!charId && skinId) return fail(ERR.BAD_MSG, 'unknown operator or skin');
     session.card = charId; session.cardSkin = skinId;
     const seat = room?.seatOf(session.playerId);
@@ -2418,9 +2438,7 @@ export class Lobby {
 
   /** Cosmetic preferences may change during a match; they never touch its battle specification. */
   humanSeat(idx, session, room = null) {
-    const data = this.dataFor(room);
-    const visible = (charId) => Object.values(data.chess || {}).some(c => c.charId === charId && !c.isDiy && c.visible !== false);
-    const card = session.card && (Object.hasOwn(data['seat-art']?.chars || {}, session.card) || visible(session.card)) ? session.card : null;
+    const card = session.card && this.cardAllowed(room, session.card) ? session.card : null;
     const cardFields = session.card ? (card ? { card, cardSkin: session.cardSkin || null } : {}) : { card: null, cardSkin: null };
     return {
       seat: idx, playerId: session.playerId, name: session.name, isBot: false, ready: false, connected: session.connected, left: false,

@@ -1017,10 +1017,12 @@ export function LobbyScreen() {
     if (previewCs && versionFailed) { retryContentSet(); return false; }
     if (previewCs && versionLoading) return false;
     const lobbyRoomPlugins = activeLobbyPlugins(selectedVersion);
+    const aiPicksLast = loadPref('lobby.aiPicksLast', null);
     return run('create', () => net.request('room.create', {
       ...(lobbyRoomPlugins !== undefined ? { plugins: lobbyRoomPlugins } : {}),
       mode: roomMode, difficulty, ...(roomMode === 'solo' && shownMode ? { modeId: shownMode } : {}), ...(Array.isArray(store.get().versions) ? { version: selectedVersion } : {}), ...(roomMode === 'solo' ? { soloUnlimited } : {}), ...(testMode && asTest ? { test: true } : {}),
       ...(roomMode === 'coop' && customCode ? { code: customCode } : {}),
+      ...(roomMode === 'coop' && typeof aiPicksLast === 'boolean' ? { aiPicksLast } : {}),
       ...(CAN_FIREPOWER ? { random: randomMode, ...(randomMode ? { variant } : {}) } : {}),
       ...(CAN_PRIVATE ? { private: roomMode !== 'solo' && privateRoom } : {}),
     }));

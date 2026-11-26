@@ -521,3 +521,7 @@ and effect key; ordinary and elite copies, rebuy and later rounds share it, whil
 traits using the copied-from operator and investor repeats advancing once each. No official state-layout claim is made.
 Other garrison counters are unchanged. No persistence or replay infrastructure is introduced by this fix. Runtime text is handled separately by #926, which reads
 shared counters when present and otherwise keeps the legacy display path; this payout fix builds independently.
+
+### 第 84 轮玩法适配
+
+规程普通回合收入为 `min(3 + round, 11)`，极速模拟为 `min(5 + round, 11)`。合成晋级奖励在首个可操作休整期结束时失效。就绪后、战斗和结算期间到达的晋级奖励等待下个休整期 [ASSUMED]。策略和道具提供的待选奖励继续使用原队列。

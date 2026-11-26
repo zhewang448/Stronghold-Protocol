@@ -48,13 +48,13 @@ LOBBY → INFO_CHECK (co-op 25 s; solo and single-human matches untimed; all hum
      ROUND_START (2 s)  income + pending coins, upgrade price −1 (r > 1, floor 0), temp NOT wiped (what overflowed after
                         the last prep's deadline — battle-result grants, a SETTLE merge's elite with no copy deployed,
                         returned equipment — is shown and usable in this prep, `PlayerState.tempDue`; every queued reward
-                        offer — a promotion's pick, a special refresh, an item offer — is kept until picked),
+                        offer — a promotion pick lapses at the prep deadline, a special refresh or item offer stays queued),
                         shop reroll (frozen slots kept in place, then unfrozen), the round's wave generated (preview),
                         onRoundStart dispatch
      [SP_DRAFT]         r ∈ modes[m].spRounds (机变)
      PREP               onPrepStart; co-op timer rounds[r].prepTime, solo / single human untimed; ends when every alive seat is ready
      (prep end)         onPrepEnd, the temp pieces due at this prep resolved (tempDue; what arrived after Ready or
-                        during onPrepEnd waits for the next prep), queued reward offers kept until picked, unfrozen shop cleared, funds lost
+                        during onPrepEnd waits for the next prep), unpicked promotion offers due this prep lapse, unfrozen shop cleared, funds lost
                         (band_cannot keeps them), boss round: Σ activated layers recorded for the hidden-core check
      COMBAT             one Battle per alive player (FieldRunner, 2× game speed; limit = 2 × maxPlayTime game s, §3)
      UNITE              co-op, ≥ 1 leaker and ≥ 1 perfect player (§4)

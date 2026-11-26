@@ -375,7 +375,7 @@ exists) gets no section rather than an empty grid.
 - **Bots always wear the default model** (`PlayerState.setSkins` refuses a bot, as `setLoadout` does).
 - **The studio does not list skins.** It finds an operator, an enemy or an interface picture by its official name
   (`server/studio/targets.js`), so a skin key is copied from the installation's manifest or written in the stem form.
-- **No skin effects and no operator voices** (a separate piece of work; docs/ASSETS.md).
+- 外观插件可为时装提供分语言的干员语音。未配置的语音槽沿用干员原声，已安装的本库时装特效继续由其素材索引提供。
 - **A 自选 slot's own record has `charId: null`**, so it wears its **pick's** operator's skin — the slot has no body of
   its own. The picker offers the appearance while picking that operator, and the choice is kept per operator, so
   changing the slot's operator changes the appearance with it.

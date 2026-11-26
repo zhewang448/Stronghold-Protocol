@@ -64,6 +64,7 @@ export const DATA_FILES = Object.freeze({
   assets: 'assets.json',
   skins: 'skins.json',
   'seat-art': 'seat-art.json',
+  'card-roster': 'card-roster.json',
   // 补位 stand-ins (DATA.md §18): the bodies the 干员持有 screen, the cards and the detail card compose (shared/standIn.js)
   backups: 'backups.json',
   // Optional art extracted from a local game client (DESIGN §13): { groups: { '<subdir>': { name: { path, w, h } } } }.
@@ -316,6 +317,14 @@ export function createDataStore(opts = {}) {
     return l;
   }
 
+  /** The index of a loaded file as downloaded (its Chinese texts), built on first use; null when not loaded. */
+  function rawIndex(name) {
+    const e = entries.get(name);
+    if (!e || e.status !== 'ready') return null;
+    if (!e.index) e.index = buildIndex(name, e.value);
+    return e.index;
+  }
+
   function index(name) {
     const e = entries.get(name);
     if (!e || e.status !== 'ready') return null;
@@ -385,24 +394,40 @@ export function createDataStore(opts = {}) {
     const prev = content;
     const values = next ? (next.values instanceof Map ? next.values : new Map(Object.entries(next.values || {}))) : null;
     content = next && values ? { id: String(next.id), values, overlay: typeof next.overlay === 'function' ? next.overlay : null, langs: new Set(next.langs || []) } : null;
-    if ((prev?.id ?? null) === (content?.id ?? null) && prev?.values === content?.values) return;
-    const names = new Set([...(prev ? prev.values.keys() : []), ...(content ? content.values.keys() : [])]);
-    for (const name of names) {
-      if (content && content.values.has(name)) {
-        // keep the server's entry while the set shows its own (given back by setContent(null), never downloaded again)
-        const cur = entries.get(name);
-        if (!(prev && prev.values.has(name)) && cur) stash.set(name, cur);
-        const value = content.values.get(name);
-        entries.set(name, { status: 'ready', promise: Promise.resolve(value), value, index: null });
-      } else {
-        entries.delete(name);
-        const old = stash.get(name);
-        stash.delete(name);
-        if (old) entries.set(name, old);
+    const sameFiles = (prev?.id ?? null) === (content?.id ?? null) && prev?.values === content?.values;
+    const langsChanged = (() => {
+      const a = [...(prev?.langs || [])].sort().join('|');
+      const b = [...(content?.langs || [])].sort().join('|');
+      return a !== b || (!!prev?.overlay) !== (!!content?.overlay);
+    })();
+    // same data map: still refresh overlays when i18n langs appear (version cs ignores i18n, so a cached set can gain texts later)
+    if (sameFiles && !langsChanged) return;
+    if (!sameFiles) {
+      const names = new Set([...(prev ? prev.values.keys() : []), ...(content ? content.values.keys() : [])]);
+      for (const name of names) {
+        if (content && content.values.has(name)) {
+          // keep the server's entry while the set shows its own (given back by setContent(null), never downloaded again)
+          const cur = entries.get(name);
+          if (!(prev && prev.values.has(name)) && cur) stash.set(name, cur);
+          const value = content.values.get(name);
+          entries.set(name, { status: 'ready', promise: Promise.resolve(value), value, index: null });
+        } else {
+          entries.delete(name);
+          const old = stash.get(name);
+          stash.delete(name);
+          if (old) entries.set(name, old);
+        }
+        localized.delete(name);
       }
-      localized.delete(name);
+      for (const name of names) notify(name);
+    } else {
+      localized.clear();
+      for (const name of entries.keys()) notify(name);
     }
-    for (const name of names) notify(name);
+    // drop cached overlay loads for this content id so a newly listed language is fetched
+    if (content?.id) {
+      for (const key of [...overlayLoads.keys()]) if (String(key).startsWith(`${content.id}|`)) overlayLoads.delete(key);
+    }
     // the game texts: the new source's overlays for the language in effect
     const langs = new Set([...(prev ? prev.langs : []), ...(content ? content.langs : [])]);
     if (langs.size && lastLocale && locale !== 'zh') api.setLocale(lastLocale.lang, lastLocale.items).catch(() => {});
@@ -443,13 +468,15 @@ export function createDataStore(opts = {}) {
      */
     lookupRaw(name, id) {
       if (id == null) return null;
-      const e = entries.get(name);
-      if (!e || e.status !== 'ready') return null;
-      if (!e.index) e.index = buildIndex(name, e.value);
-      return e.index.get(String(id)) ?? null;
+      return rawIndex(name)?.get(String(id)) ?? null;
     },
     /** All records of a loaded file as an array (empty when not loaded). */
     list: (name) => [...(index(name)?.values() ?? [])],
+    /**
+     * All records of a loaded file exactly as downloaded (their Chinese texts), whatever the locale; empty when not
+     * loaded — the 名片干员 picker's search matches the Chinese names in every language (ui/seatArt.js withCardZh).
+     */
+    listRaw: (name) => [...(rawIndex(name)?.values() ?? [])],
     /** Drop a cached file and refetch it now (subscribers are notified when it settles). */
     invalidate(name) {
       if (!entries.has(name)) return Promise.resolve(null);
@@ -483,6 +510,24 @@ export function createDataStore(opts = {}) {
     locale: () => locale,
     /** The languages whose overlays apply now, best first (empty in Chinese). */
     localeChain: () => [...chain],
+    /**
+     * Meta of the content set's own game-text overlay for the language in effect (version i18n), or null.
+     * Used for the Settings community-translation note (docs/I18N.md §5 / act3 Terra fills).
+     * @returns {{ communityTranslated: boolean, credit?: string } | null}
+     */
+    contentGameTextMeta() {
+      if (locale === 'zh' || !content) return null;
+      // the chain, not just the locale: ja / ko fall back to the English overlay, which carries the mark
+      for (const lang of chain) {
+        const o = overlays.get(lang);
+        if (!o?.meta || o.meta.communityTranslated !== true) continue;
+        return {
+          communityTranslated: true,
+          ...(typeof o.meta.credit === 'string' && o.meta.credit ? { credit: o.meta.credit } : {}),
+        };
+      }
+      return null;
+    },
     /**
      * Switch the game texts' language: 'zh' at once; another language once the overlays of `chain` (default: the
      * language alone) have downloaded — those that fail are left out. When every overlay of a non-empty chain fails the

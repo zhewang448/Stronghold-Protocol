@@ -29,9 +29,10 @@ export class PlayerRound {
     this.addFunds(nonNeg(ev.pending), { reason: 'pending' });
     // temp is NOT wiped here: the last prep's deadline resolved what the player could act on (endPrep); what overflowed
     // after it (battle-result grants, SETTLE merges, returned equipment) is shown and usable in this prep (tempDue).
-    // Queued reward offers (a promotion's pick, a strategy's special refresh, an item offer) are kept until picked —
-    // they do not lapse at the prep deadline (PRTS 卫戍协议/帮助: the temporary shop leaves its state when one is bought;
-    // community report relayed by the maintainer on 2026-10-15) — so an offer left with 稍后 is shown again in this prep
+    // A legacy promotion offer has no deadline. Its first available prep after restore supplies one.
+    for (const offer of this.offers) {
+      if (offer.source === 'merge' && !Number.isInteger(offer.due)) offer.due = this.prepsEnded;
+    }
     this.ready = false;
     // summon stacks removed from temp at the last prep deadline come back (PRTS 卫戍协议/帮助 §手牌区); full hand ⇒ temp
     for (const p of [...this.board.values()]) if (p.kind === 'chess') this.grantTokensFor(p);
@@ -47,9 +48,11 @@ export class PlayerRound {
    */
   endPrep() {
     this.resolveTemp();
+    // The official promotion tip says the reward expires. [ASSUMED] A grant after Ready first opens next prep.
+    this.offers = this.offers.filter(offer => offer.source !== 'merge'
+      || (Number.isInteger(offer.due) ? offer.due : this._tempDueNow()) > this.prepsEnded);
     this.prepsEnded++;
     for (const uid of [...this._tempDue.keys()]) if (!this.temp.some((p) => p && p.uid === uid)) this._tempDue.delete(uid);
-    // (queued reward offers stay: they last until picked, startRound)
     this.clearUnfrozenShop();
     if (!keepsFunds(this)) { this.noteEconomy(-this.funds, 'discard'); this.funds = 0; }
     this.ready = true;

@@ -1993,13 +1993,18 @@ function MatchScreen() {
   const popOps = cc && battleRunner && field?.local && bondOpen && bondOpen.ownerId !== myId ? battleRunner.ownerOps(bondOpen.ownerId, field.fieldId) : null;
   const bondPop = popupView({ open: bondOpen, pub, priv, myId, field, units: popOps, live: liveLayers, temporary: tempLayersSnapshot });
   const openBond = (id, ownerId, from) => { setBondOpen((b) => toggleBond(b, id, ownerId, from)); audio.sfx('click', { volume: 0.4 }); };
-  const popupBondIds = visibleStripBonds(stripBonds).map(b => b.bondId);
-  const bondNavIndex = bondOpen?.from === 'strip' ? popupBondIds.indexOf(bondOpen.id) : -1;
+  const popupOwner = bondOpen?.ownerId;
+  const popupFrom = bondOpen?.from;
+  const flyoutOwner = popupFrom === 'team' && pub?.players?.find(p => p.playerId === popupOwner && p.alive !== false);
+  const navBonds = popupFrom === 'strip' ? stripBonds : flyoutOwner
+    ? playerBonds({ pub, priv, myId, ownerId: popupOwner, live: liveLayers, temporary: tempLayersSnapshot }) : [];
+  const popupBondIds = visibleStripBonds(navBonds).map(b => b.bondId);
+  const bondNavIndex = popupBondIds.indexOf(bondOpen?.id);
   const bondNavigation = bondNavIndex >= 0 && popupBondIds.length > 1;
   const switchBond = direction => {
     if (!bondNavigation) return;
     const id = popupBondIds[(bondNavIndex + direction + popupBondIds.length) % popupBondIds.length];
-    openBond(id, strip.ownerId, 'strip');
+    openBond(id, popupOwner, popupFrom);
   };
   const watchingNow = combat ? (watching || field?.fieldId || home) : watching;
   const pingFieldId = combat ? (field?.fieldId || watchingNow) : (watching || ownFieldId(myId));

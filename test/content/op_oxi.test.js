@@ -184,16 +184,16 @@ test('S2 阂断骤雪: 5 charges from initSp, cast by an enemy hit: that hit ×0
   done(h);
 });
 
-test('S2: no second cast while the effect runs; 庇护 holds, then fades to 0 at skill_duration; DoT and source-less hits never cast it', () => {
+test('S2: no second cast while the effect runs; 庇护 holds, then fades to 0 at skill_duration; DoT and allied source-less hits do not cast it', () => {
   const { h, u } = field({ skill: 1, enemies: [{ key: 'enemy_dummy', pos: [10, 6] }] });
   const bb = bbOf(true, S2), sk = u.skill, e = h.enemies()[0];
   fillSp(u);
   const n = sk.charges;
   h.b.dealDamage({ source: e, target: u, amount: 100, type: 'arts', tags: ['dot'], attackType: 'BUFF' });
+  h.b.dealDamage({ source: null, credit: u, target: u, amount: 100, type: 'arts', tags: ['probe'] });
+  assert.equal(sk.charges, n, 'a DoT and an allied source-less hit do not cast');
   h.b.dealDamage({ source: null, target: u, amount: 100, type: 'arts', tags: ['probe'] });
-  assert.equal(sk.charges, n, 'a DoT and a source-less hit do not cast');
-  h.b.dealDamage({ source: e, target: u, amount: 100, type: 'phys', tags: ['probe'] });
-  assert.equal(sk.charges, n - 1);
+  assert.equal(sk.charges, n - 1, 'an unattributed attack can cast');
   h.b.dealDamage({ source: e, target: u, amount: 100, type: 'phys', tags: ['probe'] });
   assert.equal(sk.charges, n - 1, 'the effect runs: no recast');
   h.run(0.1);

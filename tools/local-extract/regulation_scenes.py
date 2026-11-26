@@ -33,6 +33,7 @@ Materials are not all in the sand theme. STAGE_DEPS is the bundle each stage's m
 (m01–m04 and m06 sand, m05 Syracuse metro, m09/m11 icewild, m10/m12 ltny2) plus the one external mesh.
 """
 import json
+import math
 import re
 from pathlib import Path
 
@@ -291,13 +292,13 @@ def _mesh(pptr, cache, log, stage_id):
     return cache[key]
 
 
-def _chunks_of_piece(piece, objects, log, stage_id, material_info):
+def _chunks_of_piece(piece, objects, log, stage_id, material_info, device=False):
     """Every triangle of one prefab, in its own frame, keyed by (material, the prefab's own lightmap index, group)."""
     tf, go_info, go_of_tf, tf_of_go = _hierarchy(objects)
     lights = _renderer_light(objects)
     cache, materials, mat_tex = {}, {}, {}
     chunks = {}
-    group = PIECE_GROUPS[piece]
+    group = 'device:trap_196_cnnon' if device else PIECE_GROUPS[piece]
     stats = {'tris': 0, 'inactive': 0, 'nomat': 0, 'static': 0}
     world_cache = {}
 
@@ -328,6 +329,13 @@ def _chunks_of_piece(piece, objects, log, stage_id, material_info):
         gid = renderer.m_GameObject.m_PathID
         if gid not in tf_of_go:
             continue
+        if device:
+            tid, names = tf_of_go[gid], []
+            while tid in tf:
+                names.append(go_info.get(go_of_tf[tid], ('', True))[0])
+                tid = tf[tid][1]
+            if not '/'.join(reversed(names)).startswith('trap_196_cnnon/Graphic/'):
+                continue
         if not _active(tf, go_info, go_of_tf, tf_of_go, gid):
             stats['inactive'] += 1
             continue
@@ -353,6 +361,9 @@ def _chunks_of_piece(piece, objects, log, stage_id, material_info):
         if static:
             stats['static'] += 1
         matrix = scenes.IDENTITY if static else _world(tf, tf_of_go.get(gid), world_cache)
+        if device:
+            # The stage faces DOWN; the token graphic's authored frame faces UP.
+            matrix = scenes.mul(scenes.trs((0,0,0), (0,0,1,0), (1,1,1)), matrix)
         flip = scenes.det3(matrix) > 0
         index, scale = lights.get(obj.path_id, (-1, (1.0, 1.0, 0.0, 0.0)))
         luv = uv1 if uv1 else uv0
@@ -417,7 +428,7 @@ def _shift_pages(chunks, page_of):
     return out
 
 
-def _write(stage_id, chunks, materials, mat_tex, light, images, out_root, manifest, log):
+def _write(stage_id, chunks, materials, mat_tex, light, images, out_root, manifest, log, tile_depth=None):
     from PIL import Image
     out_dir = Path(out_root) / scenes.SCENE_SUB / stage_id
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -435,9 +446,8 @@ def _write(stage_id, chunks, materials, mat_tex, light, images, out_root, manife
     if not records:
         log(f'  warn {stage_id}: no regulation triangle')
         return 0
-    (out_dir / 'scene.bin').write_bytes(bytes(blob))
-    manifest.setdefault(sub, {})['bin'] = {'path': f'/assets/local/{sub}/scene.bin', 'kind': 'SceneData', 'bytes': len(blob)}
-    written = 1
+    bin_parts = scenes.write_scene_bins(out_dir, blob)
+    written = scenes.record_scene_bins(manifest.setdefault(sub, {}), sub, bin_parts)
     lightmaps = 0
     for index, image in enumerate(images):
         try:
@@ -460,12 +470,13 @@ def _write(stage_id, chunks, materials, mat_tex, light, images, out_root, manife
                 tex = pptr.read()
                 tname = re.sub(r'[^A-Za-z0-9_.\-\[\]]+', '_', tex.m_Name or f'tex_{pptr.m_PathID}')
                 materials[name][key] = tname
-                if tname in manifest.get(scenes.TEX_SUB, {}):
-                    continue
-                img = scenes.normal_rgb(tex.image) if key == 'normalMap' else tex.image
-                manifest.setdefault(scenes.TEX_SUB, {})[tname] = {
-                    **scenes.save_image(img, tex_dir, tname, scenes.TEX_SUB, key in scenes.LOSSLESS_MAPS), 'kind': 'Texture2D'}
-                written += 1
+                if tname not in manifest.get(scenes.TEX_SUB, {}):
+                    img = scenes.normal_rgb(tex.image) if key == 'normalMap' else tex.image
+                    manifest.setdefault(scenes.TEX_SUB, {})[tname] = {
+                        **scenes.save_image(img, tex_dir, tname, scenes.TEX_SUB, key in scenes.LOSSLESS_MAPS), 'kind': 'Texture2D'}
+                    written += 1
+                if key == 'map':
+                    written += scenes.export_opaque_albedo(info, out_root, manifest)
             except Exception as e:
                 log(f'  warn {stage_id}: texture {slot} of {name}: {e}')
     doc = {'version': scenes.SCENE_VERSION, 'stage': stage_id,
@@ -475,6 +486,12 @@ def _write(stage_id, chunks, materials, mat_tex, light, images, out_root, manife
            'layout': 'pieces', 'pieceGrid': {PIECE_GROUPS[i]: [PIECE_ROWS[i], PIECE_COLS[i]] for i in (1, 2, 3)},
            'materials': dict(sorted(materials.items())), 'groups': sorted({rec['group'] for rec in records}),
            'chunks': records, 'binBytes': len(blob)}
+    if len(bin_parts) > 1:
+        doc['binParts'] = [part['bytes'] for part in bin_parts]
+    if any(rec['group'] == 'device:trap_196_cnnon' for rec in records):
+        doc['deviceModels'] = {'trap_196_cnnon': 'device:trap_196_cnnon'}
+    if tile_depth:
+        doc['tileDepthHeights'] = tile_depth
     (out_dir / 'scene.json').write_text(json.dumps(doc, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
     manifest[sub]['scene'] = {'path': f'/assets/local/{sub}/scene.json', 'kind': 'Scene', 'chunks': len(records),
                               'version': scenes.SCENE_EXTRACT_VERSION}
@@ -605,16 +622,34 @@ def _atlas(images, chunks, log, stage_id, gutter=ATLAS_GUTTER):
     return [atlas], out
 
 
+def tile_depth_height(objects):
+    """MapSettings.highlandHeight in this piece, for terrain FX depth only (not unit positions)."""
+    for obj in objects:
+        if obj.type.name != 'MonoBehaviour':
+            continue
+        try:
+            value = obj.read_typetree().get('_mapSettings', {}).get('highlandHeight')
+        except Exception:
+            continue
+        if isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) and 0 <= value <= 4:
+            return round(value, 5)
+    return None
+
+
 def export_stage(stage_id, paths, dep_paths, out_root, manifest, log, material_info):
-    """Write one 规程 stage from its three prefab bundles. `paths` is (sub_01, sub_02, sub_03)."""
+    """Write three board pieces and, for MAP10, an optional independent cannon graphic."""
     images = []
     merged = {}
     materials, mat_tex = {}, {}
     light = None
+    tile_depth = {}
     log(f'{stage_id}: loading {", ".join(Path(p).name for p in paths)}')
     owns = _load_pieces(paths, dep_paths, log, stage_id)
-    for piece, own in zip((1, 2, 3), owns):
-        chunks, mats, texs, piece_light, pages, stats = _chunks_of_piece(piece, own, log, stage_id, material_info)
+    for piece, own in zip((1, 2, 3, 0), owns):
+        height = tile_depth_height(own) if piece else None
+        if height is not None:
+            tile_depth[PIECE_GROUPS[piece]] = height
+        chunks, mats, texs, piece_light, pages, stats = _chunks_of_piece(piece, own, log, stage_id, material_info, device=piece == 0)
         log(f'  sub_0{piece}: {stats["tris"]} triangles'
             f' ({stats["inactive"]} inactive, {stats["nomat"]} without a material, {stats["static"]} static)')
         page_of = {}
@@ -637,7 +672,7 @@ def export_stage(stage_id, paths, dep_paths, out_root, manifest, log, material_i
         if light is None and piece_light is not None:
             light = piece_light
     images, merged = _atlas(images, merged, log, stage_id)
-    return _write(stage_id, merged, materials, mat_tex, light, images, out_root, manifest, log)
+    return _write(stage_id, merged, materials, mat_tex, light, images, out_root, manifest, log, tile_depth=tile_depth)
 
 
 def export_regulation(ab_root, out_root, manifest, log, ids, roots, material_info, shader_deps=()):
@@ -661,6 +696,17 @@ def export_regulation(ab_root, out_root, manifest, log, ids, roots, material_inf
                 missing = prefab_rel(stage_id, piece)
                 break
             paths.append(found)
+        if not missing and stage_id == 'act3autochess_m10':
+            # The native frame is a token prefab, not a renderer in any of the three board pieces.
+            from fx import container_index
+            cache = Path(__file__).resolve().parents[2] / '.cache/fx/tokens.json'
+            tokens = container_index(root, ('pkgrps/btl_pfb_tokens_*.ab',), cache, 1, log)
+            token = root / tokens['trap_196_cnnon'] if 'trap_196_cnnon' in tokens else None
+            if token and token.is_file():
+                paths.append(token)
+                deps.append(root / 'arts/maps/common/trap/trap_19.ab')
+            else:
+                log(f'  warn {stage_id}: no cannon prefab; keep the procedural device')
         if missing:
             log(f'skip (no regulation prefab: off-season client, see --scenes) {missing}')
             continue

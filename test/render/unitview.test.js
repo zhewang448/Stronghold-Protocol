@@ -14,10 +14,10 @@ import { presetCamera } from '../../public/js/render/projection.js';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const ASSETS = JSON.parse(readFileSync(path.join(ROOT, 'data/assets.json'), 'utf8'));
 
-let fake, UnitView, T;
+let fake, UnitView, DeviceView, T;
 before(async () => {
   fake = installFakePixi();
-  ({ UnitView } = await import('../../public/js/render/units.js'));
+  ({ UnitView, DeviceView } = await import('../../public/js/render/units.js'));
   T = await import('../../public/js/render/textures.js');
 });
 after(() => fake.restore());
@@ -1034,4 +1034,45 @@ describe('GitHub #648: the Hidden Core 假想敌：管 (enemy_9021_acduml_2)', (
     assert.ok(dx > 0);
     assert.ok(Math.abs((h.hpFill.position.x - b.hpFill.position.x) - dx) < 1, `HP bar moved by ${h.hpFill.position.x - b.hpFill.position.x} px (1.4 tiles ≈ ${dx})`);
   });
+});
+
+test('a passenger hidden before its first snapshot stays invisible until it appears, without hiding prep units', () => {
+  const v = view({ side: 'enemy', kind: 'enemy' }),
+    prep = view({}, { prep: true });
+  try {
+    v._seen = false;
+    for (let i = 0; i < 30; i++) v.update(1 / 60, cam(), i / 60);
+    assert.equal(v.root.alpha, 0);
+    assert.equal(v.shadow.alpha, 0);
+    assert.equal(v.alpha, 0);
+    v._seen = true;
+    v.update(1 / 60, cam(), 1);
+    assert.ok(v.root.alpha > 0);
+    assert.ok(v.shadow.alpha > 0);
+    prep.update(1 / 60, cam(), 1);
+    assert.ok(prep.root.alpha > 0);
+  } finally {
+    v.destroy();
+    prep.destroy();
+  }
+});
+
+
+test('cannon destruction leaves debris to the chosen death effect, while crates keep their break effect', () => {
+  const ctx = fakeViewCtx(fake.P, { assets: store(), cam });
+  const breaks = [];
+  ctx.fx = { crateBreak: (...args) => breaks.push(args) };
+  const cannon = new DeviceView(ctx, { id: 901, defId: 'trap_196_cnnon', x: 6, y: 13 });
+  const crate = new DeviceView(ctx, { id: 902, defId: 'test_crate', x: 4, y: 10 });
+  try {
+    cannon.die();
+    cannon.die();
+    assert.equal(cannon.alive, false);
+    assert.equal(breaks.length, 0);
+    crate.die();
+    assert.equal(breaks.length, 1);
+  } finally {
+    cannon.destroy();
+    crate.destroy();
+  }
 });

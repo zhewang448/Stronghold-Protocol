@@ -1,6 +1,7 @@
 // 名片干员: the portrait a doctor shows on the room's seat card (screens/room.js) and on the strategy draft's name-card rows
 // (screens/bandDraft.js) — the operator the player picked (room.card; room.state seats[].card), else one of the 5★/6★
 // operators chosen by the player id, the same on every client.
+import { CARD_PERIOD_ORDER, isCardChess, parseCardRoster } from '../../../shared/cardRoster.js';
 import { chessPortraitUrl } from './assetUrls.js';
 import { createStore, loadPref, savePref } from '../store.js';
 import { ownerSkin } from './skins.js';
@@ -25,7 +26,7 @@ export const CARD_SKIN_PREF = 'room.cardSkin';
 export function cardOperators(chessList, catalogue = null, manifest = null, skins = null) {
   const by = new Map();
   for (const c of Array.isArray(chessList) ? chessList : []) {
-    if (!c || c.isDiy || c.visible === false || typeof c.charId !== 'string') continue;
+    if (!isCardChess(c)) continue;
     const prev = by.get(c.charId);
     if (!prev || (c.isGolden && !prev.isGolden)) by.set(c.charId, c);
   }
@@ -103,14 +104,82 @@ export function setCard(charId, skinId = '') {
 
 /**
  * What the seat cards draw from: the pickable operators by charId and the default pool (5★/6★, by charId so every
- * client orders it the same).
+ * client orders it the same). `extra` (#877): the cross-period records (rosterOperators) — they resolve a pick, never
+ * the default pool, and a charId of the room's list keeps the room's record (a plugin's redefinition included).
  * @param {any[]} list cardOperators()
+ * @param {{ pending?: boolean, extra?: any[] }} [opts]
  */
-export function cardContext(list) {
+export function cardContext(list, extra = []) {
   return {
-    byChar: new Map(list.map((c) => [c.charId, c])),
+    byChar: new Map([...extra, ...list].map((c) => [c.charId, c])),
     pool: list.filter((c) => (c.rarity ?? 0) >= 5).sort((a, b) => (a.charId < b.charId ? -1 : a.charId > b.charId ? 1 : 0)),
   };
+}
+
+/**
+ * The picker's groups (#877, DESIGN §37.325): first the room's version (`key` 'room': the room's own list, then any
+ * roster record whose periods include the room's version — an official operator the room's plugins hide, [ASSUMED] 6:
+ * it stays a card, in this group, whichever other periods list it too), then the other periods newest first
+ * (shared/cardRoster.js CARD_PERIOD_ORDER reversed). Any other cross-period operator shows once, in the newest period
+ * that lists it. Empty groups are left out.
+ * @param {any[]} list cardOperators() of the room
+ * @param {any[]} others rosterOperators()
+ * @param {string} roomVersion the room's version id (versions.js roomVersion)
+ * @returns {{ key: string, version: string, ops: any[] }[]}
+ */
+export function rosterOperators(raw, list, manifest, skins) {
+  const roster = parseCardRoster(raw);
+  if (!roster) return [];
+  const existing = new Set(list.map(c => c.charId));
+  const candidates = [...roster.byChar.values()].filter(c => !existing.has(c.charId));
+  return cardOperators(candidates.map(c => ({ ...c, isGolden: c.golden })), null, manifest, skins);
+}
+
+export function cardGroups(list, others, roomVersion) {
+  const room = Array.isArray(list) ? [...list] : [];
+  /** @type {Map<string, any[]>} */
+  const by = new Map();
+  for (const c of Array.isArray(others) ? others : []) {
+    if (!c) continue;
+    const periods = Array.isArray(c.periods) ? c.periods : [];
+    const rest = periods.filter((p) => p !== roomVersion && CARD_PERIOD_ORDER.includes(p));
+    if (!rest.length || periods.includes(roomVersion)) { room.push(c); continue; }
+    const key = rest.reduce((a, b) => (CARD_PERIOD_ORDER.indexOf(b) > CARD_PERIOD_ORDER.indexOf(a) ? b : a));
+    if (!by.has(key)) by.set(key, []);
+    by.get(key).push(c);
+  }
+  const groups = [{ key: 'room', version: roomVersion, ops: room }];
+  for (const v of [...CARD_PERIOD_ORDER].reverse()) if (by.has(v)) groups.push({ key: v, version: v, ops: by.get(v) });
+  return groups.filter((g) => g.ops.length);
+}
+
+/**
+ * The players whose outfits the strategy draft's name cards read (#877, DESIGN §37.325): the match's public players
+ * (m.public.players[].skins), plus — only for the operators the match's data lacks (`matchOps`) — the room's seats'
+ * (room.state seats[].skins). The match keeps only the operators of the data it plays (server/match/player/basics.js
+ * setSkins), so a cross-period card's outfit comes from the room; for an operator of the match's data the match's map
+ * alone decides (#877 review): `room.skins` during a match re-broadcasts no room.state (server/lobby.js skins), so the
+ * room's seats keep the map from before the start, and an outfit a teammate took off in the match's 干员调配 would show
+ * again. A player without a room seat keeps its own map.
+ * @param {any[]} players m.public players
+ * @param {any[] | null | undefined} roomSeats room.state seats
+ * @param {Set<string> | null} [matchOps] the operators of the match's data (shared/protocol.js operatorCharIds of the
+ *   room's files, the set setSkins keeps); null: none known yet, the room's map fills every gap
+ * @returns {any[]}
+ */
+export function cardSkinPlayers(players, roomSeats, matchOps = null) {
+  const list = Array.isArray(players) ? players : [];
+  const seats = new Map();
+  for (const s of Array.isArray(roomSeats) ? roomSeats : []) if (s && s.playerId != null) seats.set(s.playerId, s);
+  return list.map((p) => {
+    if (!p || typeof p !== 'object') return p;
+    const fromRoom = seats.get(p.playerId)?.skins;
+    if (!fromRoom || typeof fromRoom !== 'object') return p;
+    const extra = {};
+    for (const [charId, skinId] of Object.entries(fromRoom)) if (!(matchOps instanceof Set && matchOps.has(charId))) extra[charId] = skinId;
+    if (!Object.keys(extra).length) return p;
+    return { ...p, skins: { ...extra, ...(p.skins && typeof p.skins === 'object' ? p.skins : {}) } };
+  });
 }
 
 /**

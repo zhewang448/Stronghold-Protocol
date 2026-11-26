@@ -436,7 +436,7 @@ test('HTTP: explicit all enables every version, serves their data, and forks no 
     assert.equal(srv.versionHosts.stats().matches, 0);
     const health = await (await get('/healthz')).json();
     assert.deepEqual(health.versions, {
-      enabled: VERSIONS.map((v) => v.id), default: LOBBY_DEFAULT_VERSION,
+      enabled: VERSIONS.map((v) => v.id), default: LOBBY_DEFAULT_VERSION, loaded: 0,
       hosts: { workers: 0, matches: 0, transport: 'process' },
     });
     assert.equal((await get('/data/chess.json')).status, 200);
@@ -465,7 +465,7 @@ test('HTTP (M1, DESIGN §35.23): an enabled version\'s data is served (immutable
       const cs = srv.versions.csOf(id);
       const ir = await get(`/cs/${cs.slice(0, 16)}/index.json`);
       assert.equal(ir.status, 200);
-      assert.equal(ir.headers.get('cache-control'), 'public, max-age=31536000, immutable');
+      assert.equal(ir.headers.get('cache-control'), 'no-cache');
       const index = await ir.json();
       assert.equal(index.cs, cs);
       assert.equal(index.version, id);
@@ -497,7 +497,7 @@ test('HTTP (M1, DESIGN §35.23): an enabled version\'s data is served (immutable
     assert.equal((await get(`/cs/${srv.versions.csOf('act1autochess').slice(0, 16)}/data/chess.json`)).status, 404);
     // /healthz names them and their match hosts
     const health = await (await get('/healthz')).json();
-    assert.deepEqual(health.versions, { enabled: ['act2autochess', 'act2autochess@V2_1', 'act1autochess'], default: 'act2autochess',
+    assert.deepEqual(health.versions, { enabled: ['act2autochess', 'act2autochess@V2_1', 'act1autochess'], default: 'act2autochess', loaded: 2,
       hosts: { workers: 0, matches: 0, transport: 'process' } });
   } finally {
     await srv.close();

@@ -287,7 +287,8 @@ export function BondChips({ bondIds, bonds = [], onBond = null, off = null, gran
       const tier = isOff ? 0 : Number.isFinite(e?.tier) ? e.tier : bondTier(count, th, rec?.maxCount ?? null);
       const active = !isOff && (e ? !!e.active : tier > 0);
       const next = nextThreshold(count, th);
-      const cap = next ?? th[th.length - 1] ?? null;
+      const cap = data.get('config')?.version?.family === 'regulation'
+        ? th[0] ?? null : next ?? th[th.length - 1] ?? null;
       const isoTag = iso.has(id) ? t('（变形同构体）') : '';
       // the count holds 调和's +1 (the server's bond entry says so, DESIGN §21.26)
       const harmonyTag = !isOff && Number.isInteger(e?.harmony) && e.harmony > 0 ? t('（含调和 +{harmony}）', { harmony: e.harmony }) : '';

@@ -62,7 +62,7 @@ import { net } from '../net.js';
 import { store, useStore, shallowEqual, emptyMatch, isSpectating, serverNow, loadPref, savePref } from '../store.js';
 import { data, useData, getConfig } from '../data.js';
 import { chessAvatarUrl } from '../ui/assetUrls.js';
-import { CARD_PREF, CARD_KEY, CARD_SKIN_KEY, cardStore, setCard, cardOperators, seatPortrait, seatOperator, cardAvatarUrl, useSeatArt } from '../ui/seatArt.js';
+import { CARD_PREF, CARD_KEY, CARD_SKIN_KEY, cardStore, setCard, cardOperators, cardGroups, rosterOperators, seatPortrait, seatOperator, cardAvatarUrl, useSeatArt } from '../ui/seatArt.js';
 import { C2S } from '../../../shared/protocol.js';
 import { difficultyInfo, modeInfo, LadderList, ProtoCard } from './lobby.js';
 import { ProtocolScene } from '../ui/protocolScene.js';
@@ -192,7 +192,7 @@ const CAN_PRIVATE = !!C2S && Object.hasOwn(C2S, 'room.setPrivate');
 
 
 /** 名片干员 picker: search, rarity, the operators' avatars; 默认 clears the pick. */
-function CardPicker({ current, currentSkin, list, m, art, onPick, onClose, customAllowed = true }) {
+function CardPicker({ current, currentSkin, groups, m, art, onPick, onClose, customAllowed = true }) {
   const [q, setQ] = useState('');
   const [star, setStar] = useState(0);
   const [selected, setSelected] = useState(null);
@@ -211,8 +211,8 @@ function CardPicker({ current, currentSkin, list, m, art, onPick, onClose, custo
     </div>
   <//>`;
   const needle = q.trim().toLowerCase();
-  const shown = list.filter((c) => (!star || c.rarity === star) && (!needle || String(c.name || '').toLowerCase().includes(needle)
-    || String(c.appellation || '').toLowerCase().includes(needle)));
+  const matches = (c) => (!star || c.rarity === star) && (!needle || String(c.name || '').toLowerCase().includes(needle)
+    || String(c.appellation || '').toLowerCase().includes(needle));
   return html`<${Modal} open=${true} title=${t('名片干员')} micro="SEAT CARD" onClose=${onClose} width="min(9.6rem, 94vw)" class="cardpick" actions=${html`<${Button} onClick=${onClose}>${t('关闭')}<//>`}>
     <div class="cardpick__bar">
       <label class="cardpick__search"><${Icon} name="search" /><input type="search" value=${q} placeholder=${t('搜索干员')} onInput=${(e) => setQ(e.currentTarget.value)} /></label>
@@ -229,9 +229,13 @@ function CardPicker({ current, currentSkin, list, m, art, onPick, onClose, custo
         <span class="cardpick__name">${t('替换立绘')}</span>${ownIllust ? html`<span class="cardpick__star cardpick__custom-status">${t('已上传')}</span>` : null}</button>
       <button type="button" class=${`cardpick__op cardpick__op--auto${!current ? ' is-on' : ''}`} onClick=${() => onPick('')} title=${t('按博士编号自动分配')}>
         <span class="cardpick__img"><${Icon} name="refresh" /></span><span class="cardpick__name">${t('默认')}</span></button>
+      ${groups.map(group => {
+        const shown = group.ops.filter(matches);
+        return shown.length ? html`<div key=${group.key} class="cardpick__group">${versionLabel(group.version)}</div>
       ${shown.map((c) => html`<button key=${c.charId} type="button" class=${`cardpick__op${current === c.charId ? ' is-on' : ''}`} onClick=${() => setSelected(c)} title=${c.name}>
         <span class="cardpick__img"><img src=${chessAvatarUrl(m, c) || c.choices?.[0]?.portrait} alt="" loading="lazy" draggable=${false} /></span>
-        <span class=${`cardpick__name${String(c.name).split(/\s+/).some(w => w.length >= 12) ? ' is-long' : ''}`}>${c.name}</span>${c.rarity ? html`<span class=${`cardpick__star r${c.rarity}`}>${c.rarity}★</span>` : null}</button>`)}
+        <span class=${`cardpick__name${String(c.name).split(/\s+/).some(w => w.length >= 12) ? ' is-long' : ''}`}>${c.name}</span>${c.rarity ? html`<span class=${`cardpick__star r${c.rarity}`}>${c.rarity}★</span>` : null}</button>`)}` : null;
+      })}
     </div>
     <p class="cardpick__note"><${Icon} name="info" />${CARD_SYNC ? t('选择后，同盟里的博士都会看到这张立绘') : t('目前只有你自己看得到；服务器下次更新后，同盟里的其他博士也能看到你的选择')}</p>
   <//>`;
@@ -506,11 +510,13 @@ export function RoomScreen() {
   const inFlight = useRef(false); // synchronous guard against double clicks (state updates are async)
   const [, tick] = useState(0);
   useEffect(() => { const id = setInterval(() => tick((x) => x + 1), 1000); return () => { clearInterval(id); alive.current = false; }; }, []);
-  useData('config', 'chess', 'assets', 'seat-art', 'skins', 'bands', 'bonds');
+  useData('config', 'chess', 'assets', 'seat-art', 'skins', 'bands', 'bonds', 'card-roster');
   const m = data.get('assets');
   // 名片干员: the pickable operators, the default pool (5★/6★ by charId, the same order on every client), one's pick
   const cardList = useMemo(() => cardOperators(data.list('chess'), data.get('seat-art'), m, data.get('skins')),
     [data.get('chess'), data.get('seat-art'), m, data.get('skins')]);
+  const roster = data.get('card-roster');
+  const otherCards = useMemo(() => rosterOperators(roster, cardList, m, data.get('skins')), [roster, cardList, m, data.get('skins')]);
   const myCard = useStore(s => s[CARD_KEY], Object.is, cardStore);
   const mySkin = useStore(s => s[CARD_SKIN_KEY], Object.is, cardStore);
   const myCustomIllust = useCustomIllust(me.playerId);
@@ -518,8 +524,8 @@ export function RoomScreen() {
   const [artAdjusting, setArtAdjusting] = useState(false);
   const portraits = useMemo(() => ({
     pool: cardList.filter((c) => (c.rarity ?? 0) >= 5 && c.assets).sort((a, b) => (a.charId < b.charId ? -1 : 1)),
-    byChar: new Map(cardList.map((c) => [c.charId, c])), m, myId: me.playerId, myCard, mySkin,
-  }), [cardList, m, me.playerId, myCard, mySkin]);
+    byChar: new Map([...otherCards, ...cardList].map((c) => [c.charId, c])), m, myId: me.playerId, myCard, mySkin,
+  }), [cardList, otherCards, m, me.playerId, myCard, mySkin]);
   const pickCard = (charId, skinId = '') => run('card', async () => {
     if (facts.mine?.illust || await ownIllustSnapshot()) await removeOwnIllust();
     setCard(charId, skinId); setPicking(false); setArtAdjusting(true);
@@ -607,7 +613,10 @@ export function RoomScreen() {
   const setDifficulty = (difficulty) => run('diff', async () => { const pluginMode = room.content?.modeId ? (room.content.modes || []).find(mode => mode.id === room.content.modeId)?.name || room.content.modeId : null; await net.request('room.setDifficulty', { difficulty }); savePref('lobby.difficulty', difficulty); setPicker(false); if (pluginMode) toast(t('已退出插件模式「{name}」', { name: pluginMode }), 'info'); });
   const setOfficialMode = modeId => run('diff', async () => { await net.request('room.setMode', { modeId }); setPicker(false); });
   const setAiTakeover = (on) => run('ai-takeover', () => net.request('room.setAiTakeover', { on }));
-  const setAiLast = (on) => run('ailast', () => net.request('room.setAiPicksLast', { on }));
+  const setAiLast = (on) => run('ailast', async () => {
+    await net.request('room.setAiPicksLast', { on });
+    savePref('lobby.aiPicksLast', on);
+  });
   const setSeatAvatars = (on) => run('seat-avatars', () => net.request('room.setSeatAvatars', { on }));
   const setCustomIllust = on => run('custom-illust', () => net.request('room.setCustomIllust', { on }));
   const resetSettings = () => run('reset-defaults', async () => {
@@ -791,7 +800,7 @@ export function RoomScreen() {
       tags=${[{ key: 'mode', label: t('精确搜寻'), icon: html`<${Icon} name="search" />` },
         { key: 'diff', label: t(DIFFICULTY_NAMES[room.difficulty]), color: DIFFICULTY_COLORS[room.difficulty], icon: html`<${DifficultyIcon} difficulty=${room.difficulty} />` }]} />` : null}
     ${foundShown ? html`<${FoundPanel} class=${foundLeaving ? 'is-leaving' : ''} seats=${facts.seats.length} text=${t('同盟集结完毕')} />` : null}
-    ${picking ? html`<${CardPicker} current=${myCard} currentSkin=${mySkin} list=${cardList} m=${m} art=${currentArt} customAllowed=${room.customIllust !== false} onPick=${pickCard} onClose=${() => setPicking(false)} />` : null}
+    ${picking ? html`<${CardPicker} current=${myCard} currentSkin=${mySkin} groups=${cardGroups(cardList, otherCards, roomVersion(room))} m=${m} art=${currentArt} customAllowed=${room.customIllust !== false} onPick=${pickCard} onClose=${() => setPicking(false)} />` : null}
     ${artAdjusting && currentArt.src && !currentArt.custom ? html`<${CardArtDialog} ...${currentArt} onClose=${() => setArtAdjusting(false)} />` : null}
     ${protoShown ? html`<${RoomProtocol} room=${room} variant=${variant} busy=${busy} onClose=${() => setPicker(false)} onPick=${setDifficulty} onMode=${setOfficialMode} leaving=${protoLeaving} />` : null}
   </div>`;

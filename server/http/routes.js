@@ -77,7 +77,7 @@ export function healthReport({ startedAt, network, registry, lobby, content = nu
   if (illusts?.size) report.illusts = illusts.size;
   // the official versions (DESIGN §35.23): only when another one than 第二期下半 is enabled
   if (versions && versions.nonDefault.length) {
-    report.versions = { enabled: [...versions.ids], default: versions.defaultId,
+    report.versions = { enabled: [...versions.ids], default: versions.defaultId, loaded: versions.stats().loaded,
       hosts: versionHosts ? versionHosts.stats() : { workers: 0, matches: 0, transport: 'process' } };
   }
   if (withTraffic && traffic) report.traffic = traffic.snapshot();

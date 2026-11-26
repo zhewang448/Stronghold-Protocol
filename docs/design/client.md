@@ -1547,3 +1547,7 @@ Covenant rooms with the independent equipment-row choice off retain the mixed ha
 来源是已保存的上游 entryFilm、allianceScene 与 regulationFilm 实现，以及用户本轮明确选择的手动入口。
 入口尺寸、短括号样式与减少动态效果下仍允许显式请求观看，是本库交互决定 [ASSUMED]；无自动触发，玩法与 golden 不变。
 实现入口为 public/js/ui/entryFilmButton.js、public/js/ui/entryFilm.js 和 public/css/entry-film.css。
+
+### 第 84 轮设置与名片
+
+设置按界面、声音、战斗显示、操作、外观和资源分组，可搜索名称及说明。设置锁定沿用服主规则。名片选择涵盖各期官方名单，沿用独立皮肤、立绘和取景。规程按盟约阶段表显示阶段，圆盘沿用已验收主题素材。

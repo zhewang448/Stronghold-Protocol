@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from '../../vendor/hooks.module.js';
 import { html, Icon, BondDisc } from './components.js';
 import { UnitThumb, BandIcon, RichText } from './gameComponents.js';
-import { sortBonds, nextThreshold } from './gameLogic.js';
+import { sortBonds } from './gameLogic.js';
 import { bondDisplay } from './bondStrip.js';
 import { bondIconUrl } from './assetUrls.js';
 import { data } from '../data.js';
@@ -29,10 +29,9 @@ function FlyBonds({ bonds, ownerId, onBond, layersDisabled }) {
   return sortBonds(bonds, (id) => data.lookup('bonds', id))
     .filter((bond) => !bond.off && (bond.active || bond.count > 0 || bond.layers > 0 || bond.tempLayers > 0))
     .map((bond) => {
-      const { record: rec, thresholds, tier, total, tempLayers } = bondDisplay(bond.bondId, bond);
-      const next = nextThreshold(bond.count ?? 0, thresholds);
+      const { record: rec, thresholds, tier, total, tempLayers, countCap } = bondDisplay(bond.bondId, bond);
       const name = rec?.name || bond.bondId;
-      const title = `${name} ${bond.count ?? 0}/${next ?? thresholds.at(-1) ?? '-'}${bond.harmony > 0 ? t('（含调和 +{harmony}）', { harmony: bond.harmony }) : ''}`;
+      const title = `${name} ${bond.count ?? 0}/${countCap ?? thresholds.at(-1) ?? '-'}${bond.harmony > 0 ? t('（含调和 +{harmony}）', { harmony: bond.harmony }) : ''}`;
       return html`<${BondDisc} key=${bond.bondId} name=${name} icon=${bondIconUrl(manifest, bond.bondId)}
         layers=${rec?.noStack ? undefined : total} tier=${tier} class=${tempLayers > 0 ? 'team__fly-temp-bond' : undefined}
         maxTier=${Math.max(1, thresholds.length)} active=${!!bond.active} size="sm" showName=${false}

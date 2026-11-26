@@ -17,7 +17,8 @@
 // - S1 照霎白夜 (AUTO): at once, every ground enemy on her target's tile takes atk_scale arts and 恐惧 [ASSUMED: no attack is
 //   replaced].
 // - S2 阂断骤雪 (AUTO, 5 charges, trigger NEVER: the kit casts it): ready and with no effect running, the first damage from an
-//   enemy source (PRTS: not a DoT, priority +1000) casts it. That hit, if physical or arts, falls to damage_remaining_scale.
+//   enemy or source-less attack (PRTS, §37.317: excludes DoT, terrain and allied credit) casts it before dodge resolves.
+//   Physical or arts damage falls to damage_remaining_scale.
 //   庇护 damage_resistance holds shelter_hold_duration, then fades linearly to 0 at skill_duration. The damage source, else a
 //   blocked unit, else a ground enemy of her range takes retaliate_atk_scale arts around it (ability_range_radius, the
 //   official blackboard; PRTS's 0.9 is the same circle by collider), healing her heal_ratio of the sum. Each cast adds one
@@ -37,7 +38,7 @@
 //   [ASSUMED] cooperative instances here channel independently, as specified by this implementation plan.
 // Cooperative instances are independent [ASSUMED]; no extra bonds or ally-death layer rules.
 
-import { num, talentBb, skillRec, up, posKey, holdProtect, byEnemyDamage, enemiesInGrid } from '../shared/tier1.js';
+import { num, talentBb, skillRec, up, posKey, holdProtect, enemiesInGrid } from '../shared/tier1.js';
 import { canTargetEnemy } from '../../../targeting.js';
 import { dirVec } from '../../../dir.js';
 import { COLS } from '../../../constants.js';
@@ -133,7 +134,9 @@ function installShelter(battle, unit, b2) {
     injury(ev) {
       const sk = unit.skill;
       if (!sk?.ready || battle.time < m.castAt + life - 1e-9 || !unit.canAct || unit.s.flags.silence) return;
-      if (!byEnemyDamage(ev) || isDot(ev.dmg)) return;
+      if (!['phys', 'arts', 'true', 'elemental'].includes(ev.type)) return;
+      const from = ev.source || ev.credit;
+      if (from?.side === unit.side || isDot(ev.dmg) || ev.dmg?.tags?.includes('terrain')) return;
       m.castAt = battle.time;
       if (ev.type === 'phys' || ev.type === 'arts') ev.amount *= num(b2.damage_remaining_scale, 0.1);
       const source = ev.source;

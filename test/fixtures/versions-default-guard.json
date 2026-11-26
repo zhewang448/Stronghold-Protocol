@@ -109,6 +109,9 @@
         "solo",
         "coop"
       ],
+      "i18n": [
+        "en"
+      ],
       "default": true
     }
   ]

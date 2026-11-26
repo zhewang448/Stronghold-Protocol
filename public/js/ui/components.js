@@ -229,7 +229,7 @@ export function TierChip({ tier, golden = false, size = 'md', class: cls, overla
  */
 export function BondDisc({
   name = '', icon, count, layers, tier = 0, maxTier = 3, active = false, disabled = false, layersDisabled = false,
-  size = 'md', showName = true, onClick, class: cls, title, cross = disabled, tag = null, theme = null,
+  size = 'md', showName = true, onClick, class: cls, title, cross = disabled, tag = null, theme = null, stage = null,
 }) {
   // Remember which URL failed (a per-URL flag can't race a reset effect).
   const [badSrc, setBadSrc] = useState(null);
@@ -237,6 +237,7 @@ export function BondDisc({
   const n = Math.max(1, Math.min(8, maxTier | 0 || 3));
   const filled = Math.max(0, Math.min(n, tier | 0));
   const lit = active && !disabled;
+  const displayTier = stage ?? filled;
   const frameKey = theme ? bondRimKey(n, lit ? Math.max(1, filled) : 0) : null;
   const rim = useBondRim(frameKey ? uiUrl(data.get('assets'), frameKey) : null);
   const themeStyle = theme ? {
@@ -278,7 +279,7 @@ export function BondDisc({
           ? html`<img class="bond__icon" src=${icon} alt="" draggable=${false} onError=${() => setBadSrc(icon)} />`
           : html`<span class="bond__glyph">${glyph}</span>`}
       </span>
-      ${theme && lit && filled ? html`<span class="bond__tier" role="img" aria-label=${t('阶段 {tier}', { tier: roman(filled) })}>${roman(filled)}</span>` : null}
+      ${theme && lit && displayTier ? html`<span class="bond__tier" role="img" aria-label=${t('阶段 {tier}', { tier: roman(displayTier) })}>${roman(displayTier)}</span>` : null}
       ${stack != null ? html`<span class="bond__count">${stack}</span>` : null}
       ${cross ? html`<span class="bond__ban" aria-label=${t('禁用')}><${Icon} name="close" /></span>` : null}
       ${tag}

@@ -376,3 +376,17 @@ export function bandOffLine(names) {
   const list = (Array.isArray(names) ? names : []).filter((n) => typeof n === 'string' && n);
   return list.length ? t('本局禁用{names}盟约，此策略效果可能无法发挥', { names: list.map((n) => t('【{name}】', { name: n })).join('') }) : '';
 }
+
+/** The 规程 phase table measures active effects by members or total battle layers. */
+export function bondStage(entry, phase, phased = true) {
+  if (!phased || !isObj(entry) || !entry.active) return 0;
+  const n = (v) => (Number.isFinite(v) ? v : 0);
+  const counts = Array.isArray(phase?.phaseCounts) ? phase.phaseCounts : [];
+  const reached = (value) => counts.filter((c) => Number.isFinite(c) && value >= c).length;
+  switch (phase?.phaseType) {
+    case 'NONE': return 0;
+    case 'STACK_COUNT': return reached(n(entry.layers) + n(entry.tempLayers));
+    case 'PEOPLE_COUNT': return Number.isFinite(entry.tier) ? n(entry.tier) : reached(n(entry.count));
+    default: return n(entry.tier);
+  }
+}
