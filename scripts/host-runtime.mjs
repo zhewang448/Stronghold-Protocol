@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import readline from 'node:readline';
 import { probePort, hostUrl } from '../tools/doctor.mjs';
 import { stopInstance } from '../server/instance.js';
@@ -11,7 +11,18 @@ import { computeBuildTag } from '../server/http/buildTag.js';
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code !== 'ESRCH'; } };
 
-export function acquireLease(root, name, { isAlive = alive } = {}) {
+// Windows can reuse a PID left behind after a forced close or reboot. Unknown start times keep the lease.
+function windowsProcessStartedAt(pid) {
+  if (process.platform !== 'win32' || !process.env.SystemRoot) return null;
+  const powershell = path.join(process.env.SystemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+  const result = spawnSync(powershell, ['-NoProfile', '-NonInteractive', '-Command',
+    `[DateTimeOffset]::new((Get-Process -Id ${pid} -ErrorAction Stop).StartTime).ToUnixTimeMilliseconds()`],
+  { encoding: 'utf8', timeout: 5000, windowsHide: true });
+  const value = result.stdout?.trim();
+  return result.status === 0 && /^\d+$/.test(value ?? '') ? Number(value) : null;
+}
+
+export function acquireLease(root, name, { isAlive = alive, processStartedAt = windowsProcessStartedAt } = {}) {
   if (!/^(launch|tunnel|runtime)-\d+$/.test(name)) throw new Error('Invalid launcher lease');
   const file = path.join(root, 'logs', `${name}.json`), owner = crypto.randomBytes(16).toString('hex');
   fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -24,10 +35,28 @@ export function acquireLease(root, name, { isAlive = alive } = {}) {
         release() { try { if (JSON.parse(fs.readFileSync(file, 'utf8')).owner === owner) fs.unlinkSync(file); } catch (e) { if (e.code !== 'ENOENT') throw e; } } };
     } catch (e) {
       if (e.code !== 'EEXIST') throw e;
-      let record, raw;
-      try { raw = fs.readFileSync(file, 'utf8'); record = JSON.parse(raw); } catch { return { owned: false }; }
-      if (!Number.isSafeInteger(record.pid) || record.pid < 1 || isAlive(record.pid)) return { owned: false, record };
-      if (fs.readFileSync(file, 'utf8') === raw) fs.unlinkSync(file);
+      let record, raw, stat;
+      try {
+        const fd = fs.openSync(file, 'r');
+        try { raw = fs.readFileSync(fd, 'utf8'); stat = fs.fstatSync(fd); } finally { fs.closeSync(fd); }
+        record = JSON.parse(raw);
+      } catch (error) {
+        if (error.code === 'ENOENT') continue;
+        return { owned: false };
+      }
+      if (!Number.isSafeInteger(record?.pid) || record.pid < 1) return { owned: false, record };
+      if (isAlive(record.pid)) {
+        if (record.pid === process.pid) return { owned: false, record };
+        const startedAt = processStartedAt(record.pid);
+        // Use the last write for legacy leases too. A valid owner must have started before it wrote the lease.
+        if (!Number.isFinite(startedAt) || stat.mtimeMs <= 0 || startedAt <= stat.mtimeMs + 2000) return { owned: false, record };
+      }
+      try {
+        const latest = fs.statSync(file);
+        if (latest.ino === stat.ino && latest.mtimeMs === stat.mtimeMs && fs.readFileSync(file, 'utf8') === raw) fs.unlinkSync(file);
+      } catch (error) {
+        if (error.code !== 'ENOENT') throw error;
+      }
     }
   }
   return { owned: false };

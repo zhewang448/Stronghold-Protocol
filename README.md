@@ -1,6 +1,6 @@
 # 卫戍协议：盟约 · Stronghold Protocol: Alliance
 
-![扩展版本](https://img.shields.io/badge/version-0.4.0--extended.2-blue)
+![扩展版本](https://img.shields.io/badge/version-0.4.0--extended.3-blue)
 ![上游基础版本](https://img.shields.io/badge/version-0.4.0-2ea44f)
 ![许可](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
 
@@ -17,7 +17,7 @@ A non-commercial fan remake of the Arknights mode *Stronghold Protocol: Alliance
 
 [本库改进图鉴](https://zhewang448.github.io/Stronghold-Protocol/) · [下载正式版](https://github.com/zhewang448/Stronghold-Protocol/releases/latest) · [开始运行](#开始运行) · [特色图鉴](docs/FORK-FEATURES.md) · [本库特色详解](#本库特色详解) · [和朋友一起玩](#和朋友一起玩) · [更新记录](docs/LOCAL-CHANGELOG.md) · [反馈问题](https://github.com/zhewang448/Stronghold-Protocol/issues)
 
-> 当前版本为 **`v0.4.0-extended.2`**，基础游戏 0.4.0。**2026-11-19 更新**同步上游第 83 轮，恢复三套官方主题的盟约图标，更新规程地图和赛前材质，支持骷髅手光标调节大小，并修复 Windows 跨盘提取。附启动器 1.4.1。 [发布说明](docs/RELEASE-V0.4.0-EXTENDED.2.md)
+> 当前版本为 **`v0.4.0-extended.3`**，基础游戏 0.4.0。同步上游第 84 轮，修复规程领袖战普通叠层与 Windows 守护器残留锁，新增设置搜索、跨期名片和 v6 战场场景。附启动器 1.4.1。 [发布说明](docs/RELEASE-V0.4.0-EXTENDED.3.md)
 >
 > 非官方、非商业同人项目，与《明日方舟》官方无隶属或授权关系。游戏素材与数据的权利归原权利人；代码、素材及截图的许可边界见 [NOTICE.md](NOTICE.md)。
 
@@ -64,7 +64,7 @@ Windows 服主从同版本 Release 下载 StrongholdProtocolLauncher-v1.4.1-win-
 
 ### 下载整合包
 
-**v0.4.0-extended.2 的基础安装由 lite 程序包和 common、local、fx 三组素材分包组成，动态立绘使用可选的 dynamic-art.zip。** 推荐用启动器自动组装。手动安装时合并四个基础 ZIP 的同名文件夹，需要动态立绘时再合并 dynamic ZIP。本版增量包直接适用于 v0.4.0-extended.1。更早版本可在支持增量链的控制台升级，或用启动器重新安装。 [本库 Releases](https://github.com/zhewang448/Stronghold-Protocol/releases)
+**v0.4.0-extended.3 的基础安装由 lite 程序包和 common、local、fx 三组素材分包组成，动态立绘使用可选的 dynamic-art.zip。** 推荐用启动器自动组装。手动安装时合并四个基础 ZIP 的同名文件夹，需要动态立绘时再合并 dynamic ZIP。本版增量包直接适用于 v0.4.0-extended.2。更早版本可在支持增量链的控制台升级，或用启动器重新安装。 [本库 Releases](https://github.com/zhewang448/Stronghold-Protocol/releases)
 
 | 附件 | 适合的情况 |
 | --- | --- |
@@ -328,7 +328,7 @@ winget install Cloudflare.cloudflared
 
 大厅可选择或上传背景、导入本地音乐，并设置画质、字号、帧率上限和实际 FPS 显示。调配、皮肤、背景与音乐等个人选择保存在当前浏览器，可通过个人数据备份迁移。小屏适配不修改战斗坐标或游戏规则，移动端性能仍取决于设备；不承诺所有实体设备或 Safari 均已验证。
 
-鼠标默认使用**方舟主题、96 px**，可在「设置 → 界面与操作」切换系统鼠标或调整到 32–128 px，并查看实际大小预览。已保存的个人选择继续有效；触屏、高对比度或素材缺失时使用系统指针。服主可统一提供客户端默认值和修改权限，锁定不覆盖个人原始偏好，解锁后恢复。详见[鼠标设置](docs/CURSOR.md)。
+新用户默认使用系统指针。可在「设置 → 操作」开启骷髅手指光标，并选自动大小或 32–128 px。已保存的个人选择继续有效；触屏、高对比度或素材缺失时使用系统指针。服主可统一提供客户端默认值和修改权限，锁定不覆盖个人原始偏好，解锁后恢复。详见[鼠标设置](docs/CURSOR.md)。
 
 ### 素材与加载管理
 

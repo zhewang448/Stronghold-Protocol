@@ -24,6 +24,25 @@ test('leases prevent duplicate starts and reclaim only verifiably dead owners', 
   const reclaimed = acquireLease(root, 'launch-3001', { isAlive: () => false }); assert.equal(reclaimed.owned, true); reclaimed.release();
 });
 
+test('a recycled PID releases a stale lease, while a live original or unknown owner keeps it', (t) => {
+  const root = temp(t);
+  const name = 'runtime-3000';
+  const file = path.join(root, 'logs', `${name}.json`);
+  const writtenAt = 1700000000000;
+  fs.mkdirSync(path.dirname(file));
+  fs.writeFileSync(file, JSON.stringify({ pid: process.pid + 1, owner: 'legacy' }));
+  fs.utimesSync(file, writtenAt / 1000, writtenAt / 1000);
+  const isAlive = () => true;
+  for (const startedAt of [null, writtenAt - 10000, writtenAt + 1000]) {
+    assert.equal(acquireLease(root, name, { isAlive, processStartedAt: () => startedAt }).owned, false);
+  }
+  const lease = acquireLease(root, name, { isAlive, processStartedAt: () => writtenAt + 10000 });
+  assert.equal(lease.owned, true);
+  assert.equal(acquireLease(root, name, { isAlive }).owned, false);
+  lease.release();
+  assert.equal(fs.existsSync(file), false);
+});
+
 test('planned server restart retains one tunnel and explicit shutdown ends the supervisor', async (t) => {
   const root = temp(t), children = []; let tunnelChild, tunnelStarts = 0;
   const tunnel = openTunnel({ root, port: 3000, log() {}, spawnImpl() { tunnelStarts++; return tunnelChild = child(999); } });

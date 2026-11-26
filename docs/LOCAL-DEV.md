@@ -11,7 +11,7 @@
 用户设置仍沿用原 key、稀疏保存和别名迁移；锁定只覆盖生效层。测试入口为 `test/client-preferences.test.js` 和
 启用 `SP_E2E=1` 的 `test/ui/client-preferences.e2e.test.js`。
 
-当前版本为 `v0.4.0-extended.2`，基础游戏 0.4.0、启动器 1.4.1。本轮同步上游第 83 轮和 v5 场景，恢复盟约主题效果、鼠标大小与观战入口。 [发布记录](RELEASE-V0.4.0-EXTENDED.2.md)
+当前版本为 `v0.4.0-extended.3`，基础游戏 0.4.0、启动器 1.4.1。本轮同步上游第 84 轮和 v6 场景，并修复 Windows PID 复用导致的守护器残留锁。 [发布记录](RELEASE-V0.4.0-EXTENDED.3.md)
 
 v0.3.3 整合候选及验证边界见 [整合说明](UPSTREAM-V0.3.3-INTEGRATION.md)。
 
